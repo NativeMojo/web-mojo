@@ -87,3 +87,51 @@
 .list-view-wrapper .list-empty {
     color: var(--bs-secondary-color);
 }
+
+/* ========================================================================
+   Group header rows (groupBy primitive)
+
+   Light + dark from a single block: every property uses Bootstrap tokens
+   that re-skin under [data-bs-theme="dark"], so no override block needed.
+   ======================================================================== */
+
+.list-group-header {
+    padding: 0.5rem 0.25rem 0.25rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bs-secondary-color);
+    border-top: 1px solid var(--bs-border-color-translucent);
+    pointer-events: none; /* never participate in row-click affordances */
+}
+
+.list-group-header:first-child,
+.list-items > .list-group-header:first-child,
+.list-view-wrapper .list-items > .list-group-header:first-child {
+    border-top: 0;
+    padding-top: 0;
+}
+
+/* TableView shape — same eyebrow typography as the list variant, but
+   inside a `<tr><th>` pair so it sits in the table grid. */
+
+.list-group-header-row {
+    background: transparent;
+}
+
+.list-group-header-row .list-group-header-cell {
+    padding: 0.5rem 0.5rem 0.25rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bs-secondary-color);
+    border-top: 1px solid var(--bs-border-color-translucent);
+    border-bottom: 0;
+    background: transparent;
+}
+
+.list-group-header-row:first-child .list-group-header-cell {
+    border-top: 0;
+}

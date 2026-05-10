@@ -652,4 +652,303 @@ module.exports = async function (testContext) {
       expect(collection.params.start).toBe(0);
     });
   });
+
+  // --------------------------------------------------------------
+  // Grouped rows — groupBy / groupHeaderTemplate / groupHeaderLabel
+  // --------------------------------------------------------------
+  describe('ListView (grouped)', () => {
+    it('inserts header rows between groups when groupBy is a function', async () => {
+      const collection = new Collection([
+        { id: 1, name: 'A1', bucket: 'alpha' },
+        { id: 2, name: 'A2', bucket: 'alpha' },
+        { id: 3, name: 'B1', bucket: 'beta' },
+        { id: 4, name: 'C1', bucket: 'gamma' }
+      ]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div class="row">{{model.name}}</div>',
+        groupBy: (m) => m.get('bucket')
+      });
+      await listView.render();
+
+      const headers = listView.element.querySelectorAll('.list-group-header');
+      expect(headers.length).toBe(3);
+      expect(headers[0].textContent.trim()).toBe('alpha');
+      expect(headers[1].textContent.trim()).toBe('beta');
+      expect(headers[2].textContent.trim()).toBe('gamma');
+    });
+
+    it('accepts groupBy as a string field name (shorthand)', async () => {
+      const collection = new Collection([
+        { id: 1, name: 'A', status: 'open' },
+        { id: 2, name: 'B', status: 'open' },
+        { id: 3, name: 'C', status: 'closed' }
+      ]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        groupBy: 'status'
+      });
+      await listView.render();
+
+      const headers = listView.element.querySelectorAll('.list-group-header');
+      expect(headers.length).toBe(2);
+      expect(headers[0].textContent.trim()).toBe('open');
+      expect(headers[1].textContent.trim()).toBe('closed');
+    });
+
+    it('applies groupHeaderLabel formatter to {{key}}', async () => {
+      const collection = new Collection([
+        { id: 1, status: 'active' },
+        { id: 2, status: 'resolved' }
+      ]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.id}}</div>',
+        groupBy: 'status',
+        groupHeaderLabel: (k) => k.toUpperCase()
+      });
+      await listView.render();
+
+      const headers = listView.element.querySelectorAll('.list-group-header');
+      expect(headers[0].textContent.trim()).toBe('ACTIVE');
+      expect(headers[1].textContent.trim()).toBe('RESOLVED');
+    });
+
+    it('treats falsy resolver returns as ungrouped tail (no header emitted)', async () => {
+      const collection = new Collection([
+        { id: 1, bucket: 'alpha' },
+        { id: 2, bucket: null },        // ungrouped — no header
+        { id: 3, bucket: 'alpha' }      // same key as prior emitted; no header
+      ]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.id}}</div>',
+        groupBy: (m) => m.get('bucket')
+      });
+      await listView.render();
+
+      const headers = listView.element.querySelectorAll('.list-group-header');
+      expect(headers.length).toBe(1);
+      expect(headers[0].textContent.trim()).toBe('alpha');
+    });
+
+    it('does not register header views in itemViews (so they cannot fire item:click)', async () => {
+      let onItemClickFired = 0;
+      const collection = new Collection([
+        { id: 1, bucket: 'alpha' },
+        { id: 2, bucket: 'beta' }
+      ]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.id}}</div>',
+        groupBy: 'bucket',
+        onItemClick: () => { onItemClickFired += 1; }
+      });
+      await listView.render();
+
+      // Sanity: item count vs header count
+      expect(listView.itemViews.size).toBe(2);
+      expect(listView.groupHeaderViews.size).toBe(2);
+
+      // Headers must NOT be among itemViews
+      const headerIds = Array.from(listView.groupHeaderViews.keys());
+      const itemIds = Array.from(listView.itemViews.values()).map(v => v.id);
+      headerIds.forEach((hid) => {
+        expect(itemIds).not.toContain(hid);
+      });
+
+      // Click on a header element — onItemClick must not fire (no
+      // _wireClickableHandler is bound to header views).
+      const header = listView.element.querySelector('.list-group-header');
+      header.click();
+      expect(onItemClickFired).toBe(0);
+    });
+
+    it('re-segments groups on collection reset (filter narrowing)', async () => {
+      const collection = new Collection([
+        { id: 1, bucket: 'alpha' },
+        { id: 2, bucket: 'beta' },
+        { id: 3, bucket: 'gamma' }
+      ]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.id}}</div>',
+        groupBy: 'bucket'
+      });
+      await listView.render();
+      expect(listView.element.querySelectorAll('.list-group-header').length).toBe(3);
+
+      // Simulate a filter narrowing the collection — reset() rebuilds.
+      collection.reset([
+        { id: 1, bucket: 'alpha' },
+        { id: 3, bucket: 'gamma' }
+      ]);
+      await listView.render();
+
+      const headers = listView.element.querySelectorAll('.list-group-header');
+      expect(headers.length).toBe(2);
+      expect(headers[0].textContent.trim()).toBe('alpha');
+      expect(headers[1].textContent.trim()).toBe('gamma');
+    });
+
+    it('interleaves headers between items in DOM order', async () => {
+      const collection = new Collection([
+        { id: 1, bucket: 'alpha' },
+        { id: 2, bucket: 'beta' }
+      ]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div class="rec">{{model.id}}</div>',
+        groupBy: 'bucket'
+      });
+      await listView.render();
+
+      const items = listView.element.querySelector('[data-container="items"]');
+      // Expect: header(alpha), item(1), header(beta), item(2)
+      const children = Array.from(items.children);
+      expect(children.length).toBe(4);
+      expect(children[0].classList.contains('list-group-header')).toBe(true);
+      expect(children[0].textContent.trim()).toBe('alpha');
+      expect(children[1].querySelector('.rec').textContent).toBe('1');
+      expect(children[2].classList.contains('list-group-header')).toBe(true);
+      expect(children[2].textContent.trim()).toBe('beta');
+      expect(children[3].querySelector('.rec').textContent).toBe('2');
+    });
+
+    it('non-grouped consumers see no behavior change (no header markup, no _renderOrder)', async () => {
+      const collection = new Collection([{ id: 1, name: 'A' }]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>'
+        // no groupBy
+      });
+      await listView.render();
+
+      expect(listView.element.querySelectorAll('.list-group-header').length).toBe(0);
+      expect(listView._renderOrder.length).toBe(0);
+      expect(listView.groupHeaderViews.size).toBe(0);
+    });
+  });
+
+  // --------------------------------------------------------------
+  // groupByDay helper — built-in chronological-feed bucketing
+  // --------------------------------------------------------------
+  describe('groupByDay helper', () => {
+    const grouping = loadModule('grouping');
+    const groupByDay = grouping?.groupByDay || grouping?.default?.groupByDay;
+
+    const makeModel = (created) => ({ id: Math.random(), get: (k) => (k === 'created' ? created : null) });
+    const isoOf = (date) => {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    };
+
+    it('exports a function returning { groupBy, groupHeaderLabel }', () => {
+      expect(typeof groupByDay).toBe('function');
+      const helper = groupByDay('created');
+      expect(typeof helper.groupBy).toBe('function');
+      expect(typeof helper.groupHeaderLabel).toBe('function');
+    });
+
+    it('produces a stable YYYY-MM-DD bucket key from a Date input', () => {
+      const helper = groupByDay('created');
+      const date = new Date(2026, 0, 15, 14, 30); // Jan 15 2026 14:30 local
+      expect(helper.groupBy(makeModel(date))).toBe('2026-01-15');
+    });
+
+    it('produces the same bucket key for epoch ms and ISO string and Date', () => {
+      const helper = groupByDay('created');
+      const date = new Date(2026, 4, 9, 10, 0); // May 9 2026 10:00 local
+      const ms = date.getTime();
+      const iso = date.toISOString();
+      expect(helper.groupBy(makeModel(ms))).toBe(helper.groupBy(makeModel(date)));
+      expect(helper.groupBy(makeModel(iso))).toBe(helper.groupBy(makeModel(date)));
+    });
+
+    it('accepts an accessor function instead of a field-name string', () => {
+      const helper = groupByDay((m) => m.get('updated') || m.get('created'));
+      const date = new Date(2026, 2, 3, 9, 0);
+      const model = { get: (k) => (k === 'updated' ? null : k === 'created' ? date : null) };
+      expect(helper.groupBy(model)).toBe('2026-03-03');
+    });
+
+    it('returns null bucket key for missing / unparseable date inputs', () => {
+      const helper = groupByDay('created');
+      expect(helper.groupBy(makeModel(null))).toBe(null);
+      expect(helper.groupBy(makeModel(''))).toBe(null);
+      expect(helper.groupBy(makeModel('not-a-date'))).toBe(null);
+    });
+
+    it('formats today as "Today"', () => {
+      const helper = groupByDay('created');
+      const today = new Date();
+      const todayKey = isoOf(today);
+      expect(helper.groupHeaderLabel(todayKey)).toBe('Today');
+    });
+
+    it('formats yesterday as "Yesterday"', () => {
+      const helper = groupByDay('created');
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const key = isoOf(yesterday);
+      expect(helper.groupHeaderLabel(key)).toBe('Yesterday');
+    });
+
+    it('formats current-year date as "Mon DD"', () => {
+      const helper = groupByDay('created');
+      const now = new Date();
+      const yearAgoSafe = new Date(now.getFullYear(), 0, 5); // Jan 5 of current year
+      // If today is Jan 5 / 6, this would collide — just pick a date that
+      // is neither today nor yesterday by going back ~10 days from now
+      // but staying in the current year.
+      const past = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 10);
+      const key = isoOf(past);
+      const label = helper.groupHeaderLabel(key);
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      expect(label).toContain(months[past.getMonth()]);
+      expect(label).toContain(String(past.getDate()));
+      expect(label).not.toContain(String(yearAgoSafe.getFullYear() - 1));
+    });
+
+    it('formats prior-year date as "Mon DD, YYYY"', () => {
+      const helper = groupByDay('created');
+      const priorYearKey = '2024-12-19';
+      expect(helper.groupHeaderLabel(priorYearKey)).toBe('Dec 19, 2024');
+    });
+  });
+
+  // --------------------------------------------------------------
+  // TableView grouping default — `<tr><th colspan="N">` shape
+  // --------------------------------------------------------------
+  describe('TableView (grouped)', () => {
+    it('default group header renders as <tr class="list-group-header-row"><th colspan="N">', async () => {
+      const TableView = loadModule('TableView');
+      const collection = new Collection([
+        { id: 1, name: 'A', bucket: 'alpha' },
+        { id: 2, name: 'B', bucket: 'beta' }
+      ]);
+      const tableView = new TableView({
+        collection,
+        columns: [
+          { key: 'id', label: 'ID' },
+          { key: 'name', label: 'Name' }
+        ],
+        actions: ['view'],
+        groupBy: 'bucket'
+      });
+      await tableView.render();
+
+      const headerRows = tableView.element.querySelectorAll('tr.list-group-header-row');
+      expect(headerRows.length).toBe(2);
+
+      // colspan = data cols (2) + actions col (1) = 3.
+      const firstHeaderCell = headerRows[0].querySelector('th.list-group-header-cell');
+      expect(firstHeaderCell).not.toBeNull();
+      expect(firstHeaderCell.getAttribute('colspan')).toBe('3');
+      expect(firstHeaderCell.textContent.trim()).toBe('alpha');
+    });
+  });
 };

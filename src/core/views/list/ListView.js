@@ -59,6 +59,7 @@ import Mustache from '@core/utils/mustache.js';
 import FormView from '@core/forms/FormView.js';
 import { parseFilterKey, formatFilterDisplay } from '@core/utils/DjangoLookups.js';
 import ListViewItem from './ListViewItem.js';
+import ListGroupHeaderView from './ListGroupHeaderView.js';
 
 class ListView extends View {
   constructor(options = {}) {
@@ -155,6 +156,23 @@ class ListView extends View {
     this.clickable = options.clickable === true
       || !!this.onItemClick
       || (this.clickAction && this.clickAction !== 'none');
+
+    // -------- Grouped rows — opt-in via groupBy --------
+    // `groupBy` is a function (model) => key OR a string (model field name).
+    // When set, ListView inserts a synthetic header row before the first
+    // item of each new group key (computed in render order). Headers are
+    // ListGroupHeaderView instances — separate from the click-routing
+    // machinery so they cannot fire item:click / row:click. Falsy resolver
+    // return = no header for that item ("ungrouped tail" — prior group's
+    // section continues visually).
+    this.groupBy = (typeof options.groupBy === 'function' || typeof options.groupBy === 'string')
+      ? options.groupBy
+      : null;
+    this.groupHeaderTemplate = options.groupHeaderTemplate || null;
+    this.groupHeaderLabel = typeof options.groupHeaderLabel === 'function' ? options.groupHeaderLabel : null;
+    this.groupHeaderClass = options.groupHeaderClass || ListGroupHeaderView;
+    this.groupHeaderViews = new Map();
+    this._renderOrder = [];
 
     // "Show more" state
     this.loadingMore = false;
@@ -802,11 +820,23 @@ class ListView extends View {
     // the clickable handler, etc.) has fully run by the time the parent's
     // render() resolves. Items are kept in the `itemViews` Map, not the
     // standard child registry, so we drive their render directly.
+    //
+    // When grouping is configured, walk the precomputed `_renderOrder` to
+    // interleave header views with item views in the correct DOM order.
+    // Otherwise, fall through to the lighter forEachItem walk (zero
+    // behavior change for non-grouped consumers).
     const renders = [];
-    this.forEachItem((item) => {
-      itemsContainer.appendChild(item.element);
-      renders.push(Promise.resolve(item.render(false)).catch(() => {}));
-    });
+    if (this._renderOrder.length > 0) {
+      for (const entry of this._renderOrder) {
+        itemsContainer.appendChild(entry.view.element);
+        renders.push(Promise.resolve(entry.view.render(false)).catch(() => {}));
+      }
+    } else {
+      this.forEachItem((item) => {
+        itemsContainer.appendChild(item.element);
+        renders.push(Promise.resolve(item.render(false)).catch(() => {}));
+      });
+    }
     await Promise.all(renders);
   }
 
@@ -824,12 +854,111 @@ class ListView extends View {
       this._createItemView(model, index);
     });
     this._applyPersistedSelections();
+    this._buildGroupHeaders();
 
     this.emit('list:loaded', { count: this.collection.length() });
 
     if (this.isMounted()) {
       this.render();
     }
+  }
+
+  /**
+   * Walk the collection in render order, run `groupBy`, and build the
+   * `_renderOrder` array of `{ type: 'item' | 'header', view }` entries.
+   *
+   * No-op when `groupBy` isn't configured — `_renderChildren` falls back to
+   * the lighter `forEachItem` walk for non-grouped consumers.
+   *
+   * Falsy resolver returns are treated as "ungrouped tail" — the item is
+   * pushed without emitting a header, so the prior group's section
+   * continues visually.
+   *
+   * @private
+   */
+  _buildGroupHeaders() {
+    this.groupHeaderViews.forEach((headerView) => this.removeChild(headerView.id));
+    this.groupHeaderViews.clear();
+    this._renderOrder.length = 0;
+
+    if (!this.groupBy || !this.collection || this.collection.isEmpty()) return;
+
+    const resolver = typeof this.groupBy === 'function'
+      ? this.groupBy
+      : (model) => model.get(this.groupBy);
+
+    let prevKey;
+    let prevKeySet = false;
+
+    this.collection.forEach((model, index) => {
+      const itemView = this.itemViews.get(model.id);
+      if (!itemView) return;
+
+      let rawKey;
+      try {
+        rawKey = resolver(model);
+      } catch (err) {
+        console.warn('ListView: groupBy resolver threw — treating as ungrouped tail', err);
+        rawKey = null;
+      }
+
+      if (rawKey && (!prevKeySet || rawKey !== prevKey)) {
+        const headerView = this._createGroupHeaderView(model, rawKey, index);
+        this._renderOrder.push({ type: 'header', view: headerView });
+        prevKey = rawKey;
+        prevKeySet = true;
+      }
+      this._renderOrder.push({ type: 'item', view: itemView });
+    });
+  }
+
+  /**
+   * Build (or rebuild) the group-header markers. Public-ish hook called by
+   * `_onModelsAdded` after Show More appends, so the appended page's first
+   * item gets (or doesn't get) a header against the prior tail correctly.
+   * @private
+   */
+  _rebuildGroupHeaders() {
+    this._buildGroupHeaders();
+  }
+
+  /**
+   * Create a ListGroupHeaderView for the given trigger model and raw key.
+   * Subclasses (TableView) override to inject `tagName: 'tr'` + `colspan`.
+   * @private
+   */
+  _createGroupHeaderView(model, key, index) {
+    const displayKey = this.groupHeaderLabel ? this.groupHeaderLabel(key) : key;
+    const headerView = new this.groupHeaderClass({
+      template: this.groupHeaderTemplate || this._defaultGroupHeaderTemplate(),
+      model,
+      key: displayKey,
+      index,
+      ...this._groupHeaderViewOptions(model, key, index)
+    });
+    this.groupHeaderViews.set(headerView.id, headerView);
+    return headerView;
+  }
+
+  /**
+   * Subclass hook for extra constructor options on the header view (TableView
+   * uses this to set `tagName`, `className`, `colspan`). Default: no extras.
+   * @protected
+   */
+  _groupHeaderViewOptions(_model, _key, _index) {
+    return {};
+  }
+
+  /**
+   * Default Mustache template used when the consumer doesn't pass
+   * `groupHeaderTemplate`. ListView default is the bare display key — the
+   * outer `<div class="list-group-header">` wrapper comes from
+   * ListGroupHeaderView's tagName + className. TableView overrides to emit
+   * a `<th colspan="...">` cell so the framework-provided `<tr>` is full-width.
+   * @protected
+   */
+  _defaultGroupHeaderTemplate() {
+    return '{{key}}';
   }
 
   _createItemView(model, index) {
@@ -950,6 +1079,9 @@ class ListView extends View {
       this.removeChild(itemView.id);
     });
     this.itemViews.clear();
+    this.groupHeaderViews.forEach((headerView) => this.removeChild(headerView.id));
+    this.groupHeaderViews.clear();
+    this._renderOrder.length = 0;
     if (!this.persistSelection) {
       this.selectedItems.clear();
     }
@@ -962,6 +1094,10 @@ class ListView extends View {
       this._createItemView(model, index);
     });
     this._applyPersistedSelections();
+    // Rebuild the grouping pass against the now-larger collection so the
+    // appended page's first item gets (or doesn't get) a header against
+    // the prior tail correctly. No-op for non-grouped consumers.
+    if (this.groupBy) this._rebuildGroupHeaders();
 
     this.isEmpty = this.collection.isEmpty();
 

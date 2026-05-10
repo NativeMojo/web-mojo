@@ -44,6 +44,12 @@
             "route": "components/list-view/lifecycle",
             "title": "ListView — lifecycle",
             "summary": "Full Add / View / Edit / Delete flow with click-to-view and per-card buttons."
+        },
+        {
+            "page": "ListViewGroupedExample.js",
+            "route": "components/list-view/grouped",
+            "title": "ListView — grouped rows",
+            "summary": "Synthetic group headers between items — raw groupBy + groupByDay helper."
         }
     ]
 }

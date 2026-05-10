@@ -32,6 +32,8 @@ class SimpleModuleLoader {
             'View',
             'Page',
             'ListViewItem',
+            'ListGroupHeaderView',
+            'grouping',
             'TableRow'
         ];
 
@@ -195,13 +197,21 @@ class SimpleModuleLoader {
                 path: path.join(this.sourceRoot, 'core/views/list/ListViewItem.js'),
                 dependencies: ['View']
             },
+            'ListGroupHeaderView': {
+                path: path.join(this.sourceRoot, 'core/views/list/ListGroupHeaderView.js'),
+                dependencies: ['View']
+            },
+            'grouping': {
+                path: path.join(this.sourceRoot, 'core/views/list/grouping.js'),
+                dependencies: ['dataFormatter']
+            },
             'DjangoLookups': {
                 path: path.join(this.sourceRoot, 'core/utils/DjangoLookups.js'),
                 dependencies: []
             },
             'ListView': {
                 path: path.join(this.sourceRoot, 'core/views/list/ListView.js'),
-                dependencies: ['View', 'Collection', 'Modal', 'DjangoLookups', 'ListViewItem']
+                dependencies: ['View', 'Collection', 'Modal', 'DjangoLookups', 'ListViewItem', 'ListGroupHeaderView']
             },
             'TableRow': {
                 path: path.join(this.sourceRoot, 'core/views/table/TableRow.js'),
@@ -521,8 +531,10 @@ class SimpleModuleLoader {
             { test: /Rest/, name: 'Rest' },
             { test: /DataFormatter/, name: 'dataFormatter' },
             { test: /MOJOUtils/, name: 'MOJOUtils' },
+            { test: /ListGroupHeaderView/, name: 'ListGroupHeaderView' },
             { test: /ListViewItem/, name: 'ListViewItem' },
             { test: /\/ListView(\.js)?$/, name: 'ListView' },
+            { test: /\/grouping(\.js)?$/, name: 'grouping' },
             { test: /TableRow/, name: 'TableRow' },
             { test: /DjangoLookups/, name: 'DjangoLookups' },
             { test: /\/Dialog(\.js)?$/, name: 'Dialog' },

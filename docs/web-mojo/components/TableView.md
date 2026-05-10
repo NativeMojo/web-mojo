@@ -533,6 +533,39 @@ Totals are automatically recalculated when the collection changes (add, remove, 
 
 ---
 
+## Grouped rows
+
+The same `groupBy` / `groupHeaderTemplate` / `groupHeaderLabel` options [documented on ListView](./ListView.md#grouped-rows) work on TableView. The difference is the default header markup: TableView emits a full-width `<tr class="list-group-header-row"><th colspan="N" class="list-group-header-cell">{{key}}</th></tr>` so the header sits in the table grid and spans all columns (data cols + selection col + actions col).
+
+```js
+const table = new TableView({
+  collection: incidentCollection,
+  columns: [
+    { key: 'name', label: 'Name' },
+    { key: 'severity', label: 'Severity' }
+  ],
+  actions: ['view'],
+  groupBy: 'status',
+  groupHeaderLabel: (k) => k.toUpperCase()
+});
+```
+
+If you pass a custom `groupHeaderTemplate` for TableView, write it as cell-only inner content (`<th colspan="N">…</th>`) — the framework provides the `<tr>` outer element automatically. This parallels how `TableRow` consumes inner `<td>` markup while the framework provides the row.
+
+The built-in `groupByDay` helper (chronological feeds) works identically:
+
+```js
+import { groupByDay } from '@core/views/list/grouping.js';
+
+new TableView({
+  collection: auditLogCollection,
+  columns: [{ key: 'action' }, { key: 'actor' }, { key: 'created', formatter: 'relative' }],
+  ...groupByDay('created')
+});
+```
+
+---
+
 ## Built-in Actions
 
 The `actions` option defines which action buttons appear in each row:

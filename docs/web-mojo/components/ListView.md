@@ -174,6 +174,99 @@ ListView only renders the Show More button when `collection.meta.count > collect
 
 ---
 
+## Grouped rows
+
+Opt-in grouping inserts a synthetic header row before the first item of each new group key. Use it for chronological feeds (Today / Yesterday / May 5), categorical lists (Active / Resolved), alphabetical dividers (A / B / C), or any list where consumers benefit from a visible bucket break.
+
+```js
+const list = new ListView({
+  collection: loginEvents,
+  itemTemplate: '<div class="card">{{model.location}} — {{model.created|relative}}</div>',
+  groupBy: (m) => m.get('day_bucket'),                  // resolver — see "Three-layer label pipeline" below
+  groupHeaderTemplate: '<div class="list-group-header">{{key}}</div>'
+});
+```
+
+The shorthand for "raw model field as the key" is a string:
+
+```js
+groupBy: 'status',                              // equivalent to (m) => m.get('status')
+groupHeaderLabel: (k) => k.toUpperCase()        // 'active' → 'ACTIVE'
+```
+
+### Three-layer label pipeline
+
+```
+model → groupBy(model) → rawKey → groupHeaderLabel(rawKey) → displayKey → {{key}} in groupHeaderTemplate → DOM
+```
+
+| Layer | Required? | Purpose |
+|---|---|---|
+| `groupBy` | yes | Resolver. Returns the raw bucket key for a model. Header emitted when the key changes. Falsy return = no header for that item ("ungrouped tail" — joins the prior group's section). |
+| `groupHeaderLabel` | optional | Formatter `(rawKey) => displayKey`. Runs once per header before the template renders. Use for raw-to-display transforms ('warning' → 'WARNING', '2026-05-08' → 'Yesterday'). |
+| `groupHeaderTemplate` | optional | Mustache template. Receives `{{key}}` (the formatted display key) and `{{model.*}}` (the trigger model — first model of the group). Default: `'{{key}}'` inside an automatic `<div class="list-group-header">` wrapper. |
+
+### Built-in helpers
+
+For the dominant chronological-feed case, ship `groupByDay` instead of writing the day-bucketing logic by hand:
+
+```js
+import { groupByDay } from '@core/views/list/grouping.js';
+
+new ListView({
+  collection: loginEvents,
+  itemTemplate: '<div class="card">{{model.location}}</div>',
+  ...groupByDay('created')
+});
+```
+
+`groupByDay` produces:
+- A stable `YYYY-MM-DD` bucket key (deterministic equality regardless of input format — epoch / ISO / `Date` all bucket identically).
+- A label formatter that renders `'Today'` / `'Yesterday'` / `'May 5'` (current year) / `'May 5, 2025'` (prior years).
+
+Accepts either a field-name string (`groupByDay('created')`) or an accessor function (`groupByDay((m) => m.get('updated') || m.get('created'))`).
+
+Additional helpers (`groupByField`, `groupByMonth`, `groupByYear`, `groupByLetter`) are tracked in `planning/requests/listview-grouping-helpers.md` and ship when a real consumer asks. Until then, write the resolver inline.
+
+### Pagination math
+
+**Pagination counts items only** — page-size 5 still means 5 items per page, regardless of how many group headers fall into the page. Headers are decorative; the user thinks "5 logins per page," not "5 rows."
+
+### Filter / search interaction
+
+Headers re-segment automatically when filters or search narrow the collection — `_onCollectionReset` rebuilds against the new model order, and the resolver runs again. No special wiring needed if `groupBy` is a pure function of the model (which the API contract requires).
+
+### Sort order
+
+Grouping is applied **after** sort — the framework does not enforce a sort order to match grouping. If `groupBy` returns "Today / Yesterday / May 5" but the sort is ascending date, the timeline reads bottom-up. That's the consumer's call.
+
+### Click routing
+
+Headers do **not** participate in `clickAction: 'view'` / `onItemClick` / `item:click` / `row:click`. They extend `View` directly (not `ListViewItem`) so the row-click handler is never wired on them — clicking a header is a no-op by construction.
+
+### Constructor options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `groupBy` | `Function \| string` | `null` | Resolver `(model) => key`, or a model field name (shorthand). When set, ListView interleaves header rows. |
+| `groupHeaderTemplate` | `string` | `'{{key}}'` | Mustache template for the header. Receives `{{key}}` and `{{model.*}}`. |
+| `groupHeaderLabel` | `Function` | `null` | Optional `(rawKey) => displayKey` formatter applied before the template renders. |
+| `groupHeaderClass` | `Class` | `ListGroupHeaderView` | Custom View subclass for headers (escape hatch — full control over outer element + behavior). |
+
+### Naming caveat
+
+`Sidebar` and `SidebarTopNav` already use a `groupHeader` option for a different concept — a single static Mustache header rendered once at the top of the sidebar. ListView's grouping API is separate; the names parallel but the two systems do not interact.
+
+### Out of scope
+
+- Sticky headers that pin to the viewport while scrolling.
+- Multi-level / nested grouping.
+- Group-level batch actions ("Delete all in this group").
+- Server-side grouping primitives (the collection delivers a flat ordered list; grouping is purely render-side).
+- Collapsible group headers — consumers can build on top of `groupHeaderTemplate` if they want.
+
+---
+
 ## Installation
 
 ListView is part of the web-mojo core:

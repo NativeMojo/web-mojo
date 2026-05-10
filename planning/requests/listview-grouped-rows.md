@@ -120,3 +120,146 @@ These are the non-obvious choices that need a call before build:
 ## First Consumer
 
 Once this lands, [`detailview-audit-round-2.md`](detailview-audit-round-2.md) R2 reopens with a one-liner `groupBy` addition to UserView's Logins ListView (`src/extensions/admin/account/users/UserView.js:1189`) — the CSS-only timeline rail from R2 stays as-is, day headers slot in via the new primitive. The audit feeds in the same view (`UserView.js:797`, `824`, `851`) similarly become candidates for "Today / Yesterday / earlier" grouping if visually warranted.
+
+The hand-rolled `_groupByDate` in `src/extensions/admin/assistant/AssistantConversationListView.js:166` is the second-consumer migration candidate — once `groupByDay` ships, that ~80 lines of imperative DOM stitching collapses to a one-line spread on a real `ListView`. File separately when ready.
+
+## Plan
+
+### Objective
+
+Add an opt-in grouping primitive to `ListView` (inherited by `TableView`) that inserts synthetic header rows between consecutive items whenever a derived group key changes. Existing consumers see no behavior change. Ship one built-in helper (`groupByDay`) for the dominant chronological-feed case; everything else stays consumer-defined via `groupBy` / `groupHeaderTemplate` / `groupHeaderLabel`. After this lands, UserView's Logins ListView (and any other chronological/categorical feed) gets day grouping with a one-line `...groupByDay('created')` addition.
+
+### Steps
+
+1. **New file: `src/core/views/list/ListGroupHeaderView.js`** — small `View` subclass (NOT extending `ListViewItem`, so it does not inherit `_wireClickableHandler` / `onActionDefault` and structurally cannot fire `item:click` / `row:click`). Properties: `key` (resolved + label-formatted display key), `model` (trigger model — the first model of the group, exposed for `{{model.*}}` in the template), `colspan` (set by TableView). Default `tagName: 'div'`, `className: 'list-group-header'`. Renders through the standard `View` Mustache flow so `{{key}}` and `{{model.field}}` resolve. No event bindings.
+
+2. **`src/core/views/list/ListView.js` — constructor (after the toolbar/pagination block, ~line 162):**
+   - Accept `options.groupBy` (function `(model) => key` OR a string treated as `model.get(string)`).
+   - Accept `options.groupHeaderTemplate` (Mustache string; default from `_defaultGroupHeaderTemplate()`).
+   - Accept `options.groupHeaderLabel` (optional `(rawKey) => displayKey` formatter applied before the template runs).
+   - Accept `options.groupHeaderClass` (escape hatch, mirrors `itemClass`; defaults to `ListGroupHeaderView`).
+   - Initialize `this.groupHeaderViews = new Map()` (key: synthetic `gh-<index>-<key>` id → headerView) and `this._renderOrder = []` (ordered array of `{ type: 'item' | 'header', view }`).
+
+3. **`ListView._buildItems` (line 813) — extend without breaking the non-grouped path:**
+   - After the existing `collection.forEach((model, index) => _createItemView(model, index))` loop, call a new `_buildGroupHeaders()` that walks `collection.models` in render order, runs the resolver, and:
+     - When the resolved key !== previous key (and the resolver returns a truthy value), creates a header via `_createGroupHeaderView(model, key, index)` and pushes `{ type: 'header', view }` then `{ type: 'item', view: itemViews.get(model.id) }` into `_renderOrder`.
+     - Falsy resolver return = "ungrouped tail"; do NOT emit a header (continues prior group's section visually). Item still pushed.
+   - Plain ListView (no `groupBy`) skips the grouping pass entirely; `_renderChildren` falls through to its current `forEachItem` walk.
+
+4. **`ListView._createGroupHeaderView(model, key, index)` — new helper:**
+   - `displayKey = this.groupHeaderLabel ? this.groupHeaderLabel(key) : key`.
+   - `new this.groupHeaderClass({ template: this.groupHeaderTemplate || this._defaultGroupHeaderTemplate(), model, key: displayKey, index })`.
+   - Store under a synthetic id in `this.groupHeaderViews`. Returns the view.
+
+5. **`ListView._defaultGroupHeaderTemplate()` — virtual hook returning `'{{key}}'`** (TableView overrides to inject `<th colspan="...">`).
+
+6. **`ListView._renderChildren` (line 797) — generalize to iterate `_renderOrder`:**
+   - When `_renderOrder.length > 0`, append each entry's `view.element` into the items container in interleaved order. Render each view (item or header) via `await Promise.resolve(view.render(false))` (same shape as the current code).
+   - Otherwise (no grouping configured, fresh build), keep the existing `forEachItem` path verbatim. Net effect: zero change for non-grouped consumers.
+
+7. **`ListView._clearItems` (line 948) — also tear down headers:**
+   - Iterate `groupHeaderViews` and `removeChild(headerView.id)` for each, then `groupHeaderViews.clear()` and `_renderOrder.length = 0`.
+
+8. **`ListView._onModelsAdded` (line 958) — rebuild grouping after Show More appends:**
+   - After the existing `_createItemView` loop, when `groupBy` is set, call `_rebuildGroupHeaders()` that clears `groupHeaderViews` + `_renderOrder` and re-runs the grouping pass against the now-larger `collection.models`. Required for `paginationMode: 'more'` so the appended page's first item gets (or doesn't get) a header against the prior tail correctly.
+
+9. **`ListView._dispatchRowClick` — verify, no edit needed:**
+   - Headers are not registered in `itemViews` and `_wireItemViewListeners` is never called for them, so they cannot emit `item:click` with `action: 'row-click'` or `row:click`. The "headers don't fire row-click" acceptance criterion is structural.
+
+10. **`src/core/views/table/TableView.js` — override grouping defaults:**
+    - Override `_defaultGroupHeaderTemplate()` to return `<th colspan="{{colspan}}" class="list-group-header-cell">{{key}}</th>`.
+    - Override `_createGroupHeaderView(model, key, index)` to pass `tagName: 'tr'`, `className: 'list-group-header-row'`, and `colspan = Math.max(1, this.columns.length + (this.isSelectable() ? 1 : 0) + ((this.actions || this.contextMenu) ? 1 : 0))` to the helper. Adjust `_createGroupHeaderView` (step 4) to accept and forward those constructor options.
+
+11. **`src/core/css/list-view.css` — append at the bottom of the file (token-based, dark theme automatic):**
+    - `.list-group-header` block: flex row, `0.5rem 0.25rem 0.25rem` padding, `0.7rem` font-size, `font-weight: 600`, `text-transform: uppercase`, `letter-spacing: 0.06em`, `color: var(--bs-secondary-color)`, `border-top: 1px solid var(--bs-border-color-translucent)`.
+    - `:first-child` reset (no top border / padding-top).
+    - Parallel `.list-group-header-row` / `.list-group-header-cell` block for TableView's `<tr>` / `<th>` pair using the same eyebrow typography.
+    - No `[data-bs-theme="dark"]` overrides needed — every property uses Bootstrap tokens.
+
+12. **New file: `src/core/views/list/grouping.js`** — built-in helpers module. v1 exports `groupByDay(fieldOrAccessor)`:
+    - Accepts a string field name (resolves via `model.get(field)`) or an accessor function `(model) => raw`.
+    - Returns `{ groupBy, groupHeaderLabel }` ready to spread into the ListView constructor.
+    - `groupBy` resolves the raw value, runs it through `dataFormatter.normalizeEpoch()` (matches the existing AssistantConversationListView convention), and produces a stable local-midnight ISO date string (`'2026-05-09'`) as the bucket key. Stable keys mean equality is deterministic regardless of input format (epoch / ISO / Date).
+    - `groupHeaderLabel` formats the ISO bucket key into `'Today'` / `'Yesterday'` / `'May 5'` (current year) / `'May 5, 2025'` (prior years).
+    - Documented as v1 of a growing helpers set; further helpers tracked in `listview-grouping-helpers.md`.
+
+13. **`docs/web-mojo/components/ListView.md` — new "Grouped rows" section** between "Pagination & Show More" and "Installation". Document:
+    - Three-layer label pipeline (`groupBy` → `groupHeaderLabel` → `groupHeaderTemplate`).
+    - Constructor-options table additions: `groupBy`, `groupHeaderTemplate`, `groupHeaderLabel`, `groupHeaderClass`.
+    - "Built-in helpers" subsection covering `groupByDay` with a copy-paste example.
+    - Pagination math: counts items only — page-size 5 still means 5 items per page, regardless of header count.
+    - Resolver runs against the filtered set automatically; falsy return = no header emitted.
+    - Naming caveat: `Sidebar` / `SidebarTopNav` already use a `groupHeader` option for a different concept (single static header at the top of the sidebar); ListView's grouping API is separate.
+    - Not collapsible, not sticky (out of scope; pointer to the deferred follow-on if/when filed).
+
+14. **`docs/web-mojo/components/TableView.md` — short note** that the same grouping options work and the default header template emits a full-width `<th colspan="N">` row.
+
+15. **`CHANGELOG.md` — one-line entry** under the next unreleased section: "Add `groupBy` / `groupHeaderTemplate` to ListView (inherited by TableView) for synthetic group-header rows, plus a `groupByDay` built-in helper."
+
+16. **Tests in `test/unit/ListView.test.js` — append a `describe('ListView (grouped)')` block** covering:
+    - Renders header rows between groups when `groupBy` is a function.
+    - Renders header rows when `groupBy` is a string field name.
+    - `groupHeaderLabel` formatter applied to `{{key}}`.
+    - Empty groups (filter eliminates all items of one key) emit zero headers.
+    - Header view is NOT wired to `item:click` / `row:click` / `clickAction: 'view'`.
+    - `paginationMode: 'pages'` + `pageSize: 5` keeps the page-size selector at 5 (server-side count is items-only; no math change).
+    - `_onCollectionReset` after a filter narrows the collection re-segments groups (call `collection.reset(filteredArray)` and assert new header count).
+    - TableView default produces `<tr class="list-group-header-row"><th colspan="N">…</th></tr>` (small block at the bottom of the same file; TableView is not currently broadly unit-tested).
+    - **`groupByDay` helper:** Today bucket, Yesterday bucket, current-year date, prior-year date, accepts string-field and accessor-function input, accepts epoch / ISO / `Date` raw values.
+
+### Design Decisions
+
+- **One file added (`ListGroupHeaderView.js`), one helpers file added (`grouping.js`), three files edited (`ListView.js`, `TableView.js`, `list-view.css`).** Mirrors the `ListViewItem` ↔ `TableRow` symmetry — request file specifically called out the View-subclass option as preferred.
+- **Header view does NOT extend `ListViewItem`.** Extends `View` only, deliberately. `ListViewItem.onAfterRender` wires `_wireClickableHandler` and `onActionDefault` re-emits `item:click` for any nested `data-action`. Inheriting either would let header clicks accidentally route through the row-click flow. By extending `View`, the "headers don't participate in click routing" criterion is structural, not a check at dispatch time.
+- **`_renderOrder` is the single ordering source of truth when grouping is on.** Avoids interleaving a parallel marker array against a separately-iterated `itemViews` Map. Plain ListView keeps the lighter `forEachItem` path.
+- **TableView grouping uses subclass-provided default template + outer element.** Consumer who passes `groupHeaderTemplate` for TableView writes `<th colspan="N">…</th>` (cell-only inner content for the framework-provided `<tr>`), parallel to how `TableRow` consumes inner `<td>` markup. Symmetric to the existing inheritance.
+- **Pagination counts items only.** No code change: `paginationMode: 'pages'` reads `collection.meta.count` and `collection.params.size` (server-side, header-unaware); `paginationMode: 'more'` reads `collection.length()` and `collection.meta.count`. Document the rule; don't introduce client-side math.
+- **`groupBy` contract: pure function of the model.** Documented. Filter/search re-segmentation is automatic because `_onCollectionReset` → `_buildItems` rebuilds against the new model order. No filter/search machinery changes.
+- **Sort vs grouping order: framework does not enforce alignment.** If sort runs ascending date but the resolver returns "Today / Yesterday / May 5" labels, the timeline reads in the sorted order — consumer's call. Documented.
+- **`groupByDay` produces a stable ISO-date bucket key, not a display label.** Equality is deterministic; the display layer is decoupled. Same pattern future date-bucket helpers (`groupByMonth`, `groupByYear`) will follow.
+- **One helper for v1 — `groupByDay`.** It retires real existing duplication (the AssistantConversationListView code) and serves the immediate first consumer (UserView Logins). Other helpers (`groupByField`, `groupByMonth`, `groupByLetter`, etc.) tracked in `listview-grouping-helpers.md` and only land when a real consumer asks. Per `.claude/rules/core.md` KISS rule.
+- **Sticky / collapsible / multi-level / batch-actions / server-side grouping all out of scope.** No code paths.
+
+### Edge Cases
+
+- **Falsy resolver return on a model.** Treat as "ungrouped tail" — push the item without emitting a header; previous group continues visually. Documented in JSDoc on `groupBy`.
+- **First item in the collection.** Always emits a header (resolver runs, prior key is `undefined`, current key !== `undefined` → emit). Avoids "first group has no header, others do".
+- **Empty collection.** `_buildItems` early-returns at line 816 (`isEmpty`) before the grouping pass. `_renderOrder` stays empty, no DOM work. `list:empty` fires as before.
+- **Collection reset with `groupBy` unchanged.** `_clearItems` tears down both items and headers (step 7), `_buildItems` rebuilds — clean, no leaked DOM.
+- **Show More appends a new page whose first model has the same group key as the prior tail.** No header at the seam — `_rebuildGroupHeaders` (step 8) walks the full combined list and only emits when key changes.
+- **Show More appends a page that introduces a new group mid-flight.** `_rebuildGroupHeaders` re-segments — header inserted before the first item of the new group.
+- **`collection.fetch()` mid-render.** `_onFetchStart` triggers the loading template (no items container exists) → no grouping work runs. `_onFetchEnd` triggers `_onCollectionReset` rebuild. No new race.
+- **Selection persistence + headers.** `_applyPersistedSelections` walks `itemViews` only, never headers. Unchanged.
+- **TableView with zero columns (degenerate).** `colspan` clamps to `Math.max(1, …)`.
+- **Models without an `id`.** Header view's synthetic id is `gh-<index>-<key>` (not model-id-based), so `id == null` doesn't break header tracking.
+- **Mustache render error in `groupHeaderTemplate`.** Same failure mode as a broken `itemTemplate` — view renders empty content. No special handling.
+- **`groupByDay` on a model with no date field set.** Helper returns `null` (falsy), so no header is emitted for that item. Consumer gets the "ungrouped tail" behavior.
+- **`groupByDay` across DST or year boundaries.** Bucket key is local-midnight ISO date — DST shifts midnight by one hour but the date string is unaffected. Year boundaries naturally produce a new key. Test covers prior-year display formatting.
+
+### Testing
+
+```bash
+npm run test:unit
+```
+
+Single-file shortcut: temporarily move other `test/unit/*.test.js` aside (per `.claude/rules/testing.md`) to run only `ListView.test.js`. The custom test runner has no `--grep`.
+
+Manual smoke test in the example portal: drop a temporary `...groupByDay('created')` (or `groupBy: (m) => m.get('status')`) on the ListView in `examples/portal/examples/components/ListView/ListViewExample.js`, run `npm run dev`, and verify (a) headers appear between groups, (b) toggling theme to dark shows the same `--bs-secondary-color` muted eyebrow, (c) no console errors. Repeat for the TableView example page to confirm the `<tr>`/`<th colspan>` shape renders correctly.
+
+### Docs Impact
+
+- `docs/web-mojo/components/ListView.md` — new "Grouped rows" section (constructor options + label pipeline + `groupByDay` helper + naming caveat re Sidebar's `groupHeader`).
+- `docs/web-mojo/components/TableView.md` — short cross-reference section.
+- `CHANGELOG.md` — one-line entry.
+- No update to `docs/web-mojo/README.md` (ListView already indexed).
+
+### Out of scope
+
+- Sticky headers that pin to the viewport while scrolling.
+- Multi-level grouping (`groupBy` returning a path of keys).
+- Group-level batch actions ("Delete all in this group").
+- Server-side grouping primitives.
+- Collapsible group headers — consumers can build on top of `groupHeaderTemplate`.
+- Updating UserView's Logins ListView to use the new primitive — that's the first consumer, addressed by reopening [`detailview-audit-round-2.md`](detailview-audit-round-2.md) R2 once this lands.
+- Migrating `AssistantConversationListView._groupByDate` to `groupByDay` — second-consumer migration, file separately.
+- Additional helpers (`groupByField`, `groupByMonth`, `groupByYear`, `groupByLetter`, `groupByRange`, `groupByBoolean`) — tracked in `listview-grouping-helpers.md`.

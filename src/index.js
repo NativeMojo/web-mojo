@@ -62,6 +62,8 @@ export { default as TableRow } from '@core/views/table/TableRow.js';
 export { default as TablePage } from '@core/pages/TablePage.js';
 export { default as ListView } from '@core/views/list/ListView.js';
 export { default as ListViewItem } from '@core/views/list/ListViewItem.js';
+export { default as ListGroupHeaderView } from '@core/views/list/ListGroupHeaderView.js';
+export { groupByDay } from '@core/views/list/grouping.js';
 export { default as TopNav } from '@core/views/navigation/TopNav.js';
 export { default as Sidebar } from '@core/views/navigation/Sidebar.js';
 export { default as TabView } from '@core/views/navigation/TabView.js';

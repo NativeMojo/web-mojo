@@ -1,6 +1,6 @@
 {
   "generatedAt": "static",
-  "pageCount": 88,
+  "pageCount": 89,
   "pages": [
     {
       "name": "ActiveGroup",
@@ -325,6 +325,28 @@
       "section": "Components",
       "icon": "bi-list-ul",
       "order": 21,
+      "topic": "components",
+      "group": "Lists & Tables"
+    },
+    {
+      "name": "ListView",
+      "area": "components",
+      "route": "components/list-view/grouped",
+      "title": "ListView — grouped rows",
+      "summary": "Synthetic group headers between items — raw groupBy + groupByDay helper.",
+      "docs": "docs/web-mojo/components/ListView.md",
+      "tags": [
+        "list",
+        "collection",
+        "selection",
+        "search"
+      ],
+      "page": "ListViewGroupedExample.js",
+      "modulePath": "./examples/components/ListView/ListViewGroupedExample.js",
+      "sourcePath": "examples/portal/examples/components/ListView/ListViewGroupedExample.js",
+      "section": "Components",
+      "icon": "bi-list-ul",
+      "order": 26,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -2312,6 +2334,13 @@
               "docs": "docs/web-mojo/components/ListView.md"
             },
             {
+              "route": "components/list-view/grouped",
+              "title": "ListView — grouped rows",
+              "summary": "Synthetic group headers between items — raw groupBy + groupByDay helper.",
+              "icon": "bi-list-ul",
+              "docs": "docs/web-mojo/components/ListView.md"
+            },
+            {
               "route": "components/table-view",
               "title": "TableView",
               "summary": "Sortable, filterable, paginated table over ~25 seeded user rows.",
@@ -3029,6 +3058,13 @@
           "route": "components/list-view/lifecycle",
           "title": "ListView — lifecycle",
           "summary": "Full Add / View / Edit / Delete flow with click-to-view and per-card buttons.",
+          "icon": "bi-list-ul",
+          "docs": "docs/web-mojo/components/ListView.md"
+        },
+        {
+          "route": "components/list-view/grouped",
+          "title": "ListView — grouped rows",
+          "summary": "Synthetic group headers between items — raw groupBy + groupByDay helper.",
           "icon": "bi-list-ul",
           "docs": "docs/web-mojo/components/ListView.md"
         },

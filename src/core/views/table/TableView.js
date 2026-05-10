@@ -714,6 +714,43 @@ class TableView extends ListView {
   _onCellCancel(event) { this.emit('cell:cancel', event); }
 
   // ============================================================
+  // Grouped rows (TableView-aware overrides)
+  //
+  // ListView's grouping primitive emits a `<div class="list-group-header">`
+  // by default. That shape is invalid inside a `<tbody>` (browsers will
+  // hoist the `<div>` out of the table). TableView overrides the outer
+  // element to a `<tr class="list-group-header-row">` and the inner
+  // template to a `<th colspan="N">…</th>` cell so the header sits in
+  // the table grid and spans the full row.
+  // ============================================================
+
+  /**
+   * Default group-header inner template for TableView. Wrapped by the
+   * `<tr>` outer element from `_groupHeaderViewOptions` below.
+   * @protected
+   */
+  _defaultGroupHeaderTemplate() {
+    return '<th colspan="{{colspan}}" class="list-group-header-cell">{{key}}</th>';
+  }
+
+  /**
+   * Inject TableView-specific constructor options on the header view.
+   * `tagName: 'tr'` makes the outer element legal inside `<tbody>`;
+   * `colspan` covers the selection checkbox col + data cols + actions col.
+   * @protected
+   */
+  _groupHeaderViewOptions(_model, _key, _index) {
+    const dataCols = this.columns?.length || 0;
+    const selectCol = this.isSelectable() ? 1 : 0;
+    const actionsCol = (this.actions || this.contextMenu) ? 1 : 0;
+    return {
+      tagName: 'tr',
+      className: 'list-group-header-row',
+      colspan: Math.max(1, dataCols + selectCol + actionsCol)
+    };
+  }
+
+  // ============================================================
   // Fullscreen
   // ============================================================
 
