@@ -64,7 +64,7 @@ class MemberTablePage extends TablePage {
                     key: 'created',
                     label: 'Added',
                     formatter: "epoch|datetime",
-                    visibility: 'lg'
+                    visibility: 'xl'
                 }
             ],
 

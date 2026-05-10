@@ -63,7 +63,7 @@ export default class BouncerDeviceTablePage extends TablePage {
                     key: 'event_count',
                     label: 'Events',
                     sortable: true,
-                    visibility: 'md',
+                    visibility: 'lg',
                     align: 'right',
                     footer_total: true
                 },
@@ -71,14 +71,14 @@ export default class BouncerDeviceTablePage extends TablePage {
                     key: 'block_count',
                     label: 'Blocks',
                     sortable: true,
-                    visibility: 'md',
+                    visibility: 'lg',
                     align: 'right',
                     footer_total: true
                 },
                 {
                     key: 'last_seen_ip',
                     label: 'Last IP',
-                    visibility: 'md',
+                    visibility: 'lg',
                     template: '<code>{{model.last_seen_ip|default("—")}}</code>'
                 },
                 {

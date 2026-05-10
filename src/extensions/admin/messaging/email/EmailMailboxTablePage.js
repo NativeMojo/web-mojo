@@ -24,11 +24,11 @@ class EmailMailboxTablePage extends TablePage {
             columns: [
                 { key: 'id', label: 'ID', width: '70px', sortable: true, class: 'text-muted' },
                 { key: 'email', label: 'Email', sortable: true },
-                { key: 'domain.name', label: 'Domain', sortable: true, formatter: "default('—')", visibility: 'md' },
+                { key: 'domain.name', label: 'Domain', sortable: true, formatter: "default('—')", visibility: 'lg' },
                 { key: 'allow_inbound', label: 'Inbound', formatter: "boolean|badge" },
                 { key: 'allow_outbound', label: 'Outbound', formatter: "boolean|badge" },
-                { key: 'is_system_default', label: 'System Default', formatter: "boolean|badge", visibility: 'lg' },
-                { key: 'is_domain_default', label: 'Domain Default', formatter: "boolean|badge", visibility: 'lg' }
+                { key: 'is_system_default', label: 'System Default', formatter: "boolean|badge", visibility: 'xl' },
+                { key: 'is_domain_default', label: 'Domain Default', formatter: "boolean|badge", visibility: 'xl' }
             ],
 
             searchPlaceholder: 'Search email or domain',

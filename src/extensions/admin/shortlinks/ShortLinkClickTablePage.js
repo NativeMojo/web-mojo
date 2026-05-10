@@ -45,7 +45,7 @@ class ShortLinkClickTablePage extends TablePage {
                     key: 'shortlink.url',
                     label: 'Destination',
                     formatter: "truncate(50)|default('—')",
-                    visibility: 'md',
+                    visibility: 'lg',
                 },
                 {
                     key: 'ip',
@@ -57,7 +57,7 @@ class ShortLinkClickTablePage extends TablePage {
                     key: 'is_bot',
                     label: 'Bot',
                     width: '80px',
-                    visibility: 'md',
+                    visibility: 'lg',
                     formatter: 'yesnoicon',
                     filter: {
                         type: 'select',
@@ -71,13 +71,13 @@ class ShortLinkClickTablePage extends TablePage {
                     key: 'user_agent',
                     label: 'User-Agent',
                     formatter: 'truncate(50)',
-                    visibility: 'md',
+                    visibility: 'lg',
                 },
                 {
                     key: 'referer',
                     label: 'Referer',
                     formatter: "truncate(40)|default('—')",
-                    visibility: 'lg',
+                    visibility: 'xl',
                 },
             ],
 

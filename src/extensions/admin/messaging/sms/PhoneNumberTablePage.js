@@ -30,13 +30,13 @@ class PhoneNumberTablePage extends TablePage {
       // Column definitions
       columns: [
         { key: 'phone_number', label: 'Phone Number', sortable: true },
-        { key: 'carrier', label: 'Carrier', sortable: true, formatter: "default('—')", visibility: 'md' },
+        { key: 'carrier', label: 'Carrier', sortable: true, formatter: "default('—')", visibility: 'lg' },
         { key: 'line_type', label: 'Line Type', sortable: true, formatter: "capitalize" },
-        { key: 'is_mobile', label: 'Mobile', formatter: 'yesnoicon', visibility: 'md' },
-        { key: 'is_voip', label: 'VOIP', formatter: 'yesnoicon', visibility: 'lg' },
+        { key: 'is_mobile', label: 'Mobile', formatter: 'yesnoicon', visibility: 'lg' },
+        { key: 'is_voip', label: 'VOIP', formatter: 'yesnoicon', visibility: 'xl' },
         { key: 'is_valid', label: 'Valid', formatter: 'yesnoicon' },
-        { key: 'registered_owner', label: 'Owner', sortable: true, formatter: "default('—')", visibility: 'lg' },
-        { key: 'owner_type', label: 'Owner Type', formatter: "capitalize", visibility: 'lg' },
+        { key: 'registered_owner', label: 'Owner', sortable: true, formatter: "default('—')", visibility: 'xl' },
+        { key: 'owner_type', label: 'Owner Type', formatter: "capitalize", visibility: 'xl' },
         { key: 'last_lookup_at|relative', label: 'Last Lookup', sortable: true},
       ],
 

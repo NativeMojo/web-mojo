@@ -67,7 +67,7 @@ class LogTablePage extends TablePage {
                 {
                     key: 'method',
                     label: 'Method',
-                    visibility: 'md',
+                    visibility: 'lg',
                     filter: {
                         type: "text"
                     }
@@ -75,7 +75,7 @@ class LogTablePage extends TablePage {
                 {
                     key: 'path',
                     label: 'Path',
-                    visibility: 'md',
+                    visibility: 'lg',
                     filter: {
                         type: "text"
                     }
@@ -83,7 +83,7 @@ class LogTablePage extends TablePage {
                 {
                     key: 'username',
                     label: 'User',
-                    visibility: 'md',
+                    visibility: 'lg',
                     filter: {
                         type: "text"
                     }
@@ -91,7 +91,7 @@ class LogTablePage extends TablePage {
                 {
                     key: 'ip',
                     label: 'IP',
-                    visibility: 'lg',
+                    visibility: 'xl',
                     filter: {
                         type: "text"
                     }
@@ -100,7 +100,7 @@ class LogTablePage extends TablePage {
                     key: 'duid',
                     label: 'Browser ID',
                     formatter: 'truncate_middle(16)',
-                    visibility: 'lg',
+                    visibility: 'xl',
                     filter: {
                         type: "text"
                     }

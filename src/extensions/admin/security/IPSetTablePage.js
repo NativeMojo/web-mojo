@@ -60,12 +60,12 @@ class IPSetTablePage extends TablePage {
                 {
                     key: 'description', label: 'Description',
                     formatter: "truncate(40)|default('—')",
-                    visibility: 'lg'
+                    visibility: 'xl'
                 },
-                { key: 'cidr_count', label: 'CIDRs', width: '80px', sortable: true, align: 'right', visibility: 'md' },
+                { key: 'cidr_count', label: 'CIDRs', width: '80px', sortable: true, align: 'right', visibility: 'lg' },
                 {
                     key: 'source', label: 'Source', width: '110px',
-                    visibility: 'md',
+                    visibility: 'lg',
                     formatter: (value) => {
                         const opt = IPSetSourceOptions.find(o => o.value === value);
                         return opt ? opt.label : (value || '—');
@@ -73,11 +73,11 @@ class IPSetTablePage extends TablePage {
                 },
                 {
                     key: 'last_synced|datetime', label: 'Last Synced', width: '160px', sortable: true,
-                    visibility: 'lg'
+                    visibility: 'xl'
                 },
                 {
                     key: 'sync_error', label: 'Status', width: '80px',
-                    visibility: 'lg',
+                    visibility: 'xl',
                     formatter: (value) => {
                         if (value) return '<span class="text-danger" title="' + value + '"><i class="bi bi-exclamation-triangle"></i> Error</span>';
                         return '<span class="text-success"><i class="bi bi-check-circle"></i></span>';

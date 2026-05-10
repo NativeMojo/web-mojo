@@ -30,12 +30,12 @@ class UserDeviceTablePage extends TablePage {
             // Column definitions
             columns: [
                 { key: 'id', label: 'ID', width: '70px', sortable: true, class: 'text-muted' },
-                { key: 'duid', label: 'Device ID', sortable: true, formatter: 'truncate_middle(16)', visibility: 'xl' },
+                { key: 'duid', label: 'Device ID', sortable: true, formatter: 'truncate_middle(16)', visibility: 'xxl' },
                 { key: 'user.display_name', label: 'User', sortable: true, formatter: "default('—')" },
-                { key: 'device_info.user_agent.family', label: 'Browser', formatter: "default('—')", visibility: 'md' },
-                { key: 'device_info.os.family', label: 'OS', formatter: "default('—')", visibility: 'lg' },
+                { key: 'device_info.user_agent.family', label: 'Browser', formatter: "default('—')", visibility: 'lg' },
+                { key: 'device_info.os.family', label: 'OS', formatter: "default('—')", visibility: 'xl' },
                 { key: 'last_ip', label: 'Last IP', sortable: true },
-                { key: 'first_seen', label: 'First Seen', formatter: "epoch|datetime", visibility: 'lg' },
+                { key: 'first_seen', label: 'First Seen', formatter: "epoch|datetime", visibility: 'xl' },
                 { key: 'last_seen', label: 'Last Seen', formatter: "epoch|datetime" }
             ],
 

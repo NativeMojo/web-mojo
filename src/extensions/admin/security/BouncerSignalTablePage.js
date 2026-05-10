@@ -64,7 +64,7 @@ export default class BouncerSignalTablePage extends TablePage {
                     key: 'risk_score',
                     label: 'Risk',
                     sortable: true,
-                    visibility: 'lg',
+                    visibility: 'xl',
                     formatter: (value) => {
                         const score = value || 0;
                         const color = score >= 80 ? 'danger' : score >= 50 ? 'warning' : score >= 20 ? 'info' : 'success';
@@ -74,13 +74,13 @@ export default class BouncerSignalTablePage extends TablePage {
                 {
                     key: 'page_type',
                     label: 'Page',
-                    visibility: 'md',
+                    visibility: 'lg',
                     filter: { type: 'text' }
                 },
                 {
                     key: 'stage',
                     label: 'Stage',
-                    visibility: 'md',
+                    visibility: 'lg',
                     filter: {
                         type: 'select',
                         options: ['assess', 'submit', 'event']
@@ -90,7 +90,7 @@ export default class BouncerSignalTablePage extends TablePage {
                     key: 'muid',
                     label: 'Device',
                     formatter: 'truncate_middle(12)',
-                    visibility: 'lg'
+                    visibility: 'xl'
                 }
             ],
 

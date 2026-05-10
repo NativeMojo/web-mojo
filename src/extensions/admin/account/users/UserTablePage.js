@@ -42,7 +42,7 @@ class UserTablePage extends TablePage {
                 //     label: 'Avatar',
                 //     key: 'avatar|avatar("sm")',
                 //     sortable: false,
-                //     visibility: 'md'
+                //     visibility: 'lg'
                 // },
                 {
                     key: 'display_name|tooltip:model.username',
@@ -63,13 +63,13 @@ class UserTablePage extends TablePage {
                 {
                     key: 'email',
                     label: 'Email',
-                    visibility: 'xl',
+                    visibility: 'xxl',
                     className: 'text-muted fs-8',
                 },
                 // {
                 //     key: 'username',
                 //     label: 'Username',
-                //     visibility: 'xl',
+                //     visibility: 'xxl',
                 //     className: 'text-muted fs-8',
                 // },
                 {

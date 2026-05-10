@@ -39,61 +39,66 @@ function hasVisibility(src, key, breakpoint) {
 }
 
 // Matrix: { file: [ [key, breakpoint], ... ] }
+// Shifted one notch up from the initial pass (md→lg, lg→xl) because the
+// admin shell's persistent sidebar shaves ~250-300px off the table viewport
+// at lower nav levels, so an apparent ≥768px viewport renders at ≤500px of
+// usable table width. Effective rule of thumb: a `visibility: 'lg'` column
+// hides whenever the *table* is narrower than ~992px.
 const MOBILE_BREAKPOINTS = {
     'account/devices/UserDeviceTablePage.js': [
-        ['device_info.user_agent.family', 'md'],
+        ['device_info.user_agent.family', 'lg'],
     ],
     'incidents/IncidentTablePage.js': [
-        ['scope', 'md'],
-        ['category', 'md'],
-        ['priority', 'lg'],
+        ['scope', 'lg'],
+        ['category', 'lg'],
+        ['priority', 'xl'],
     ],
     'incidents/EventTablePage.js': [
-        ['scope', 'md'],
-        ['category', 'md'],
+        ['scope', 'lg'],
+        ['category', 'lg'],
     ],
     'monitoring/LogTablePage.js': [
-        ['method', 'md'],
-        ['path', 'md'],
-        ['username', 'md'],
-        ['ip', 'lg'],
-        ['duid', 'lg'],
+        ['method', 'lg'],
+        ['path', 'lg'],
+        ['username', 'lg'],
+        ['ip', 'xl'],
+        ['duid', 'xl'],
     ],
     'security/IPSetTablePage.js': [
-        ['cidr_count', 'md'],
-        ['source', 'md'],
+        ['cidr_count', 'lg'],
+        ['source', 'lg'],
     ],
     'messaging/email/EmailMailboxTablePage.js': [
-        ['domain.name', 'md'],
+        ['domain.name', 'lg'],
     ],
     'messaging/sms/PhoneNumberTablePage.js': [
-        ['carrier', 'md'],
-        ['is_mobile', 'md'],
+        ['carrier', 'lg'],
+        ['is_mobile', 'lg'],
     ],
     'security/BouncerSignalTablePage.js': [
-        ['page_type', 'md'],
-        ['stage', 'md'],
-        ['risk_score', 'lg'],
-        ['muid', 'lg'],
+        ['page_type', 'lg'],
+        ['stage', 'lg'],
+        ['risk_score', 'xl'],
+        ['muid', 'xl'],
     ],
     'security/BouncerDeviceTablePage.js': [
-        ['last_seen_ip', 'md'],
+        ['last_seen_ip', 'lg'],
     ],
     'messaging/push/PushDeliveryTablePage.js': [
-        ['user.display_name', 'md'],
+        ['user.display_name', 'lg'],
     ],
     'messaging/push/PushDeviceTablePage.js': [
-        ['push_enabled', 'md'],
+        ['push_enabled', 'lg'],
     ],
     'shortlinks/ShortLinkTablePage.js': [
-        ['is_active', 'md'],
-        ['source', 'md'],
-        ['track_clicks', 'md'],
-        ['expires_at', 'lg'],
+        ['is_active', 'lg'],
+        ['source', 'lg'],
+        ['track_clicks', 'lg'],
+        ['expires_at', 'xl'],
     ],
     'shortlinks/ShortLinkClickTablePage.js': [
-        ['shortlink.url', 'md'],
-        ['is_bot', 'md'],
+        ['shortlink.url', 'lg'],
+        ['is_bot', 'lg'],
     ],
 };
 

@@ -64,9 +64,9 @@ class UserDeviceLocationTablePage extends Page {
                 { key: 'user.display_name', label: 'User', sortable: true },
                 { key: 'ip_address', label: 'IP Address', sortable: true },
                 { key: 'city', label: 'City', formatter: "default('—')" },
-                { key: 'region', label: 'Region', formatter: "default('—')", visibility: 'lg' },
+                { key: 'region', label: 'Region', formatter: "default('—')", visibility: 'xl' },
                 { key: 'country_code', label: 'Country', sortable: true },
-                { key: 'source', label: 'Source', sortable: true, visibility: 'lg' },
+                { key: 'source', label: 'Source', sortable: true, visibility: 'xl' },
                 { key: 'is_new_country', label: 'New Country', formatter: 'boolean', sortable: true, width: '110px' }
             ]
         });

@@ -61,19 +61,19 @@ class GroupTablePage extends TablePage {
                     label: 'Members',
                     sortable: true,
                     align: 'right',
-                    visibility: 'md',
+                    visibility: 'lg',
                     class: 'text-muted'
                 },
                 {
                     key: 'is_active|yesnoicon',
                     label: 'Enabled',
-                    visibility: 'lg'
+                    visibility: 'xl'
                 },
                 {
                     key: 'parent.name',
                     label: 'Parent',
                     formatter: "default('-')",
-                    visibility: 'md',
+                    visibility: 'lg',
                     class: 'text-muted fs-8'
                 },
                 {
@@ -81,14 +81,14 @@ class GroupTablePage extends TablePage {
                     label: 'Created',
                     className: 'text-muted fs-8',
                     formatter: "epoch|datetime",
-                    visibility: 'lg'
+                    visibility: 'xl'
                 },
                 {
                     key: 'last_activity',
                     label: 'Activity',
                     className: 'text-muted fs-8',
                     formatter: "relative",
-                    visibility: 'lg'
+                    visibility: 'xl'
                 }
             ],
 

@@ -34,7 +34,7 @@ class FileManagerTablePage extends TablePage {
                     key: 'backend_url',
                     label: 'Backend URL',
                     sortable: true,
-                    visibility: 'lg'
+                    visibility: 'xl'
                 },
                 {
                     key: 'is_default',
@@ -50,7 +50,7 @@ class FileManagerTablePage extends TablePage {
                     key: 'is_public',
                     label: 'Public',
                     formatter: "boolean|badge",
-                    visibility: 'lg'
+                    visibility: 'xl'
                 },
                 {
                     key: 'backend_type',
@@ -61,7 +61,7 @@ class FileManagerTablePage extends TablePage {
                     key: 'created',
                     label: 'Created',
                     formatter: "epoch|datetime",
-                    visibility: 'lg'
+                    visibility: 'xl'
                 }
             ],
 

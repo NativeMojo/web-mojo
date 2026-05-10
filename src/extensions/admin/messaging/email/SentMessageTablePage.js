@@ -36,11 +36,11 @@ class SentMessageTablePage extends TablePage {
             // Table columns
             columns: [
                 { key: 'id', label: 'ID', width: '70px', sortable: true, class: 'text-muted' },
-                { key: 'mailbox.email', label: 'From', sortable: true, visibility: 'lg' },
+                { key: 'mailbox.email', label: 'From', sortable: true, visibility: 'xl' },
                 { key: 'to_addresses', label: 'To', sortable: false, formatter: "list" },
                 { key: 'subject', label: 'Subject', sortable: true },
                 { key: 'status', label: 'Status', formatter: 'badge' },
-                { key: 'status_reason', label: 'Reason', formatter: "truncate(80)|default('—')", visibility: 'lg' },
+                { key: 'status_reason', label: 'Reason', formatter: "truncate(80)|default('—')", visibility: 'xl' },
                 { key: 'created', label: 'Created', formatter: 'datetime' }
             ],
 

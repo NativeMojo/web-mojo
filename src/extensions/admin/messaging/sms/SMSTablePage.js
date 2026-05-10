@@ -40,10 +40,10 @@ class SMSTablePage extends TablePage {
         { key: 'from_number', label: 'From', sortable: true, formatter: "default('—')" },
         { key: 'to_number', label: 'To', sortable: true, formatter: "default('—')" },
         { key: 'status', label: 'Status', sortable: true },
-        { key: 'provider', label: 'Provider', sortable: true, formatter: "default('—')", visibility: 'md' },
+        { key: 'provider', label: 'Provider', sortable: true, formatter: "default('—')", visibility: 'lg' },
         { key: 'body', label: 'Message', formatter: "default('—')" },
-        { key: 'sent_at', label: 'Sent At', sortable: true, formatter: 'datetime', visibility: 'lg' },
-        { key: 'delivered_at', label: 'Delivered At', sortable: true, formatter: 'datetime', visibility: 'lg' },
+        { key: 'sent_at', label: 'Sent At', sortable: true, formatter: 'datetime', visibility: 'xl' },
+        { key: 'delivered_at', label: 'Delivered At', sortable: true, formatter: 'datetime', visibility: 'xl' },
         { key: 'created', label: 'Created', sortable: true, formatter: 'datetime' }
       ],
 

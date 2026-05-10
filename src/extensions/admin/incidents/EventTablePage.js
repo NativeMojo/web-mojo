@@ -66,7 +66,7 @@ class EventTablePage extends TablePage {
                     key: 'scope',
                     label: 'Scope',
                     sortable: true, formatter: 'badge',
-                    visibility: 'md',
+                    visibility: 'lg',
                     filter: {
                         type: "combobox",
                         options: [
@@ -85,7 +85,7 @@ class EventTablePage extends TablePage {
                     key: 'category',
                     label: 'Category',
                     sortable: true, formatter: 'badge',
-                    visibility: 'md',
+                    visibility: 'lg',
                     filter: {
                         type: "combobox",
                         options: [
@@ -99,7 +99,7 @@ class EventTablePage extends TablePage {
                 { key: 'title', label: 'Title', sortable: true, formatter: 'truncate(50)' },
                 {
                     key: 'source_ip', label: 'Source IP', sortable: true,
-                    visibility: 'md',
+                    visibility: 'lg',
                     filter: {
                         type: "text"
                     }
@@ -107,7 +107,7 @@ class EventTablePage extends TablePage {
                 {
                     key: 'metadata.server', label: 'Server',
                     sortable: true,
-                    visibility: 'lg',
+                    visibility: 'xl',
                     filter: {
                         type: "text"
                     }

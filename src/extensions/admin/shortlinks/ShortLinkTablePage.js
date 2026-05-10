@@ -55,7 +55,7 @@ class ShortLinkTablePage extends TablePage {
                     label: 'Active',
                     width: '70px',
                     sortable: true,
-                    visibility: 'md',
+                    visibility: 'lg',
                     formatter: 'yesnoicon',
                     filter: {
                         type: 'select',
@@ -92,7 +92,7 @@ class ShortLinkTablePage extends TablePage {
                     label: 'Source',
                     width: '110px',
                     sortable: true,
-                    visibility: 'md',
+                    visibility: 'lg',
                     filter: {
                         type: 'select',
                         options: SHORTLINK_SOURCE_OPTIONS,
@@ -110,7 +110,7 @@ class ShortLinkTablePage extends TablePage {
                     key: 'track_clicks',
                     label: 'Tracked',
                     width: '90px',
-                    visibility: 'md',
+                    visibility: 'lg',
                     formatter: 'yesnoicon',
                     filter: {
                         type: 'select',
@@ -125,7 +125,7 @@ class ShortLinkTablePage extends TablePage {
                     label: 'Expires',
                     width: '160px',
                     sortable: true,
-                    visibility: 'lg',
+                    visibility: 'xl',
                     formatter: "datetime|default('Never')",
                 },
                 {
@@ -134,7 +134,7 @@ class ShortLinkTablePage extends TablePage {
                     width: '160px',
                     sortable: true,
                     formatter: 'datetime',
-                    visibility: 'lg',
+                    visibility: 'xl',
                 },
             ],
 

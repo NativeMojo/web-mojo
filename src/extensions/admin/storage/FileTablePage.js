@@ -47,7 +47,7 @@ class FileTablePage extends TablePage {
                     key: 'content_type',
                     label: 'Type',
                     formatter: "default('Unknown')",
-                    visibility: 'md'
+                    visibility: 'lg'
                 },
                 {
                     key: 'file_size',
@@ -59,13 +59,13 @@ class FileTablePage extends TablePage {
                     key: 'group.name',
                     label: 'Group',
                     formatter: "default('No Group')",
-                    visibility: 'lg'
+                    visibility: 'xl'
                 },
                 {
                     key: 'upload_status',
                     label: 'Status',
                     formatter: "badge",
-                    visibility: 'lg'
+                    visibility: 'xl'
                 },
                 {
                     key: 'created',

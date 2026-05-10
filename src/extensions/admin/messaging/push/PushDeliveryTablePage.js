@@ -30,10 +30,10 @@ class PushDeliveryTablePage extends TablePage {
             columns: [
                 { key: 'id', label: 'ID', width: '70px' },
                 { key: 'created', label: 'Timestamp', formatter: 'datetime' },
-                { key: 'user.display_name', label: 'User', visibility: 'md' },
-                { key: 'device.device_name', label: 'Device', visibility: 'md' },
+                { key: 'user.display_name', label: 'User', visibility: 'lg' },
+                { key: 'device.device_name', label: 'Device', visibility: 'lg' },
                 { key: 'title', label: 'Title' },
-                { key: 'category', label: 'Category', visibility: 'lg' },
+                { key: 'category', label: 'Category', visibility: 'xl' },
                 { key: 'status', label: 'Status', formatter: 'badge' },
             ],
 
