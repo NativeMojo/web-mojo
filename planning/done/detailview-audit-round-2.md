@@ -1,8 +1,9 @@
 ---
-status: planned
+status: resolved
 type: request
 scope: src/extensions/admin · src/core/views/data
 created: 2026-05-09
+resolved: 2026-05-09
 parent: detailview-audit-followups.md
 ---
 
@@ -458,3 +459,46 @@ Swept all 14 DetailView consumers for the round-1 swallow pattern (`onActionDefa
 The only match for `onActionDefault|dest.element|contains(target)|stopPropagation` across all 14 files is `GroupView.js:915` — a standard `event.stopPropagation()` inside `onActionInviteMember` for the (now-removed) header Invite button. That's intentional event handling, not the swallow pattern.
 
 **Result: clean.** No view-specific surface re-introduces the round-1 bug. R5 closed without code changes.
+
+## Resolution
+
+All twelve items closed across nine commits on 2026-05-09:
+
+| # | Commit | What landed |
+|---|---|---|
+| R5 + R7 + R9.1 + R10 | [32bc144](commit:32bc144) | Audit findings, GroupView header gutter cleanup, GeoIPView header gutter cleanup, ShortLinkView URL truncation + new `.detail-flat-row-value--url` modifier |
+| R7.2 | [9b93786](commit:9b93786) | GroupView Active toggle moves into auxFn (`dh-aux-top` row 1 / `dh-aux-meta` row 2) |
+| R7.3 follow-up | [1e4cdfc](commit:1e4cdfc) | GroupView subtitle dedupe (parent name only, kind only on chip); ShortLinkView gutter trimmed to clipboard icon |
+| Framework primitive | [d5a2564](commit:d5a2564) | DetailHeaderView `titleAffix` slot — ShortLinkView Copy moves next to the URL |
+| R3 | [7b8572d](commit:7b8572d) | DetailView mobile reflow at sm-breakpoint (575.98px) |
+| R4 | [4c8fc4a](commit:4c8fc4a) | UserView Profile section per-row pencils, drop block-edit Personal modal |
+| R8 | [d314ce9](commit:d314ce9) | GroupView Identity row-level edits (7 pencils) |
+| R1 + R2 | [538e94c](commit:538e94c) | UserView Audit feed `.user-audit-row` redesign + Logins `.user-login-row` timeline |
+| Framework primitive | [d187756](commit:d187756) | DetailHeaderView `iconHtml` slot — UserView shows the user's actual avatar |
+| R2 follow-up | [8e2a8a9](commit:8e2a8a9) | `groupByDay('created')` on Logins + Audit feeds (Today / Yesterday / May 4 banners) |
+| R9.2 + framework | [9b27d17](commit:9b27d17) | DetailHeaderView `chip.tooltip` primitive; IncidentView threat-flag chips driven by source-IP geo lookup |
+| R6 | [planning artifact](listview-grouped-rows.md) | Per-view inventory written to [`detailview-listview-sweep.md`](detailview-listview-sweep.md) |
+| R11 | [250d009](commit:250d009) | FileView migration to extend DetailView |
+| R11 follow-up | [150127c](commit:150127c) | FileView leads with canonical Overview section (Snapshot KPIs + Identity flat-rows) |
+| R11 follow-up | [641f6da](commit:641f6da) | FileTablePage modal envelope (no body padding, no footer, lg width) |
+| R12 | [d5a2564 + index update](commit:d5a2564) | LoginEventView created (Overview + Source + Audit sections) and registered in admin index |
+| R12 follow-up | [f61209d](commit:f61209d) | UserView's seven `clickAction:'view'` ListViews all carry the locked modal envelope |
+
+### Framework primitives added
+
+Three new opt-in slots on `DetailHeaderView`, each mirroring `auxFn`'s trusted-HTML-slot contract (string or `(model) => htmlString`):
+
+- **`iconHtml`** — replaces the Bootstrap icon in the icon slot (UserView avatar, FileView thumbnail). New `.dh-icon-image` CSS modifier strips the tinted background so the slot is a frame.
+- **`titleAffix`** — renders trusted HTML next to the title text (ShortLinkView clipboard, future copy/edit-pencil cases). New `.dh-name-row` flex container, `.dh-title-affix` wrapper, `.dh-name-action` ghost-button class.
+- **`chip.tooltip`** — chips gain `data-bs-toggle="tooltip" title="…"` when set (IncidentView threat flags). Purely additive; existing chips render unchanged.
+
+### Spawned
+
+- [`planning/requests/listview-grouped-rows.md`](listview-grouped-rows.md) — ListView grouping primitive request, written and shipped during round-2.
+- [`planning/requests/detailview-listview-sweep.md`](detailview-listview-sweep.md) — R6 inventory artifact (14 conversions queued, 4 keep-as-table classifications).
+
+### Out of scope (still)
+
+- Day-grouping headers on the timeline now ride the `groupByDay` primitive that landed; the deferral is closed.
+- Spec-alignment work in [`admin-users-spec-alignment.md`](admin-users-spec-alignment.md) Phases 3+ — still paused.
+- Modal `_renderAndAwait` dismiss-button-resolves-to-`0` patch — still tracked separately.
