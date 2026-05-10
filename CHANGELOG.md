@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### ListView / TableView · `dayRangeFilter` toolbar helper
+
+- **New `dayRangeFilter` option on `ListView`** — opt-in. Pass `dayRangeFilter: true` and ListView mounts a `1d / 7d / 30d / 90d` `SegmentControl` in the toolbar AND auto-applies the selected range as a `${field}__gte` filter on the collection. Same flow as the existing `filterable` machinery: writes to `collection.params`, resets `start = 0`, refetches. Boolean form uses defaults `{ field: 'created', value: '7d' }`; object form `{ field, value, options, ariaLabel }` merges over those defaults. TableView inherits the option unchanged.
+- **`range:change` event** — fires on the ListView with `{ field, value, previous, params }` whenever the user clicks a different segment, plus a `params-changed` emit (mirrors `list:search`, `list:sort`, filter pills). Initial mount-time seed does NOT emit, matching the existing `defaultQuery` seeding pattern.
+- **Programmatic API** — `listView.getRange()`, `listView.setRange(value, { silent })`, plus the underlying SegmentControl is exposed as `listView.dayRangeControl` for callers that need it.
+- **Side-by-side composition with `toolbarRight`.** Both can coexist; day-range mounts to the left, `toolbarRight` to the right, in the existing right-aligned toolbar group via a new `data-container="toolbar-day-range"` slot.
+- **Escape hatches** — values that don't match `/^\d+d$/` (e.g. `'all'`, `'ytd'`) wire the segment but don't write a `__gte` param. The `range:change` event still fires (with `params: {}`) so callers can customize.
+- **`RuleSetView` migration** — the manual SegmentControl wiring in `src/extensions/admin/incidents/RuleSetView.js` (~15 lines: SegmentControl construction, `_applyRange` translation, `toolbarRight` plumbing, `rangeValue` tracking) collapses to `dayRangeFilter: { value: this.rangeValue }` plus a single `range:change` listener for the eyebrow label.
+- **Tests:** new `describe('ListView (dayRangeFilter)')` block in `test/unit/ListView.test.js` covering boolean / object forms, mount-time seed, custom field, refetch + `start = 0` on change, `range:change` payload, no-emit-on-seed, `getRange` / `setRange` (incl. `silent: true`), unknown-value rejection, side-by-side ordering with `toolbarRight`, `_isToolbarEnabled` truthiness, and the non-`\d+d` escape-hatch path.
+- **Docs:** new `dayRangeFilter` row in the ListView toolbar options table + a "Day-range filter" subsection under Toolbar / Search / Filters in `docs/web-mojo/components/ListView.md`. TableView inherits without a separate doc section.
+
 ### ListView / TableView · grouped rows (synthetic group headers between items)
 
 - **New `groupBy` primitive on `ListView`** — opt-in. Pass either a function `(model) => key` or a string field-name shorthand and ListView interleaves a synthetic header row before the first item of each new group. Headers extend `View` directly (not `ListViewItem`) so they cannot fire `item:click` / `row:click` / `clickAction: 'view'` — non-interactive by construction.

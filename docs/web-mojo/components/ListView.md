@@ -130,6 +130,57 @@ The search input updates `collection.params.search`, filter pills update `collec
 
 `data-action="kebab-case"` on toolbar buttons routes through the standard `onActionKebabCase` handler convention, so wiring `toolbarButtons: [{ action: 'import', label: 'Import' }]` and defining `onActionImport(event, element)` on a ListView subclass works exactly like TableView.
 
+### Day-range filter
+
+`dayRangeFilter: true` mounts a `1d / 7d / 30d / 90d` SegmentControl in the toolbar and **auto-applies** the selected range as a Django `__gte` filter on the collection — same flow as the regular filter pills (writes to `collection.params`, resets `start = 0`, refetches).
+
+```js
+new ListView({
+  collection,                 // a REST-backed Collection
+  itemTemplate: '<div>{{model.title}}</div>',
+  dayRangeFilter: true        // → collection.params.created__gte = nowEpoch - 7*86400; fetch.
+});
+```
+
+Object form for overrides:
+
+```js
+new TableView({
+  collection,
+  dayRangeFilter: {
+    field: 'occurred',                                    // default 'created' — becomes the `${field}__gte` param key
+    value: '30d',                                         // default '7d'
+    options: [{ value: '1d', label: '1d' }, { value: '7d', label: '7d' }, { value: '30d', label: '30d' }],
+    ariaLabel: 'Time range'                               // default 'Time range'
+  }
+});
+```
+
+Listen for `range:change` if you need a side effect (e.g. updating a count label). The framework already mutates `collection.params` and refetches — your handler is for **extra** work, not the param translation:
+
+```js
+listView.on('range:change', ({ field, value, previous, params }) => {
+  // field   - the configured field (e.g. 'created')
+  // value   - the new range ('1d' / '7d' / '30d' / '90d' / your custom value)
+  // previous- the value before this change
+  // params  - the delta written to collection.params, e.g. { created__gte: 1715212800 }
+  this.eyebrow = `Last ${value}`;
+  this.render();
+});
+```
+
+**API surface.**
+
+- `listView.getRange()` → current value (`'7d'`) or `null` when the helper is disabled.
+- `listView.setRange(value, { silent })` — programmatically select a value. Returns `true` on success, `false` if the value isn't a known option. `silent: true` suppresses the `range:change` event and the refetch.
+- `listView.dayRangeControl` — direct handle to the underlying `SegmentControl` for callers that need it.
+
+**Custom values are escape hatches.** Values that don't match `/^\d+d$/` (e.g. `'all'`, `'ytd'`) wire the segment but the framework does not write a `__gte` param. The `range:change` event still fires (with `params: {}`), so a caller can listen and clear / customize the filter manually.
+
+**Combined with `toolbarRight`.** Both can coexist. The day-range SegmentControl mounts to the left of the user-supplied `toolbarRight` view in the right-aligned toolbar group.
+
+**Initial seed.** When `dayRangeFilter` is set, ListView seeds `collection.params[`${field}__gte`]` **before** the first fetch (no `range:change` event — matches the `defaultQuery` seeding pattern). This means the initial request honors the default range without any extra wiring.
+
 ---
 
 ## Pagination & Show More
@@ -414,6 +465,7 @@ ListView ships an opt-in toolbar that mirrors what `TableView` has. Every flag b
 | `showRefresh` | `boolean` | `true` | Render the refresh button. Has no effect unless the toolbar shell is rendered. |
 | `toolbarButtons` | `Array<object>` | `[]` | Custom buttons: `{ label, icon, action?, handler?, variant?, title?, className?, permissions? }`. |
 | `toolbarRight` | `View` | `null` | Optional View mounted into a right-aligned slot (range pickers, view-mode toggles, etc.). |
+| `dayRangeFilter` | `boolean \| object` | `false` | When truthy, mounts a `SegmentControl` day-range picker in the toolbar and writes `${field}__gte` to `collection.params` on every change (refetches automatically). Boolean `true` → defaults `{ field: 'created', value: '7d', options: [1d, 7d, 30d, 90d], ariaLabel: 'Time range' }`. Object form merges over those defaults. Coexists with `toolbarRight`: day-range mounts to the left, `toolbarRight` to the right. See [Day-range filter](#day-range-filter). |
 
 ### Pagination
 

@@ -34,6 +34,7 @@ class SimpleModuleLoader {
             'ListViewItem',
             'ListGroupHeaderView',
             'grouping',
+            'SegmentControl',
             'TableRow'
         ];
 
@@ -209,9 +210,13 @@ class SimpleModuleLoader {
                 path: path.join(this.sourceRoot, 'core/utils/DjangoLookups.js'),
                 dependencies: []
             },
+            'SegmentControl': {
+                path: path.join(this.sourceRoot, 'core/views/navigation/SegmentControl.js'),
+                dependencies: ['View']
+            },
             'ListView': {
                 path: path.join(this.sourceRoot, 'core/views/list/ListView.js'),
-                dependencies: ['View', 'Collection', 'Modal', 'DjangoLookups', 'ListViewItem', 'ListGroupHeaderView']
+                dependencies: ['View', 'Collection', 'Modal', 'DjangoLookups', 'ListViewItem', 'ListGroupHeaderView', 'SegmentControl']
             },
             'TableRow': {
                 path: path.join(this.sourceRoot, 'core/views/table/TableRow.js'),

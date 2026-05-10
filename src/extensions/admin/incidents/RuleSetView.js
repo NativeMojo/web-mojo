@@ -8,13 +8,12 @@
  *
  * Uses the framework primitives shipped with this redesign:
  *   - SideNavView with badge support (live counts on Conditions / Incidents)
- *   - SegmentControl (7d / 30d / 90d range picker on the Incidents section)
+ *   - TableView `dayRangeFilter` (1d / 7d / 30d / 90d range picker on the Incidents section)
  *   - MetricCard (Overview at-a-glance row)
  */
 
 import View from '@core/View.js';
 import DetailView from '@core/views/data/DetailView.js';
-import SegmentControl from '@core/views/navigation/SegmentControl.js';
 import MetricCard from '@core/views/data/MetricCard.js';
 import DataView from '@core/views/data/DataView.js';
 import TableView from '@core/views/table/TableView.js';
@@ -588,19 +587,6 @@ class RuleSetIncidentsSection extends View {
     }
 
     async onInit() {
-        // Build the SegmentControl FIRST so we can pass it as TableView's toolbarRight
-        this.range = new SegmentControl({
-            options: [
-                { value: '1d', label: '1d' },
-                { value: '7d', label: '7d' },
-                { value: '30d', label: '30d' },
-                { value: '90d', label: '90d' }
-            ],
-            value: this.rangeValue,
-            ariaLabel: 'Time range'
-        });
-        this.range.on('change', ({ value }) => this._applyRange(value));
-
         this.tableView = new TableView({
             containerId: 'incidents-table',
             collection: this.collection,
@@ -632,23 +618,15 @@ class RuleSetIncidentsSection extends View {
             size: 10,
             searchable: false,
             filterable: false,
-            toolbarRight: this.range
+            dayRangeFilter: { value: this.rangeValue }
+        });
+        this.tableView.on('range:change', ({ value }) => {
+            this.rangeValue = value;
+            this._updateEyebrow();
         });
         this.addChild(this.tableView);
 
         this.collection.on('fetch:success', () => this._updateEyebrow(), this);
-    }
-
-    async _applyRange(value) {
-        this.rangeValue = value;
-        const days = value === '1d' ? 1 : value === '7d' ? 7 : value === '90d' ? 90 : 30;
-        const since = Math.floor(Date.now() / 1000) - days * 86400;
-        this.collection.setParams({
-            rule_set: this.rulesetId,
-            created__gte: since,
-            sort: '-created'
-        });
-        await this.collection.fetch();
     }
 
     _buildEyebrowLabel() {

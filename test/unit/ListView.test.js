@@ -152,6 +152,324 @@ module.exports = async function (testContext) {
   });
 
   // --------------------------------------------------------------
+  // Toolbar — dayRangeFilter
+  // --------------------------------------------------------------
+  describe('ListView (dayRangeFilter)', () => {
+    const NOW_TOLERANCE = 5; // seconds
+
+    function makeRestCollection(seed = []) {
+      const c = new Collection(seed);
+      c.restEnabled = true;
+      c.lastFetchTime = Date.now();
+      c.fetch = async () => ({ success: true, data: { status: 'ok' } });
+      return c;
+    }
+
+    it('boolean form mounts a SegmentControl with the four default options at value="7d"', async () => {
+      const collection = makeRestCollection([{ id: 1, name: 'A' }]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        dayRangeFilter: true
+      });
+      await listView.render();
+
+      expect(listView.dayRangeControl).not.toBeNull();
+      expect(listView.dayRangeControl.items).toHaveLength(4);
+      expect(listView.dayRangeControl.items.map((o) => o.value))
+        .toEqual(['1d', '7d', '30d', '90d']);
+      expect(listView.dayRangeControl.getValue()).toBe('7d');
+      expect(listView.dayRangeControl.ariaLabel).toBe('Time range');
+    });
+
+    it('object form respects field, value, options, ariaLabel overrides', async () => {
+      const collection = makeRestCollection();
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        dayRangeFilter: {
+          field: 'occurred',
+          value: '30d',
+          options: [
+            { value: '7d', label: '7d' },
+            { value: '30d', label: '30d' }
+          ],
+          ariaLabel: 'Window'
+        }
+      });
+      await listView.render();
+
+      expect(listView.dayRangeFilter.field).toBe('occurred');
+      expect(listView.dayRangeControl.getValue()).toBe('30d');
+      expect(listView.dayRangeControl.items).toHaveLength(2);
+      expect(listView.dayRangeControl.ariaLabel).toBe('Window');
+    });
+
+    it('seeds collection.params.created__gte to nowEpoch - 7*86400 on mount', async () => {
+      const collection = makeRestCollection();
+      const expected = Math.floor(Date.now() / 1000) - 7 * 86400;
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        dayRangeFilter: true
+      });
+      await listView.render();
+
+      expect(typeof collection.params.created__gte).toBe('number');
+      expect(Math.abs(collection.params.created__gte - expected))
+        .toBeLessThanOrEqual(NOW_TOLERANCE);
+    });
+
+    it('custom field writes to ${field}__gte (not created__gte)', async () => {
+      const collection = makeRestCollection();
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        dayRangeFilter: { field: 'occurred', value: '30d' }
+      });
+      await listView.render();
+
+      expect(collection.params.created__gte).toBeUndefined();
+      expect(typeof collection.params.occurred__gte).toBe('number');
+    });
+
+    it('on segment change updates ${field}__gte, resets start, fetches', async () => {
+      const collection = makeRestCollection([{ id: 1, name: 'A' }]);
+      collection.params.start = 50;
+      const fetchSpy = jest.fn(async () => ({ success: true, data: { status: 'ok' } }));
+      collection.fetch = fetchSpy;
+
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        dayRangeFilter: true
+      });
+      await listView.render();
+
+      const before = collection.params.created__gte;
+      const expected = Math.floor(Date.now() / 1000) - 30 * 86400;
+      // Drive the change through the SegmentControl (mirrors a click)
+      listView.dayRangeControl.setValue('30d');
+
+      // _onDayRangeChange is async; flush microtasks
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(collection.params.created__gte).not.toBe(before);
+      expect(Math.abs(collection.params.created__gte - expected))
+        .toBeLessThanOrEqual(NOW_TOLERANCE);
+      expect(collection.params.start).toBe(0);
+      expect(fetchSpy).toHaveBeenCalled();
+    });
+
+    it('emits range:change with { field, value, previous, params } on user change', async () => {
+      const collection = makeRestCollection();
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        dayRangeFilter: true
+      });
+      await listView.render();
+
+      const captured = [];
+      listView.on('range:change', (payload) => captured.push(payload));
+
+      listView.dayRangeControl.setValue('30d');
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(captured).toHaveLength(1);
+      expect(captured[0].field).toBe('created');
+      expect(captured[0].value).toBe('30d');
+      expect(captured[0].previous).toBe('7d');
+      expect(captured[0].params).toHaveProperty('created__gte');
+      expect(typeof captured[0].params.created__gte).toBe('number');
+    });
+
+    it('does NOT emit range:change on the initial mount-time seed', async () => {
+      const collection = makeRestCollection();
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        dayRangeFilter: true
+      });
+
+      const seen = jest.fn();
+      listView.on('range:change', seen);
+
+      await listView.render();
+      expect(seen).not.toHaveBeenCalled();
+    });
+
+    it('getRange / setRange proxy correctly', async () => {
+      const collection = makeRestCollection();
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        dayRangeFilter: true
+      });
+      await listView.render();
+
+      expect(listView.getRange()).toBe('7d');
+
+      const fired = jest.fn();
+      listView.on('range:change', fired);
+
+      const ok = listView.setRange('30d');
+      await new Promise((r) => setTimeout(r, 0));
+      expect(ok).toBe(true);
+      expect(listView.getRange()).toBe('30d');
+      expect(fired).toHaveBeenCalled();
+    });
+
+    it('setRange(value, { silent: true }) updates without emit or fetch', async () => {
+      const collection = makeRestCollection();
+      const fetchSpy = jest.fn(async () => ({ success: true, data: { status: 'ok' } }));
+      collection.fetch = fetchSpy;
+
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        dayRangeFilter: true
+      });
+      await listView.render();
+
+      const fired = jest.fn();
+      listView.on('range:change', fired);
+      fetchSpy.mockClear();
+
+      const ok = listView.setRange('30d', { silent: true });
+      expect(ok).toBe(true);
+      expect(listView.getRange()).toBe('30d');
+      expect(fired).not.toHaveBeenCalled();
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('setRange(unknown) returns false and does not change state', async () => {
+      const collection = makeRestCollection();
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        dayRangeFilter: true
+      });
+      await listView.render();
+
+      const ok = listView.setRange('not-an-option');
+      expect(ok).toBe(false);
+      expect(listView.getRange()).toBe('7d');
+    });
+
+    it('combined dayRangeFilter + toolbarRight mounts both, day-range to the left', async () => {
+      const ToolbarRightView = loadModule('View');
+      const rightView = new ToolbarRightView({
+        tagName: 'div',
+        className: 'right-extra',
+        template: '<button class="btn-extra">Extra</button>'
+      });
+
+      const collection = makeRestCollection();
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        dayRangeFilter: true,
+        toolbarRight: rightView
+      });
+      await listView.render();
+
+      const dayRangeContainer = listView.element.querySelector('[data-container="toolbar-day-range"]');
+      const rightContainer = listView.element.querySelector('[data-container="toolbar-right"]');
+      expect(dayRangeContainer).not.toBeNull();
+      expect(rightContainer).not.toBeNull();
+
+      // Both containers live in the same right-aligned flex group.
+      // dayRange must come BEFORE toolbar-right in document order.
+      const pos = dayRangeContainer.compareDocumentPosition(rightContainer);
+      // DOCUMENT_POSITION_FOLLOWING (4) — rightContainer follows dayRangeContainer
+      expect(pos & 4).toBe(4);
+    });
+
+    it('_isToolbarEnabled returns true when only dayRangeFilter is set', async () => {
+      const collection = makeRestCollection();
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        dayRangeFilter: true
+      });
+      expect(listView._isToolbarEnabled()).toBe(true);
+
+      await listView.render();
+      const html = listView.element.innerHTML;
+      expect(html).toContain('table-action-buttons');
+      expect(html).toContain('data-container="toolbar-day-range"');
+    });
+
+    it('escape-hatch value (non-\\d+d) does NOT write a __gte param on seed', async () => {
+      const collection = makeRestCollection();
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        dayRangeFilter: {
+          value: 'all',
+          options: [
+            { value: 'all', label: 'All' },
+            { value: '7d', label: '7d' }
+          ]
+        }
+      });
+      await listView.render();
+
+      expect(collection.params.created__gte).toBeUndefined();
+    });
+
+    it('escape-hatch value on change leaves params untouched but emits the event', async () => {
+      const collection = makeRestCollection();
+      const fetchSpy = jest.fn(async () => ({ success: true, data: { status: 'ok' } }));
+      collection.fetch = fetchSpy;
+
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        dayRangeFilter: {
+          value: '7d',
+          options: [
+            { value: '7d', label: '7d' },
+            { value: 'all', label: 'All' }
+          ]
+        }
+      });
+      await listView.render();
+
+      const captured = [];
+      listView.on('range:change', (p) => captured.push(p));
+      const seedBefore = collection.params.created__gte;
+      fetchSpy.mockClear();
+
+      listView.dayRangeControl.setValue('all');
+      await new Promise((r) => setTimeout(r, 0));
+
+      // created__gte unchanged from seed
+      expect(collection.params.created__gte).toBe(seedBefore);
+      expect(captured).toHaveLength(1);
+      expect(captured[0].value).toBe('all');
+      expect(captured[0].params).toEqual({});
+      // Fetch still runs — the framework refetches on every change, even
+      // when no params changed (matches applyFilters' behavior).
+      expect(fetchSpy).toHaveBeenCalled();
+    });
+
+    it('plain ListView with no dayRangeFilter has no dayRangeControl or container', async () => {
+      const collection = new Collection([{ id: 1, name: 'A' }]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>'
+      });
+      await listView.render();
+
+      expect(listView.dayRangeControl).toBeNull();
+      expect(listView.element.querySelector('[data-container="toolbar-day-range"]'))
+        .toBeNull();
+    });
+  });
+
+  // --------------------------------------------------------------
   // Numbered pagination
   // --------------------------------------------------------------
   describe("ListView (paginationMode: 'pages')", () => {

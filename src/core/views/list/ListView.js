@@ -57,6 +57,7 @@ import Collection from '@core/Collection.js';
 import Modal from '@core/views/feedback/Modal.js';
 import Mustache from '@core/utils/mustache.js';
 import FormView from '@core/forms/FormView.js';
+import SegmentControl from '@core/views/navigation/SegmentControl.js';
 import { parseFilterKey, formatFilterDisplay } from '@core/utils/DjangoLookups.js';
 import ListViewItem from './ListViewItem.js';
 import ListGroupHeaderView from './ListGroupHeaderView.js';
@@ -121,6 +122,15 @@ class ListView extends View {
     this.toolbarButtons = options.toolbarButtons || [];
     this.toolbarRight = options.toolbarRight || null;
     this._toolbarRightMounted = false;
+
+    // Day-range filter helper: opt-in `1d / 7d / 30d / 90d` SegmentControl
+    // mounted to the left of `toolbarRight`. When enabled, ListView writes
+    // `${field}__gte = nowEpoch - days*86400` to `collection.params` on each
+    // change and refetches — same contract as `applyFilters`. Caller can
+    // listen to the `range:change` event for side effects (eyebrow labels,
+    // etc.). Boolean true → defaults; object form merges over defaults.
+    this.dayRangeFilter = this._normalizeDayRangeFilter(options.dayRangeFilter);
+    this.dayRangeControl = null;
 
     // Export configuration (gated by `showAdd` / `showExport` toolbar
     // options, which default to off on ListView). exportSource is 'remote'
@@ -216,6 +226,18 @@ class ListView extends View {
 
   async onInit() {
     this._initCollection(this.options.collection || this.options.Collection);
+
+    if (this.dayRangeFilter) {
+      this._seedDayRangeParams();
+      this.dayRangeControl = new SegmentControl({
+        containerId: 'toolbar-day-range',
+        options: this.dayRangeFilter.options,
+        value: this.dayRangeFilter.value,
+        ariaLabel: this.dayRangeFilter.ariaLabel
+      });
+      this.dayRangeControl.on('change', this._onDayRangeChange, this);
+      this.addChild(this.dayRangeControl);
+    }
   }
 
   async onAfterMount() {
@@ -366,6 +388,7 @@ class ListView extends View {
       (this.filterable && this._hasAnyFilters()) ||
       (this.sortOptions && this.sortOptions.length > 0) ||
       this.toolbarRight ||
+      this.dayRangeFilter ||
       (this.toolbarButtons && this.toolbarButtons.length > 0) ||
       this.options.showAdd ||
       this.options.showExport
@@ -388,6 +411,7 @@ class ListView extends View {
 
     const titleBlock = this._buildTitleBlockTemplate();
     const rightSlot = this.toolbarRight ? `<div data-container="toolbar-right"></div>` : '';
+    const dayRangeSlot = this.dayRangeFilter ? `<div data-container="toolbar-day-range"></div>` : '';
     const sortDropdown = (this.sortOptions && this.sortOptions.length > 0) ? this.buildSortDropdownTemplate() : '';
 
     const rightGroup = `
@@ -396,6 +420,7 @@ class ListView extends View {
         ${sortDropdown}
         ${this.filterable ? this.buildFilterDropdownTemplate() : ''}
         ${this.searchable && this.searchPlacement === 'toolbar' ? this.buildSearchTemplate() : ''}
+        ${dayRangeSlot}
         ${rightSlot}
       </div>
     `;
@@ -794,6 +819,91 @@ class ListView extends View {
       const collection = new Collection(collectionOrClass);
       this.setCollection(collection);
     }
+  }
+
+  // ============================================================
+  // Day-range filter helper
+  // ============================================================
+
+  _normalizeDayRangeFilter(raw) {
+    if (!raw) return null;
+    const defaults = {
+      field: 'created',
+      value: '7d',
+      options: [
+        { value: '1d', label: '1d' },
+        { value: '7d', label: '7d' },
+        { value: '30d', label: '30d' },
+        { value: '90d', label: '90d' }
+      ],
+      ariaLabel: 'Time range'
+    };
+    if (raw === true) return defaults;
+    return { ...defaults, ...raw };
+  }
+
+  _dayRangeDays(value) {
+    const m = /^(\d+)d$/.exec(String(value || ''));
+    return m ? parseInt(m[1], 10) : null;
+  }
+
+  _seedDayRangeParams() {
+    if (!this.dayRangeFilter || !this.collection) return;
+    const days = this._dayRangeDays(this.dayRangeFilter.value);
+    if (days == null) return;
+    const epoch = Math.floor(Date.now() / 1000) - days * 86400;
+    this.collection.params[`${this.dayRangeFilter.field}__gte`] = epoch;
+  }
+
+  async _onDayRangeChange({ value, previous }) {
+    const field = this.dayRangeFilter?.field || 'created';
+    const days = this._dayRangeDays(value);
+    let params = {};
+
+    if (days != null && this.collection) {
+      const epoch = Math.floor(Date.now() / 1000) - days * 86400;
+      this.collection.params[`${field}__gte`] = epoch;
+      this.collection.params.start = 0;
+      params = { [`${field}__gte`]: epoch };
+    }
+
+    this.emit('range:change', { field, value, previous, params });
+    this.emit('params-changed');
+
+    if (this.collection?.restEnabled) {
+      try {
+        await this.collection.fetch();
+      } catch (err) {
+        console.error('Failed to fetch day-range data:', err);
+      }
+    }
+    await this.render();
+  }
+
+  /**
+   * Get the currently-selected day-range value, or null when the helper
+   * is disabled / not yet initialized.
+   * @returns {string|null}
+   */
+  getRange() {
+    return this.dayRangeControl?.getValue() ?? null;
+  }
+
+  /**
+   * Programmatically set the day-range value. Returns false when the helper
+   * is disabled or the value isn't a known option. Pass `silent: true` to
+   * suppress the `range:change` event and the refetch.
+   * @param {string} value
+   * @param {{ silent?: boolean }} opts
+   * @returns {boolean}
+   */
+  setRange(value, { silent = false } = {}) {
+    if (!this.dayRangeControl) return false;
+    const previous = this.dayRangeControl.getValue();
+    const ok = this.dayRangeControl.setValue(value, { silent: true });
+    if (!ok) return false;
+    if (!silent) this._onDayRangeChange({ value, previous });
+    return true;
   }
 
   setCollection(collection) {
