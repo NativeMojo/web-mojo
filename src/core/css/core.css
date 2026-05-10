@@ -3185,6 +3185,31 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
     font-size: 1.4rem;
     flex-shrink: 0;
 }
+/* Image slot — drops the tinted background so the caller's HTML (avatar
+   img, custom badge) carries the visual identity. The container becomes
+   a 44x44 frame with rounded corners; <img> children stretch to fill. */
+.detail-header .dh-icon-image {
+    background: transparent;
+    border: none;
+    padding: 0;
+    overflow: hidden;
+}
+.detail-header .dh-icon-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.detail-header .dh-icon-image .dh-icon-action {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
 
 /* Toned icon variants — opt-in via header `iconTone: 'danger'|'warning'|'success'|'info'|'primary'` */
 .detail-header .dh-icon.dh-icon-tone-danger {

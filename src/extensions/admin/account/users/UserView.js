@@ -1339,6 +1339,9 @@ class UserView extends DetailView {
                     if (m.get('is_staff'))     return 'info';
                     return 'primary';
                 },
+                // Render the user's actual avatar (with generic-SVG fallback)
+                // in the icon slot. Click opens the change-avatar action.
+                iconHtml: m => `<button type="button" class="dh-icon-action" data-action="change-avatar" data-bs-toggle="tooltip" title="Change avatar">${dataFormatter.apply('avatar', m.get('avatar'))}</button>`,
                 titleField: 'display_name',
                 titleFn: m => m.get('display_name')
                     || m.get('username')

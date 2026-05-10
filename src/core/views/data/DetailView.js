@@ -82,6 +82,7 @@ class DetailHeaderView extends View {
             icon,
             iconTone,               // optional: primary | success | warning | danger | info — toned dh-icon
             iconToneFn,             // optional: (model) => tone, for state-driven icons
+            iconHtml,               // optional: string | (model) => htmlString — render trusted HTML in the icon slot (avatar img, custom badge, etc.) instead of the Bootstrap icon
             titleField,
             titleFn,
             titleAffix,             // optional: string | (model) => htmlString — trusted HTML slot rendered next to the title (copy-button, etc.)
@@ -110,6 +111,7 @@ class DetailHeaderView extends View {
         this.icon = icon || 'bi-file-earmark';
         this.iconTone = iconTone || null;
         this.iconToneFn = iconToneFn || null;
+        this.iconHtml = iconHtml || null;
         this.titleField = titleField || null;
         this.titleFn = titleFn || null;
         this.titleAffix = titleAffix || null;
@@ -147,6 +149,11 @@ class DetailHeaderView extends View {
     _resolveIconTone() {
         if (this.iconToneFn) return this.iconToneFn(this.model) || null;
         return this.iconTone;
+    }
+
+    _resolveIconHtml() {
+        if (typeof this.iconHtml === 'function') return this.iconHtml(this.model) || '';
+        return this.iconHtml || '';
     }
 
     _resolveChips() {
@@ -207,7 +214,16 @@ class DetailHeaderView extends View {
         const hasGroup2 = !!this.contextMenuConfig || this.closable;
 
         const tone = this._resolveIconTone();
-        const iconClass = tone ? `dh-icon dh-icon-tone-${this.escapeHtml(tone)}` : 'dh-icon';
+        const iconHtmlSlot = this._resolveIconHtml();
+
+        // When iconHtml is provided (avatar img, custom badge, etc.) drop the
+        // tone-tinted background/border so the slot is a frame for the
+        // caller's content rather than a colored square. The caller's HTML
+        // controls its own visual identity.
+        const iconClass = iconHtmlSlot
+            ? 'dh-icon dh-icon-image'
+            : (tone ? `dh-icon dh-icon-tone-${this.escapeHtml(tone)}` : 'dh-icon');
+        const iconBody = iconHtmlSlot || `<i class="bi ${this.escapeHtml(this.icon)}"></i>`;
 
         // Trusted-HTML slot rendered inline next to the title (copy-button,
         // edit-pencil, etc.). Caller is responsible for escaping anything
@@ -217,7 +233,7 @@ class DetailHeaderView extends View {
         // Stylesheet lives in src/core/css/core.css under "DetailHeaderView".
         return `
             <div class="d-flex align-items-start gap-3">
-                <div class="${iconClass}"><i class="bi ${this.escapeHtml(this.icon)}"></i></div>
+                <div class="${iconClass}">${iconBody}</div>
                 <div class="dh-meta" style="min-width: 0; flex: 1;">
                     <div class="dh-name-row">
                         <h2 class="dh-name">${this.escapeHtml(title)}</h2>
