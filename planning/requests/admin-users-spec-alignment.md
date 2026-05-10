@@ -6,33 +6,61 @@ created: 2026-05-09
 parent: detailview-audit-followups.md
 ---
 
-## Status — 2026-05-10
+## Status — 2026-05-10 (handoff for new session)
 
-**Unblocked.** The previous pause-blocker [`listview-search-filters-pagination.md`](../done/listview-search-filters-pagination.md) shipped — toolbar / pagination / show-more is in `planning/done/`. The DetailView audit round 2 ([`planning/done/detailview-audit-round-2.md`](../done/detailview-audit-round-2.md)) also landed and incidentally swept several of the table-heavy surfaces this request was waiting on:
+**Unblocked.** The previous pause-blocker [`listview-search-filters-pagination.md`](../done/listview-search-filters-pagination.md) shipped — toolbar / pagination / show-more is in `planning/done/`. The [DetailView audit round 2](../done/detailview-audit-round-2.md) also landed and incidentally swept several of the table-heavy surfaces this request was waiting on. **Phases 3 / 4 / 5 / 6 are still real work and ready to pick up.**
 
-- **UserView Audit / Devices / Locations / Groups** all converted from `TableView` to toolbar-equipped `ListView` with `paginationMode: 'pages'` + `pageSize: 5` + `clickAction: 'view'`.
-- The Audit feeds + Logins ListView gained day-grouped headers via the new `groupByDay('created')` primitive.
-- `LoginEventView` was created so Logins-row click opens the proper detail modal.
-- `FileView` migrated to extend `DetailView`.
+### What's already shipped (don't redo)
 
-**Phase 1 + Phase 2** still shipped (commits below). **Phases 3-6** are still TO-DO — round-2 did **not** touch the identity-change flows, field-write protections, GroupView/MemberView spec quirks, or the unified security-events audit feed.
+**Phase 1** — UserView immediate fixes (commit `52c4712`)
+- I1 double-fire on Profile edit pencils — fixed
+- I2 `send-email-verification` / `force-verify-email` / `force-verify-phone` removed from context menu and handlers
+- I3 `Change Avatar` action wired via `Modal.updateModelImage`
+- I4 TOTP / SMS / Passkey rows in the Security MFA block
 
-Phase 1 / Phase 2 commits:
-- `52c4712` — Phase 1 (I1 double-fire, I2 force-verify removal, I3 Change Avatar, I4 TOTP/SMS/Passkey rows) + this spec file.
-- `7f37b68` — bonus: badges + KPI counts use `collection.meta.count` instead of fetched-page length.
-- `d6dde92` — Phase 2 (disable lifecycle): reason-keyed status badge, optional reason+note form on toggle-off, silent reactivate on toggle-on, anonymized hides toggle, inactivity-warning row + Reset link, disable-history accordion, mock-backend POST_SAVE_ACTIONS support, seed users get is_active + populated disable blocks.
+**Phase 2** — Disable lifecycle (commit `d6dde92`)
+- Reason-keyed status badge (`admin` / `inactive` / `anonymized` / `abuse` / `self`)
+- Optional `reason + note` form on toggle-off, silent reactivate on toggle-on
+- `anonymized` hides the toggle entirely (irreversible per spec)
+- Inactivity-warning row in `auxFn` + "Reset" link calling `{"reactivate":{}}`
+- Disable-history accordion section
+- Mock-backend POST_SAVE_ACTIONS support; seed users get `is_active` + populated `disable` blocks
 
-Round-2 commits that incidentally moved the needle on this file's scope (visually, not spec-wise):
-- `538e94c` — UserView Audit feed redesign + Logins timeline (visual primitives Phase 6's unified feed will reuse).
-- `d314ce9` — GroupView Identity row-level edits (lays groundwork for Phase 5's GroupView spec rows).
+**Plus from round-2** — moved adjacent surfaces forward (visually, not spec-wise):
+- UserView's Audit / Devices / Locations / Groups TableViews → ListView with `paginationMode: 'pages'`, `pageSize: 5`, `clickAction: 'view'`, `viewDialogOptions: { header: false, noBodyPadding: true, buttons: [] }`
+- Day-grouped headers on chronological feeds via the new `groupByDay('created')` primitive (`@core/views/list/grouping.js`)
+- `LoginEventView` created at `src/extensions/admin/account/login_events/LoginEventView.js`
+- `FileView` migrated to extend `DetailView`
+- Visual primitives `.user-audit-row` (3-col flex with leading tonal icon) and `.user-login-row` (CSS-only vertical-rail timeline) — Phase 6's unified feed should reuse these
 
-**Remaining (still to ship):**
-- **Phase 3** — Identity-change cards for email / phone / username / password (replacing direct pencil edits with managed flows that go through `/api/auth/...` endpoints).
-- **Phase 4** — Wire `NO_SAVE_FIELDS` / `SUPERUSER_ONLY_FIELDS` / `MANAGE_USERS_ONLY_FIELDS` client-side gating + "Include disabled" toggle on Table pages.
-- **Phase 5** — GroupView parent breadcrumb / kind-aware copy / `auth_domain` / `email_template` / `timezone` / `short_name` / `domain` from `metadata.protected`. User → org chip + click-through. MemberView per-group vs system perms split. `MEMBER_PERMS_PROTECTION` gating.
-- **Phase 6** — Replace UserView Audit's triple-tab with a single `/api/account/security-events` feed driven by the canonical category list.
+### What's still pending — Phase order matters
 
-The previously-mentioned "Phase 7" was a numbering glitch in the original status note — Phase 6 is the last phase per the phased plan below.
+**Phase 3 — Identity-change cards** (recommended starting point, see § Phase 3 below for full detail)
+Replace pencil-edit affordances on `email`, `phone_number`, `username`, password with managed cards that route through `/api/auth/...`. Reference impl: `src/extensions/user-profile/views/UserProfileView.js` already has `onActionUpdateEmail` / `onActionUpdatePhone` / `onActionUpdatePassword` flows. Admin-side just needs the same flows wired into UserView's Profile section, replacing the existing `onActionChangeEmail` / `onActionChangePhone` / `onActionEditUsername` (which currently call `model.save()` directly). Display Name / First Name / Last Name keep the pencil approach — no auth flow.
+
+**Phase 4 — Field-write protections + permission gating**
+Client-side gating against `NO_SAVE_FIELDS` / `SUPERUSER_ONLY_FIELDS` / `MANAGE_USERS_ONLY_FIELDS` so admins don't see edit affordances they'd 403 on. Read caller perms from `app.activeUser` (or `/api/user/me`). Plus "Include disabled" toggle on `UserTablePage` / `GroupTablePage` / `MemberTablePage` to defeat the `is_active=true` default filter.
+
+**Phase 5 — GroupView + MemberView spec quirks**
+- GroupView: parent breadcrumb (walk `Group.parent`), kind-aware copy
+- GroupView: surface `auth_domain`, `email_template`, `timezone`, `short_name`, `domain` from `metadata.protected`
+- User → org chip on UserView header + click-through to that GroupView
+- MemberView: per-group `member.permissions` vs system `user.permissions.*` split (two panels)
+- MemberView: `MEMBER_PERMS_PROTECTION` gating
+
+Note: round-2 already added per-row pencils to `GroupIdentitySection` (commit `d314ce9`) for `name` / `kind` / `timezone` / `eod_hour` / `domain` / `portal` / `email_template`. Phase 5 builds on that — add the remaining `auth_domain` / `short_name` rows and the parent breadcrumb.
+
+**Phase 6 — Unified security-events audit feed**
+Replace UserView Audit tab's triple-tab (Activity / Events / Audit Log) with a single feed driven by `GET /api/account/security-events`. Categories per spec: `login, password_reset, mfa, email_change, phone_change, username_change, sessions, oauth, passkey, magic_login, deactivate`. Reuse the `.user-audit-row` template + `groupByDay('created')` already in place on the existing tabs.
+
+### Where to start
+
+A new session picking this up should:
+1. Read this Status block + the `## Spec — full reference` section below (the spec is canonical, do not paraphrase from memory).
+2. Pick a phase. **Phase 3 (identity cards) is the highest-impact and self-contained** — doesn't depend on Phase 4/5/6.
+3. Run `/design planning/requests/admin-users-spec-alignment.md` if a fuller plan section is wanted before building, or `/build` directly if the phase descriptions in this file are enough.
+4. Reference impl for identity flows: `src/extensions/user-profile/views/UserProfileView.js`.
+5. The previously-mentioned "Phase 7" was a numbering glitch in the original status note — Phase 6 is the last phase per the plan below.
 
 ---
 
