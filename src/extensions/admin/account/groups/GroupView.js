@@ -789,10 +789,11 @@ class GroupView extends DetailView {
                 subtitlePath: '_subtitle',
                 subtitlePlaceholder: kindLabel(kind) || 'Group',
                 chips,
-                activeField: 'is_active',
+                // Active toggle is emitted from auxFn (not via framework's
+                // `activeField`) so the right gutter is a 2-row block:
+                //   row 1: [Active toggle]
+                //   row 2: muted "last activity 50m ago"
                 actions: [],
-                // auxFn — small right-gutter readout (last activity / member count).
-                // Trusted HTML; model fields escaped before interpolation.
                 auxFn: m => _buildHeaderAux(m, membersCollection),
                 contextMenu: { items: contextItems }
             },
@@ -972,6 +973,30 @@ class GroupView extends DetailView {
         await Modal.detail(new GroupView({ model: target }));
     }
 
+    /**
+     * Active toggle in the header right-gutter (emitted from `_buildHeaderAux`).
+     * Optimistic save with silent revert on failure — the bounce IS the
+     * feedback, mirroring the framework's default DetailHeaderView pattern.
+     * The context-menu Activate/Deactivate path (`onActionStateToggle`)
+     * keeps its confirm dialog for explicit state-change intent.
+     */
+    async onActionToggleActive(event, element) {
+        const checked = !!element.checked;
+        element.disabled = true;
+        try {
+            this.model.set('is_active', checked);
+            const resp = await this.model.save({ is_active: checked });
+            if (resp && resp.status && resp.status >= 400) throw new Error('Save failed');
+            this.emit('detail:updated');
+        } catch (err) {
+            // Revert silently — the bounce IS the feedback.
+            this.model.set('is_active', !checked);
+        } finally {
+            if (element && element.isConnected) element.disabled = false;
+        }
+        return true;
+    }
+
     /** Active toggle from the context menu */
     async onActionStateToggle() {
         const toActive = !this.model.get('is_active');
@@ -1035,32 +1060,39 @@ class GroupView extends DetailView {
 // ── Header aux helper ──────────────────────────────────────
 
 /**
- * Build the header right-gutter "aux" block — small "last activity" /
- * member count read-out beside the Active toggle. Trusted HTML; model
- * fields are escaped before interpolation.
+ * Right-gutter readout for the DetailHeader. Trusted HTML — model fields
+ * escaped before interpolation. Two-row layout mirroring UserView:
+ *   row 1: [Active/Inactive toggle]
+ *   row 2: muted "last activity 50m ago" (or member count fallback)
+ *
+ * The toggle lives in here (not as the framework's `activeField`) so the
+ * meta line can sit on its own row underneath the toggle cluster, instead
+ * of left of it. `data-change-action` (not `data-action`) so it fires
+ * once per toggle, not twice.
  */
 function _buildHeaderAux(m, membersCollection) {
+    const isActive = !!m.get('is_active');
+    const switchHtml = `
+        <label class="dh-active-switch">
+            <input type="checkbox" data-change-action="toggle-active" ${isActive ? 'checked' : ''}>
+            <span class="dh-track"></span>
+            <span class="dh-track-label">${isActive ? 'Active' : 'Inactive'}</span>
+        </label>
+    `;
+
     const lastActivity = m.get('last_activity');
     const memberCount = membersCollection?.models?.length ?? 0;
-    const memberWord = memberCount === 1 ? 'member' : 'members';
-
-    let main, sub;
+    let metaText = '';
     if (lastActivity) {
         const rel = dataFormatter.apply(lastActivity, ['epoch', 'relative']);
-        main = 'Last activity';
-        sub = rel ? escapeHtml(String(rel)) : '';
+        if (rel) metaText = `Last activity ${escapeHtml(String(rel))}`;
     } else if (memberCount > 0) {
-        main = `${memberCount} ${memberWord}`;
-        sub = '';
-    } else {
-        return '';
+        metaText = `${memberCount} ${memberCount === 1 ? 'member' : 'members'}`;
     }
 
     return `
-        <span class="dh-aux-presence">
-            <span>${escapeHtml(main)}</span>
-        </span>
-        ${sub ? `<span class="dh-aux-meta">${sub}</span>` : ''}
+        <div class="dh-aux-top">${switchHtml}</div>
+        ${metaText ? `<span class="dh-aux-meta">${metaText}</span>` : ''}
     `;
 }
 
