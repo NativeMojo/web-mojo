@@ -165,10 +165,15 @@ class DetailHeaderView extends View {
                 else if (chip.textPath) text = this.model?.get?.(chip.textPath);
                 else text = chip.text;
 
+                let tooltip = '';
+                if (typeof chip.tooltip === 'function') tooltip = chip.tooltip(this.model) || '';
+                else if (chip.tooltip) tooltip = String(chip.tooltip);
+
                 return {
                     icon: chip.icon || null,
                     text: text != null ? String(text) : '',
-                    variant: chip.variant || 'light'
+                    variant: chip.variant || 'light',
+                    tooltip
                 };
             })
             .filter(c => c.text !== '');
@@ -182,7 +187,10 @@ class DetailHeaderView extends View {
 
         const chipsHtml = chips.map(c => {
             const iconHtml = c.icon ? `<i class="bi ${this.escapeHtml(c.icon)} me-1"></i>` : '';
-            return `<span class="badge bg-${this.escapeHtml(c.variant)}">${iconHtml}${this.escapeHtml(c.text)}</span>`;
+            const tooltipAttrs = c.tooltip
+                ? ` data-bs-toggle="tooltip" title="${this.escapeHtml(c.tooltip)}"`
+                : '';
+            return `<span class="badge bg-${this.escapeHtml(c.variant)}"${tooltipAttrs}>${iconHtml}${this.escapeHtml(c.text)}</span>`;
         }).join('');
 
         // Right-gutter aux slot — trusted HTML. Falsy result omits the wrapper.

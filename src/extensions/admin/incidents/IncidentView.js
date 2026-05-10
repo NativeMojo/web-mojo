@@ -1730,7 +1730,39 @@ class IncidentView extends DetailView {
                 return c != null ? `${c} ${c === 1 ? 'event' : 'events'}` : null;
               }, variant: 'light' },
             { icon: 'bi-shield-fill-check', text: 'Protected', variant: 'warning',
-              when: m => !!(m.get('metadata')?.do_not_delete) }
+              when: m => !!(m.get('metadata')?.do_not_delete) },
+            // Threat-flag chips driven by source-IP GeoLocatedIP lookup.
+            // `_sourceGeo` is stashed onto the model in onAfterBuild after the
+            // lookup resolves; chips re-evaluate on the subsequent header render.
+            // Tooltips surface the one-line description per the chip.tooltip
+            // primitive added in DetailHeaderView round-2.
+            { icon: 'bi-shield-lock',          text: 'TOR',         variant: 'danger',
+              tooltip: 'Source IP is a Tor exit node',
+              when: m => !!m.get('_sourceGeo')?.is_tor },
+            { icon: 'bi-shield-shaded',        text: 'VPN',         variant: 'warning',
+              tooltip: 'Source IP is a VPN exit node',
+              when: m => !!m.get('_sourceGeo')?.is_vpn },
+            { icon: 'bi-diagram-3',            text: 'Proxy',       variant: 'warning',
+              tooltip: 'Source IP is an open proxy',
+              when: m => !!m.get('_sourceGeo')?.is_proxy },
+            { icon: 'bi-hdd-stack',            text: 'Datacenter',  variant: 'warning',
+              tooltip: 'Source IP belongs to a datacenter range',
+              when: m => !!m.get('_sourceGeo')?.is_datacenter },
+            { icon: 'bi-cloud-fill',           text: 'Cloud',       variant: 'info',
+              tooltip: 'Source IP belongs to a cloud-provider range',
+              when: m => !!m.get('_sourceGeo')?.is_cloud },
+            { icon: 'bi-phone',                text: 'Mobile',      variant: 'light',
+              tooltip: 'Source IP is a mobile carrier range',
+              when: m => !!m.get('_sourceGeo')?.is_mobile },
+            { icon: 'bi-bug-fill',             text: 'Known attacker', variant: 'danger',
+              tooltip: 'Source IP appears in attacker feeds',
+              when: m => !!m.get('_sourceGeo')?.is_known_attacker },
+            { icon: 'bi-slash-circle',         text: 'Blocked',     variant: 'danger',
+              tooltip: 'Source IP is currently blocked',
+              when: m => !!m.get('_sourceGeo')?.is_blocked },
+            { icon: 'bi-shield-check',         text: 'Whitelisted', variant: 'success',
+              tooltip: 'Source IP is on the whitelist',
+              when: m => !!m.get('_sourceGeo')?.is_whitelisted }
         ];
 
         // Context menu — long-tail; primary actions live on the StatusPanel.
@@ -1863,7 +1895,21 @@ class IncidentView extends DetailView {
         this.ticketsCollection.fetch().catch(() => {});
         this.relatedCollection.fetch().catch(() => {});
 
-        // Header may need to re-render with detailed-graph fields
+        // Source-IP geolocation lookup — drives the threat-flag header chips
+        // (TOR / VPN / Proxy / Datacenter / Cloud / Mobile / Known attacker /
+        // Blocked / Whitelisted). The chips' `when` callbacks read from
+        // `model._sourceGeo`, which we stash here after the async lookup
+        // resolves and then re-render the header to pick up the chips.
+        if (this._sourceIP) {
+            try {
+                const geoModel = await GeoLocatedIP.lookup(this._sourceIP);
+                if (geoModel?.attributes) {
+                    this.model.attributes._sourceGeo = geoModel.attributes;
+                }
+            } catch (_e) { /* lookup failed — header chips simply don't render */ }
+        }
+
+        // Header may need to re-render with detailed-graph fields + threat chips
         if (this.headerView?.isMounted()) await this.headerView.render();
     }
 
