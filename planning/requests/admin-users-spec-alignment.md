@@ -77,6 +77,12 @@ See §"Phase 3 — REVISED" below for the simplified plan.
 - Disable-history accordion section
 - Mock-backend POST_SAVE_ACTIONS support; seed users get `is_active` + populated `disable` blocks
 
+**Phase 3** — Identity cards in UserView Profile section (commit `ba960ae`)
+- `UserProfileSection` template restructured: Personal (Display name pencil) + new Identity eyebrow with four `.admin-security-item` cards (Username / Email / Phone / Password)
+- New `isAdminCaller` getter gates affordances — admin tier (`users` / `manage_users` / `is_superuser`) sees direct-edit pencils + force-verify icons + Set/Clear-phone buttons; non-admin viewers get read-only rows + "Send magic-login link"
+- New `onActionSetPhone` / `onActionRemovePhone` handlers; existing pencil handlers unchanged (backend now accepts their direct field writes for admin tier)
+- `AdminSecuritySection` cleanup: deleted broken Send-Email-Verification row+handler (was JWT-scoped, didn't target the right user); deleted duplicate `onActionSendPasswordReset` / `onActionSendMagicLink` handlers (now bubble to UserView); renamed one `data-action`; switched Set-Password body field to `new_password` per backend relaxation. Set Password row kept (operationally required, audited).
+
 **Plus from round-2** — moved adjacent surfaces forward (visually, not spec-wise):
 - UserView's Audit / Devices / Locations / Groups TableViews → ListView with `paginationMode: 'pages'`, `pageSize: 5`, `clickAction: 'view'`, `viewDialogOptions: { header: false, noBodyPadding: true, buttons: [] }`
 - Day-grouped headers on chronological feeds via the new `groupByDay('created')` primitive (`@core/views/list/grouping.js`)
@@ -677,4 +683,35 @@ Restructure UserView's Profile section so Username / Email / Phone / Password re
 
 ---
 
-Status: **planned** — ready to build.
+## Resolution — Phase 3 (2026-05-10, commit `ba960ae`)
+
+**Status: shipped.** Phases 4-6 remain pending; the request stays in `planning/requests/` until they land.
+
+### Files changed
+
+- `src/extensions/admin/account/users/UserView.js` — `isAdminCaller` getter on `UserProfileSection`; template restructured (Personal eyebrow with Display name pencil; new Identity eyebrow with four `.admin-security-item` cards); new `onActionSetPhone` / `onActionRemovePhone` handlers; existing pencil handlers and `_savePersonalField` unchanged.
+- `src/extensions/admin/account/users/sections/AdminSecuritySection.js` — deleted Send-Email-Verification template row + handler; deleted duplicate `onActionSendPasswordReset` and `onActionSendMagicLink` handlers; renamed `data-action="send-password-reset"` → `reset-password` (bubbles to UserView's existing `onActionResetPassword`); Set Password body field changed `password` → `new_password` per backend relaxation. Set Password row kept (operationally required).
+- `CHANGELOG.md` — Unreleased entry under "Admin UserView · identity cards (Phase 3)".
+
+### Tests run
+
+- `npm run lint` — only pre-existing errors in unrelated `src/core/` files; no findings in touched files.
+- `npm run test:unit` — 1030/1030 passed.
+- Browser preview verification — light + dark themes, identity cards render correctly with all expected affordances; no console errors.
+- test-runner agent: `npm test` full suite — 1172/1172 passed, no regressions.
+
+### Agent findings
+
+- **test-runner**: 1172/1172 pass, no regressions.
+- **docs-updater**: no docs in `docs/web-mojo/` reference UserView's Profile-section behaviour or AdminSecuritySection's removed handlers; CHANGELOG entry is the only release-facing doc and is in place. No updates needed.
+- **security-review**: no concerns. UI gating is intentionally browser-side only (backend has independent perm checks); template escaping preserved (only the pre-existing `{{{model.email|clipboard}}}` triple-brace remains, which is escape-safe via the formatter); input handling on new phone handlers is safe; field-rename `password` → `new_password` is consistent on both client and server contracts; action-dedup wiring is clean.
+
+### Follow-ups (out of scope for this commit)
+
+- Remove dead `src/extensions/admin/account/users/sections/AdminProfileSection.js` — unused, overlaps Phase 3's territory.
+- Phase 4: full perm gating across the request file's broader scope (force-verify icons get gated naturally by Phase 3's template, but other admin affordances elsewhere in the codebase still need it).
+- Phase 5 (GroupView/MemberView), Phase 6 (unified security-events feed) — distinct future design passes.
+
+---
+
+Status: **shipped (Phase 3 of multi-phase request)** — file stays in `planning/requests/` until Phases 4-6 land.
