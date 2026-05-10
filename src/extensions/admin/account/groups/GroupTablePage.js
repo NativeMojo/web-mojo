@@ -28,7 +28,11 @@ class GroupTablePage extends TablePage {
 
             defaultQuery: {
                 sort: '-id',
-                is_active: 1,
+                // String 'true' matches the boolean filter's wire format (see
+                // the `is_active` filter below) — keeps the URL and the filter
+                // pill in sync. Backend normalizes 'true' / 1 / true to the
+                // same boolean.
+                is_active: 'true',
             },
 
             // Column definitions
