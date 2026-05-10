@@ -1058,6 +1058,8 @@ table.on('batch:action', ({ action, items, event }) => {
 });
 ```
 
+If your table lives inside a **TablePage subclass**, use [`TablePage.batchAction()`](./TablePage.md#batchaction-options) instead of writing the loop by hand — it handles loading state, toast feedback, per-item execution, `clearSelection()`, and `refresh()` for you.
+
 ---
 
 ## Add Form

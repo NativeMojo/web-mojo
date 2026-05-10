@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | Type | request |
-| Status | planned |
+| Status | done |
 | Date | 2026-05-10 |
 | Priority | high |
 
@@ -599,3 +599,76 @@ Reaffirming the request's out-of-scope list now that the plan is concrete:
 - `GeoLocatedIP.VIEW_CLASS` collision — both `GeoLocatedIPTablePage` and `BlockedIPsTablePage` use `GeoIPView`. Wire the static once on `GeoLocatedIP` and let both pages inherit it.
 
 If any of these turn out to be larger than a small judgment call during build, stop and file a follow-up issue rather than expanding scope here.
+
+## Resolution
+
+Status: **done** · Date: 2026-05-10 · Commits 1–6 of 6 landed on `main`.
+
+### What was implemented
+
+Six small, independently-reviewable commits matching the planned sequence:
+
+| # | SHA | Subject | Files | LOC |
+|---|-----|---------|-------|-----|
+| 1 | `0c16b31` | add TablePage.batchAction() helper | 5 | +1028 |
+| 2 | `018e8bc` | bug fixes across admin TablePages | 12 | +198 / -71 |
+| 3 | `5e3b33f` | adopt Model.{ADD_FORM,EDIT_FORM,VIEW_CLASS} | 43 | +307 / -107 |
+| 4 | `fe5025f` | adopt new TableView features | 32 | +191 / -80 |
+| 5 | `6d41357` | collapse batch handlers via batchAction() | 7 | +34 / -241 |
+| 6 | `3e09e92` | composition outliers + docs/CHANGELOG | 4 | +194 / -6 |
+
+Net: ~93 file edits, ~+1952 / -505 LOC. The big +1028 in commit 1 is mostly the new test file and the planning request itself; the production-code delta is much smaller. Commit 5 is net negative — boilerplate removed.
+
+### Files changed (high-level)
+
+- **Framework primitive (1 file):** `src/core/pages/TablePage.js` — added `batchAction({ field, value, destroy, handler, label, message, confirm })` between `clearSelection()` and `handleFilterEdit()`. Three modes (save / destroy / handler), `Promise.allSettled` for partial-failure safety, count-only toast (no server-error leakage), idempotent clearSelection + refresh.
+- **Models that gained statics (8 files):** `Incident`, `Tickets`, `Email`, `Push`, `Bouncer`, `IPSet`, `AWS` (admin), `Files` (core).
+- **Admin TablePages cleaned up (33 files):** every `*TablePage.js` under `src/extensions/admin/` plus the embedded TableView in `UserDeviceLocationTablePage`. Each lost some combination of `formCreate:` / `formEdit:` / `itemViewClass:` (commit 3), gained `dayRangeFilter` / `groupByDay` / `boolean` filter / `visibility:` / `searchPlaceholder` / `footer_total` (commit 4), and where applicable replaced 2–6 hand-rolled batch handlers with one-liners (commit 5).
+- **Tests (3 new files, 1 updated):** `test/unit/TablePage.batchAction.test.js` (8 cases), `test/unit/admin-tablepages-bugfixes.test.js` (24), `test/unit/admin-model-statics.test.js` (67), and `test/utils/simple-module-loader.js` registering TablePage. Total: 1163 tests pass (up from 1072).
+- **Docs (2 files):** `docs/web-mojo/pages/TablePage.md` — new sections "Canonical pattern: model statics", "When to use `dayRangeFilter` vs. column `daterange` filter", "Embedding a TableView in a non-TablePage", and the `batchAction()` API reference. `CHANGELOG.md` — single rollup entry under "Admin extension · TablePage UX sweep".
+
+Cross-link doc updates landed via the docs-updater agent: `docs/web-mojo/components/TableView.md` got a one-line pointer from "Handling Batch Events" to `TablePage.batchAction()`. `docs/web-mojo/components/ListView.md` got a "Batch actions on a TablePage" callout after the multi-select example. `docs/web-mojo/AGENT.md` needed no change.
+
+### Tests run and results
+
+- `node test/test-runner.js` — full suite, 1163 / 1163 passing, 100 % rate, ~1.8 s. Run after every commit with no failures introduced.
+- `npm run build:lib` — clean build after every commit.
+- `npm run build` — full bundle clean post-final-commit.
+- `git grep` smoke checks: zero `tableOptions.actions` matches, zero `format: 'boolean'` typos in TablePage column configs (the one remaining hit is in `PushDeviceView.js` which extends DataView — `field.format` is supported there per `DataView.js:461`, not a typo), zero private `_onRowView` calls in admin pages.
+
+### Agent findings
+
+- **test-runner:** All 1163 tests pass at 100 % rate, no fixes required.
+- **docs-updater:** Added two cross-links — TableView.md and ListView.md now point readers toward `TablePage.batchAction()` from their respective batch-action discovery surfaces. AGENT.md needed no change.
+- **security-review:** **No security concerns found.** Audited all five vectors I flagged: privilege escalation (auth still backend-enforced; helper is mechanically equivalent to the old loop), `confirm: false` bypass (zero production call sites use it), toast/error leakage (count-only summaries; rejection reasons never accessed), module-level statics (single JS realm, no per-tenant isolation to break), idempotent dual registration (all collisions assign the same class regardless of import order).
+
+### Resolved open questions from the plan
+
+- **`User.PASSWORD_FORM`** — deferred to a follow-up. UserTablePage's hand-rolled password / permissions / invite modals were explicitly out of scope for commit 5 to keep the commit focused on the batch-handler collapse.
+- **`Member.ADD_FORM`** — left as-is. `MemberForms.create` is undefined; `Member.ADD_FORM = MemberForms.create` resolves to undefined and falls through to `Member.EDIT_FORM` per `ListView.getAddFormConfig()`. The page keeps `showAdd: true`. Not changing this behavior was the conservative call.
+- **`EmailDomain.AUDIT_VIEW`** — deferred to a follow-up (part of the larger EmailDomain modal cleanup).
+- **`GeoLocatedIP.VIEW_CLASS` collision** — resolved with idempotent dual registration in both `GeoLocatedIPTablePage.js` and `BlockedIPsTablePage.js`, mirrored by `Log.VIEW_CLASS` in `LogTablePage.js` and `FirewallLogTablePage.js`. Both pages work whether imported via `admin/index.js` or directly. Security review confirmed last-write-wins is safe (always assigns the same class).
+
+### Follow-up requests filed
+
+The plan deferred the heavier modal refactors. Worth filing as a separate request when there's appetite:
+
+- **UserTablePage modal cleanup** — move the password / permissions / invite form configs to `User.PASSWORD_FORM` / `PERMISSIONS_FORM` / `INVITE_FORM` so the page handlers shrink to thin wrappers. Includes deciding whether `MOJOUtils.checkPasswordStrength` lives in the form's `onSubmit` or as a field-level `validator:`.
+- **EmailDomain instance methods** — pull `onActionAudit / Reconcile / Onboard` into instance methods on `EmailDomain`. The audit-result View becomes `EmailDomain.AUDIT_VIEW` or stays a sibling file.
+- **EmailMailbox send-email collapse** — fold the duplicated `onActionSendEmail` and `onActionSendTemplateEmail` into one `_sendEmail(formConfig)` helper, with form configs as `Mailbox.SEND_EMAIL_FORM` / `Mailbox.SEND_TEMPLATE_FORM`.
+- **FileManager context-menu cleanup** — six context actions (`edit-credentials`, `edit-owners`, `clone`, `test-connection`, `check-cors`, `fix-cors`) move to instance methods on `FileManager`; form configs become `FileManager.CREDENTIALS_FORM` / `OWNERS_FORM`.
+- **ShortLink metadata transform** — move `flattenShortLinkMetadata` / `extractShortLinkPayload` to `ShortLink.toForm()` / `fromForm()` so `_handleAdd` / `_handleEdit` shrink.
+- **IPSet country-code transform** — `IPSet.fromCountryCode(code)` static; the page's custom Add becomes a 3-line wrapper.
+- **GeoIP / PhoneNumber lookup forms** — move the inline form configs to `GeoLocatedIP.LOOKUP_FORM` / `PhoneNumber.LOOKUP_FORM`. Post-lookup show-result behavior stays page-level (no new primitive).
+- **`UserDeviceLocationTablePage` extraction** — the embedded TableView could be extracted to a sibling `LoginEventTableView` if a second consumer ever appears. Today the inline config is small enough that extraction would be churn for no payoff.
+
+### How to verify
+
+The acceptance criteria from the plan are all satisfied:
+
+- ✅ `git grep -nE "tableOptions:\\s*\\{[^}]*actions:" src/extensions/admin/` returns nothing.
+- ✅ `git grep -n "format:\\s*'boolean'" src/extensions/admin/` only matches DataView field configs, which support `field.format` natively (`DataView.js:461`).
+- ✅ `git grep -n "tableView\\._onRowView" src/extensions/admin/` returns nothing.
+- ✅ Every admin TablePage either matches the canonical (Collection + columns + features) shape OR has a documented reason not to (custom `onAdd:` / `onItemEdit:` for ShortLink, IPSet, FileTablePage; `Page` parent for JobsTablePage and UserDeviceLocationTablePage).
+- ✅ `TablePage.batchAction()` exists, is documented, is unit-tested, and has 14 production callers across 7 admin pages.
+- ✅ The `LogTablePage` immutable-feed principle is encoded in code (no `selectable`, no `batchActions`) and in docs (Design Decisions section).

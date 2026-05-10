@@ -772,6 +772,8 @@ listView.on('selection:change', ({ selected }) => {
 });
 ```
 
+**Batch actions on a TablePage.** If the list is a `TableView` inside a `TablePage` subclass, reach for [`TablePage.batchAction()`](./TablePage.md#batchaction-options) instead of a manual `getSelectedItems()` loop — it handles loading state, toast feedback, `clearSelection()`, and `refresh()` in one call.
+
 ---
 
 ## Methods
