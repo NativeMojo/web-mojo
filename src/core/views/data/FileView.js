@@ -25,6 +25,7 @@ import View from '@core/View.js';
 import DetailView from '@core/views/data/DetailView.js';
 import DataView from '@core/views/data/DataView.js';
 import TableView from '@core/views/table/TableView.js';
+import MetricCard from '@core/views/data/MetricCard.js';
 import Modal from '@core/views/feedback/Modal.js';
 import dataFormatter from '@core/utils/DataFormatter.js';
 import { File, FileForms } from '@core/models/Files.js';
@@ -666,6 +667,98 @@ class FileSharesSection extends View {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
+// FileOverviewSection — canonical DetailView landing surface
+//
+// Mirrors the round-1 KPIs + flat-row identity card + recent-activity shape
+// every other DetailView consumer leads with (UserView, GroupView,
+// IncidentView, ShortLinkView). Preview / Renditions / Details remain as
+// dedicated sections; the user lands here first.
+// ──────────────────────────────────────────────────────────────────────────
+
+class FileOverviewSection extends View {
+    constructor(options = {}) {
+        super({
+            className: 'file-overview-section',
+            // The Public-URL row uses the `clipboard` formatter which emits a
+            // [data-bs-toggle="tooltip"] copy button.
+            enableTooltips: true,
+            template: `
+                <div class="detail-section-eyebrow">Snapshot</div>
+                <div class="detail-kpi-grid">
+                    <div data-container="file-kpi-size"></div>
+                    <div data-container="file-kpi-type"></div>
+                    <div data-container="file-kpi-status"></div>
+                    <div data-container="file-kpi-uploaded"></div>
+                </div>
+
+                <div class="detail-section-eyebrow">Identity</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Filename</div>
+                    <div class="detail-flat-row-value text-break">{{model.filename|default:'Unnamed file'}}</div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Content type</div>
+                    <div class="detail-flat-row-value"><code>{{model.content_type|default:'unknown'}}</code></div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Uploaded by</div>
+                    <div class="detail-flat-row-value">{{model.user.display_name|default:'—'}}</div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Storage</div>
+                    <div class="detail-flat-row-value">{{model.file_manager.name|default:'—'}}</div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Visibility</div>
+                    <div class="detail-flat-row-value">
+                        {{#model.is_public|bool}}<span class="badge bg-success"><i class="bi bi-unlock me-1"></i>Public</span>{{/model.is_public|bool}}
+                        {{^model.is_public|bool}}<span class="badge bg-secondary"><i class="bi bi-lock me-1"></i>Private</span>{{/model.is_public|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Public URL</div>
+                    <div class="detail-flat-row-value detail-flat-row-value--url">
+                        {{#hasUrl|bool}}{{{model.url|clipboard}}}{{/hasUrl|bool}}
+                        {{^hasUrl|bool}}<span class="text-secondary">—</span>{{/hasUrl|bool}}
+                    </div>
+                </div>
+            `,
+            ...options
+        });
+    }
+
+    get hasUrl() { return !!this.model?.get?.('url'); }
+
+    async onInit() {
+        const m = this.model;
+        this.kpiSize = new MetricCard({
+            containerId: 'file-kpi-size',
+            label: 'File size',
+            value: dataFormatter.apply('filesize', m.get('file_size')) || '—'
+        });
+        this.kpiType = new MetricCard({
+            containerId: 'file-kpi-type',
+            label: 'Type',
+            value: _capitalize(m.get('category') || 'other')
+        });
+        this.kpiStatus = new MetricCard({
+            containerId: 'file-kpi-status',
+            label: 'Status',
+            value: _capitalize(m.get('upload_status') || '—')
+        });
+        const created = m.get('created');
+        this.kpiUploaded = new MetricCard({
+            containerId: 'file-kpi-uploaded',
+            label: 'Uploaded',
+            value: created ? (dataFormatter.apply('relative', created) || '—') : '—'
+        });
+        [this.kpiSize, this.kpiType, this.kpiStatus, this.kpiUploaded]
+            .forEach(c => this.addChild(c));
+    }
+}
+
+
+// ──────────────────────────────────────────────────────────────────────────
 // FileView (main component)
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -675,6 +768,8 @@ class FileView extends DetailView {
         const categoryConfig = getCategoryConfig(model);
 
         // ── Section views (built before super() so SideNavView mounts them) ──
+
+        const overviewSection = new FileOverviewSection({ model });
 
         const previewSection = new FilePreviewSection({ model, categoryConfig });
 
@@ -705,6 +800,7 @@ class FileView extends DetailView {
         const renditionsSection = new FileRenditionsSection({ model });
 
         const sections = [
+            { key: 'overview',   label: 'Overview',   icon: 'bi-grid-1x2',       view: overviewSection },
             { key: 'preview',    label: 'Preview',    icon: categoryConfig.icon, view: previewSection },
             { key: 'details',    label: 'Details',    icon: 'bi-info-circle',    view: detailsSection },
             { key: 'renditions', label: 'Renditions', icon: 'bi-layers',         view: renditionsSection }
@@ -789,13 +885,14 @@ class FileView extends DetailView {
                 contextMenu: { items: contextItems }
             },
             sections,
-            activeSection: 'preview',
+            activeSection: 'overview',
             navWidth: 200,
             minWidth: 500,
             contentPadding: '1.25rem 1.5rem'
         });
 
         // Stash references for action handlers + cross-section wiring
+        this.overviewSection = overviewSection;
         this.previewSection = previewSection;
         this.detailsSection = detailsSection;
         this.renditionsSection = renditionsSection;
@@ -1096,3 +1193,10 @@ File.VIEW_CLASS = FileView;
 File.MODEL_REF = 'fileman.File';
 
 export default FileView;
+export {
+    FileView,
+    FileOverviewSection,
+    FilePreviewSection,
+    FileRenditionsSection,
+    FileSharesSection
+};
