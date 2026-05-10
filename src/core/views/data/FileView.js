@@ -22,13 +22,29 @@
  */
 
 import View from '@core/View.js';
-import SideNavView from '@core/views/navigation/SideNavView.js';
+import DetailView from '@core/views/data/DetailView.js';
 import DataView from '@core/views/data/DataView.js';
 import TableView from '@core/views/table/TableView.js';
-import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import Modal from '@core/views/feedback/Modal.js';
+import dataFormatter from '@core/utils/DataFormatter.js';
 import { File, FileForms } from '@core/models/Files.js';
 import { ShortLinkList } from '@core/models/ShortLink.js';
+
+// CATEGORY_CONFIG.badgeClass → DetailHeaderView iconTone mapping. Anything
+// not in here renders without tone tinting (the regular dh-icon background).
+const CATEGORY_TONE = {
+    'bg-info':    'info',
+    'bg-primary': 'primary',
+    'bg-danger':  'danger',
+    'bg-success': 'success',
+    'bg-warning': 'warning'
+};
+
+function _capitalize(s) {
+    if (!s) return '';
+    const str = String(s);
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
 
 // ──────────────────────────────────────────────────────────────────────────
 // Category → preview config
@@ -653,64 +669,17 @@ class FileSharesSection extends View {
 // FileView (main component)
 // ──────────────────────────────────────────────────────────────────────────
 
-class FileView extends View {
+class FileView extends DetailView {
     constructor(options = {}) {
-        super({
-            className: 'file-view',
-            ...options
-        });
+        const model = options.model || new File(options.data || {});
+        const categoryConfig = getCategoryConfig(model);
 
-        this.model = options.model || new File(options.data || {});
-        this.sideNavView = null;
-        this.contextMenu = null;
+        // ── Section views (built before super() so SideNavView mounts them) ──
 
-        // The SideNavView uses flex + overflow-y: auto on its content panel,
-        // which needs a *bounded* parent height to scroll correctly. Without
-        // a max-height the nav content stretches the dialog and overflows
-        // past its own bounds. `min-height` keeps short content from looking
-        // cramped; `max-height: 70vh` keeps tall content scrollable inside
-        // the dialog on any viewport.
-        this.template = `
-            <div class="file-view-container d-flex flex-column" style="min-height: 0;">
-                <!-- Header + Context Menu -->
-                <div class="d-flex justify-content-between align-items-start mb-3 flex-shrink-0">
-                    <div data-container="file-header" style="flex: 1; min-width: 0;"></div>
-                    <div data-container="file-context-menu" class="ms-3 flex-shrink-0"></div>
-                </div>
-                <!-- Section body -->
-                <div data-container="file-sidenav" class="flex-grow-1" style="min-height: 400px; max-height: 70vh;"></div>
-            </div>
-        `;
-    }
+        const previewSection = new FilePreviewSection({ model, categoryConfig });
 
-    _getCategoryConfig() {
-        return getCategoryConfig(this.model);
-    }
-
-    async onInit() {
-        const categoryConfig = this._getCategoryConfig();
-
-        // ── Header ──────────────────────────────────
-        this.header = new View({
-            containerId: 'file-header',
-            template: this._buildHeaderTemplate(categoryConfig)
-        });
-        this.header.setModel(this.model);
-        this.addChild(this.header);
-
-        // ── Section views ───────────────────────────
-        const sections = [];
-
-        // Preview — always shown, default active
-        const previewView = new FilePreviewSection({
-            model: this.model,
-            categoryConfig
-        });
-        sections.push({ key: 'preview', label: 'Preview', icon: categoryConfig.icon, view: previewView });
-
-        // Details — always shown
-        const detailsView = new DataView({
-            model: this.model,
+        const detailsSection = new DataView({
+            model,
             className: 'p-3',
             showEmptyValues: true,
             emptyValueText: '—',
@@ -732,24 +701,25 @@ class FileView extends View {
                 { name: 'is_public', label: 'Is Public', format: 'boolean' }
             ]
         });
-        sections.push({ key: 'details', label: 'Details', icon: 'bi-info-circle', view: detailsView });
 
-        // Renditions — always shown; the section itself decides whether to
-        // render the table, a "processing" placeholder, or a "upload pending"
-        // placeholder based on current model state. Backend renditions are
-        // async, so even completed files may start with an empty map.
-        const renditionsView = new FileRenditionsSection({ model: this.model });
-        sections.push({ key: 'renditions', label: 'Renditions', icon: 'bi-layers', view: renditionsView });
+        const renditionsSection = new FileRenditionsSection({ model });
+
+        const sections = [
+            { key: 'preview',    label: 'Preview',    icon: categoryConfig.icon, view: previewSection },
+            { key: 'details',    label: 'Details',    icon: 'bi-info-circle',    view: detailsSection },
+            { key: 'renditions', label: 'Renditions', icon: 'bi-layers',         view: renditionsSection }
+        ];
 
         // Shares — list of shortlinks (source=fileman-share) for this file.
         // Hidden for unsaved models — the section needs an `id` to scope.
-        if (this.model.get('id')) {
-            this.sharesSection = new FileSharesSection({ model: this.model });
-            sections.push({ key: 'shares', label: 'Shares', icon: 'bi-link-45deg', view: this.sharesSection });
+        let sharesSection = null;
+        if (model.get('id')) {
+            sharesSection = new FileSharesSection({ model });
+            sections.push({ key: 'shares', label: 'Shares', icon: 'bi-link-45deg', view: sharesSection });
         }
 
         // Metadata — only when backend returned a non-empty metadata object
-        const metadata = this.model.get('metadata');
+        const metadata = model.get('metadata');
         if (metadata && typeof metadata === 'object' && Object.keys(metadata).length) {
             const metadataView = new DataView({
                 data: metadata,
@@ -760,42 +730,76 @@ class FileView extends View {
             sections.push({ key: 'metadata', label: 'Metadata', icon: 'bi-braces', view: metadataView });
         }
 
-        // ── SideNavView ─────────────────────────────
-        this.sideNavView = new SideNavView({
-            containerId: 'file-sidenav',
+        // ── Header config ───────────────────────────────────
+
+        // Thumbnail — render real preview if the model exposes one; otherwise
+        // fall back to the category Bootstrap icon (DetailView default).
+        const thumbnailUrl = (typeof model.getThumbnailUrl === 'function') ? model.getThumbnailUrl() : null;
+        const iconHtml = thumbnailUrl
+            ? `<img src="${escapeAttr(thumbnailUrl)}" alt="">`
+            : null;
+        const iconTone = CATEGORY_TONE[categoryConfig.badgeClass] || null;
+
+        const chips = [
+            { icon: 'bi-hdd', text: m => dataFormatter.apply('filesize', m.get('file_size')), variant: 'light',
+              when: m => !!m.get('file_size') },
+            { text: m => m.get('content_type') || null, variant: 'light',
+              when: m => !!m.get('content_type') },
+            { text: m => _capitalize(m.get('category') || 'other'),
+              variant: (categoryConfig.badgeClass || 'bg-secondary').replace(/^bg-/, '') },
+            { text: m => _capitalize(m.get('upload_status') || ''), variant: 'secondary',
+              when: m => !!m.get('upload_status') },
+            { icon: 'bi-unlock', text: 'Public', variant: 'success',
+              when: m => !!m.get('is_public') },
+            { icon: 'bi-lock', text: 'Private', variant: 'secondary',
+              when: m => !m.get('is_public') }
+        ];
+
+        const contextItems = [
+            { label: 'View',                action: 'view-file',             icon: 'bi-eye' },
+            { label: 'Download',            action: 'download-file',         icon: 'bi-download' },
+            { label: 'Copy URL',            action: 'copy-url',              icon: 'bi-clipboard' },
+            { label: 'Share Link…',         action: 'share-file',            icon: 'bi-link-45deg' },
+            { type: 'divider' },
+            { label: 'Edit Details',        action: 'edit-file',             icon: 'bi-pencil' },
+            model.get('is_public')
+                ? { label: 'Make Private',  action: 'make-private',          icon: 'bi-lock' }
+                : { label: 'Make Public',   action: 'make-public',           icon: 'bi-unlock' },
+            { label: 'Regenerate Previews', action: 'regenerate-renditions', icon: 'bi-arrow-repeat' },
+            { type: 'divider' },
+            { label: 'Delete File',         action: 'delete-file',           icon: 'bi-trash', danger: true }
+        ];
+
+        super({
+            className: 'file-view',
+            ...options,
+            model,
+            header: {
+                icon: categoryConfig.icon,
+                iconTone,
+                iconHtml,
+                titleFn: m => m.get('filename') || 'Unnamed file',
+                subtitleFn: m => {
+                    const created = m.get('created');
+                    if (!created) return '';
+                    const fmt = dataFormatter.apply('datetime', dataFormatter.apply('epoch', created));
+                    return fmt ? `Uploaded ${fmt}` : '';
+                },
+                chips,
+                contextMenu: { items: contextItems }
+            },
+            sections,
             activeSection: 'preview',
             navWidth: 200,
-            contentPadding: '1.25rem 1.5rem',
-            enableResponsive: true,
             minWidth: 500,
-            sections
+            contentPadding: '1.25rem 1.5rem'
         });
-        this.addChild(this.sideNavView);
 
-        // ── Context Menu ────────────────────────────
-        this.contextMenu = new ContextMenu({
-            containerId: 'file-context-menu',
-            className: 'context-menu-view header-menu-absolute',
-            context: this.model,
-            config: {
-                icon: 'bi-three-dots-vertical',
-                items: [
-                    { label: 'View', action: 'view-file', icon: 'bi-eye' },
-                    { label: 'Download', action: 'download-file', icon: 'bi-download' },
-                    { label: 'Copy URL', action: 'copy-url', icon: 'bi-clipboard' },
-                    { label: 'Share Link…', action: 'share-file', icon: 'bi-link-45deg' },
-                    { type: 'divider' },
-                    { label: 'Edit Details', action: 'edit-file', icon: 'bi-pencil' },
-                    this.model.get('is_public')
-                        ? { label: 'Make Private', action: 'make-private', icon: 'bi-lock' }
-                        : { label: 'Make Public', action: 'make-public', icon: 'bi-unlock' },
-                    { label: 'Regenerate Previews', action: 'regenerate-renditions', icon: 'bi-arrow-repeat' },
-                    { type: 'divider' },
-                    { label: 'Delete File', action: 'delete-file', icon: 'bi-trash', danger: true }
-                ]
-            }
-        });
-        this.addChild(this.contextMenu);
+        // Stash references for action handlers + cross-section wiring
+        this.previewSection = previewSection;
+        this.detailsSection = detailsSection;
+        this.renditionsSection = renditionsSection;
+        this.sharesSection = sharesSection;
 
         // No auto-poll: a `completed` upload means renditions are done. If the
         // user explicitly clicks "Regenerate", _maybeStartRenditionsPoll is
@@ -803,52 +807,12 @@ class FileView extends View {
         // appear without a manual refresh.
     }
 
-    async onBeforeDestroy() {
-        this._stopRenditionsPoll();
+    _getCategoryConfig() {
+        return getCategoryConfig(this.model);
     }
 
-    _buildHeaderTemplate(categoryConfig) {
-        const thumbnailUrl = this.model.getThumbnailUrl && this.model.getThumbnailUrl();
-        const thumbHtml = thumbnailUrl
-            ? `<img src="${escapeAttr(thumbnailUrl)}" alt="thumbnail" class="rounded" style="width: 80px; height: 80px; object-fit: cover;">`
-            : `<div class="rounded bg-light d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                   <i class="bi ${categoryConfig.icon} text-secondary" style="font-size: 2.25rem;"></i>
-               </div>`;
-
-        return `
-            <div class="d-flex align-items-center gap-3">
-                <div class="file-view-thumb flex-shrink-0">
-                    ${thumbHtml}
-                </div>
-                <div class="flex-grow-1" style="min-width:0;">
-                    <h3 class="mb-1 text-break">{{model.filename|default('Unnamed file')}}</h3>
-                    <div class="text-muted small d-flex flex-wrap align-items-center gap-2">
-                        <span><i class="bi bi-hdd me-1"></i>{{model.file_size|filesize}}</span>
-                        <span class="text-muted">·</span>
-                        <span>{{model.content_type|default('unknown')}}</span>
-                        <span class="text-muted">·</span>
-                        <span class="badge ${categoryConfig.badgeClass}">{{model.category|default('other')|capitalize}}</span>
-                        {{#model.upload_status|bool}}
-                            <span class="text-muted">·</span>
-                            <span class="badge {{model.upload_status|badge}}">{{model.upload_status|capitalize}}</span>
-                        {{/model.upload_status|bool}}
-                        {{#model.is_public|bool}}
-                            <span class="text-muted">·</span>
-                            <span class="badge bg-success"><i class="bi bi-unlock me-1"></i>Public</span>
-                        {{/model.is_public|bool}}
-                        {{^model.is_public|bool}}
-                            <span class="text-muted">·</span>
-                            <span class="badge bg-secondary"><i class="bi bi-lock me-1"></i>Private</span>
-                        {{/model.is_public|bool}}
-                    </div>
-                    {{#model.created|bool}}
-                        <div class="text-muted small mt-1">
-                            Uploaded {{model.created|epoch|datetime}}
-                        </div>
-                    {{/model.created|bool}}
-                </div>
-            </div>
-        `;
+    async onBeforeDestroy() {
+        this._stopRenditionsPoll();
     }
 
     // ── Action handlers ─────────────────────────────
