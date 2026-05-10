@@ -138,26 +138,6 @@ if (!dataFormatter.formatters?.has?.('leveltone')) {
     });
 }
 
-function _deviceLabel(deviceInfo) {
-    const dev = deviceInfo?.device || {};
-    const ua  = deviceInfo?.user_agent || {};
-    const os  = deviceInfo?.os || {};
-    const browser = ua.family ? `${ua.family} ${ua.major || ''}`.trim() : '';
-    const osName  = os.family ? `${os.family} ${os.major || ''}`.trim() : '';
-    const devName = `${dev.brand || ''} ${dev.family || ''}`.trim();
-    return [browser || devName, osName].filter(Boolean).join(' · ') || '—';
-}
-
-function _deviceIcon(deviceInfo) {
-    const dev = deviceInfo?.device || {};
-    const os  = deviceInfo?.os || {};
-    const isMobile = ['iPhone', 'Android'].some(m =>
-        (dev.family || '').includes(m) || (os.family || '').includes(m)
-    );
-    return isMobile ? 'bi-phone' : 'bi-laptop';
-}
-
-
 // ── Overview section ───────────────────────────────────────
 
 class UserOverviewSection extends View {
@@ -617,12 +597,14 @@ class UserPermissionsSection extends View {
 }
 
 
-// ── Devices section (single TableView, browser + push merged) ──
+// ── Devices section (TabView · Browser / Push) ─────────────────
 
 /**
- * Backed by a synthetic in-memory list rebuilt from the two shared
- * collections. `_kindFilter` (column filter) trims rows in place; the
- * "All / Browser / Push" UI lives in TableView's column-filter dropdown.
+ * Two-tab layout: "Browser" and "Push" each render their own ListView
+ * against the corresponding collection. Real Collections so ListView's
+ * built-in refresh / pagination / search work natively — no synthetic
+ * array, no custom toolbar buttons. Click a row → open DeviceView /
+ * PushDeviceView in a Modal.detail.
  */
 class UserDevicesSection extends View {
     constructor(options = {}) {
@@ -631,147 +613,78 @@ class UserDevicesSection extends View {
             className: 'user-devices-section',
             template: `
                 <div class="detail-section-eyebrow">Devices &amp; sessions</div>
-                <div data-container="user-devices-table"></div>
+                <div data-container="user-devices-tabs"></div>
             `,
             ...rest
         });
         this.devicesCollection     = devicesCollection;
         this.pushDevicesCollection = pushDevicesCollection;
-        this.kindFilter = 'all';   // all | browser | push
     }
 
     async onInit() {
-        // Local-only ListView — synthetic-array collection rebuilt
-        // whenever the source collections fetch. Kind filter lives in the
-        // toolbar (All / Browser / Push). Each row is a device card:
-        // icon · label · last-seen · kind badge.
-        this.tableView = new ListView({
-            containerId: 'user-devices-table',
-            collection: this._buildSyntheticArray(),
-            paginated: false,
-            // Synthetic rows aren't Model instances; route clicks through
-            // a hand-dispatch that looks the real model up from the source
-            // collection and opens DeviceView / PushDeviceView accordingly.
-            onItemClick: (rowModel) => this._openDeviceRow(rowModel),
+        this.browserList = new ListView({
+            collection: this.devicesCollection,
+            paginated: true,
+            paginationMode: 'pages',
+            pageSize: 5,
+            searchable: true,
+            searchPlaceholder: 'Search browser devices…',
+            onItemClick: (model) => Modal.detail(new DeviceView({ model })),
+            emptyMessage: 'No browser devices on file.',
             itemTemplate: `
                 <div class="user-device-row" role="button">
-                    <div class="user-device-icon"><i class="bi {{model.deviceIcon}}"></i></div>
+                    <div class="user-device-icon"><i class="bi bi-laptop"></i></div>
                     <div class="user-device-info">
-                        <div class="user-device-label">{{model.label}}</div>
+                        <div class="user-device-label">{{model.device_info.user_agent.family|default:'Unknown browser'}} {{model.device_info.user_agent.major}} · {{model.device_info.os.family|default:'Unknown OS'}} {{model.device_info.os.major}}</div>
                         <div class="user-device-meta">
                             {{model.last_seen|relative|default:'never'}}
-                            {{#model.identifier}} · <code>{{model.identifier|truncate_middle(20)}}</code>{{/model.identifier}}
+                            {{#model.duid}} · <code>{{model.duid|truncate_middle(20)}}</code>{{/model.duid}}
                         </div>
                     </div>
-                    {{#model.isPush|bool}}<span class="badge text-bg-primary"><i class="bi bi-bell me-1"></i>Push</span>{{/model.isPush|bool}}
-                    {{^model.isPush|bool}}<span class="badge text-bg-info">Browser</span>{{/model.isPush|bool}}
+                    <span class="badge text-bg-info">Browser</span>
                 </div>
-            `,
-            emptyMessage: 'No devices on file for this user.',
-            toolbarButtons: [
-                { label: 'All',     icon: 'bi bi-list-ul',         handler: () => this._setKind('all') },
-                { label: 'Browser', icon: 'bi bi-laptop',          handler: () => this._setKind('browser') },
-                { label: 'Push',    icon: 'bi bi-bell',            handler: () => this._setKind('push') },
-                { label: 'Refresh', icon: 'bi bi-arrow-clockwise', handler: () => this._refresh() }
-            ]
+            `
         });
-        this.addChild(this.tableView);
-    }
-
-    async onAfterRender() {
-        await super.onAfterRender();
-        const wire = (col) => {
-            if (col && !col._userDevicesWired) {
-                col.on('fetch:success', () => this._rebuildTable(), this);
-                col._userDevicesWired = true;
-            }
+        this.browserList.onTabActivated = async () => {
+            await this.devicesCollection?.fetch?.().catch(() => {});
         };
-        wire(this.devicesCollection);
-        wire(this.pushDevicesCollection);
-    }
 
-    _setKind(kind) {
-        if (kind === this.kindFilter) return;
-        this.kindFilter = kind;
-        this._rebuildTable();
-    }
+        this.pushList = new ListView({
+            collection: this.pushDevicesCollection,
+            paginated: true,
+            paginationMode: 'pages',
+            pageSize: 5,
+            searchable: true,
+            searchPlaceholder: 'Search push devices…',
+            onItemClick: (model) => Modal.detail(new PushDeviceView({ model })),
+            emptyMessage: 'No push devices on file.',
+            itemTemplate: `
+                <div class="user-device-row" role="button">
+                    <div class="user-device-icon"><i class="bi bi-bell"></i></div>
+                    <div class="user-device-info">
+                        <div class="user-device-label">{{model.device_info.device.family|default:'Push device'}}{{#model.device_info.os.family}} · {{model.device_info.os.family}} {{model.device_info.os.major}}{{/model.device_info.os.family}}</div>
+                        <div class="user-device-meta">
+                            {{model.last_seen|relative|default:'never'}}
+                            {{#model.duid}} · <code>{{model.duid|truncate_middle(20)}}</code>{{/model.duid}}
+                        </div>
+                    </div>
+                    <span class="badge text-bg-primary"><i class="bi bi-bell me-1"></i>Push</span>
+                </div>
+            `
+        });
+        this.pushList.onTabActivated = async () => {
+            await this.pushDevicesCollection?.fetch?.().catch(() => {});
+        };
 
-    /**
-     * Open the proper detail view for a synthetic row.
-     * `row.id` is `b:<id>` for browser devices and `p:<id>` for push devices.
-     * Look the real model up from the source collection — synthetic rows
-     * aren't Model instances so TableView's clickAction: 'view' can't
-     * resolve them on its own.
-     */
-    async _openDeviceRow(rowModel) {
-        const rawId = rowModel?.id ?? rowModel?.get?.('id');
-        if (!rawId || typeof rawId !== 'string') return;
-        const colon = rawId.indexOf(':');
-        if (colon < 0) return;
-        const kind = rawId.slice(0, colon);
-        const realId = rawId.slice(colon + 1);
-
-        if (kind === 'b') {
-            const model = this.devicesCollection?.models?.find(d =>
-                String(d.get('id') ?? d.get('duid') ?? d.cid) === String(realId)
-            );
-            if (model) await Modal.detail(new DeviceView({ model }));
-        } else if (kind === 'p') {
-            const model = this.pushDevicesCollection?.models?.find(d =>
-                String(d.get('id') ?? d.get('duid') ?? d.cid) === String(realId)
-            );
-            if (model) await Modal.detail(new PushDeviceView({ model }));
-        }
-    }
-
-    async _refresh() {
-        await Promise.all([
-            this.devicesCollection?.fetch?.().catch(() => {}),
-            this.pushDevicesCollection?.fetch?.().catch(() => {})
-        ]);
-        this._rebuildTable();
-    }
-
-    _rebuildTable() {
-        if (!this.tableView) return;
-        const rows = this._buildSyntheticArray();
-        this.tableView.collection = rows;
-        if (this.tableView.isMounted()) this.tableView.render().catch(() => {});
-    }
-
-    _buildSyntheticArray() {
-        const out = [];
-        if (this.kindFilter === 'all' || this.kindFilter === 'browser') {
-            for (const d of this.devicesCollection?.models || []) {
-                const info = d.get('device_info');
-                out.push({
-                    id: `b:${d.get('id') || d.get('duid') || d.cid}`,
-                    kind: 'browser',
-                    isPush: false,
-                    deviceIcon: _deviceIcon(info),
-                    label: _deviceLabel(info),
-                    identifier: d.get('duid') || '',
-                    last_seen: d.get('last_seen'),
-                    signals: 'trusted'
-                });
-            }
-        }
-        if (this.kindFilter === 'all' || this.kindFilter === 'push') {
-            for (const d of this.pushDevicesCollection?.models || []) {
-                const info = d.get('device_info');
-                out.push({
-                    id: `p:${d.get('id') || d.get('duid') || d.cid}`,
-                    kind: 'push',
-                    isPush: true,
-                    deviceIcon: 'bi-bell',
-                    label: _deviceLabel(info),
-                    identifier: d.get('duid') || '',
-                    last_seen: d.get('last_seen'),
-                    signals: 'trusted'
-                });
-            }
-        }
-        return out;
+        this.tabView = new TabView({
+            containerId: 'user-devices-tabs',
+            tabs: {
+                'Browser': this.browserList,
+                'Push':    this.pushList
+            },
+            activeTab: 'Browser'
+        });
+        this.addChild(this.tabView);
     }
 }
 
