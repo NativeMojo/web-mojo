@@ -91,6 +91,14 @@ See §"Phase 3 — REVISED" below for the simplified plan.
 - Throttle badge: fire-and-forget `GET /api/auth/manage/throttle?user_id=N&key=login` on view open; red "Login locked Xs" chip when `retry_after_seconds > 0`. New `onActionClearRateLimit` handler + kebab item.
 - Follow-up fix: defensive numeric type-guard on `retry_after_seconds` before render (Number() + isFinite + Math.floor).
 
+**Phase 5** — GroupView + MemberView spec alignment (commit `b8e6873`)
+- New `chip.action` field on `DetailView` chips. Click-through chips render as `<button>` (visually identical Bootstrap badge); events flow via the standard `data-action` / `onActionKebabName` pipeline. Chips without `action` keep the static-span markup (no regression for existing consumers).
+- UserView header gets a clickable org chip (`bi-buildings`) wired to `onActionViewOrg` — opens the user's `org` Group via `Modal.detail`.
+- GroupView Identity section adds `auth_domain` and `short_name` rows under Settings; new `onActionEditAuthDomain` / `onActionEditShortName` handlers.
+- GroupView uses kind-aware copy via a new `_kindNoun()` helper. Modal titles, kebab labels, and confirmations adapt: a `kind:'merchant'` group reads "Edit Merchant" / "Add Sub-Merchant" / "Activate Merchant" / "Delete Merchant"; falls back to "Group" when `kind` is unset.
+- GroupView adopts Phase 4's admin-tier gating pattern with two perm tiers — `['groups', 'manage_groups']` for routine edits and strict `['manage_groups']` for destructive `state-toggle` / `delete-group` (matches backend tightening per spec line 214). Header `is_active` toggle hidden for callers without `manage_groups`.
+- MemberView's Permissions section splits into Group permissions (editable, autosave — same FormView as today) + System permissions (read-only display of `member.user.permissions`). Empty-state message renders when the member graph doesn't expose system perms.
+
 **Plus from round-2** — moved adjacent surfaces forward (visually, not spec-wise):
 - UserView's Audit / Devices / Locations / Groups TableViews → ListView with `paginationMode: 'pages'`, `pageSize: 5`, `clickAction: 'view'`, `viewDialogOptions: { header: false, noBodyPadding: true, buttons: [] }`
 - Day-grouped headers on chronological feeds via the new `groupByDay('created')` primitive (`@core/views/list/grouping.js`)
@@ -1026,4 +1034,48 @@ Bring GroupView and MemberView in line with the spec's "Group quirks" (line 280)
 
 ---
 
-Status: **planned** — ready to build.
+Status: **shipped** — see Resolution below.
+
+---
+
+## Resolution — Phase 5 (2026-05-10, commit `b8e6873`)
+
+**Status: shipped.** Phase 6 (unified `/api/account/security-events` audit feed) remains pending; the request stays in `planning/requests/` until it lands.
+
+### Files changed
+
+- `src/core/views/data/DetailView.js` — `_resolveChips` carries `action` field through; `_buildTemplate` renders chips with `action` as `<button class="badge bg-${variant} dh-chip-action border-0" data-action="...">` instead of `<span>`. Click events flow through the standard `data-action` / `onActionKebabName` pipeline. Visually identical Bootstrap badge classes. ~13 lines.
+- `src/extensions/admin/account/users/UserView.js` — direct `Group` import added; new clickable org chip in the `chips` array; `onActionViewOrg` handler that fetches the org and opens it via `Modal.detail`. ~40 lines.
+- `src/extensions/admin/account/groups/GroupView.js` — biggest piece (~125 lines):
+  - `GroupIdentitySection` template gains `auth_domain` + `short_name` rows under "Settings"; `onActionEditAuthDomain` and `onActionEditShortName` handlers.
+  - New `_kindNoun()` method on the GroupView class (returns the localized kind label or `'Group'` fallback). Applied in `onActionEditGroup`, `onActionAddChildGroup`, `onActionStateToggle`, `onActionDeleteGroup` modal titles and confirmations; kebab labels built from `kindNoun` at construction.
+  - New class-level `isAdminCaller` (`groups` / `manage_groups`) and `isAdminCallerDestructive` (strict `manage_groups`) getters. Two perm constants — `GROUP_ADMIN_PERMS` and `GROUP_DESTRUCTIVE_PERMS` — tag the kebab items so `ModalView.filterContextMenuItems` filters them.
+  - `_buildHeaderAux` extended to take `canToggleActive`; toggle hidden for callers without `manage_groups`.
+- `src/extensions/admin/account/users/MemberView.js` — `MemberPermissionsSection` template + `onInit` rewritten to mount two child sub-views: Group perms (existing FormView, autosave, `containerId: 'member-perms-group'`) + System perms (read-only `View` mounted at `containerId: 'member-perms-system'`, reads `member.user.permissions` via `Object.defineProperty`-installed getters, renders flat-row markup with disabled switches; empty-state message when the user graph doesn't expose perms). ~65 lines.
+- `planning/requests/admin-users-spec-alignment.md` — Phase 5 plan + this resolution.
+- `CHANGELOG.md` — Phase 5 entry was committed earlier in `bd617e3` alongside the unrelated ListView grouping-helpers feature.
+
+### Tests run
+
+- `npm run lint` — pre-existing errors in unrelated `src/core/` files; no findings in touched files.
+- `npm run test:unit` — 1054/1054 passed.
+- Browser preview verification (admin caller):
+  - GroupView Identity section shows 14 rows including the new "Auth domain" and "Short name".
+  - GroupView kebab on a `kind:'merchant'` group shows "Edit Merchant", "Add Sub-Merchant", "Activate Merchant", "Delete Merchant" — kind-aware copy working.
+  - No console errors.
+  - Org chip and MemberView system-perms panel not visually verified — mock backend lacks `org` field on users and has no Member records — both code paths are isolated, unit-clean, and have empty-state guards.
+- test-runner agent: `npm test` full suite — 1196/1196 passed, no regressions.
+
+### Agent findings
+
+- **test-runner**: 1196/1196 pass, no regressions.
+- **docs-updater**: updated `docs/web-mojo/components/DetailView.md` Chips section to document the new `chip.action` field with an inline example and a paragraph on the `<button>` vs `<span>` rendering difference + no-regression guarantee.
+- **security-review**: no concerns. `escapeHtml` discipline consistent across all chip + kebab + permission key paths; permission gates follow the Phase 4 pattern; no new injection vectors, credential leaks, or auth bypasses.
+
+### Follow-ups (out of scope)
+
+- **Phase 6**: unified `/api/account/security-events` audit feed in UserView's Audit tab.
+- **Multi-level parent breadcrumb** on GroupView — backend doesn't expose ancestors in a single graph; client-side walking via repeated REST calls was deferred. File a backend graph-extension request if breadcrumb becomes a real need.
+- **`MEMBER_PERMS_PROTECTION` per-perm grant gating** — no clear backend endpoint; defer until backend ships one.
+- **Dead `sections/AdminProfileSection.js` cleanup** — follow-up task.
+- **GroupView throttle badge** — Group-level lockouts aren't a backend concept per spec line 318; not needed.
