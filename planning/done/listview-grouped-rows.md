@@ -1,8 +1,9 @@
 ---
-status: planned
+status: done
 type: request
 scope: src/core/views/list · src/core/css
 created: 2026-05-09
+resolved: 2026-05-09
 related: detailview-audit-round-2.md (R2 — UserView Logins timeline day-grouping); listview-grouping-helpers.md (deferred follow-on helpers)
 ---
 
@@ -263,3 +264,47 @@ Manual smoke test in the example portal: drop a temporary `...groupByDay('create
 - Updating UserView's Logins ListView to use the new primitive — that's the first consumer, addressed by reopening [`detailview-audit-round-2.md`](detailview-audit-round-2.md) R2 once this lands.
 - Migrating `AssistantConversationListView._groupByDate` to `groupByDay` — second-consumer migration, file separately.
 - Additional helpers (`groupByField`, `groupByMonth`, `groupByYear`, `groupByLetter`, `groupByRange`, `groupByBoolean`) — tracked in `listview-grouping-helpers.md`.
+
+## Resolution
+
+**Implemented:** opt-in `groupBy` primitive on `ListView` (inherited by `TableView`) with three-layer label pipeline (`groupBy` → `groupHeaderLabel` → `groupHeaderTemplate`), TableView-aware `<tr><th colspan="N">` defaults, and a `groupByDay` built-in helper for chronological feeds. Plus a dedicated portal example and a deferred follow-on request file for additional helpers.
+
+### Files changed
+
+**New:**
+- `src/core/views/list/ListGroupHeaderView.js` — extends `View` directly (not `ListViewItem`) so headers structurally cannot fire `item:click` / `row:click`.
+- `src/core/views/list/grouping.js` — exports `groupByDay(fieldOrAccessor)` returning `{ groupBy, groupHeaderLabel }`. Default export is the helper bag for test-loader compatibility.
+- `examples/portal/examples/components/ListView/ListViewGroupedExample.js` — runnable demo of both shapes.
+- `planning/requests/listview-grouping-helpers.md` — deferred follow-on for `groupByField` / `groupByMonth` / `groupByYear` / `groupByLetter` / `groupByRange` / `groupByBoolean`.
+
+**Modified:**
+- `src/core/views/list/ListView.js` — `groupBy` / `groupHeaderTemplate` / `groupHeaderLabel` / `groupHeaderClass` constructor opts; `_buildGroupHeaders`, `_rebuildGroupHeaders`, `_createGroupHeaderView`, `_groupHeaderViewOptions`, `_defaultGroupHeaderTemplate`. Hooks into `_buildItems`, `_renderChildren` (interleave), `_clearItems` (teardown), `_onModelsAdded` (Show More rebuild).
+- `src/core/views/table/TableView.js` — overrides `_defaultGroupHeaderTemplate` to emit `<th colspan="{{colspan}}">` and `_groupHeaderViewOptions` to set `tagName: 'tr'` + `colspan = data + selection + actions cols (clamped >=1)`.
+- `src/core/css/list-view.css` — `.list-group-header` (visual list) + `.list-group-header-row` / `.list-group-header-cell` (table). Token-based, dark theme automatic. `pointer-events: none` on the default header.
+- `src/index.js` — exports `ListGroupHeaderView` and `groupByDay`.
+- `docs/web-mojo/components/ListView.md` — new "Grouped rows" section + TOC + Key Features bullet.
+- `docs/web-mojo/components/TableView.md` — cross-reference section + TableView shape note.
+- `CHANGELOG.md` — Unreleased entry.
+- `examples/portal/examples/components/ListView/example.json` + `examples/portal/scripts/build-registry.js` + `docs/web-mojo/examples.md` + `examples/portal/examples.registry.json` — registered the new grouped example.
+- `test/unit/ListView.test.js` — three new describe blocks: `ListView (grouped)` (8 tests), `groupByDay helper` (8 tests), `TableView (grouped)` (1 test).
+- `test/utils/simple-module-loader.js` — registered `ListGroupHeaderView` and `grouping` modules.
+
+### Tests run
+
+- **`npm run test:unit`** — 900/900 passing, including the new grouping tests.
+- **`npm run lint`** — clean for all touched files (16 pre-existing errors elsewhere).
+- **Manual portal smoke** — both shapes verified in light theme via screenshot, dark theme via `getComputedStyle` on the eyebrow color (resolved to `rgb(138, 150, 166)` against dark page bg). Day labels confirmed: `Today / Yesterday / May 4 / Apr 25` produced by `groupByDay` against seeded offsets (`now`, `-4hr`, `-1d`, `-1d 7hr`, `-5d`, `-14d`).
+- **`test-runner` agent (full suite)** — unit 900/900; pre-existing failures in integration / build suites unrelated to these changes (module resolution + missing `dist/` build).
+
+### Agent findings
+
+- **`docs-updater`** — Confirmed accuracy of the new "Grouped rows" section against source. Added two minor touch-ups: a TOC entry under "Advanced Usage" and a "Grouped rows" bullet to the Key Features list. Naming caveat re `Sidebar.groupHeader` confirmed clear. No other docs needed changes.
+- **`security-review`** — No vulnerabilities. Two low-severity surprising-behavior findings now documented:
+  1. Falsy keys (`0`, `''`) are treated as "ungrouped tail" by the `if (rawKey && …)` guard. JSDoc note added on the `groupBy` constructor option + a paragraph in ListView.md.
+  2. `data-action` inside a custom `groupHeaderTemplate` bubbles to the parent ListView's `onAction*` handler (the default template is non-interactive via `pointer-events: none`, but custom templates with buttons / links are not no-ops). JSDoc note added + a paragraph in ListView.md so consumers know to define matching handlers.
+
+### Follow-ups
+
+- **First-consumer migration** — reopen [`detailview-audit-round-2.md`](detailview-audit-round-2.md) R2 to wire `...groupByDay('created')` into UserView's Logins ListView.
+- **Second-consumer migration** — file a separate request to migrate `src/extensions/admin/assistant/AssistantConversationListView.js`'s hand-rolled `_groupByDate` (~80 lines of imperative DOM stitching) to a one-line `groupByDay` spread on a real ListView.
+- **Additional helpers** — `groupByField` / `groupByMonth` / `groupByYear` / `groupByLetter` (anchored) and `groupByRange` / `groupByBoolean` (speculative) tracked in [`listview-grouping-helpers.md`](listview-grouping-helpers.md). Promote one at a time as real consumers ask, per the file's promotion checklist.

@@ -32,6 +32,7 @@ ListView manages a collection of ListViewItem views, each backed by its own mode
 - [Events](#events)
 
 ### Advanced Usage
+- [Grouped rows](#grouped-rows)
 - [Dynamic Templates](#dynamic-templates)
 - [Custom ListViewItem Subclass](#custom-listviewitem-subclass)
 - [Preloaded Data](#preloaded-data)
@@ -78,6 +79,7 @@ ListView extends [View](../core/View.md) and works directly with [Collection](..
 - **Loading & Empty States** — Built-in loading spinner and empty message
 - **Fetch on Mount** — Automatically fetches collection data when mounted
 - **Dynamic Template Updates** — Change item templates at runtime
+- **Grouped rows** — Opt-in `groupBy` inserts synthetic header rows between groups; `groupByDay` helper for chronological feeds
 
 ---
 
@@ -205,6 +207,10 @@ model → groupBy(model) → rawKey → groupHeaderLabel(rawKey) → displayKey 
 | `groupBy` | yes | Resolver. Returns the raw bucket key for a model. Header emitted when the key changes. Falsy return = no header for that item ("ungrouped tail" — joins the prior group's section). |
 | `groupHeaderLabel` | optional | Formatter `(rawKey) => displayKey`. Runs once per header before the template renders. Use for raw-to-display transforms ('warning' → 'WARNING', '2026-05-08' → 'Yesterday'). |
 | `groupHeaderTemplate` | optional | Mustache template. Receives `{{key}}` (the formatted display key) and `{{model.*}}` (the trigger model — first model of the group). Default: `'{{key}}'` inside an automatic `<div class="list-group-header">` wrapper. |
+
+**Falsy keys** — any falsy resolver return (`null`, `undefined`, `''`, `0`, `false`) is treated as "ungrouped tail". If you genuinely want `0` or `''` to be a group, return a string (`'zero'`, `'__empty__'`, …) and format it in `groupHeaderLabel`.
+
+**`data-action` inside a custom `groupHeaderTemplate`** — bubbles to the parent ListView's `onAction*` handler. The default header template is non-interactive (`pointer-events: none`), but if you supply a custom template with `<button data-action="…">` / `<a data-action="…">`, treat those as first-class ListView actions and define matching `onAction*` methods. They are NOT no-ops.
 
 ### Built-in helpers
 

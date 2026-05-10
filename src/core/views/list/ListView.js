@@ -162,9 +162,19 @@ class ListView extends View {
     // When set, ListView inserts a synthetic header row before the first
     // item of each new group key (computed in render order). Headers are
     // ListGroupHeaderView instances — separate from the click-routing
-    // machinery so they cannot fire item:click / row:click. Falsy resolver
-    // return = no header for that item ("ungrouped tail" — prior group's
-    // section continues visually).
+    // machinery so they cannot fire item:click / row:click.
+    //
+    // Any falsy resolver return (null, undefined, '', 0, false) = no header
+    // for that item ("ungrouped tail" — prior group's section continues
+    // visually). If you genuinely want `0` or `''` as a group, return a
+    // string ('zero', '__empty__', etc.) and format it in groupHeaderLabel.
+    //
+    // Note: `data-action` attributes inside a custom `groupHeaderTemplate`
+    // will bubble to the parent ListView's EventDelegate and trigger the
+    // matching `onAction*` handler. The default template emits non-interactive
+    // markup (with `pointer-events: none` CSS), but if you supply a custom
+    // template with buttons / links that have `data-action`, treat those as
+    // first-class ListView actions and define handlers accordingly.
     this.groupBy = (typeof options.groupBy === 'function' || typeof options.groupBy === 'string')
       ? options.groupBy
       : null;
