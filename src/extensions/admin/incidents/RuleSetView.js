@@ -41,7 +41,7 @@ const HANDLER_META = {
 
 // ── Helpers ────────────────────────────────────────────────
 
-function parseHandlerChain(handlerString) {
+export function parseHandlerChain(handlerString) {
     if (!handlerString || typeof handlerString !== 'string') return [];
     return handlerString.split(',')
         .map(s => s.trim())
