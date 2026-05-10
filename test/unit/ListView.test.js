@@ -1315,6 +1315,276 @@ module.exports = async function (testContext) {
   });
 
   // --------------------------------------------------------------
+  // groupByField helper — categorical bucketing with label maps
+  // --------------------------------------------------------------
+  describe('groupByField helper', () => {
+    const grouping = loadModule('grouping');
+    const groupByField = grouping?.groupByField || grouping?.default?.groupByField;
+
+    const makeModel = (status) => ({ id: Math.random(), get: (k) => (k === 'status' ? status : null) });
+
+    it('exports a function returning { groupBy, groupHeaderLabel }', () => {
+      expect(typeof groupByField).toBe('function');
+      const helper = groupByField('status');
+      expect(typeof helper.groupBy).toBe('function');
+      expect(typeof helper.groupHeaderLabel).toBe('function');
+    });
+
+    it('string field name resolves via model.get(field) and produces String(raw) bucket key', () => {
+      const helper = groupByField('status');
+      expect(helper.groupBy(makeModel('active'))).toBe('active');
+      expect(helper.groupBy(makeModel(0))).toBe('0');
+      expect(helper.groupBy(makeModel(false))).toBe('false');
+    });
+
+    it('accepts an accessor function instead of a field-name string', () => {
+      const helper = groupByField((m) => m.get('priority'));
+      const model = { get: (k) => (k === 'priority' ? 'high' : null) };
+      expect(helper.groupBy(model)).toBe('high');
+    });
+
+    it('applies the labels map when present', () => {
+      const helper = groupByField('status', { labels: { active: 'Active', resolved: 'Resolved' } });
+      expect(helper.groupHeaderLabel('active')).toBe('Active');
+      expect(helper.groupHeaderLabel('resolved')).toBe('Resolved');
+    });
+
+    it('applies the format callback when no labels are passed', () => {
+      const helper = groupByField('status', { format: (k) => k.toUpperCase() });
+      expect(helper.groupHeaderLabel('active')).toBe('ACTIVE');
+    });
+
+    it('labels wins over format when both are passed', () => {
+      const helper = groupByField('status', {
+        labels: { active: 'Active' },
+        format: (k) => k.toUpperCase()
+      });
+      expect(helper.groupHeaderLabel('active')).toBe('Active');
+      // Falls through to format when labels has no match.
+      expect(helper.groupHeaderLabel('paused')).toBe('PAUSED');
+    });
+
+    it('null / undefined / "" raw → fallback bucket when set, null when not', () => {
+      const noFallback = groupByField('status');
+      expect(noFallback.groupBy(makeModel(null))).toBe(null);
+      expect(noFallback.groupBy(makeModel(undefined))).toBe(null);
+      expect(noFallback.groupBy(makeModel(''))).toBe(null);
+
+      const withFallback = groupByField('status', { fallback: 'Other' });
+      expect(withFallback.groupBy(makeModel(null))).toBe('Other');
+      expect(withFallback.groupBy(makeModel(''))).toBe('Other');
+    });
+
+    it('renders two group header rows when spread into a real ListView', async () => {
+      const collection = new Collection([
+        { id: 1, name: 'A', status: 'active' },
+        { id: 2, name: 'B', status: 'active' },
+        { id: 3, name: 'C', status: 'resolved' }
+      ]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        ...groupByField('status', { labels: { active: 'Active', resolved: 'Resolved' } })
+      });
+      await listView.render();
+
+      const headers = listView.element.querySelectorAll('.list-group-header');
+      expect(headers.length).toBe(2);
+      // Header text should be the formatted label, not the raw key.
+      const texts = Array.from(headers).map((h) => h.textContent.trim());
+      expect(texts).toContain('Active');
+      expect(texts).toContain('Resolved');
+    });
+  });
+
+  // --------------------------------------------------------------
+  // groupByRecency helper — six fixed relative-time buckets
+  // --------------------------------------------------------------
+  describe('groupByRecency helper', () => {
+    const grouping = loadModule('grouping');
+    const groupByRecency = grouping?.groupByRecency || grouping?.default?.groupByRecency;
+
+    const makeModel = (created) => ({ id: Math.random(), get: (k) => (k === 'created' ? created : null) });
+
+    it('exports a function returning { groupBy, groupHeaderLabel }', () => {
+      expect(typeof groupByRecency).toBe('function');
+      const helper = groupByRecency('created');
+      expect(typeof helper.groupBy).toBe('function');
+      expect(typeof helper.groupHeaderLabel).toBe('function');
+    });
+
+    it('todays date → "recency-0-today" bucket / "Today" label', () => {
+      const helper = groupByRecency('created');
+      const today = new Date();
+      const key = helper.groupBy(makeModel(today));
+      expect(key).toBe('recency-0-today');
+      expect(helper.groupHeaderLabel(key)).toBe('Today');
+    });
+
+    it('yesterdays date → "recency-1-yesterday" bucket / "Yesterday" label', () => {
+      const helper = groupByRecency('created');
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const key = helper.groupBy(makeModel(yesterday));
+      expect(key).toBe('recency-1-yesterday');
+      expect(helper.groupHeaderLabel(key)).toBe('Yesterday');
+    });
+
+    it('5 days ago → "recency-2-this-week" bucket / "This week" label', () => {
+      const helper = groupByRecency('created');
+      const fiveDaysAgo = new Date();
+      fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+      const key = helper.groupBy(makeModel(fiveDaysAgo));
+      expect(key).toBe('recency-2-this-week');
+      expect(helper.groupHeaderLabel(key)).toBe('This week');
+    });
+
+    it('earlier in current month → "recency-3-this-month" (or "earlier this year" near month boundary)', () => {
+      const helper = groupByRecency('created');
+      const now = new Date();
+      // Try to find a date that's > 7 days ago AND in the same month as now.
+      // If today is early in the month (day <= 8), there is no such date —
+      // assert the bucket lands on "earlier this year" in that boundary case.
+      if (now.getDate() > 8) {
+        const earlierThisMonth = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 8);
+        const key = helper.groupBy(makeModel(earlierThisMonth));
+        expect(key).toBe('recency-3-this-month');
+        expect(helper.groupHeaderLabel(key)).toBe('This month');
+      } else {
+        // Boundary case — fall back to a date earlier in the year.
+        const priorMonth = new Date(now.getFullYear(), now.getMonth() - 2, 15);
+        const key = helper.groupBy(makeModel(priorMonth));
+        expect(key).toBe('recency-4-this-year');
+        expect(helper.groupHeaderLabel(key)).toBe('Earlier this year');
+      }
+    });
+
+    it('earlier in current year, prior month → "recency-4-this-year" / "Earlier this year"', () => {
+      const helper = groupByRecency('created');
+      const now = new Date();
+      // Pick a date in the prior month within the current year. When we
+      // are in January, the "prior month" would cross the year boundary,
+      // so fall through to the "older" assertion instead.
+      if (now.getMonth() >= 1) {
+        const priorMonth = new Date(now.getFullYear(), now.getMonth() - 1, 15);
+        const key = helper.groupBy(makeModel(priorMonth));
+        expect(key).toBe('recency-4-this-year');
+        expect(helper.groupHeaderLabel(key)).toBe('Earlier this year');
+      } else {
+        // January boundary case — exercise "older" instead.
+        const lastYear = new Date(now.getFullYear() - 1, 5, 15);
+        const key = helper.groupBy(makeModel(lastYear));
+        expect(key).toBe('recency-5-older');
+        expect(helper.groupHeaderLabel(key)).toBe('Older');
+      }
+    });
+
+    it('prior year → "recency-5-older" / "Older"', () => {
+      const helper = groupByRecency('created');
+      const now = new Date();
+      const priorYear = new Date(now.getFullYear() - 1, 5, 15);
+      const key = helper.groupBy(makeModel(priorYear));
+      expect(key).toBe('recency-5-older');
+      expect(helper.groupHeaderLabel(key)).toBe('Older');
+    });
+
+    it('produces stable bucket from Date / epoch ms / ISO inputs for the same instant', () => {
+      const helper = groupByRecency('created');
+      const date = new Date();
+      date.setDate(date.getDate() - 2); // Day before yesterday — "this week"
+      expect(helper.groupBy(makeModel(date))).toBe('recency-2-this-week');
+      expect(helper.groupBy(makeModel(date.getTime()))).toBe('recency-2-this-week');
+      expect(helper.groupBy(makeModel(date.toISOString()))).toBe('recency-2-this-week');
+    });
+
+    it('returns null bucket for missing / unparseable input', () => {
+      const helper = groupByRecency('created');
+      expect(helper.groupBy(makeModel(null))).toBe(null);
+      expect(helper.groupBy(makeModel(''))).toBe(null);
+      expect(helper.groupBy(makeModel('not-a-date'))).toBe(null);
+    });
+  });
+
+  // --------------------------------------------------------------
+  // groupByBoolean helper — binary on/off split
+  // --------------------------------------------------------------
+  describe('groupByBoolean helper', () => {
+    const grouping = loadModule('grouping');
+    const groupByBoolean = grouping?.groupByBoolean || grouping?.default?.groupByBoolean;
+
+    const makeModel = (val) => ({ id: Math.random(), get: (k) => (k === 'is_active' ? val : null) });
+
+    it('exports a function returning { groupBy, groupHeaderLabel }', () => {
+      expect(typeof groupByBoolean).toBe('function');
+      const helper = groupByBoolean('is_active');
+      expect(typeof helper.groupBy).toBe('function');
+      expect(typeof helper.groupHeaderLabel).toBe('function');
+    });
+
+    it('native true → "true" bucket / default label "Yes"', () => {
+      const helper = groupByBoolean('is_active');
+      expect(helper.groupBy(makeModel(true))).toBe('true');
+      expect(helper.groupHeaderLabel('true')).toBe('Yes');
+    });
+
+    it('native false → "false" bucket / default label "No"', () => {
+      const helper = groupByBoolean('is_active');
+      expect(helper.groupBy(makeModel(false))).toBe('false');
+      expect(helper.groupHeaderLabel('false')).toBe('No');
+    });
+
+    it('honors custom { trueLabel, falseLabel } opts', () => {
+      const helper = groupByBoolean('is_active', { trueLabel: 'Active', falseLabel: 'Inactive' });
+      expect(helper.groupHeaderLabel('true')).toBe('Active');
+      expect(helper.groupHeaderLabel('false')).toBe('Inactive');
+    });
+
+    it('string-false carve-out: "false" / "0" / "no" / "off" → false bucket (case-insensitive)', () => {
+      const helper = groupByBoolean('is_active');
+      expect(helper.groupBy(makeModel('false'))).toBe('false');
+      expect(helper.groupBy(makeModel('FALSE'))).toBe('false');
+      expect(helper.groupBy(makeModel('  False  '))).toBe('false');
+      expect(helper.groupBy(makeModel('0'))).toBe('false');
+      expect(helper.groupBy(makeModel('no'))).toBe('false');
+      expect(helper.groupBy(makeModel('off'))).toBe('false');
+      // Other non-empty strings → true.
+      expect(helper.groupBy(makeModel('maybe'))).toBe('true');
+      expect(helper.groupBy(makeModel('yes'))).toBe('true');
+      // Numbers honor JS truthiness.
+      expect(helper.groupBy(makeModel(1))).toBe('true');
+      expect(helper.groupBy(makeModel(0))).toBe('false');
+    });
+
+    it('null / undefined / "" raw → null bucket (no header)', () => {
+      const helper = groupByBoolean('is_active');
+      expect(helper.groupBy(makeModel(null))).toBe(null);
+      expect(helper.groupBy(makeModel(undefined))).toBe(null);
+      expect(helper.groupBy(makeModel(''))).toBe(null);
+      expect(helper.groupBy(makeModel('   '))).toBe(null);
+    });
+
+    it('renders two group header rows when spread into a real ListView', async () => {
+      const collection = new Collection([
+        { id: 1, name: 'A', is_active: true },
+        { id: 2, name: 'B', is_active: true },
+        { id: 3, name: 'C', is_active: false }
+      ]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        ...groupByBoolean('is_active', { trueLabel: 'Active', falseLabel: 'Inactive' })
+      });
+      await listView.render();
+
+      const headers = listView.element.querySelectorAll('.list-group-header');
+      expect(headers.length).toBe(2);
+      const texts = Array.from(headers).map((h) => h.textContent.trim());
+      expect(texts).toContain('Active');
+      expect(texts).toContain('Inactive');
+    });
+  });
+
+  // --------------------------------------------------------------
   // TableView grouping default — `<tr><th colspan="N">` shape
   // --------------------------------------------------------------
   describe('TableView (grouped)', () => {

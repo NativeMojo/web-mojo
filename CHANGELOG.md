@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### ListView · three new grouping helpers (`groupByField`, `groupByRecency`, `groupByBoolean`)
+
+- **`groupByField(fieldOrAccessor, { labels, fallback, format })`** — categorical bucketing on the raw value at `fieldOrAccessor`, coerced to a string for deterministic equality. `labels` map wins over the optional `format` transform; `fallback` provides a bucket key for `null` / `undefined` / `''` raw values (otherwise they drop into the ungrouped tail). Covers status / severity / category / role / environment / tier feeds. Per `planning/done/listview-grouping-helpers.md`.
+- **`groupByRecency(fieldOrAccessor)`** — six fixed buckets (Today / Yesterday / This week / This month / Earlier this year / Older) relative to local "now". V1 is opinionated — no opts. Bucket keys are sort-ordered (`'recency-0-today'` …) so descending-by-date sort renders buckets in natural reading order.
+- **`groupByBoolean(fieldOrAccessor, { trueLabel = 'Yes', falseLabel = 'No' })`** — binary on/off split. Includes a string-false carve-out (`'false'` / `'0'` / `'no'` / `'off'`, case-insensitive, trimmed) so JSON-string booleans from backends bucket correctly without manual coercion. `null` / `undefined` / `''` raw values drop into the ungrouped tail.
+- All three share the existing `resolveAccessor` / `toDate` / `isoDayKey` private internals in `src/core/views/list/grouping.js` and return `{ groupBy, groupHeaderLabel }` for spread into the ListView constructor (same shape as `groupByDay`). Inherited by TableView via the existing grouping plumbing. 23 new unit tests in `test/unit/ListView.test.js`.
+
+### Admin GroupView + MemberView · spec alignment (Phase 5)
+
+- **New `chip.action` field on `DetailView` chips.** A chip with `action: 'kebab-name'` renders as a click-through `<button>` (visually identical to the static `<span class="badge">` variant); click events flow through the parent view's standard `onActionKebabName` handler. Chips without `action` keep the static-span markup — no behaviour change for existing consumers. Per `planning/done/admin-users-spec-alignment.md`.
+- **UserView header gets a click-through org chip.** When a user has an `org`, the header shows a `bi-buildings` badge bound to `onActionViewOrg` — opens the org's GroupView via `Modal.detail`. Mirror of `MemberView.onActionViewGroup`.
+- **GroupView Identity section surfaces `auth_domain` and `short_name`** alongside the existing `domain` / `timezone` / `eod_hour` / `portal` / `email_template` rows. Two new pencil handlers (`onActionEditAuthDomain`, `onActionEditShortName`) following the existing `_saveField({metadata: {...}})` pattern. Per spec line 282.
+- **GroupView uses kind-aware copy** in modal titles, kebab labels, and confirmations. New `_kindNoun()` helper falls back to "Group" when `kind` is unset. Example: a `kind: 'org'` group shows "Edit Organization", "Add Sub-Organization", "Delete Organization".
+- **GroupView adopts Phase 4's admin-tier gating** with two perm tiers matching the backend's tightening: `['groups', 'manage_groups']` for routine edits (`edit-group`, `invite-member`, `add-child-group`); strict `['manage_groups']` only for destructive `state-toggle` / `delete-group` (per spec line 214). Header `is_active` toggle hidden for callers without `manage_groups`. Filtering routed through `ModalView.filterContextMenuItems` via per-item `permissions: [...]`.
+- **MemberView Permissions splits into two panels.** "Group permissions" (editable, autosave — same FormView as today) and "System permissions" (read-only display of `member.user.permissions`). Edits to system perms still belong on the User record; surfacing them read-only here answers "what does this user have system-wide" without leaving MemberView. Per spec line 270.
+
 ### Admin UserView · admin-tier gating + throttle badge (Phase 4)
 
 - **Admin-tier gate** (`users` / `manage_users` / `is_superuser`) now hides destructive affordances from non-admin viewers. Affected: header `is_active` toggle (disable/reactivate), kebab items (`edit-user`, `change-avatar`, `clear-avatar`, `change-password`, `clear-rate-limit`, `revoke-all-sessions`), Permissions sidebar entry (via `permissions: [...]`), and the Security section's `Set Password` / `MFA Requirement` / `Revoke All Sessions` rows. Email-keyed actions (`reset-password`, `send-magic-link`) stay visible to any caller — backend trusts the email recipient. Per `planning/done/admin-users-spec-alignment.md`.

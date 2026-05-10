@@ -79,7 +79,7 @@ ListView extends [View](../core/View.md) and works directly with [Collection](..
 - **Loading & Empty States** — Built-in loading spinner and empty message
 - **Fetch on Mount** — Automatically fetches collection data when mounted
 - **Dynamic Template Updates** — Change item templates at runtime
-- **Grouped rows** — Opt-in `groupBy` inserts synthetic header rows between groups; `groupByDay` helper for chronological feeds
+- **Grouped rows** — Opt-in `groupBy` inserts synthetic header rows between groups; `groupByDay` / `groupByField` / `groupByRecency` / `groupByBoolean` helpers cover the common patterns
 
 ---
 
@@ -265,7 +265,11 @@ model → groupBy(model) → rawKey → groupHeaderLabel(rawKey) → displayKey 
 
 ### Built-in helpers
 
-For the dominant chronological-feed case, ship `groupByDay` instead of writing the day-bucketing logic by hand:
+Four built-in helpers cover the most common framework grouping patterns. Each returns `{ groupBy, groupHeaderLabel }` ready to spread into the ListView constructor — consumers can still override either piece by setting it after the spread.
+
+#### `groupByDay(fieldOrAccessor)`
+
+For chronological feeds — buckets each model by its local calendar day.
 
 ```js
 import { groupByDay } from '@core/views/list/grouping.js';
@@ -277,13 +281,86 @@ new ListView({
 });
 ```
 
-`groupByDay` produces:
+Produces:
 - A stable `YYYY-MM-DD` bucket key (deterministic equality regardless of input format — epoch / ISO / `Date` all bucket identically).
 - A label formatter that renders `'Today'` / `'Yesterday'` / `'May 5'` (current year) / `'May 5, 2025'` (prior years).
 
 Accepts either a field-name string (`groupByDay('created')`) or an accessor function (`groupByDay((m) => m.get('updated') || m.get('created'))`).
 
-Additional helpers (`groupByField`, `groupByMonth`, `groupByYear`, `groupByLetter`) are tracked in `planning/requests/listview-grouping-helpers.md` and ship when a real consumer asks. Until then, write the resolver inline.
+#### `groupByField(fieldOrAccessor, opts)`
+
+For categorical bucketing — status, severity, category, role, environment, tier, etc. Buckets each model on the raw value coerced to a string.
+
+```js
+import { groupByField } from '@core/views/list/grouping.js';
+
+new ListView({
+  collection: incidents,
+  itemTemplate: '...',
+  ...groupByField('status', {
+    labels: { active: 'Active', resolved: 'Resolved', closed: 'Closed' },
+    fallback: 'Other'
+  })
+});
+```
+
+Options (all optional):
+- `labels` — explicit `rawKey → display` map. Wins over `format` when both are passed.
+- `format` — fallback transform applied when no `labels` entry matches: `(rawKey) => display`.
+- `fallback` — bucket key used when raw is `null` / `undefined` / `''`. Omit to drop those models into the ungrouped tail (no header).
+
+**Falsy-but-stringable raw values matter.** `0` and `false` coerce to non-empty strings (`'0'`, `'false'`) and DO produce buckets — only `null`, `undefined`, and `''` go to the fallback / null-bucket path. If you want `0` collapsed into the ungrouped tail, pass a custom accessor that returns `null` for those values.
+
+#### `groupByRecency(fieldOrAccessor)`
+
+For activity feeds, notification lists, and "recently modified" views — six fixed buckets relative to local "now":
+
+| Bucket | When |
+|---|---|
+| Today | Same local calendar day as now |
+| Yesterday | Day before today |
+| This week | Within the previous 7 calendar days |
+| This month | Earlier in the current calendar month |
+| Earlier this year | Earlier in the current calendar year |
+| Older | Prior calendar years |
+
+```js
+import { groupByRecency } from '@core/views/list/grouping.js';
+
+new ListView({
+  collection: notifications,
+  itemTemplate: '...',
+  ...groupByRecency('created')
+});
+```
+
+V1 is opinionated — no options. If you need different bucket thresholds, override `groupHeaderLabel` after the spread (label-only customization) or write an inline `groupBy` for a different bucket set. Bucket keys are sort-ordered (`'recency-0-today'`, `'recency-1-yesterday'`, …) so a descending-by-date sort renders buckets in natural reading order.
+
+Future-dated rows (rare) bucket as 'Today' if same day, otherwise 'This week'.
+
+#### `groupByBoolean(fieldOrAccessor, opts)`
+
+For binary on/off splits — `is_active` / `is_verified` / `is_archived` / `is_paid`, read/unread, public/private.
+
+```js
+import { groupByBoolean } from '@core/views/list/grouping.js';
+
+new ListView({
+  collection: users,
+  itemTemplate: '...',
+  ...groupByBoolean('is_active', { trueLabel: 'Active', falseLabel: 'Inactive' })
+});
+```
+
+Options (all optional):
+- `trueLabel` — label for the truthy bucket. Default: `'Yes'`.
+- `falseLabel` — label for the falsy bucket. Default: `'No'`.
+
+**String-false carve-out.** Raw string values `'false'`, `'0'`, `'no'`, `'off'` (case-insensitive, trimmed) coerce to `false`. This catches the common backend pattern of returning JSON booleans as strings — without the carve-out, JS truthy-coercion would mis-bucket `'false'` as truthy. Numbers use `raw !== 0`. `null` / `undefined` / `''` raw values drop into the ungrouped tail.
+
+#### Additional helpers (deferred)
+
+`groupByMonth`, `groupByYear`, `groupByLetter`, `groupByRange`, `groupByWeek`, `groupByQuarter`, `groupByExists`, `groupByPath` are tracked in [`planning/requests/listview-grouping-helpers.md`](../../../planning/requests/listview-grouping-helpers.md) and ship when a real consumer asks. Until then, write the resolver inline.
 
 ### Visual styles
 
