@@ -3141,9 +3141,38 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
 /* Reserve space on the right of the title row so a long name doesn't run
    under the absolute-positioned actions. */
 .detail-header .dh-meta { padding-right: 200px; }
-@media (max-width: 540px) {
-    .detail-header .dh-actions { position: static; margin-top: 0.5rem; }
+/* Mobile reflow — sm-breakpoint (matches Bootstrap's `sm` cutoff). At
+   narrow widths the absolute-positioned action cluster would crowd the
+   title; stack instead, with a tighter icon + title and the aux block
+   spanning the full row underneath. */
+@media (max-width: 575.98px) {
+    .detail-header { padding: 1rem 1rem; }
+    .detail-header > .d-flex.align-items-start { gap: 0.6rem !important; }
+    .detail-header .dh-actions {
+        position: static;
+        margin-top: 0.5rem;
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        row-gap: 0.4rem;
+    }
     .detail-header .dh-meta { padding-right: 0; }
+    .detail-header .dh-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1.1rem;
+    }
+    .detail-header .dh-name { font-size: 1.05rem; }
+    .detail-header .dh-subtitle { font-size: 0.8rem; }
+    .detail-header .dh-aux {
+        align-items: flex-start;
+        text-align: left;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+    .detail-header .dh-aux-top { flex-wrap: wrap; gap: 0.5rem; row-gap: 0.25rem; }
+    /* Group separator gets in the way when actions wrap — hide it */
+    .detail-header .dh-group-sep { display: none; }
 }
 
 .detail-header .dh-icon {
