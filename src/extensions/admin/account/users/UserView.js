@@ -2209,8 +2209,10 @@ function _buildHeaderAux(m, isAdminCaller, throttle) {
     // be active AND login-locked). Read from `this.throttle` which is
     // fetched fire-and-forget in `onAfterBuild`; `null` until the GET
     // settles, after which any non-zero `retry_after_seconds` produces
-    // the badge.
-    const retry = throttle?.retry_after_seconds || 0;
+    // the badge. Explicit Number() coercion + floor guards against the
+    // backend returning a non-integer / string / negative value.
+    const retryRaw = Number(throttle?.retry_after_seconds);
+    const retry = Number.isFinite(retryRaw) && retryRaw > 0 ? Math.floor(retryRaw) : 0;
     const throttleHtml = retry > 0
         ? `<span class="badge text-bg-danger" title="Login attempts throttled. Use Clear Rate Limit in the kebab menu to reset."><i class="bi bi-clock-history me-1"></i>Login locked ${escapeHtml(String(retry))}s</span>`
         : '';
