@@ -61,17 +61,20 @@ class IncidentTablePage extends TablePage {
                     key: 'scope',
                     label: 'Scope',
                     sortable: true,
+                    visibility: 'md',
                     filter: {type:"text"}
                 },
                 {
                     key: 'category',
                     label: 'Category',
                     sortable: true,
+                    visibility: 'md',
                     filter: {type:"text"}
                 },
                 {
                     key: 'priority',
                     label: 'Priority',
+                    visibility: 'lg',
                     filter: {type:"text"}
                 },
                 {

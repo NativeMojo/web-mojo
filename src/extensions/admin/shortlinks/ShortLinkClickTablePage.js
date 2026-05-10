@@ -45,6 +45,7 @@ class ShortLinkClickTablePage extends TablePage {
                     key: 'shortlink.url',
                     label: 'Destination',
                     formatter: "truncate(50)|default('—')",
+                    visibility: 'md',
                 },
                 {
                     key: 'ip',
@@ -56,6 +57,7 @@ class ShortLinkClickTablePage extends TablePage {
                     key: 'is_bot',
                     label: 'Bot',
                     width: '80px',
+                    visibility: 'md',
                     formatter: 'yesnoicon',
                     filter: {
                         type: 'select',

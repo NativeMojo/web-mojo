@@ -25,7 +25,7 @@ class PushDeviceTablePage extends TablePage {
                 { key: 'device_name', label: 'Device Name' },
                 { key: 'platform', label: 'Platform', formatter: 'badge', visibility: 'md' },
                 { key: 'app_version', label: 'App Version', visibility: 'lg' },
-                { key: 'push_enabled', label: 'Push Enabled', formatter: 'boolean' },
+                { key: 'push_enabled', label: 'Push Enabled', formatter: 'boolean', visibility: 'md' },
                 { key: 'last_seen', label: 'Last Seen', formatter: 'datetime' },
             ],
 

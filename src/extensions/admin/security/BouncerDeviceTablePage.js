@@ -78,6 +78,7 @@ export default class BouncerDeviceTablePage extends TablePage {
                 {
                     key: 'last_seen_ip',
                     label: 'Last IP',
+                    visibility: 'md',
                     template: '<code>{{model.last_seen_ip|default("—")}}</code>'
                 },
                 {

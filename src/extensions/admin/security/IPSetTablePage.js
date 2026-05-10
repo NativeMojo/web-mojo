@@ -62,9 +62,10 @@ class IPSetTablePage extends TablePage {
                     formatter: "truncate(40)|default('—')",
                     visibility: 'lg'
                 },
-                { key: 'cidr_count', label: 'CIDRs', width: '80px', sortable: true, align: 'right' },
+                { key: 'cidr_count', label: 'CIDRs', width: '80px', sortable: true, align: 'right', visibility: 'md' },
                 {
                     key: 'source', label: 'Source', width: '110px',
+                    visibility: 'md',
                     formatter: (value) => {
                         const opt = IPSetSourceOptions.find(o => o.value === value);
                         return opt ? opt.label : (value || '—');

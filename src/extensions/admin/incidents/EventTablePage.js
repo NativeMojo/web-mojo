@@ -66,6 +66,7 @@ class EventTablePage extends TablePage {
                     key: 'scope',
                     label: 'Scope',
                     sortable: true, formatter: 'badge',
+                    visibility: 'md',
                     filter: {
                         type: "combobox",
                         options: [
@@ -84,6 +85,7 @@ class EventTablePage extends TablePage {
                     key: 'category',
                     label: 'Category',
                     sortable: true, formatter: 'badge',
+                    visibility: 'md',
                     filter: {
                         type: "combobox",
                         options: [

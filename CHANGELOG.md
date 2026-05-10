@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+### Admin TablePage · phone-first column breakpoints
+
+Follow-up to the previous TablePage UX sweep, applying a phone-first lens (≤375px) on top of the desktop-first breakpoints the sweep landed. Each affected table now shows at most three real data columns on a phone — primary identifier + state + timestamp. Pure column-option edits; no row-template rewrites, no framework changes. Per `planning/done/admin-tablepages-mobile-breakpoint-pass.md`.
+
+- **13 admin TablePages strengthened.** New `visibility:` tags on secondary columns:
+  - `UserDeviceTablePage` — `md` on Browser.
+  - `IncidentTablePage` — `md` on Scope / Category; `lg` on Priority.
+  - `EventTablePage` — `md` on Scope / Category.
+  - `LogTablePage` — `md` on Method / Path / User; `lg` on IP / Browser ID.
+  - `IPSetTablePage` — `md` on CIDR count / Source.
+  - `EmailMailboxTablePage` — `md` on Domain.
+  - `PhoneNumberTablePage` — `md` on Carrier / Mobile.
+  - `BouncerSignalTablePage` — `md` on Page / Stage; `lg` on Risk / Device.
+  - `BouncerDeviceTablePage` — `md` on Last IP.
+  - `PushDeliveryTablePage` — `md` on User.
+  - `PushDeviceTablePage` — `md` on Push Enabled.
+  - `ShortLinkTablePage` — `md` on Active / Source / Tracked; `lg` on Expires.
+  - `ShortLinkClickTablePage` — `md` on Destination / Bot.
+- **`EmailDomainTablePage` audited, not edited** — its existing `md` / `lg` tags from the previous sweep already meet the phone-first rule.
+- **Tests.** New `test/unit/admin-tablepages-mobile-breakpoints.test.js` — 25 source-level regex assertions, one per `(file, key, breakpoint)` triple, mirroring the existing `admin-tablepages-bugfixes.test.js` pattern. Locks the regression so a future refactor can't silently drop the tags.
+- **Docs.** No changes — `docs/web-mojo/components/TableView.md` already documents the `visibility:` option. The "≤3 columns on phone" rule is a per-component judgment, not a framework invariant.
+
 ### ListView · three new grouping helpers (`groupByField`, `groupByRecency`, `groupByBoolean`)
 
 - **`groupByField(fieldOrAccessor, { labels, fallback, format })`** — categorical bucketing on the raw value at `fieldOrAccessor`, coerced to a string for deterministic equality. `labels` map wins over the optional `format` transform; `fallback` provides a bucket key for `null` / `undefined` / `''` raw values (otherwise they drop into the ungrouped tail). Covers status / severity / category / role / environment / tier feeds. Per `planning/done/listview-grouping-helpers.md`.
