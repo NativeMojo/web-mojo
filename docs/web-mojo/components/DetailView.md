@@ -85,13 +85,20 @@ new DetailView({
 | Key | Type | Description |
 |---|---|---|
 | `icon` | `string` | Bootstrap Icons class for the left badge |
+| `iconTone` | `string` | Optional tone keying — `primary` / `success` / `warning` / `danger` / `info`. Tints the icon's background and color via `.dh-icon-tone-<tone>` |
+| `iconToneFn` | `(model) => string \| null` | Alternative to `iconTone` for state-driven tones (e.g. `m => m.get('is_active') ? 'primary' : null`) |
+| `iconHtml` | `string \| (model) => string` | Optional trusted-HTML slot replacing the Bootstrap `<i>` icon — for avatar `<img>`, custom badges, or click-to-change buttons. See [Icon HTML slot](#icon-html-slot) below |
 | `titleField` | `string` | Model field whose value is the `<h2>` |
 | `titleFn` | `(model) => string` | Alternative to `titleField` for computed titles |
+| `titleAffix` | `string \| (model) => string` | Optional trusted-HTML slot rendered inline next to the title — for copy buttons, edit pencils, or other context-relevant single-icon affordances. See [Title affix](#title-affix) below |
 | `subtitlePath` | `string` | Dotted path on `model.attributes` (e.g. `'metadata.reasoning'`); falsy for no subtitle |
+| `subtitleFn` | `(model) => string` | Alternative to `subtitlePath` for computed subtitles. Takes precedence when both are set |
+| `subtitlePlaceholder` | `string` | Muted text shown when subtitle is empty — useful for "click to add" affordances |
+| `subtitleEditAction` | `string` | When set with `subtitlePlaceholder`, makes the empty placeholder a button that dispatches this action |
 | `chips` | `Array` | See [Chips](#chips) below |
 | `activeField` | `string` | Model field that drives the active/inactive toggle. `null` (default) hides the toggle |
 | `auxFn` | `(model) => string` | Optional. Returns trusted HTML for the right-gutter aux slot — see [Aux slot](#aux-slot) below |
-| `actions` | `Array<{label, icon, action, title?}>` | Ghost-style buttons inline with the close X. `action` becomes `data-action`, dispatched on the parent `DetailView` subclass via the standard `onAction<KebabCase>` pipeline |
+| `actions` | `Array<{label, icon, action, title?}>` | Ghost-style buttons inline with the close X. `action` becomes `data-action`, dispatched on the parent `DetailView` subclass via the standard `onAction<KebabCase>` pipeline. **Default to `[]`** — primary actions belong on `StatusPanel` or section affordances, long-tail in `contextMenu` |
 | `closable` | `boolean` | Default `true`. Renders an X with `data-bs-dismiss="modal"`. Set false for non-modal hosts |
 | `contextMenu` | `{ items: [...] }` | Optional [`ContextMenu`](ContextMenu.md) config — items are dispatched on the parent view via `data-action` |
 
@@ -106,11 +113,58 @@ Each chip resolves text and is filtered by an optional predicate:
     text: m => `Priority ${m.get('p')}`, // OR function — receives model
     textPath: 'category',                // OR shortcut — model.get('category')
     variant: 'primary',                  // bg-* variant; defaults to 'light'
-    when: m => m.get('flag')             // optional — chip omitted when false
+    when: m => m.get('flag'),            // optional — chip omitted when false
+    tooltip: 'Source IP is on the allow list',  // optional — Bootstrap tooltip
+    tooltip: m => `Verified by ${m.get('verified_by')}`  // OR function form
 }
 ```
 
-Variants pick up the global soft-badge styling (`primary`, `secondary`, `success`, `warning`, `danger`, `info`, `light`).
+Variants pick up the global soft-badge styling (`primary`, `secondary`, `success`, `warning`, `danger`, `info`, `light`). When `tooltip` is set the badge gains `data-bs-toggle="tooltip" title="…"` and Bootstrap's auto-init wires up the hover. The default `enableTooltips: true` on `DetailHeaderView` keeps this working without per-consumer setup.
+
+### Icon HTML slot
+
+When the icon position needs to render something other than a Bootstrap glyph — a user avatar, a file thumbnail, a brand mark — pass `iconHtml` instead of (or alongside) `icon`. The framework drops the tone-tinted background and renders your trusted HTML inside the 44×44 frame with `overflow: hidden`. `<img>` children fill the box via `object-fit: cover`. Returning a falsy value falls through to the standard `icon` + `iconTone` path, so consumers can use the slot conditionally:
+
+```js
+header: {
+    icon: 'bi-person-circle',                                // placeholder fallback
+    iconToneFn: m => m.get('is_staff') ? 'info' : 'primary', // tones the placeholder
+    iconHtml: m => {
+        const avatar = m.get('avatar');
+        if (!avatar?.url) return null;                        // → fall through to icon
+        return `
+            <button type="button" class="dh-icon-action"
+                    data-action="change-avatar"
+                    data-bs-toggle="tooltip" title="Change avatar">
+                ${dataFormatter.apply('avatar', avatar)}
+            </button>
+        `;
+    }
+}
+```
+
+Caller is responsible for escaping any user-controlled values reaching the slot. The framework ships a `.dh-icon-action` ghost-button class for the click-to-change pattern; otherwise use any markup that fits the 44×44 frame.
+
+### Title affix
+
+`titleAffix` is the trusted-HTML slot for an inline icon affordance pinned next to the title text (copy-to-clipboard, edit pencil, link-out). Renders inside `.dh-title-affix` within a flex `.dh-name-row` that wraps the H2:
+
+```js
+header: {
+    titleFn: m => m.get('short_link') || m.get('code'),
+    titleAffix: () => `
+        <button type="button" class="dh-name-action"
+                data-action="copy-link"
+                data-bs-toggle="tooltip" title="Copy short URL">
+            <i class="bi bi-clipboard"></i>
+        </button>
+    `
+}
+```
+
+The framework's `.dh-name-action` class is the standard ghost-icon-button treatment (transparent bg, secondary-text icon, hover deepens). Action bubbles to the parent `DetailView`'s `onActionCopyLink` (or whatever `data-action` you used) via the same pipeline as other header actions.
+
+Same security contract as `auxFn`: any user-controlled values must be escaped by the caller.
 
 ### Aux slot
 
