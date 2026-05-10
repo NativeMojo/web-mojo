@@ -1,9 +1,11 @@
 ---
-status: planned
+status: resolved
 type: request
 scope: src/extensions/admin · src/core/utils
 created: 2026-05-09
+resolved: 2026-05-09
 parent: detailview-design-audit.md
+followup: detailview-audit-round-2.md
 ---
 
 # DetailView audit follow-ups — structural issues flagged during the polish pass
@@ -400,3 +402,49 @@ Original audit items deferred to a follow-up after UserView lands and the user c
 - **Framework: `Modal._renderAndAwait` dismiss-button-resolves-to-`0` bug.** A separate framework patch — risk surface beyond UserView. To track, we should either file a bug under `planning/issues/` or list it in this request's Deferred section. Suggest filing as `planning/issues/modal-prompt-cancel-returns-zero.md` so it's discoverable independently.
 - **Framework: turning on `enableTooltips` repo-wide.** Out of scope — narrow to just the views we touch.
 - **DeviceView replacing PushDeviceView's thin shape.** Already deferred; PushDeviceView stays a DataView wrapper for now.
+
+---
+
+## Resolution (2026-05-09)
+
+UserView Plan landed across the commit range `52c4712`..`2d2a735`. Manual walkthrough surfaced a fresh set of structural issues — captured separately in [`detailview-audit-round-2.md`](detailview-audit-round-2.md) so this request can close.
+
+### Audit items addressed
+
+| ID | What landed | Commit(s) |
+|---|---|---|
+| Item #1 / U6 | OAuth section gets `LINKED ACCOUNTS` eyebrow | `52c4712` |
+| Item #2 | Devices section: clickAction wired (later restructured into TabView with real model lookups) | `52c4712`, `f3ee75f` |
+| Item #5 | `Joined` row + KPI badges read `collection.meta.count` with proper fallbacks | `52c4712`, `7f37b68` |
+
+### UserView walkthrough items addressed
+
+| ID | What landed | Commit(s) |
+|---|---|---|
+| U1 | Header right-gutter dedup — Online chip / Active badge / "last seen" all dropped; presence + Active toggle + active-ago kept | `0d09761` |
+| U2 | Email click-to-copy via `clipboard` formatter (Phase 1) | `52c4712` |
+| U5 | `Modal.prompt` Cancel-returns-`0` guard added in `AdminPersonalSection` + `AdminProfileSection` | `52c4712` |
+| U7 | Permissions section rewritten as a single `FormView` driving `User.CATEGORY_PERMISSIONS` + `GRANULAR_PERMISSION_TABS` via `_permSwitch`; tabset uses TabView default variant via `FormBuilder.renderTabsetField` | `52c4712`, `7e21807`, `35aee61`, `e348a97` |
+| U8 | `Incidents` tab → `Events` | `52c4712` |
+| U9 | `Object changes` tab → `Audit Log` | `52c4712` |
+| U10 | Context menu repaired — removed dead force-verify items, added `Change Avatar`. Root cause was `DetailHeaderView.onActionDefault`'s `dest.element?.contains(target)` short-circuit; that early-return was deleted | `52c4712` |
+
+### Items addressed beyond the original Plan
+
+The Plan was scoped to "make UserView feel right." During the build pass the user expanded scope to spec-alignment work (captured separately in [`admin-users-spec-alignment.md`](admin-users-spec-alignment.md)) and post-ListView-landing layout work. Those landed in this commit window too:
+
+- **Disable lifecycle (spec Phase 2)** — `is_active` toggle now opens a `Modal.form` for optional reason + note → POSTs `{"disable":{...}}`; reactivate is silent → POSTs `{"reactivate":{}}`. Status badge surfaces `metadata.protected.disable.reason` only when disabled. Group/Member keep plain toggles per user clarification. Disable history accordion lives in the Audit section. (`d6dde92`)
+- **mockBackend method-aware POST/PUT/PATCH** — fixes a bug surfaced during U7 build where `FormView.autosaveModelField` was sending the right body but the example portal's mock backend ignored HTTP method. Real backends weren't affected. (`6611c33`)
+- **TabView variant system pulled from `origin/main`** with all UserView fixes preserved; `DEFAULT_VARIANT = 'underline-all'`; corresponding 266-line CSS block landed in `core.css`. (`e348a97`, `35aee61`)
+- **Cramped TableViews → ListViews** — Audit (×3 tabs), Devices, Groups, Logins replaced with feed/card-style ListViews. Modal.detail width is the actual constraint, not column count. (`c82e6a1`)
+- **In-modal pagination** — `paginationMode: 'pages'` + `pageSize: 5` for quick-glance use. (`deb330e`)
+- **Devices section restructured** — single ListView with synthetic array → TabView (Browser / Push), each ListView bound to its real Collection. `hideActivePillNames: ['user']` carried onto both. (`f3ee75f`, `1bffc3a`)
+- **`clickAction: 'view'`** added to Audit + Logins ListViews so rows open the proper detail modal automatically. (`2d2a735`)
+
+### Items deferred to round 2
+
+The U3 (profile spacing tighten) and U4 (Bootstrap tooltip) framework-CSS sweeps landed during the design-audit waves before this request opened, so they were already in place. Manual walkthrough at the end of the build raised a fresh batch of issues (Audit list visual design, Logins timeline, mobile-width headers, Personal row-level editing, GroupView header, IncidentView header icon row, ShortLinkView URL truncation, FileView migration, LoginEvent view, double-event audit across remaining DetailViews, table → ListView sweep elsewhere). Those move to [`detailview-audit-round-2.md`](detailview-audit-round-2.md).
+
+### Tests
+
+`npm run test:unit` 882/882 throughout the build window. No new tests added — every change was either bug-fix or layout/markup within the admin extension or small framework CSS tweaks.

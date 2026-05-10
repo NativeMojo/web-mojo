@@ -1,8 +1,9 @@
 ---
-status: planned
+status: resolved
 type: request
 scope: src/core/views/list · src/core/views/table
 created: 2026-05-09
+resolved: 2026-05-10
 related: src/extensions/admin/incidents/RuleSetView.js (existing manual wiring this helper simplifies)
 ---
 
@@ -272,3 +273,55 @@ Add an opt-in `dayRangeFilter` option to `ListView` that mounts a `SegmentContro
 - `docs/web-mojo/components/ListView.md` — new option row + subsection.
 - `docs/web-mojo/components/TableView.md` — no edit needed.
 - `CHANGELOG.md` — unreleased entry.
+
+## Resolution
+
+**Status**: Resolved — 2026-05-10
+
+### Commits
+
+- `9b05436` — Core helper. Adds `dayRangeFilter` option to ListView, the `range:change` event, `getRange` / `setRange` API, `dayRangeControl` child, and the new `data-container="toolbar-day-range"` slot. Migrates `RuleSetView` to use the helper. Updates `ListView.md` + `CHANGELOG.md`. Extends `simple-module-loader` to load `SegmentControl`. New `describe('ListView (dayRangeFilter)')` block in `test/unit/ListView.test.js` covering 13 cases.
+- `9c1b467` — Demo + framework fix surfaced by demo. Adds `TableViewDayRangeFilterExample` (route `components/table-view/day-range-filter`) to the example portal. Two small framework fixes: `_buildTitleBlockTemplate` now emits Mustache `{{title}}` / `{{eyebrow}}` vars (so setters survive any subsequent render); `_onDayRangeChange` no longer trails an extra `await this.render()` after fetch (fetch:end's render already covers it). Drive-by: registered orphaned `components/detail-view` route in TOPIC_TAXONOMY.
+
+### Files changed
+
+- `src/core/views/list/ListView.js` (helper + Mustache title/eyebrow + render flow)
+- `src/extensions/admin/incidents/RuleSetView.js` (migrated from manual SegmentControl)
+- `test/unit/ListView.test.js` (new dayRangeFilter describe block)
+- `test/utils/simple-module-loader.js` (loads `SegmentControl`)
+- `docs/web-mojo/components/ListView.md` (option row + Day-range filter subsection)
+- `docs/web-mojo/components/TableView.md` (inherited option + event rows — docs-updater agent)
+- `docs/web-mojo/components/SegmentControl.md` (cross-link tip — docs-updater agent)
+- `examples/portal/examples/components/TableView/TableViewDayRangeFilterExample.js` (new demo)
+- `examples/portal/examples/components/TableView/example.json` (registered new route)
+- `examples/portal/scripts/build-registry.js` (taxonomy entries: day-range-filter + drive-by detail-view orphan)
+- `examples/portal/examples.registry.json` (auto-generated)
+- `docs/web-mojo/examples.md` (auto-generated)
+- `CHANGELOG.md` (unreleased entry)
+
+### Tests run
+
+- `npm run test:unit` — **921 / 921 pass.** New `describe('ListView (dayRangeFilter)')` block covers 13 cases (boolean form, object form, mount-time seed, custom field, refetch + start=0 on change, range:change payload, no-emit-on-seed, getRange / setRange / silent: true, unknown-value rejection, side-by-side ordering, _isToolbarEnabled truthiness, escape-hatch for non-`\d+d` values).
+- `npm run lint` — no new errors in changed files (16 errors in lint output are all pre-existing, none in `ListView.js` / `RuleSetView.js` / `SegmentControl.js`).
+
+### Agent findings
+
+- **test-runner**: 921/921 unit tests pass. Integration / build suite failures are all pre-existing infrastructure issues (missing `@core` alias resolver for raw Node, missing `dist/` artifacts, missing `src/mojo.js` entry, non-conforming test-file shapes). None caused by this change.
+- **docs-updater**: Edited `TableView.md` (added inherited `dayRangeFilter` row + `range:change` event row to the inheritance tables) and `SegmentControl.md` (added a tip pointing readers using the manual pattern at the new helper). Decided against `README.md` and `AGENT.md` (right level of abstraction, no inheritance cheat-sheet).
+- **security-review**: No security concerns. `field` is caller-controlled (same trust level as `endpoint` / `defaultQuery`); large-day overflow stays within JS safe-integer range and the worst case is a wider-than-intended result set; `range:change` payload contains only computed integers; no XSS in the new toolbar slot; no authorization bypass.
+
+### Validation
+
+Verified end-to-end in the live preview (`npm run dev`):
+- Toolbar SegmentControl renders with `7d` active in primary blue under both light and dark themes.
+- Initial mount writes `created__gte = nowEpoch - 7*86400` — verified via in-memory fake-server Collection in the demo (`paramAge: 604800` exactly).
+- Each segment click updates the param, refetches, resets `start = 0`, and the eyebrow updates live ("2 events in the last 7 days" → "8 events in the last 30 days" → "23 events in the last 90 days" → "1 event in the last 1 day").
+- `hideActivePillNames: ['created__gte']` correctly suppresses the duplicate filter pill.
+- `getRange()` / `setRange()` / silent / unknown-value / escape-hatch paths verified via unit tests.
+
+### Visible outside the framework
+
+- New example: `components/table-view/day-range-filter` in the portal.
+- ListView: new `dayRangeFilter` option, `range:change` event, `getRange` / `setRange` methods, `dayRangeControl` child instance.
+- TableView: inherits all of the above unchanged.
+- Subtle: `_buildTitleBlockTemplate` now uses Mustache vars — any code that previously relied on the construction-time bake will see the same initial render but `setTitle` / `setEyebrow` updates are now durable across re-renders.
