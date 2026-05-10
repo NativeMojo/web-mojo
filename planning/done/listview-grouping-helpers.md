@@ -1,8 +1,9 @@
 ---
-status: planned
+status: done
 type: request
 scope: src/core/views/list
 created: 2026-05-09
+resolved: 2026-05-10
 related: listview-grouped-rows.md (parent — grouping primitive + `groupByDay` v1 helper)
 ---
 
@@ -268,3 +269,43 @@ Manual smoke (optional): drop a temporary `...groupByField('status', { labels: {
 - Configurable bucket thresholds for `groupByRecency`. v1 is opinionated; configurability is its own request if asked.
 - Migrating internal consumers (`AssistantConversationListView._groupByDate` migration to `groupByDay` is still tracked separately).
 - Multi-level / nested grouping, server-side grouping, sticky / collapsible headers — all frozen out by the parent request.
+
+## Resolution
+
+**Implemented:** three new built-in grouping helpers (`groupByField`, `groupByRecency`, `groupByBoolean`) alongside the existing `groupByDay`. Each returns `{ groupBy, groupHeaderLabel }` ready to spread into the ListView constructor; all three are inherited by TableView via the existing grouping plumbing. Per the framework-first reframing during planning: shipped without waiting for individual internal consumers, since the bar for a framework is "would a competent dev reach for this" rather than "did an internal app file a ticket."
+
+### Files changed
+
+**Modified:**
+- `src/core/views/list/grouping.js` — added `groupByField` (categorical bucketing with `{ labels, fallback, format }` opts), `groupByRecency` (six fixed buckets — Today / Yesterday / This week / This month / Earlier this year / Older, sort-ordered keys), `groupByBoolean` (binary on/off with `{ trueLabel, falseLabel }` opts + string-false carve-out for `'false'` / `'0'` / `'no'` / `'off'`). Added private `coerceBoolean` and `recencyBucketKey` helpers plus a `RECENCY_LABELS` map. JSDoc updates on `resolveAccessor` / `toDate` flagging them as shared internals. Extended the default-export bag to include all four helpers.
+- `src/index.js` — extended the existing `export { groupByDay }` to `export { groupByDay, groupByField, groupByRecency, groupByBoolean }`.
+- `test/unit/ListView.test.js` — three new `describe(...)` blocks alongside the existing `groupByDay helper` block: `groupByField helper` (8 tests), `groupByRecency helper` (8 tests), `groupByBoolean helper` (7 tests). Total +23 tests.
+- `docs/web-mojo/components/ListView.md` — restructured the "Built-in helpers" subsection with four named sub-subsections (`groupByDay`, `groupByField`, `groupByRecency`, `groupByBoolean`). Updated the Key Features bullet to list all four helper names. Updated the "Additional helpers (deferred)" sentence to enumerate the still-deferred ones.
+- `docs/web-mojo/components/TableView.md` — extended the grouping-helpers reference to enumerate all four helpers (docs-updater finding — previously only mentioned `groupByDay`).
+- `CHANGELOG.md` — Unreleased entry with one paragraph per helper.
+
+### Tests run
+
+- **`npm run test:unit`** — 1054/1054 passing locally, including the 23 new tests.
+- **test-runner agent** (full suite via `npm test`) — 1196/1196 passing across unit (56 files) + build (4 files). No regressions.
+- **`npm run lint` on touched files** — clean (`grouping.js` and `src/index.js` have zero lint errors / warnings; the 16 pre-existing errors elsewhere are unrelated).
+
+### Agent findings
+
+- **`test-runner`** — full suite green (1196/1196). No regressions from the three new helpers. No fixes needed.
+- **`docs-updater`** — verified `ListView.md` (correct), `README.md` (no change needed), `AGENT.md` (no change needed), `CHANGELOG.md` (already updated). Found one gap in `TableView.md` — the line listing grouping helpers only named `groupByDay`. Extended it to enumerate all four helpers with two concrete examples and a cross-link to the full helper reference in `ListView.md`.
+- **`security-review`** — diff is clean. Four checks, three rated "none" and one rated "low":
+  1. **XSS / template injection (none):** `groupHeaderLabel` return values render through Mustache `{{key}}` which HTML-escapes by default. Only a consumer-supplied custom template using `{{{key}}}` could bypass — that's a consumer-controlled choice, not introduced by this diff.
+  2. **Prototype pollution in `groupByField` `labels` lookup (none):** `Object.prototype.hasOwnProperty.call(labels, key)` correctly guards against prototype-chain matches.
+  3. **`coerceBoolean` object fallthrough (none):** an object raw value falls through to `Boolean(raw)` → always `true`. Documented bucketing surprise, not a security issue.
+  4. **`String(raw)` on adversarial `toString` (low):** if a model field returns an object whose `toString()` throws, the exception propagates up and aborts that render pass. Theoretical — `Model.get()` returns scalar values from server JSON in normal operation, so the attack would require adversarial control of model field object shapes, which doesn't happen via the standard data-normalization path. No fix needed in the helper; defensive layer belongs in the model's normalization step if raw API objects could ever reach field values.
+
+### Follow-ups
+
+- **Deferred helpers** still tracked in this file's earlier sections: `groupByMonth`, `groupByYear`, `groupByLetter`, `groupByRange`, plus the new ideas surfaced during planning (`groupByWeek`, `groupByQuarter`, `groupByExists`, `groupByPath`). Promote individually as real demand arrives.
+- **`AssistantConversationListView._groupByDate` migration** to `groupByDay` is still pending — separate request (carried over from the parent `listview-grouped-rows.md` resolution). Not in scope of this build.
+- **No follow-up needed on the security-review low-severity finding.** The defensive layer (if ever needed) belongs in `Model` data normalization, not in the grouping helpers.
+
+### Status
+
+**Closed.** Three new helpers shipped, all tests green, docs aligned, security review clean. The framework-first reframing during planning means the file's promotion checklist no longer gates these helpers (and the still-deferred helpers in this file can be promoted on the same framework-utility basis when there's reason).

@@ -553,17 +553,27 @@ const table = new TableView({
 
 If you pass a custom `groupHeaderTemplate` for TableView, write it as cell-only inner content (`<th colspan="N">…</th>`) — the framework provides the `<tr>` outer element automatically. This parallels how `TableRow` consumes inner `<td>` markup while the framework provides the row.
 
-The built-in `groupByDay` helper (chronological feeds) works identically:
+All four built-in grouping helpers (`groupByDay`, `groupByField`, `groupByRecency`, `groupByBoolean`) work identically on TableView — each returns `{ groupBy, groupHeaderLabel }` that spreads directly into the constructor:
 
 ```js
-import { groupByDay } from '@core/views/list/grouping.js';
+import { groupByDay, groupByRecency, groupByField, groupByBoolean } from '@core/views/list/grouping.js';
 
+// Chronological audit log — Today / Yesterday / May 5 …
 new TableView({
   collection: auditLogCollection,
   columns: [{ key: 'action' }, { key: 'actor' }, { key: 'created', formatter: 'relative' }],
   ...groupByDay('created')
 });
+
+// Recency buckets — Today / Yesterday / This week …
+new TableView({
+  collection: notificationCollection,
+  columns: [{ key: 'title' }, { key: 'created', formatter: 'relative' }],
+  ...groupByRecency('created')
+});
 ```
+
+See [ListView — Built-in helpers](./ListView.md#built-in-helpers) for signatures, options, and edge-case details.
 
 ---
 
