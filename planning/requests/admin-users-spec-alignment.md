@@ -83,6 +83,14 @@ See §"Phase 3 — REVISED" below for the simplified plan.
 - New `onActionSetPhone` / `onActionRemovePhone` handlers; existing pencil handlers unchanged (backend now accepts their direct field writes for admin tier)
 - `AdminSecuritySection` cleanup: deleted broken Send-Email-Verification row+handler (was JWT-scoped, didn't target the right user); deleted duplicate `onActionSendPasswordReset` / `onActionSendMagicLink` handlers (now bubble to UserView); renamed one `data-action`; switched Set-Password body field to `new_password` per backend relaxation. Set Password row kept (operationally required, audited).
 
+**Phase 4** — Admin-tier gating + throttle badge (commits `7d65fdc`, `4d7f272`)
+- New UserView class-level `isAdminCaller` getter (mirrors the Phase 3 section-level getter).
+- Header `is_active` toggle, kebab destructive items, AdminSecuritySection's `Set Password` / `MFA Requirement` / `Revoke All Sessions` rows, and Permissions sidebar entry all gated on admin tier (`users` / `manage_users` / `is_superuser`).
+- Kebab uses framework's `permissions: [...]` per-item filtering via `ModalView.filterContextMenuItems`; email-keyed items (`reset-password`, `send-magic-link`) stay ungated.
+- New "Change Password" kebab item bubbles to a canonical `UserView.onActionChangePassword`; Security section's row `data-action="set-password"` renamed to `change-password` to bubble. `onActionSetPassword` / `onActionRevokeAllSessions` deleted from `AdminSecuritySection` (matches Phase 3 dedup pattern).
+- Throttle badge: fire-and-forget `GET /api/auth/manage/throttle?user_id=N&key=login` on view open; red "Login locked Xs" chip when `retry_after_seconds > 0`. New `onActionClearRateLimit` handler + kebab item.
+- Follow-up fix: defensive numeric type-guard on `retry_after_seconds` before render (Number() + isFinite + Math.floor).
+
 **Plus from round-2** — moved adjacent surfaces forward (visually, not spec-wise):
 - UserView's Audit / Devices / Locations / Groups TableViews → ListView with `paginationMode: 'pages'`, `pageSize: 5`, `clickAction: 'view'`, `viewDialogOptions: { header: false, noBodyPadding: true, buttons: [] }`
 - Day-grouped headers on chronological feeds via the new `groupByDay('created')` primitive (`@core/views/list/grouping.js`)
@@ -831,4 +839,49 @@ Wire the single admin-tier check (`isAdminCaller = is_superuser \|\| hasPermissi
 
 ---
 
-Status: **planned** — ready to build.
+Status: **shipped** — see Resolution below.
+
+---
+
+## Resolution — Phase 4 (2026-05-10, commits `7d65fdc` + `4d7f272`)
+
+**Status: shipped.** Phases 5-6 remain pending; the request stays in `planning/requests/` until they land.
+
+### Files changed
+
+- `src/extensions/admin/account/users/UserView.js`:
+  - New class-level `isAdminCaller` getter.
+  - Kebab `contextItems` carry `permissions: ['users','manage_users']` on destructive items.
+  - New entries: `change-password`, `clear-rate-limit`.
+  - Permissions section sidebar entry gated via `permissions: [...]`.
+  - New `onActionChangePassword` (hoisted from `AdminSecuritySection.onActionSetPassword`) and `onActionClearRateLimit` handlers.
+  - `_refreshThrottle()` helper + `this.throttle` state field; `_buildHeaderAux` extended to take `(model, isAdminCaller, throttle)` and renders a red "Login locked Xs" chip when `retry_after_seconds > 0`. Header toggle hidden for non-admin callers.
+  - Follow-up commit `4d7f272`: defensive `Number()` + `Number.isFinite()` + `Math.floor()` guard on `retry_after_seconds` before render (per security-review feedback).
+- `src/extensions/admin/account/users/sections/AdminSecuritySection.js`:
+  - New `isAdminCaller` getter.
+  - `Set Password`, `MFA Requirement`, `Revoke All Sessions` rows wrapped in `{{#isAdminCaller|bool}}` template gates.
+  - `data-action="set-password"` → `change-password` rename.
+  - `onActionSetPassword` and `onActionRevokeAllSessions` deleted — events bubble to UserView's canonical handlers.
+- `CHANGELOG.md` — Unreleased entry under "Admin UserView · admin-tier gating + throttle badge (Phase 4)".
+
+### Tests run
+
+- `npm run lint` — same pre-existing errors in unrelated `src/core/` files; no findings in touched files.
+- `npm run test:unit` — 1030/1030 passed (twice, before and after type-guard fix).
+- Browser preview verification — kebab shows all 8 admin-tier items including the two new ones; Security section renders 8 rows with the renamed `change-password` action; header `is_active` toggle visible for admin caller; no console errors.
+- test-runner agent: `npm test` full suite — 1172/1172 passed, no regressions.
+
+### Agent findings
+
+- **test-runner**: 1172/1172 pass, no regressions.
+- **docs-updater**: no docs in `docs/web-mojo/` document UserView's section-level affordances; CHANGELOG entry is the only release-facing doc and is in place. The `ContextMenu.md:492` note about `ContextMenu` ignoring `permissions` is unaffected — UserView routes through `ModalView.filterContextMenuItems`, a higher-level mechanism.
+- **security-review**: no critical issues. Two warnings:
+  - `isAdminCaller` is non-reactive at construction time for the kebab (acceptable; framework `filterContextMenuItems` evaluates `permissions` at render time, so the path is actually reactive). Worth noting for Phase 5.
+  - `retry_after_seconds` rendered without an explicit numeric type guard (XSS-safe via `escapeHtml(String(retry))`, but fragile against non-integer responses). **Fixed in follow-up commit `4d7f272`.**
+
+### Follow-ups (out of scope)
+
+- Phase 5: GroupView + MemberView spec alignment (parent breadcrumb, kind-aware copy, member-perms split, MEMBER_PERMS_PROTECTION).
+- Phase 6: unified `/api/account/security-events` audit feed in UserView's Audit tab.
+- Dead `src/extensions/admin/account/users/sections/AdminProfileSection.js` cleanup (~240 unused lines).
+- Mid-session perm reactivity refinement (admin-tier flip during a session doesn't re-render the kebab/header until something else triggers it — accepted trade-off).
