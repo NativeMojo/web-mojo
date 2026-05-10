@@ -412,6 +412,26 @@ class GroupIdentitySection extends View {
                     </div>
                 </div>
                 <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Auth domain</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasAuthDomain|bool}}<code>{{authDomain}}</code>{{/hasAuthDomain|bool}}
+                        {{^hasAuthDomain|bool}}<span class="text-secondary fst-italic">Not set</span>{{/hasAuthDomain|bool}}
+                    </div>
+                    <div class="detail-flat-row-action">
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-auth-domain" title="Edit"><i class="bi bi-pencil"></i></button>
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Short name</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasShortName|bool}}<code>{{shortName}}</code>{{/hasShortName|bool}}
+                        {{^hasShortName|bool}}<span class="text-secondary fst-italic">Not set</span>{{/hasShortName|bool}}
+                    </div>
+                    <div class="detail-flat-row-action">
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-short-name" title="Edit"><i class="bi bi-pencil"></i></button>
+                    </div>
+                </div>
+                <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Portal</div>
                     <div class="detail-flat-row-value">
                         {{#hasPortal|bool}}<a href="{{portal}}" target="_blank" rel="noopener">{{portal}}</a>{{/hasPortal|bool}}
@@ -476,12 +496,17 @@ class GroupIdentitySection extends View {
     }
     get hasDomain()        { return !!this._meta.domain; }
     get domain()           { return this._meta.domain || ''; }
+    get hasAuthDomain()    { return !!this._meta.auth_domain; }
+    get authDomain()       { return this._meta.auth_domain || ''; }
+    get hasShortName()     { return !!this._meta.short_name; }
+    get shortName()        { return this._meta.short_name || ''; }
     get hasPortal()        { return !!this._meta.portal; }
     get portal()           { return this._meta.portal || ''; }
     get hasEmailTemplate() { return !!this._meta.email_template; }
     get emailTemplate()    { return this._meta.email_template || ''; }
     get hasAnySettings() {
         return this.hasTimezone || this.hasEodHour || this.hasDomain
+            || this.hasAuthDomain || this.hasShortName
             || this.hasPortal || this.hasEmailTemplate;
     }
     get hasCreated()  { return this.model?.get?.('created')  != null; }
@@ -581,6 +606,30 @@ class GroupIdentitySection extends View {
         );
         if (typeof domain !== 'string') return true;
         await this._saveField({ metadata: { domain: domain.trim() || null } }, 'Domain');
+        return true;
+    }
+
+    async onActionEditAuthDomain() {
+        const meta = this.model.get('metadata') || {};
+        const authDomain = await Modal.prompt(
+            'Auth domain (used for white-label login pages):',
+            'Edit Auth Domain',
+            { defaultValue: meta.auth_domain || '', placeholder: 'auth.example.com' }
+        );
+        if (typeof authDomain !== 'string') return true;
+        await this._saveField({ metadata: { auth_domain: authDomain.trim() || null } }, 'Auth domain');
+        return true;
+    }
+
+    async onActionEditShortName() {
+        const meta = this.model.get('metadata') || {};
+        const shortName = await Modal.prompt(
+            'Short name:',
+            'Edit Short Name',
+            { defaultValue: meta.short_name || '' }
+        );
+        if (typeof shortName !== 'string') return true;
+        await this._saveField({ metadata: { short_name: shortName.trim() || null } }, 'Short name');
         return true;
     }
 
@@ -908,20 +957,31 @@ class GroupView extends DetailView {
               when: m => !!m.get('metadata')?.portal }
         ];
 
+        // Kind-aware noun for user-facing copy. Falls back to 'Group'
+        // when `kind` is unset or unknown.
+        const kindNoun = kindLabel(kind) || 'Group';
+
+        // Phase 4 pattern: admin-tier-tagged kebab items get filtered by
+        // ModalView.filterContextMenuItems via app.activeUser.hasPermission.
+        // Two perm tiers for Groups (line 214 of the spec — disable/delete
+        // tightened to manage_groups-only).
+        const GROUP_ADMIN_PERMS = ['groups', 'manage_groups'];
+        const GROUP_DESTRUCTIVE_PERMS = ['manage_groups'];
+
         const contextItems = [
-            { label: 'Edit Group',     action: 'edit-group',       icon: 'bi-pencil' },
-            { label: 'Invite Member',  action: 'invite-member',    icon: 'bi-person-plus' },
-            { label: 'Add Sub-Group',  action: 'add-child-group',  icon: 'bi-diagram-3' }
+            { label: `Edit ${kindNoun}`,    action: 'edit-group',       icon: 'bi-pencil',        permissions: GROUP_ADMIN_PERMS },
+            { label: 'Invite Member',       action: 'invite-member',    icon: 'bi-person-plus',   permissions: GROUP_ADMIN_PERMS },
+            { label: `Add Sub-${kindNoun}`, action: 'add-child-group',  icon: 'bi-diagram-3',     permissions: GROUP_ADMIN_PERMS }
         ];
         if (model.get('parent')?.id) {
             contextItems.push({ label: 'View Parent', action: 'view-parent-menu', icon: 'bi-arrow-up-right-square' });
         }
         contextItems.push({ type: 'divider' });
         contextItems.push(model.get('is_active')
-            ? { label: 'Deactivate Group', action: 'state-toggle', icon: 'bi-toggle-off' }
-            : { label: 'Activate Group',   action: 'state-toggle', icon: 'bi-toggle-on' });
+            ? { label: `Deactivate ${kindNoun}`, action: 'state-toggle', icon: 'bi-toggle-off', permissions: GROUP_DESTRUCTIVE_PERMS }
+            : { label: `Activate ${kindNoun}`,   action: 'state-toggle', icon: 'bi-toggle-on',  permissions: GROUP_DESTRUCTIVE_PERMS });
         contextItems.push({ type: 'divider' });
-        contextItems.push({ label: 'Delete Group', action: 'delete-group', icon: 'bi-trash', danger: true });
+        contextItems.push({ label: `Delete ${kindNoun}`, action: 'delete-group', icon: 'bi-trash', danger: true, permissions: GROUP_DESTRUCTIVE_PERMS });
 
         super({
             className: 'group-view',
@@ -937,7 +997,7 @@ class GroupView extends DetailView {
                 //   row 1: [Active toggle]
                 //   row 2: muted "last activity 50m ago"
                 actions: [],
-                auxFn: m => _buildHeaderAux(m, membersCollection),
+                auxFn: m => _buildHeaderAux(m, membersCollection, this.isAdminCallerDestructive),
                 contextMenu: { items: contextItems }
             },
             sections,
@@ -1022,11 +1082,45 @@ class GroupView extends DetailView {
         m.attributes._subtitle = parent?.name ? String(parent.name) : '';
     }
 
+    /**
+     * Kind-aware noun for user-facing copy. Returns the localized label
+     * (`Organization`, `Department`, `Team`, etc.) or falls back to
+     * `Group` when `kind` is unset. Phase 5 — spec line 264 ("Don't
+     * hardcode 'group' in copy").
+     */
+    _kindNoun() {
+        return kindLabel(this.model.get('kind')) || 'Group';
+    }
+
+    /**
+     * Admin tier == `groups` / `manage_groups` / `is_superuser`. Mirrors
+     * Phase 4's UserView pattern. Group has two perm tiers — see
+     * `isAdminCallerDestructive` for the strict gate used on disable /
+     * delete per the backend tightening (spec line 214).
+     */
+    get isAdminCaller() {
+        const u = this.getApp()?.activeUser;
+        if (!u) return false;
+        if (u.get?.('is_superuser')) return true;
+        return !!u.hasPermission?.(['groups', 'manage_groups']);
+    }
+
+    /**
+     * Strict admin tier for destructive actions — disable/reactivate and
+     * delete now require `manage_groups` only per the backend tightening.
+     */
+    get isAdminCallerDestructive() {
+        const u = this.getApp()?.activeUser;
+        if (!u) return false;
+        if (u.get?.('is_superuser')) return true;
+        return !!u.hasPermission?.('manage_groups');
+    }
+
     // ── Action handlers ────────────────────────────────────
 
     async onActionEditGroup() {
         const resp = await Modal.modelForm({
-            title: `Edit Group — ${this.model.get('name')}`,
+            title: `Edit ${this._kindNoun()} — ${this.model.get('name')}`,
             model: this.model,
             size: 'lg',
             formConfig: GroupForms.detailed
@@ -1068,7 +1162,7 @@ class GroupView extends DetailView {
 
     async onActionAddChildGroup() {
         const data = await Modal.form({
-            title: `Add Sub-Group to ${this.model.get('name')}`,
+            title: `Add Sub-${this._kindNoun()} to ${this.model.get('name')}`,
             size: 'sm',
             fields: GroupForms.create.fields.filter(f => f.name !== 'parent')
         });
@@ -1138,9 +1232,10 @@ class GroupView extends DetailView {
         const toActive = !this.model.get('is_active');
         const verb = toActive ? 'activate' : 'deactivate';
         const Verb = toActive ? 'Activate' : 'Deactivate';
+        const noun = this._kindNoun();
         const confirmed = await Modal.confirm(
             `Are you sure you want to ${verb} <strong>${escapeHtml(this.model.get('name') || '')}</strong>?`,
-            `${Verb} Group`
+            `${Verb} ${noun}`
         );
         if (!confirmed) return true;
 
@@ -1156,8 +1251,9 @@ class GroupView extends DetailView {
     }
 
     async onActionDeleteGroup() {
+        const noun = this._kindNoun();
         const confirmed = await Modal.confirm({
-            title: 'Delete Group',
+            title: `Delete ${noun}`,
             message: `Are you sure you want to delete <strong>${escapeHtml(this.model.get('name') || '')}</strong>? This cannot be undone.`,
             confirmText: 'Delete',
             confirmClass: 'btn-danger'
@@ -1206,15 +1302,17 @@ class GroupView extends DetailView {
  * of left of it. `data-change-action` (not `data-action`) so it fires
  * once per toggle, not twice.
  */
-function _buildHeaderAux(m, membersCollection) {
+function _buildHeaderAux(m, membersCollection, canToggleActive) {
     const isActive = !!m.get('is_active');
-    const switchHtml = `
+    // Toggle hidden for non-`manage_groups` callers per backend tightening
+    // (disable/reactivate stricter than rest of Group SAVE_PERMS).
+    const switchHtml = canToggleActive ? `
         <label class="dh-active-switch">
             <input type="checkbox" data-change-action="toggle-active" ${isActive ? 'checked' : ''}>
             <span class="dh-track"></span>
             <span class="dh-track-label">${isActive ? 'Active' : 'Inactive'}</span>
         </label>
-    `;
+    ` : '';
 
     const lastActivity = m.get('last_activity');
     const memberCount = membersCollection?.models?.length ?? 0;

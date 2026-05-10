@@ -206,28 +206,85 @@ class MemberOverviewSection extends View {
 
 
 // ── Permissions section ────────────────────────────────────
+//
+// Two panels per spec line 270 ("Per-group permissions ... Distinct from
+// User.permissions"). Top panel is the editable per-group FormView
+// (autosave). Bottom panel is a read-only display of the target user's
+// system permissions (`member.user.permissions`) so admins can see
+// "what does this user have system-wide" without leaving MemberView.
+// System perms edits belong on the User record, not here.
 
 class MemberPermissionsSection extends View {
     constructor(options = {}) {
         super({
             className: 'member-permissions-section',
             template: `
-                <div class="detail-section-eyebrow">Permissions</div>
-                <p class="text-secondary small mb-3">Toggles autosave as soon as you flip them.</p>
-                <div data-container="member-permissions-form"></div>
+                <div class="detail-section-eyebrow">Group permissions</div>
+                <p class="text-secondary small mb-3">Per-group grants. Toggles autosave as soon as you flip them.</p>
+                <div data-container="member-perms-group"></div>
+
+                <div class="detail-section-eyebrow mt-4">System permissions <span class="text-secondary fw-normal">(read-only)</span></div>
+                <p class="text-secondary small mb-3">User-record permissions. Edit via the user's permissions page.</p>
+                <div data-container="member-perms-system"></div>
             `,
             ...options
         });
     }
 
     async onInit() {
+        // Group-scoped perms — editable, autosave.
         this.formView = new FormView({
-            containerId: 'member-permissions-form',
+            containerId: 'member-perms-group',
             fields: Member.PERMISSION_FIELDS,
             model: this.model,
             autosaveModelField: true
         });
         this.addChild(this.formView);
+
+        // System perms — read-only, sourced from the nested user model
+        // (member graph defaults to `user:"default"` which includes
+        // permissions per spec line 292). Falls back to an empty-state
+        // message if the graph doesn't expose them.
+        this.systemPermsView = new View({
+            containerId: 'member-perms-system',
+            className: 'member-system-perms',
+            template: `
+                {{#hasSystemPerms|bool}}
+                {{#systemPermRows}}
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label"><code>{{key}}</code></div>
+                    <div class="detail-flat-row-value">
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox" disabled {{#enabled|bool}}checked{{/enabled|bool}} aria-label="{{key}}">
+                        </div>
+                    </div>
+                </div>
+                {{/systemPermRows}}
+                {{/hasSystemPerms|bool}}
+                {{^hasSystemPerms|bool}}
+                <div class="text-center text-body-secondary py-3">
+                    <p class="mb-0 small">No system permissions on this user, or the user graph does not expose them.</p>
+                </div>
+                {{/hasSystemPerms|bool}}
+            `,
+            model: this.model
+        });
+        // Wire computed properties on the sub-view — Mustache resolves these
+        // off the view instance.
+        Object.defineProperty(this.systemPermsView, 'hasSystemPerms', {
+            get: () => {
+                const p = this.model?.get?.('user')?.permissions;
+                return !!(p && typeof p === 'object' && Object.keys(p).length);
+            }
+        });
+        Object.defineProperty(this.systemPermsView, 'systemPermRows', {
+            get: () => {
+                const p = this.model?.get?.('user')?.permissions;
+                if (!p || typeof p !== 'object') return [];
+                return Object.keys(p).sort().map(key => ({ key, enabled: !!p[key] }));
+            }
+        });
+        this.addChild(this.systemPermsView);
     }
 }
 

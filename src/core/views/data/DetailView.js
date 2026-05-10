@@ -173,7 +173,12 @@ class DetailHeaderView extends View {
                     icon: chip.icon || null,
                     text: text != null ? String(text) : '',
                     variant: chip.variant || 'light',
-                    tooltip
+                    tooltip,
+                    // Optional kebab-cased action — when set, the chip
+                    // renders as a click-through <button> carrying
+                    // data-action so the parent view's onActionKebabName
+                    // fires on click. Used by UserView for the org chip.
+                    action: chip.action || null
                 };
             })
             .filter(c => c.text !== '');
@@ -190,6 +195,12 @@ class DetailHeaderView extends View {
             const tooltipAttrs = c.tooltip
                 ? ` data-bs-toggle="tooltip" title="${this.escapeHtml(c.tooltip)}"`
                 : '';
+            // Click-through chips render as buttons so the parent's
+            // EventDelegate picks up `data-action`. Visually identical
+            // to the static-span variant (same Bootstrap badge classes).
+            if (c.action) {
+                return `<button type="button" class="badge bg-${this.escapeHtml(c.variant)} dh-chip-action border-0" data-action="${this.escapeHtml(c.action)}" style="cursor:pointer;"${tooltipAttrs}>${iconHtml}${this.escapeHtml(c.text)}</button>`;
+            }
             return `<span class="badge bg-${this.escapeHtml(c.variant)}"${tooltipAttrs}>${iconHtml}${this.escapeHtml(c.text)}</span>`;
         }).join('');
 

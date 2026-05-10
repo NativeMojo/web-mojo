@@ -37,6 +37,7 @@ import MOJOUtils from '@core/utils/MOJOUtils.js';
 import dataFormatter from '@core/utils/DataFormatter.js';
 import rest from '@core/Rest.js';
 import { User, UserDeviceList } from '@core/models/User.js';
+import { Group } from '@core/models/Group.js';
 import { LoginEventList } from '@ext/admin/models/LoginEvent.js';
 import { LogList } from '@core/models/Log.js';
 import { IncidentEventList } from '@ext/admin/models/Incident.js';
@@ -1371,7 +1372,15 @@ class UserView extends DetailView {
             { icon: 'bi-shield-check', text: 'Phone verified', variant: 'light',
               when: m => !!m.get('is_phone_verified') && !!m.get('phone_number') },
             { text: '2FA enabled', variant: 'light',
-              when: m => !!m.get('requires_mfa') }
+              when: m => !!m.get('requires_mfa') },
+            // Org chip — click-through opens the user's org as a nested
+            // GroupView modal. Uses the Phase 5 chip.action enhancement.
+            { icon: 'bi-buildings',
+              text: m => m.get('org')?.name || null,
+              variant: 'light',
+              tooltip: 'Open organization',
+              action: 'view-org',
+              when: m => !!m.get('org')?.id }
             // Locked chip removed — the header aux now renders a
             // reason-keyed status badge driven by `disable.reason`.
         ];
@@ -2069,6 +2078,35 @@ class UserView extends DetailView {
         } else {
             app?.toast?.error(resp.message || 'Failed to set password');
         }
+        return true;
+    }
+
+    /**
+     * Header org chip click — fetches the user's `org` (a Group) and
+     * opens it in a nested `Modal.detail`. Mirrors
+     * `MemberView.onActionViewGroup`. Lazily imports `GroupView` so the
+     * dependency only loads on user interaction (avoids the User→Group
+     * static-import cycle at module-load time).
+     */
+    async onActionViewOrg() {
+        const org = this.model.get('org');
+        if (!org?.id) return true;
+        const group = new Group({ id: org.id });
+        try {
+            await group.fetch();
+        } catch {
+            // fall through and let the not-found path handle it
+        }
+        if (!group.id) {
+            this.getApp()?.toast?.error('Organization not found');
+            return true;
+        }
+        const ViewClass = Group.VIEW_CLASS;
+        if (!ViewClass) {
+            this.getApp()?.toast?.error('GroupView not registered');
+            return true;
+        }
+        await Modal.detail(new ViewClass({ model: group }));
         return true;
     }
 

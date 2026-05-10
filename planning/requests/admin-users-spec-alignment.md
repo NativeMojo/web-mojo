@@ -885,3 +885,145 @@ Status: **shipped** — see Resolution below.
 - Phase 6: unified `/api/account/security-events` audit feed in UserView's Audit tab.
 - Dead `src/extensions/admin/account/users/sections/AdminProfileSection.js` cleanup (~240 unused lines).
 - Mid-session perm reactivity refinement (admin-tier flip during a session doesn't re-render the kebab/header until something else triggers it — accepted trade-off).
+
+---
+
+## Plan — Phase 5 (GroupView + MemberView spec alignment)
+
+Designed 2026-05-10. Builds on Phase 4's `isAdminCaller` pattern.
+
+### Scope
+
+| File | Touched? | Why |
+|---|---|---|
+| [`src/core/views/data/DetailView.js`](../../src/core/views/data/DetailView.js) | YES — small framework enhancement | Add optional `chip.action` field; chips with an action render as click-through buttons |
+| [`src/extensions/admin/account/users/UserView.js`](../../src/extensions/admin/account/users/UserView.js) | YES | New clickable org chip + `onActionViewOrg` opening GroupView via `Modal.detail` |
+| [`src/extensions/admin/account/groups/GroupView.js`](../../src/extensions/admin/account/groups/GroupView.js) | YES — biggest piece | Identity section gets `auth_domain` + `short_name` rows; kind-aware copy on modal titles + kebab labels + confirmations; class-level `isAdminCaller` + per-item perm gating on the kebab (two-tier: `[groups, manage_groups]` for edits, strict `[manage_groups]` for disable/delete); header `is_active` toggle gated likewise |
+| [`src/extensions/admin/account/users/MemberView.js`](../../src/extensions/admin/account/users/MemberView.js) | YES | `MemberPermissionsSection` splits into Group permissions (editable, as today) + System permissions (read-only display of `member.user.permissions`) |
+| `CHANGELOG.md` | YES | Unreleased entry |
+
+### Objective
+
+Bring GroupView and MemberView in line with the spec's "Group quirks" (line 280) and "GroupMember quirks" (line 288). Add the user→org chip for header-level cross-navigation. Adopt Phase 4's admin-tier gating on GroupView with its own perm tier (`groups` / `manage_groups`), respecting the backend's stricter `manage_groups`-only gate on disable / delete (per backend update line 214).
+
+### Steps
+
+**File: [`src/core/views/data/DetailView.js`](../../src/core/views/data/DetailView.js)** — Step 1 (chip-API enhancement)
+
+1. Extend `_resolveChips` (line 159) and `_buildTemplate` (line 188) so a chip carrying `action: 'kebab-name'` renders as a click-through `<button>` instead of a `<span>`. Markup: `<button type="button" class="badge bg-${variant} dh-chip-action" data-action="${action}" style="cursor:pointer">...</button>`. Visually identical (Bootstrap badge class). Chips without `action` keep the existing `<span class="badge ...">` markup — no behaviour change for existing consumers. ~10 lines.
+
+**File: [`src/extensions/admin/account/users/UserView.js`](../../src/extensions/admin/account/users/UserView.js)** — Steps 2-3
+
+2. Add an `org` chip to the `chips` array (around line 1310). Shape:
+   ```
+   { icon: 'bi-buildings',
+     text: m => m.get('org')?.name || null,
+     variant: 'light',
+     tooltip: 'Click to open organization',
+     action: 'view-org',
+     when: m => !!m.get('org')?.id }
+   ```
+3. Add `onActionViewOrg` handler at UserView level — mirrors `MemberView.onActionViewGroup` (line 441): fetch the org as a `Group` model, `Modal.detail(new GroupView({ model: group }))`. Add a direct `Group` + `GroupView` import to UserView if not already present.
+
+**File: [`src/extensions/admin/account/groups/GroupView.js`](../../src/extensions/admin/account/groups/GroupView.js)** — Steps 4-7 (biggest piece)
+
+4. **`GroupIdentitySection` template — add two rows under "Settings"** (around lines 405-433): `auth_domain` and `short_name`. Mirror the existing `domain` / `email_template` rows with computed getters `hasAuthDomain` / `authDomain` / `hasShortName` / `shortName` reading from `metadata.auth_domain` / `metadata.short_name`. Two new pencil handlers `onActionEditAuthDomain` and `onActionEditShortName` — `Modal.prompt` → `_saveField({metadata: {...}})`. Per spec line 282: `auth_domain` is unique; backend rejects collisions with a message — surface via existing toast path.
+
+5. **Kind-aware copy.** Introduce a `_kindNoun()` method on the GroupView class returning `kindLabel(this.model.get('kind'))` with a `'Group'` fallback. Apply in user-facing strings:
+   - `onActionEditGroup` modal title: `Edit ${this._kindNoun()} — ${name}`
+   - `onActionAddChildGroup` modal title: `Add Sub-${this._kindNoun()} to ${name}`
+   - `onActionStateToggle` confirm title: `${Verb} ${this._kindNoun()}`
+   - `onActionDeleteGroup` confirm title + message: `Delete ${this._kindNoun()}`
+   - Kebab labels — build `contextItems` from a function in the constructor that closes over `_kindNoun()`. Labels become `Edit ${noun}`, `Add Sub-${noun}`, `View Parent ${noun}`, `Activate ${noun}` / `Deactivate ${noun}`, `Delete ${noun}`.
+
+6. **Admin-tier gating.** Add class-level `isAdminCaller` getter (mirror Phase 4's UserView pattern):
+   ```
+   get isAdminCaller() {
+       const u = this.getApp()?.activeUser;
+       if (!u) return false;
+       if (u.get?.('is_superuser')) return true;
+       return !!u.hasPermission?.(['groups', 'manage_groups']);
+   }
+   ```
+   Two perm constants in the constructor:
+   - `GROUP_ADMIN_PERMS = ['groups', 'manage_groups']` — used on `edit-group`, `invite-member`, `add-child-group`, `view-parent-menu`
+   - `GROUP_DESTRUCTIVE_PERMS = ['manage_groups']` — used on `state-toggle`, `delete-group` (matches backend's stricter gate per line 214)
+   Tag each kebab item with the appropriate `permissions:`. Framework's `ModalView.filterContextMenuItems` handles the filter.
+
+7. **Header `is_active` toggle gating.** `_buildHeaderAux` (line 1209) gets a new param: `(model, membersCollection, isAdminCaller)`. The toggle's `switchHtml` only renders when `isAdminCaller` is true (specifically `manage_groups` per the destructive perm). Pass via the existing `auxFn` closure in the constructor: `auxFn: m => _buildHeaderAux(m, membersCollection, this.isAdminCallerDestructive)`. Add a second getter `isAdminCallerDestructive` that checks the strict `manage_groups` perm only.
+
+**File: [`src/extensions/admin/account/users/MemberView.js`](../../src/extensions/admin/account/users/MemberView.js)** — Step 8
+
+8. **Split `MemberPermissionsSection`** (lines 210-232). Replace the single-template view with one that mounts two child sub-panels via `data-container` slots:
+   - Template:
+     ```
+     <div class="detail-section-eyebrow">Group permissions</div>
+     <p class="text-secondary small mb-3">Per-group grants. Toggles autosave as soon as you flip them.</p>
+     <div data-container="member-perms-group"></div>
+
+     <div class="detail-section-eyebrow mt-4">System permissions <span class="text-secondary fw-normal">(read-only)</span></div>
+     <p class="text-secondary small mb-3">User-record permissions. Edit via the user's permissions page.</p>
+     <div data-container="member-perms-system"></div>
+     ```
+   - `onInit`:
+     - Build the existing FormView (group perms) with `containerId: 'member-perms-group'` and `addChild()`.
+     - Build a read-only sub-view (`new View({ template: '...', containerId: 'member-perms-system' })`) that renders `member.user.permissions` as a list of disabled switches. Reuse the markup pattern from `GroupPermissionsSection` (GroupView.js:625) — flat-row + `<input type="checkbox" disabled>`.
+   - Per spec line 292, the member graph default nests `user:"default"` which includes `permissions`. Verify during build; if `user.permissions` is missing, render the empty state "User permissions unavailable in this graph" rather than blocking.
+
+**File: [`CHANGELOG.md`](../../CHANGELOG.md)** — Step 9
+
+9. Add `Unreleased` entry under "Admin GroupView + MemberView spec alignment (Phase 5)":
+   - New `chip.action` field on `DetailView` chips. UserView gets an org chip wiring to `onActionViewOrg`.
+   - GroupView Identity section now surfaces `auth_domain` and `short_name`.
+   - GroupView uses kind-aware copy in modal titles + kebab labels + confirmations.
+   - GroupView adopts Phase 4's admin-tier pattern with two perm tiers: `[groups, manage_groups]` for edits; strict `[manage_groups]` for disable / delete (matching backend tightening).
+   - MemberView's Permissions section splits into Group perms (editable, as today) + System perms (read-only display of `member.user.permissions`).
+
+### Design Decisions
+
+- **Small framework chip enhancement is right-sized.** Click-through chips are a generally useful primitive — the 10-line addition unblocks Phase 5 cleanly and matches the existing chip API.
+- **`_kindNoun()` falls back to `'Group'`** when `kind` is unset — preserves today's copy unchanged for the default case.
+- **Two-tier perm constants on GroupView** match the backend's actual contract — broader `[groups, manage_groups]` for routine edits; strict `[manage_groups]` only for destructive disable/delete.
+- **MemberView System perms panel is read-only.** Source of truth is the User record; editing belongs in UserView. Surfacing read-only here makes "who has what" answerable from one place.
+- **No `MEMBER_PERMS_PROTECTION` gating in this phase.** No clear backend endpoint yet — captured in Out of scope.
+- **No multi-level parent breadcrumb in this phase.** Walking the chain via repeated `Group.fetch()` would work but the backend doesn't expose ancestors in one graph; the existing single-level Parent link in `GroupIdentitySection` stays. Filed as a future backend graph-extension request.
+
+### Edge Cases
+
+- **`app.activeUser` not loaded yet** — `isAdminCaller` returns false; non-admin UI degrades cleanly. Same pattern as Phase 4.
+- **Org missing on user model** — chip's `when` callback hides it; no `onActionViewOrg` reachable.
+- **Org id resolves to 404** — `Group.fetch` errors; `onActionViewOrg` toasts "Organization not found" (mirror `MemberView.onActionViewGroup` line 441-460).
+- **`kind` unknown or null** — `_kindNoun()` falls back to "Group". Copy reads naturally.
+- **Member graph missing `user.permissions`** — system-perms panel renders the empty-state message rather than crashing.
+- **Concurrent edits to `auth_domain`** — backend uniqueness check fires on save; `_saveField` surfaces `resp.message` on collision.
+- **Non-admin clicks the chip's hidden action** — not reachable (chip filtered out by `when` AND, even if rendered, `Modal.detail` requires GroupView mount which requires read perm on the org).
+
+### Testing
+
+- `npm run lint && npm run test:unit` — catch unrelated breakage.
+- Manual:
+  - GroupView Identity: new `auth_domain` + `short_name` rows render with pencils; editing each saves via Modal.prompt.
+  - GroupView with `kind: 'org'`: modal titles read "Edit Organization", "Add Sub-Organization", confirmations match. Kebab labels follow.
+  - GroupView as superuser / `manage_groups` admin: full kebab visible including disable/delete.
+  - GroupView as `groups`-only admin (no `manage_groups`): edit-group / invite-member visible; `state-toggle` and `delete-group` hidden. Header `is_active` toggle hidden too.
+  - UserView header: org chip renders for users with an `org`; clicking opens the org's GroupView in a nested modal.
+  - MemberView Permissions: two clearly-separated panels, system perms switches disabled.
+- Light + dark themes.
+
+### Docs Impact
+
+- `CHANGELOG.md` — yes.
+- `docs/web-mojo/components/DetailView.md` (if the file exists and documents chips) — add a short note on the new `chip.action` field. Verify during build.
+- Other `docs/web-mojo/` — no.
+
+### Out of scope
+
+- **Multi-level parent breadcrumb** — backend doesn't expose ancestors in a single graph; client-side walking via repeated REST calls is the only way today and the user opted to defer. The existing single-level Parent link stays. File a separate backend request if the breadcrumb becomes a real need.
+- **`MEMBER_PERMS_PROTECTION` per-perm grant gating** — no clear backend endpoint; defer until backend ships one.
+- **Cross-view ancestor / org cache** — out of scope.
+- **Phase 6** (unified `/api/account/security-events` audit feed) — separate phase.
+- **Dead `sections/AdminProfileSection.js` cleanup** — follow-up task.
+
+---
+
+Status: **planned** — ready to build.
