@@ -629,6 +629,7 @@ class UserDevicesSection extends View {
             pageSize: 5,
             searchable: true,
             searchPlaceholder: 'Search browser devices…',
+            hideActivePillNames: ['user'],
             onItemClick: (model) => Modal.detail(new DeviceView({ model })),
             emptyMessage: 'No browser devices on file.',
             itemTemplate: `
@@ -656,6 +657,7 @@ class UserDevicesSection extends View {
             pageSize: 5,
             searchable: true,
             searchPlaceholder: 'Search push devices…',
+            hideActivePillNames: ['user'],
             onItemClick: (model) => Modal.detail(new PushDeviceView({ model })),
             emptyMessage: 'No push devices on file.',
             itemTemplate: `
