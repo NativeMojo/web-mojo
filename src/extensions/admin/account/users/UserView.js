@@ -128,13 +128,46 @@ const LOG_LEVEL_TONE = {
     info:     'info'
 };
 
-// Pipe formatter for log-level → Bootstrap badge tone. Used by the
-// audit feed templates (`{{model.level|levelTone}}` → `secondary`/`info`/
-// `warning`/`danger`). Registered idempotently so dev hot-reloads don't
-// double-register.
+const LOG_LEVEL_ICON = {
+    error:    'bi-shield-x',
+    critical: 'bi-shield-x',
+    warning:  'bi-exclamation-triangle',
+    warn:     'bi-exclamation-triangle',
+    info:     'bi-pencil-square'
+};
+
+// LoginEvent event-type → tone mapping. The exact field name varies by
+// backend (`event_type` / `is_success` / `status`) — the formatter just
+// looks up by lowercase string and falls through to `secondary` for any
+// unrecognized value, so the timeline reads cleanly even when the
+// backend ships a different signal field.
+const LOGIN_TONE = {
+    success_login: 'success',
+    success:       'success',
+    login:         'success',
+    failed_login:  'danger',
+    failure:       'danger',
+    failed:        'danger',
+    suspicious:    'warning',
+    mfa_required:  'warning',
+    mfa:           'warning'
+};
+
+// Pipe formatters used by the audit feed + logins-timeline templates.
+// Registered idempotently so dev hot-reloads don't double-register.
 if (!dataFormatter.formatters?.has?.('leveltone')) {
     dataFormatter.register('levelTone', (level) => {
         return LOG_LEVEL_TONE[String(level || '').toLowerCase()] || 'secondary';
+    });
+}
+if (!dataFormatter.formatters?.has?.('levelicon')) {
+    dataFormatter.register('levelIcon', (level) => {
+        return LOG_LEVEL_ICON[String(level || '').toLowerCase()] || 'bi-circle';
+    });
+}
+if (!dataFormatter.formatters?.has?.('logintone')) {
+    dataFormatter.register('loginTone', (event_type) => {
+        return LOGIN_TONE[String(event_type || '').toLowerCase()] || 'secondary';
     });
 }
 
@@ -800,14 +833,14 @@ class UserAuditSection extends View {
             hideActivePillNames: ['uid'],
             emptyMessage: 'No activity recorded yet.',
             itemTemplate: `
-                <div class="user-feed-row">
-                    <div class="user-feed-meta">
-                        <span class="text-secondary small">{{model.created|datetime}}</span>
-                        <span class="badge text-bg-{{model.level|levelTone}}">{{model.level|default:'info'}}</span>
-                        {{#model.kind}}<span class="text-body small fw-semibold">{{model.kind}}</span>{{/model.kind}}
+                <div class="user-audit-row user-audit-row-{{model.level|levelTone}}">
+                    <div class="user-audit-icon"><i class="bi {{model.level|levelIcon}}"></i></div>
+                    <div class="user-audit-body">
+                        <div class="user-audit-title">{{#model.kind}}{{model.kind}}{{/model.kind}}{{^model.kind}}{{model.level|default:'event'}}{{/model.kind}}</div>
+                        <div class="user-audit-detail">{{model.log|default:'(no message)'}}</div>
+                        {{#model.path}}<div class="user-audit-path font-monospace">{{model.path}}</div>{{/model.path}}
                     </div>
-                    <div class="user-feed-body small">{{model.log|default:'(no message)'}}</div>
-                    {{#model.path}}<div class="user-feed-path text-secondary small font-monospace">{{model.path}}</div>{{/model.path}}
+                    <div class="user-audit-time" title="{{model.created|datetime}}">{{model.created|relative}}</div>
                 </div>
             `
         });
@@ -827,13 +860,14 @@ class UserAuditSection extends View {
             hideActivePillNames: ['model_id', 'model_name'],
             emptyMessage: 'No events for this user.',
             itemTemplate: `
-                <div class="user-feed-row">
-                    <div class="user-feed-meta">
-                        <span class="text-secondary small">{{model.created|datetime}}</span>
-                        {{#model.category}}<span class="badge text-bg-secondary">{{model.category}}</span>{{/model.category}}
-                        {{#model.title}}<span class="text-body small fw-semibold">{{model.title}}</span>{{/model.title}}
+                <div class="user-audit-row user-audit-row-info">
+                    <div class="user-audit-icon"><i class="bi bi-shield-exclamation"></i></div>
+                    <div class="user-audit-body">
+                        <div class="user-audit-title">{{#model.title}}{{model.title}}{{/model.title}}{{^model.title}}{{model.category|default:'event'}}{{/model.title}}</div>
+                        {{#model.description}}<div class="user-audit-detail">{{model.description}}</div>{{/model.description}}
+                        {{#model.category}}<div class="user-audit-meta"><span class="badge text-bg-secondary">{{model.category}}</span></div>{{/model.category}}
                     </div>
-                    {{#model.description}}<div class="user-feed-body small">{{model.description}}</div>{{/model.description}}
+                    <div class="user-audit-time" title="{{model.created|datetime}}">{{model.created|relative}}</div>
                 </div>
             `
         });
@@ -854,13 +888,13 @@ class UserAuditSection extends View {
             hideActivePillNames: ['model_id', 'model_name'],
             emptyMessage: 'No record changes logged.',
             itemTemplate: `
-                <div class="user-feed-row">
-                    <div class="user-feed-meta">
-                        <span class="text-secondary small">{{model.created|datetime}}</span>
-                        <span class="badge text-bg-{{model.level|levelTone}}">{{model.level|default:'info'}}</span>
-                        {{#model.kind}}<span class="text-body small fw-semibold">{{model.kind}}</span>{{/model.kind}}
+                <div class="user-audit-row user-audit-row-{{model.level|levelTone}}">
+                    <div class="user-audit-icon"><i class="bi {{model.level|levelIcon}}"></i></div>
+                    <div class="user-audit-body">
+                        <div class="user-audit-title">{{#model.kind}}{{model.kind}}{{/model.kind}}{{^model.kind}}{{model.level|default:'event'}}{{/model.kind}}</div>
+                        <div class="user-audit-detail">{{model.log|default:'(no message)'}}</div>
                     </div>
-                    <div class="user-feed-body small">{{model.log|default:'(no message)'}}</div>
+                    <div class="user-audit-time" title="{{model.created|datetime}}">{{model.created|relative}}</div>
                 </div>
             `
         });
@@ -1201,15 +1235,15 @@ class UserView extends DetailView {
             hideActivePillNames: ['user'],
             emptyMessage: 'No login events on file.',
             itemTemplate: `
-                <div class="user-feed-row">
-                    <div class="user-feed-meta">
-                        <span class="text-secondary small">{{model.created|datetime}}</span>
-                        <span class="badge text-bg-light border"><code>{{model.ip_address}}</code></span>
-                        {{#model.source}}<span class="badge text-bg-secondary">{{model.source}}</span>{{/model.source}}
+                <div class="user-login-row">
+                    <span class="user-login-dot user-login-dot-{{model.event_type|loginTone}}"></span>
+                    <div class="user-login-body">
+                        <div class="user-login-title">{{#model.city}}{{model.city}}{{/model.city}}{{^model.city}}—{{/model.city}}{{#model.region}}, {{model.region}}{{/model.region}}{{#model.country_code}} · {{model.country_code}}{{/model.country_code}}</div>
+                        <div class="user-login-meta small text-secondary">
+                            <code>{{model.ip_address}}</code>{{#model.source}} · {{model.source}}{{/model.source}}
+                        </div>
                     </div>
-                    <div class="user-feed-body small text-secondary">
-                        {{model.city|default:'—'}}{{#model.region}}, {{model.region}}{{/model.region}}{{#model.country_code}} · {{model.country_code}}{{/model.country_code}}
-                    </div>
+                    <div class="user-login-time" title="{{model.created|datetime}}">{{model.created|relative}}</div>
                 </div>
             `
         });
