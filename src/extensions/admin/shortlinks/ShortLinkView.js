@@ -675,14 +675,14 @@ class ShortLinkView extends DetailView {
                 chips,
                 // Active toggle is emitted from auxFn (not via framework's
                 // `activeField`) so the right gutter is a 2-row block:
-                //   row 1: [Copy icon] [Active toggle]
+                //   row 1: [Active toggle]
                 //   row 2: muted "X hits · updated Y ago"
-                // Open / Edit live in the context menu (already there) —
-                // header gutter stays minimal.
+                // Copy lives next to the URL itself (titleAffix slot).
+                // Open / Edit live in the context menu — header gutter
+                // stays minimal.
+                titleAffix: () => `<button type="button" class="dh-name-action" data-action="copy-link" data-bs-toggle="tooltip" title="Copy short URL"><i class="bi bi-clipboard"></i></button>`,
                 auxFn: m => _buildHeaderAux(m),
-                actions: [
-                    { label: '', icon: 'bi-clipboard', action: 'copy-link', title: 'Copy short URL' },
-                ],
+                actions: [],
                 contextMenu: {
                     items: [
                         { label: 'Copy short URL',     action: 'copy-link',         icon: 'bi-clipboard' },

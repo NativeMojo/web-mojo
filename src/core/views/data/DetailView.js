@@ -84,6 +84,7 @@ class DetailHeaderView extends View {
             iconToneFn,             // optional: (model) => tone, for state-driven icons
             titleField,
             titleFn,
+            titleAffix,             // optional: string | (model) => htmlString — trusted HTML slot rendered next to the title (copy-button, etc.)
             subtitlePath,
             subtitleFn,             // optional: (model) => string, takes precedence over subtitlePath
             subtitlePlaceholder,    // optional muted text shown when subtitle is empty
@@ -111,6 +112,7 @@ class DetailHeaderView extends View {
         this.iconToneFn = iconToneFn || null;
         this.titleField = titleField || null;
         this.titleFn = titleFn || null;
+        this.titleAffix = titleAffix || null;
         this.subtitlePath = subtitlePath || null;
         this.subtitleFn = subtitleFn || null;
         this.subtitlePlaceholder = subtitlePlaceholder || null;
@@ -129,6 +131,11 @@ class DetailHeaderView extends View {
         if (this.titleFn) return this.titleFn(this.model) || '';
         if (this.titleField) return this.model?.get?.(this.titleField) || '';
         return '';
+    }
+
+    _resolveTitleAffix() {
+        if (typeof this.titleAffix === 'function') return this.titleAffix(this.model) || '';
+        return this.titleAffix || '';
     }
 
     _resolveSubtitle() {
@@ -202,12 +209,20 @@ class DetailHeaderView extends View {
         const tone = this._resolveIconTone();
         const iconClass = tone ? `dh-icon dh-icon-tone-${this.escapeHtml(tone)}` : 'dh-icon';
 
+        // Trusted-HTML slot rendered inline next to the title (copy-button,
+        // edit-pencil, etc.). Caller is responsible for escaping anything
+        // that comes from user input — same contract as `auxFn`.
+        const titleAffixHtml = this._resolveTitleAffix();
+
         // Stylesheet lives in src/core/css/core.css under "DetailHeaderView".
         return `
             <div class="d-flex align-items-start gap-3">
                 <div class="${iconClass}"><i class="bi ${this.escapeHtml(this.icon)}"></i></div>
                 <div class="dh-meta" style="min-width: 0; flex: 1;">
-                    <h2 class="dh-name">${this.escapeHtml(title)}</h2>
+                    <div class="dh-name-row">
+                        <h2 class="dh-name">${this.escapeHtml(title)}</h2>
+                        ${titleAffixHtml ? `<span class="dh-title-affix">${titleAffixHtml}</span>` : ''}
+                    </div>
                     ${subtitle
                         ? `<p class="dh-subtitle">${this.escapeHtml(subtitle)}</p>`
                         : (this.subtitlePlaceholder
