@@ -673,14 +673,15 @@ class ShortLinkView extends DetailView {
                     return `→ ${truncated}`;
                 },
                 chips,
-                activeField: 'is_active',
-                // Trusted HTML — `auxFn` interpolates model fields. Free
-                // text comes through `escapeHtml(...)` before composition.
+                // Active toggle is emitted from auxFn (not via framework's
+                // `activeField`) so the right gutter is a 2-row block:
+                //   row 1: [Copy icon] [Active toggle]
+                //   row 2: muted "X hits · updated Y ago"
+                // Open / Edit live in the context menu (already there) —
+                // header gutter stays minimal.
                 auxFn: m => _buildHeaderAux(m),
                 actions: [
-                    { label: 'Copy', icon: 'bi-clipboard', action: 'copy-link', title: 'Copy short URL' },
-                    { label: 'Open', icon: 'bi-box-arrow-up-right', action: 'open-destination', title: 'Open destination URL' },
-                    { label: 'Edit', icon: 'bi-pencil', action: 'edit-shortlink', title: 'Edit shortlink' },
+                    { label: '', icon: 'bi-clipboard', action: 'copy-link', title: 'Copy short URL' },
                 ],
                 contextMenu: {
                     items: [
@@ -733,6 +734,28 @@ class ShortLinkView extends DetailView {
     }
 
     // ── Actions ────────────────────────────────────────────
+
+    /**
+     * Active toggle in the header right-gutter (emitted from `_buildHeaderAux`).
+     * Optimistic save with silent revert on failure — the bounce IS the
+     * feedback, mirroring the framework's default DetailHeaderView pattern.
+     */
+    async onActionToggleActive(event, element) {
+        const checked = !!element.checked;
+        element.disabled = true;
+        try {
+            this.model.set('is_active', checked);
+            const resp = await this.model.save({ is_active: checked });
+            if (resp && resp.status && resp.status >= 400) throw new Error('Save failed');
+            this.emit('detail:updated');
+        } catch (err) {
+            // Revert silently — the bounce IS the feedback.
+            this.model.set('is_active', !checked);
+        } finally {
+            if (element && element.isConnected) element.disabled = false;
+        }
+        return true;
+    }
 
     async onActionCopyLink() {
         const url = getShortUrl(this.model, this.getApp?.());
@@ -902,11 +925,18 @@ class ShortLinkView extends DetailView {
 // ── Header aux helper ──────────────────────────────────────
 
 /**
- * State-aware right-gutter readout for the DetailHeaderView.
- * Trusted HTML — every model-controlled value is escaped before
- * interpolation. Three states: Disabled (warning dot), Expired
- * (danger dot), Active (success dot, hit count + last-modified
- * relative).
+ * Right-gutter readout for the DetailHeaderView.
+ * Trusted HTML — every model-controlled value is escaped before interpolation.
+ *
+ * Two-row layout mirroring UserView/GroupView:
+ *   row 1: [Active/Disabled/Expired toggle]
+ *   row 2: muted "X hits · updated Y ago" (Disabled / Expired states swap
+ *          the leading state label in for the hit count)
+ *
+ * The toggle lives in here (not as the framework's `activeField`) so the
+ * meta line can sit on its own row underneath the toggle, instead of left
+ * of it. `data-change-action` (not `data-action`) so it fires once per
+ * toggle, not twice.
  */
 function _buildHeaderAux(m) {
     const isActive = !!m.get('is_active');
@@ -918,28 +948,26 @@ function _buildHeaderAux(m) {
         ? dataFormatter.pipe(modified, 'relative')
         : '';
 
-    let dotTone, main, sub;
-    if (!isActive) {
-        dotTone = 'warning';
-        main = 'Disabled';
-        sub = modifiedRel ? `updated ${escapeHtml(modifiedRel)}` : '';
-    } else if (isExpired) {
-        dotTone = 'danger';
-        main = 'Expired';
-        sub = modifiedRel ? `updated ${escapeHtml(modifiedRel)}` : '';
-    } else {
-        dotTone = 'success';
-        main = `${hits.toLocaleString()} ${hits === 1 ? 'hit' : 'hits'}`;
-        sub = modifiedRel ? `updated ${escapeHtml(modifiedRel)}` : '';
-    }
+    const switchHtml = `
+        <label class="dh-active-switch">
+            <input type="checkbox" data-change-action="toggle-active" ${isActive ? 'checked' : ''}>
+            <span class="dh-track"></span>
+            <span class="dh-track-label">${isActive ? (isExpired ? 'Expired' : 'Active') : 'Disabled'}</span>
+        </label>
+    `;
 
-    const dotCls = dotTone ? ` dh-aux-dot-${dotTone}` : '';
+    const metaParts = [];
+    if (isActive && !isExpired) {
+        metaParts.push(`${hits.toLocaleString()} ${hits === 1 ? 'hit' : 'hits'}`);
+    }
+    if (modifiedRel) {
+        metaParts.push(`updated ${escapeHtml(modifiedRel)}`);
+    }
+    const metaText = metaParts.join(' · ');
+
     return `
-        <span class="dh-aux-presence">
-            <span class="dh-aux-dot${dotCls}"></span>
-            <span>${escapeHtml(main)}</span>
-        </span>
-        ${sub ? `<span class="dh-aux-meta">${sub}</span>` : ''}
+        <div class="dh-aux-top">${switchHtml}</div>
+        ${metaText ? `<span class="dh-aux-meta">${metaText}</span>` : ''}
     `;
 }
 

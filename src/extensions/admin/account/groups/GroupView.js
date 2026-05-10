@@ -787,7 +787,6 @@ class GroupView extends DetailView {
                 icon: headerIcon,
                 titleField: 'name',
                 subtitlePath: '_subtitle',
-                subtitlePlaceholder: kindLabel(kind) || 'Group',
                 chips,
                 // Active toggle is emitted from auxFn (not via framework's
                 // `activeField`) so the right gutter is a 2-row block:
@@ -869,21 +868,14 @@ class GroupView extends DetailView {
 
     /**
      * Compute the synthetic `_subtitle` field the header binds to via
-     * subtitlePath. Shows the parent breadcrumb (or kind fallback).
+     * subtitlePath. Shows the parent breadcrumb when there is one; empty
+     * otherwise. Kind is already conveyed by a header chip — don't
+     * duplicate it as a subtitle row.
      */
     _refreshComputedFields() {
         const m = this.model;
         const parent = m.get('parent');
-        const kind = kindLabel(m.get('kind'));
-        let subtitle;
-        if (parent && parent.name) {
-            subtitle = `${parent.name} · ${kind || m.get('name') || ''}`.trim();
-        } else if (kind) {
-            subtitle = kind;
-        } else {
-            subtitle = '';
-        }
-        m.attributes._subtitle = subtitle;
+        m.attributes._subtitle = parent?.name ? String(parent.name) : '';
     }
 
     // ── Action handlers ────────────────────────────────────
