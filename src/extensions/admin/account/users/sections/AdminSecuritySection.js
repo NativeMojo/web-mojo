@@ -35,7 +35,8 @@ export default class AdminSecuritySection extends View {
                     <span class="badge text-bg-light border">Send</span>
                 </div>
 
-                <div class="admin-security-item" data-action="set-password">
+                {{#isAdminCaller|bool}}
+                <div class="admin-security-item" data-action="change-password">
                     <div class="admin-security-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-key"></i></div>
                     <div class="admin-security-info">
                         <div class="admin-security-title">Set Password</div>
@@ -43,9 +44,11 @@ export default class AdminSecuritySection extends View {
                     </div>
                     <span class="badge text-bg-light border">Set</span>
                 </div>
+                {{/isAdminCaller|bool}}
 
                 <div class="detail-section-eyebrow">Multi-Factor Authentication</div>
 
+                {{#isAdminCaller|bool}}
                 <div class="admin-security-item" data-action="toggle-mfa">
                     <div class="admin-security-icon" style="background: rgba(var(--bs-purple-rgb,111,66,193),0.1); color: var(--bs-purple, #6f42c1);"><i class="bi bi-shield-lock"></i></div>
                     <div class="admin-security-info">
@@ -58,6 +61,7 @@ export default class AdminSecuritySection extends View {
                     {{#model.requires_mfa|bool}}<span class="badge text-bg-success">Required</span>{{/model.requires_mfa|bool}}
                     {{^model.requires_mfa|bool}}<span class="badge text-bg-light border">Not required</span>{{/model.requires_mfa|bool}}
                 </div>
+                {{/isAdminCaller|bool}}
 
                 <div class="admin-security-item{{#totpEnabled|bool}} admin-security-item-clickable{{/totpEnabled|bool}}"{{#totpEnabled|bool}} data-action="disable-totp"{{/totpEnabled|bool}}>
                     <div class="admin-security-icon" style="background: rgba(var(--bs-purple-rgb,111,66,193),0.1); color: var(--bs-purple, #6f42c1);"><i class="bi bi-key"></i></div>
@@ -106,6 +110,7 @@ export default class AdminSecuritySection extends View {
                 </div>
                 {{/totpEnabled|bool}}
 
+                {{#isAdminCaller|bool}}
                 <div class="detail-section-eyebrow">Sessions</div>
 
                 <div class="admin-security-item" data-action="revoke-all-sessions">
@@ -115,6 +120,7 @@ export default class AdminSecuritySection extends View {
                         <div class="admin-security-desc">Force sign-out from all devices</div>
                     </div>
                 </div>
+                {{/isAdminCaller|bool}}
             `,
             ...options
         });
@@ -148,45 +154,32 @@ export default class AdminSecuritySection extends View {
         return !!this.model?.get?.('has_passkey');
     }
 
-    // ── Password actions ────────────────────────────
-    //
-    // `reset-password` and `send-magic-link` rows have no section-local
-    // handler; events bubble to UserView's `onActionResetPassword` (sends
-    // /api/auth/password/reset) and `onActionSendMagicLink`. Single
-    // canonical handler per action across kebab + Profile card + this
-    // section. The earlier `send-email-verification` affordance was
-    // removed — `/api/auth/email/verify` is JWT-scoped (self-only) and
-    // can't be admin-targeted at another user; admins use Send Magic
-    // Login Link instead so the user verifies their own email after
-    // logging in.
-
-    async onActionSetPassword() {
-        const app = this.getApp();
-        const data = await Modal.form({
-            title: 'Set Password',
-            size: 'sm',
-            fields: [
-                { name: 'password', type: 'password', label: 'New Password', required: true, cols: 12, help: 'Set a new password for this user.' },
-                { name: 'confirm', type: 'password', label: 'Confirm Password', required: true, cols: 12 }
-            ]
-        });
-        if (!data) return true;
-
-        if (data.password !== data.confirm) {
-            app?.toast?.error('Passwords do not match');
-            return true;
-        }
-
-        // Backend accepts `new_password` for admin-tier direct reset
-        // without `current_password` (django-mojo relaxation).
-        const resp = await this.model.save({ new_password: data.password });
-        if (resp.status === 200) {
-            app?.toast?.success('Password updated');
-        } else {
-            app?.toast?.error(resp.message || 'Failed to set password');
-        }
-        return true;
+    /**
+     * Admin tier == `users` / `manage_users` / `is_superuser`. Phase 4
+     * gates the destructive rows (Set Password, MFA toggle, Revoke
+     * Sessions) on this getter. Mirrors `UserView.isAdminCaller` and
+     * `UserProfileSection.isAdminCaller`.
+     */
+    get isAdminCaller() {
+        const u = this.getApp()?.activeUser;
+        if (!u) return false;
+        if (u.get?.('is_superuser')) return true;
+        return !!u.hasPermission?.(['users', 'manage_users']);
     }
+
+    // ── Bubbled actions ─────────────────────────────
+    //
+    // `reset-password`, `send-magic-link`, `change-password`, and
+    // `revoke-all-sessions` rows have no section-local handler — events
+    // bubble to UserView's canonical handlers (`onActionResetPassword`,
+    // `onActionSendMagicLink`, `onActionChangePassword`,
+    // `onActionRevokeAllSessions`). Single canonical handler per action
+    // across kebab + Profile card + this section.
+    //
+    // `send-email-verification` was removed in Phase 3 — the endpoint is
+    // JWT-scoped and can't be admin-targeted at another user. Admins use
+    // Send Magic Login Link instead so the user verifies their own email
+    // after logging in.
 
     // ── MFA actions ─────────────────────────────────
 
@@ -328,22 +321,6 @@ export default class AdminSecuritySection extends View {
         return true;
     }
 
-    // ── Session actions ─────────────────────────────
-
-    async onActionRevokeAllSessions() {
-        const app = this.getApp();
-        const confirmed = await Modal.confirm(
-            'Revoke all sessions for this user? They will be signed out of all devices immediately.',
-            'Revoke All Sessions'
-        );
-        if (!confirmed) return true;
-
-        const resp = await rest.POST(`/api/user/${this.model.id}/sessions/revoke`);
-        if (resp.success) {
-            app?.toast?.success('All sessions revoked');
-        } else {
-            app?.toast?.error(resp.message || 'Failed to revoke sessions');
-        }
-        return true;
-    }
+    // `revoke-all-sessions` row bubbles to UserView.onActionRevokeAllSessions
+    // (Phase 4 dedup). No section-local handler.
 }

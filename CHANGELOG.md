@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Admin UserView · admin-tier gating + throttle badge (Phase 4)
+
+- **Admin-tier gate** (`users` / `manage_users` / `is_superuser`) now hides destructive affordances from non-admin viewers. Affected: header `is_active` toggle (disable/reactivate), kebab items (`edit-user`, `change-avatar`, `clear-avatar`, `change-password`, `clear-rate-limit`, `revoke-all-sessions`), Permissions sidebar entry (via `permissions: [...]`), and the Security section's `Set Password` / `MFA Requirement` / `Revoke All Sessions` rows. Email-keyed actions (`reset-password`, `send-magic-link`) stay visible to any caller — backend trusts the email recipient. Per `planning/done/admin-users-spec-alignment.md`.
+- **Throttle badge in UserView header.** Fire-and-forget `GET /api/auth/manage/throttle?user_id=N&key=login` on view open; red "Login locked Xs" chip appears whenever `retry_after_seconds > 0`. Independent of `is_active` (a user can be active AND login-locked, or disabled AND not throttled).
+- **New "Clear Rate Limit" kebab action** wires `POST /api/auth/manage/clear_rate_limit` (admin-tier). Re-fetches throttle state on success so the chip clears immediately.
+- **New "Change Password" kebab item** — same flow as the Security section's "Set Password" row. Both now bubble to a single canonical `UserView.onActionChangePassword` handler.
+- **`AdminSecuritySection` dedup.** `onActionSetPassword` and `onActionRevokeAllSessions` removed from the section — events bubble to UserView. `data-action="set-password"` renamed to `change-password` to match the canonical handler name. Net delete ~30 lines.
+
 ### Admin UserView · identity cards (Phase 3)
 
 - **UserView Profile section now renders Username / Email / Phone / Password as managed `.admin-security-item` cards.** Display Name keeps its existing pencil row under the "Personal" eyebrow; the four identity cards live under a new "Identity" eyebrow. Per `planning/done/admin-users-spec-alignment.md`.

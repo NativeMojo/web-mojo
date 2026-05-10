@@ -1342,7 +1342,8 @@ class UserView extends DetailView {
             { key: 'OAuth',         label: 'OAuth',         icon: 'bi-link-45deg',       view: connectedSection },
             { type: 'divider', label: 'Access' },
             { key: 'Groups',        label: 'Groups',        icon: 'bi-people',           view: groupsSection },
-            { key: 'Permissions',   label: 'Permissions',   icon: 'bi-shield-check',     view: permissionsSection },
+            { key: 'Permissions',   label: 'Permissions',   icon: 'bi-shield-check',     view: permissionsSection,
+              permissions: ['users', 'manage_users'] },
             { key: 'ApiKeys',       label: 'API Keys',      icon: 'bi-key',              view: apiKeysSection },
             { type: 'divider', label: 'Activity' },
             { key: 'Devices',       label: 'Devices',       icon: 'bi-laptop',           view: devicesSection },
@@ -1375,18 +1376,24 @@ class UserView extends DetailView {
             // reason-keyed status badge driven by `disable.reason`.
         ];
 
-        // Context menu — supported admin actions only.
-        // Groups separated by dividers: identity / auth / state.
-        // Email/phone verification flips are SUPERUSER_ONLY_FIELDS — surfaced
-        // through the dedicated identity-change cards (Phase 3), not here.
+        // Context menu — admin-tier items carry `permissions: [...]` and are
+        // filtered by ModalView.filterContextMenuItems against app.activeUser
+        // (Phase 4). Email-keyed actions (`reset-password`, `send-magic-link`)
+        // stay ungated — backend trusts the email recipient, not the JWT.
+        // Email/phone verification flips are surfaced through Phase 3's
+        // identity cards, not here.
+        const ADMIN_PERMS = ['users', 'manage_users'];
         const contextItems = [
-            { label: 'Edit User',              action: 'edit-user',              icon: 'bi-pencil' },
-            { label: 'Change Avatar',          action: 'change-avatar',          icon: 'bi-image' },
-            { label: 'Clear Avatar',           action: 'clear-avatar',           icon: 'bi-person-x' },
+            { label: 'Edit User',              action: 'edit-user',              icon: 'bi-pencil',         permissions: ADMIN_PERMS },
+            { label: 'Change Avatar',          action: 'change-avatar',          icon: 'bi-image',          permissions: ADMIN_PERMS },
+            { label: 'Clear Avatar',           action: 'clear-avatar',           icon: 'bi-person-x',       permissions: ADMIN_PERMS },
             { type: 'divider' },
+            { label: 'Change Password',        action: 'change-password',        icon: 'bi-key',            permissions: ADMIN_PERMS },
             { label: 'Send Password Reset',    action: 'reset-password',         icon: 'bi-envelope' },
             { label: 'Send Magic Login Link',  action: 'send-magic-link',        icon: 'bi-link-45deg' },
-            { label: 'Revoke All Sessions',    action: 'revoke-all-sessions',    icon: 'bi-box-arrow-right' }
+            { type: 'divider' },
+            { label: 'Clear Rate Limit',       action: 'clear-rate-limit',       icon: 'bi-shield-slash',   permissions: ADMIN_PERMS },
+            { label: 'Revoke All Sessions',    action: 'revoke-all-sessions',    icon: 'bi-box-arrow-right', permissions: ADMIN_PERMS }
         ];
 
         super({
@@ -1421,7 +1428,7 @@ class UserView extends DetailView {
                 // active toggle is emitted from auxFn so the right gutter can
                 // be a 2-row block (presence + toggle on top, "last active" below)
                 actions: [],   // Magic link / reset password live in the context menu
-                auxFn: m => _buildHeaderAux(m),
+                auxFn: m => _buildHeaderAux(m, this.isAdminCaller, this.throttle),
                 contextMenu: { items: contextItems }
             },
             sections,
@@ -1450,6 +1457,10 @@ class UserView extends DetailView {
         this.auditSection         = auditSection;
         this.notificationsSection = notificationsSection;
         this.metadataSection      = metadataSection;
+
+        // Throttle state for the header "Login locked" badge. Fetched
+        // fire-and-forget in onAfterBuild; null until the GET settles.
+        this.throttle = null;
 
         this._refreshComputedFields();
     }
@@ -1502,6 +1513,42 @@ class UserView extends DetailView {
         this.eventsCollection.fetch().catch(() => {});
         this.activityCollection.fetch().catch(() => {});
         this.objectLogsCollection.fetch().catch(() => {});
+
+        // Throttle state for the header badge. Admin-tier-only endpoint;
+        // failure (e.g. non-admin viewer) is non-fatal — badge stays hidden.
+        if (this.isAdminCaller) {
+            this._refreshThrottle().catch(() => {});
+        }
+    }
+
+    /**
+     * Read the target user's login-throttle state and re-render the header
+     * to surface (or clear) the "Login locked Xs" chip. Per spec, the
+     * endpoint lives at `/api/auth/manage/throttle` (admin-tier).
+     */
+    async _refreshThrottle() {
+        try {
+            const resp = await rest.GET('/api/auth/manage/throttle', { user_id: this.model.id, key: 'login' });
+            this.throttle = (resp?.success && resp.data) ? (resp.data.data || resp.data) : null;
+        } catch {
+            this.throttle = null;
+        }
+        if (this.headerView?.isMounted()) this.headerView.render().catch(() => {});
+    }
+
+    /**
+     * Admin tier == `users` / `manage_users` / `is_superuser`. Gates the
+     * header `is_active` toggle, kebab destructive items, the Permissions
+     * sidebar entry, and the Security section's destructive rows. Mirrors
+     * the `UserProfileSection.isAdminCaller` getter at the section level
+     * (Phase 3); UserView-level here so the kebab + header aux can read it
+     * at construction / render time.
+     */
+    get isAdminCaller() {
+        const u = this.getApp()?.activeUser;
+        if (!u) return false;
+        if (u.get?.('is_superuser')) return true;
+        return !!u.hasPermission?.(['users', 'manage_users']);
     }
 
     /** Force-verify or unverify the email/phone (admin override). */
@@ -1965,6 +2012,66 @@ class UserView extends DetailView {
         return true;
     }
 
+    /**
+     * Admin-tier kebab action — clears the target user's login throttle
+     * via `POST /api/auth/manage/clear_rate_limit`. No-op when no throttle
+     * is in flight; otherwise re-fetches throttle state and re-renders
+     * the header so the badge disappears.
+     */
+    async onActionClearRateLimit() {
+        if (!this.throttle?.retry_after_seconds) {
+            this.getApp()?.toast?.info('No active rate limit to clear');
+            return true;
+        }
+        const confirmed = await Modal.confirm(
+            'Clear the login rate-limit on this user? They will be able to attempt sign-in immediately.',
+            'Clear Rate Limit'
+        );
+        if (!confirmed) return true;
+        const resp = await rest.POST('/api/auth/manage/clear_rate_limit', { key: 'login', user_id: this.model.id });
+        if (resp.success) {
+            this.getApp()?.toast?.success('Rate limit cleared');
+            await this._refreshThrottle();
+        } else {
+            this.getApp()?.toast?.error(resp.message || 'Failed to clear rate limit');
+        }
+        return true;
+    }
+
+    /**
+     * Admin-tier handler — direct password reset via `model.save({new_password})`.
+     * Canonical handler for both the Security section's "Set Password" row
+     * (now bubbling `data-action="change-password"`) and the kebab item.
+     * Hoisted from AdminSecuritySection in Phase 4 dedup.
+     */
+    async onActionChangePassword() {
+        const app = this.getApp();
+        const data = await Modal.form({
+            title: 'Set Password',
+            size: 'sm',
+            fields: [
+                { name: 'password', type: 'password', label: 'New Password', required: true, cols: 12, help: 'Set a new password for this user.' },
+                { name: 'confirm', type: 'password', label: 'Confirm Password', required: true, cols: 12 }
+            ]
+        });
+        if (!data) return true;
+
+        if (data.password !== data.confirm) {
+            app?.toast?.error('Passwords do not match');
+            return true;
+        }
+
+        // Backend accepts `new_password` for admin-tier direct reset
+        // without `current_password` (django-mojo relaxation).
+        const resp = await this.model.save({ new_password: data.password });
+        if (resp.status === 200) {
+            app?.toast?.success('Password updated');
+        } else {
+            app?.toast?.error(resp.message || 'Failed to set password');
+        }
+        return true;
+    }
+
     async onActionImpersonate() {
         const confirmed = await Modal.confirm(
             `Sign in as <strong>${escapeHtml(this.model.get('display_name') || this.model.get('email') || 'this user')}</strong>?`,
@@ -2073,7 +2180,7 @@ class UserView extends DetailView {
  * The active toggle lives in here (not as the framework's `activeField`)
  * so we can keep presence and toggle on the same horizontal line.
  */
-function _buildHeaderAux(m) {
+function _buildHeaderAux(m, isAdminCaller, throttle) {
     const online = isOnline(m);
     const last = m.get('last_activity') || m.get('last_login');
     const rel = last
@@ -2098,14 +2205,24 @@ function _buildHeaderAux(m) {
         ? `<span class="badge text-bg-${status.variant}">${escapeHtml(status.label)}</span>`
         : '';
 
-    // Active toggle. Hidden for anonymized users (irreversible per spec).
-    // Disable: opens optional reason+note form, POSTs {"disable":{...}}.
-    // Reactivate: no prompt, POSTs {"reactivate":{}}.
+    // Throttle badge — independent of `is_active` per spec (a user can
+    // be active AND login-locked). Read from `this.throttle` which is
+    // fetched fire-and-forget in `onAfterBuild`; `null` until the GET
+    // settles, after which any non-zero `retry_after_seconds` produces
+    // the badge.
+    const retry = throttle?.retry_after_seconds || 0;
+    const throttleHtml = retry > 0
+        ? `<span class="badge text-bg-danger" title="Login attempts throttled. Use Clear Rate Limit in the kebab menu to reset."><i class="bi bi-clock-history me-1"></i>Login locked ${escapeHtml(String(retry))}s</span>`
+        : '';
+
+    // Active toggle. Hidden for anonymized users (irreversible per spec)
+    // AND for non-admin callers (disable/reactivate requires the admin
+    // tier per Phase 4).
     // `data-change-action` (not `data-action`) so the dispatch fires only
     // once per toggle. `data-action` on a form control fires onAction* on
     // BOTH click and change, which would open the Disable form three times
     // for a single user click.
-    const switchHtml = anonymized ? '' : `
+    const switchHtml = (anonymized || !isAdminCaller) ? '' : `
         <label class="dh-active-switch">
             <input type="checkbox" data-change-action="toggle-active" ${isActive ? 'checked' : ''}>
             <span class="dh-track"></span>
@@ -2131,6 +2248,7 @@ function _buildHeaderAux(m) {
                 <span>${escapeHtml(main)}</span>
             </span>
             ${statusHtml}
+            ${throttleHtml}
             ${switchHtml}
         </div>
         ${sub ? `<span class="dh-aux-meta">${escapeHtml(sub)}</span>` : ''}

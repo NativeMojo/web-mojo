@@ -715,3 +715,120 @@ Restructure UserView's Profile section so Username / Email / Phone / Password re
 ---
 
 Status: **shipped (Phase 3 of multi-phase request)** — file stays in `planning/requests/` until Phases 4-6 land.
+
+---
+
+## Plan — Phase 4 (admin-tier gating + throttle badge)
+
+Designed 2026-05-10. Builds on Phase 3's `isAdminCaller` pattern. Phases 5-6 remain separate.
+
+**Note on the spec's "Include disabled" toggle** (lines 97, 230, 359): outdated. The existing boolean `is_active` filter pill on UserTablePage / GroupTablePage already provides toggle semantics for any caller — admin or not. Discoverability is fine in practice. No work in this phase.
+
+### Scope
+
+| File | Touched? | Why |
+|---|---|---|
+| [`src/extensions/admin/account/users/UserView.js`](../../src/extensions/admin/account/users/UserView.js) | YES | UserView-level `isAdminCaller` + gate header aux toggle, kebab items, Permissions section; throttle badge + clear-rate-limit handler |
+| [`src/extensions/admin/account/users/sections/AdminSecuritySection.js`](../../src/extensions/admin/account/users/sections/AdminSecuritySection.js) | YES | Gate `toggle-mfa` / `set-password` / `revoke-all-sessions` rows on admin-tier (read from `app.activeUser` directly in the section's template) |
+| GroupView / MemberView | NO | Phase 5 territory (parent breadcrumb, kind-aware copy, member-perms split). Will get the same admin-tier gate then. |
+| TablePages (User / Group / Member) | NO | Existing `is_active` filter pill already provides "Include disabled" capability; no UX work needed. |
+| `CHANGELOG.md` | YES | One Unreleased entry |
+
+### Objective
+
+Wire the single admin-tier check (`isAdminCaller = is_superuser \|\| hasPermission(['users','manage_users'])`) across UserView's remaining admin affordances so non-admin viewers don't see edit/destructive controls that would 403. Ship the throttle badge + "Clear rate limit" action that was scoped under Phase 2 but never landed.
+
+### Steps
+
+**File: [`src/extensions/admin/account/users/UserView.js`](../../src/extensions/admin/account/users/UserView.js)**
+
+1. **Add an `isAdminCaller` getter to the UserView class** (alongside the existing `_refreshComputedFields` around line 1482). Reads `app.activeUser` the same way `UserProfileSection.isAdminCaller` does. UserView-level so the header aux helper, the kebab filter, and section bindings can all reach it. Existing `UserProfileSection.isAdminCaller` (Phase 3) stays as-is.
+
+2. **Header aux `is_active` toggle** — gate it in `_buildHeaderAux` (line 2004-2067). The `switchHtml` block at line 2036 currently always renders the toggle (unless `anonymized`). Wrap the emit so it only renders for admin-tier. Non-admin viewers see the status badge but no toggle. Pass `isAdminCaller` into the helper or read `app.activeUser` inline there — function-scope, no template gate.
+
+3. **Kebab `contextItems`** (line 1331-1339). Filter the items based on `isAdminCaller`:
+   - `edit-user`, `change-avatar`, `clear-avatar`, `change-password` (new — see Step 7), `revoke-all-sessions` → admin-tier only.
+   - `reset-password`, `send-magic-link` → keep for any viewer (email-keyed, work for anyone).
+   - Use a function or filter at constructor time. Easiest: build `contextItems` conditionally based on the same check, then pass to `super()`. (Note: the kebab is built once at construction; if the caller's perms change mid-session — rare — they'd need to reopen. Acceptable.)
+   - Item order suggestion: `Edit User`, `Change Avatar`, `Clear Avatar`, divider, `Change Password` (admin), `Send Password Reset`, `Send Magic Login Link`, divider, `Clear Rate Limit` (admin, see Step 5), `Revoke All Sessions` (admin).
+
+4. **`UserPermissionsSection` template** (line 605-636). Currently mounts a `FormView` with `autosaveModelField: true`. Wrap the section content in `{{#isAdminCaller|bool}}` / `{{^isAdminCaller|bool}}`:
+   - Admin-tier: existing form view.
+   - Non-admin: render a read-only message "Permission edits require the `users` / `manage_users` permission" with the user's current `permissions.*` rendered as badges (read-only). Or simpler: just hide the section entirely for non-admin via the sidebar `permissions:` field. Recommend the simpler hide-via-sidebar — match the existing `Audit` section pattern (line 1300 uses `permissions: 'view_logs'`).
+   - Sidebar gating uses string-style perm checks; the framework wires these through `app.activeUser.hasPermission`. Add `permissions: ['users', 'manage_users']` to the Permissions section entry (line 1294). Non-admins won't see the section in the sidebar at all.
+
+5. **Throttle badge + handler** (Phase 2 gap). 
+   - Add a `throttle: null` field on the UserView class. Fetched lazily.
+   - In `onAfterBuild` (line 1406, where shared collections wire up), kick off a fire-and-forget `rest.GET('/api/auth/manage/throttle', { user_id: this.model.id, key: 'login' })`. On success, store on `this.throttle` and re-render the header.
+   - Add a chip to the `chips` array (line 1310) with `when: m => this.throttle?.retry_after_seconds > 0`, text `() => 'Login locked ' + this.throttle.retry_after_seconds + 's'`, variant `'danger'`.
+   - Add `onActionClearRateLimit` handler — `Modal.confirm` → `rest.POST('/api/auth/manage/clear_rate_limit', { key: 'login', user_id: this.model.id })` → re-fetch throttle → re-render header.
+   - Add a kebab item `Clear Rate Limit` → `clear-rate-limit`, gated on `isAdminCaller` (same filter as Step 3) AND only when `this.throttle?.retry_after_seconds > 0`. Conditional kebab items aren't currently supported; simpler: add the item unconditionally to the admin-tier kebab, and let the handler no-op if throttle is clear. Or just guard the handler with the same throttle-state check.
+
+**File: [`src/extensions/admin/account/users/sections/AdminSecuritySection.js`](../../src/extensions/admin/account/users/sections/AdminSecuritySection.js)**
+
+6. **Add `isAdminCaller` getter** to `AdminSecuritySection` (same pattern as `UserProfileSection`). Reads `app.activeUser`.
+
+7. **Dedupe `onActionSetPassword` to UserView** (matches Phase 3's `reset-password` dedup pattern):
+   - **Move the handler body** from `AdminSecuritySection.onActionSetPassword` (currently ~25 lines) to UserView as `onActionChangePassword`. Logic unchanged: `Modal.form` with `password` + `confirm` → equality check → `model.save({ new_password: data.password })` → toast.
+   - **Delete** `AdminSecuritySection.onActionSetPassword`.
+   - **Rename** the Security section template's `data-action="set-password"` → `change-password` so events bubble to the new UserView handler. Keep the row's visible label as "Set Password" (matches existing operational vocabulary) — the action name is the wire identifier.
+   - The new kebab item from Step 3 uses `data-action="change-password"`, same canonical handler.
+
+8. **Gate the destructive rows** in the template — wrap `toggle-mfa` (line 60), the renamed `change-password` row, and `revoke-all-sessions` (line 122) in `{{#isAdminCaller|bool}}` / `{{/isAdminCaller|bool}}`. Non-admin sees only `reset-password`, `send-magic-link`, and the MFA status rows (TOTP / SMS / Passkeys are read-only display rows; keep visible).
+
+**File: [`CHANGELOG.md`](../../CHANGELOG.md)**
+
+9. Add `Unreleased` entry under "Admin UserView · admin-tier gating + throttle badge (Phase 4)":
+   - Admin-tier (`users` / `manage_users` / `is_superuser`) check now gates the header `is_active` toggle, kebab items, Permissions section (via sidebar `permissions:` gate), and the MFA / Set Password / Revoke Sessions rows in the Security section.
+   - New throttle badge in UserView header (red "Login locked Xs") when target user is rate-limited; new "Clear Rate Limit" kebab action wiring `POST /api/auth/manage/clear_rate_limit`.
+   - New "Change Password" kebab item — same flow as the Security section's "Set Password" row; both now bubble to a single canonical UserView handler (`onActionChangePassword`).
+
+### Design Decisions
+
+- **Single admin-tier check, three places.** UserView class-level + `UserProfileSection` (Phase 3 already done) + `AdminSecuritySection`. Each section reads `app.activeUser` independently rather than threading a prop down — matches the existing `getApp()` pattern.
+- **Sidebar-level gating on Permissions section.** Simpler than template-level read-only. Matches the existing Audit section's `permissions: 'view_logs'` precedent. Non-admin viewers don't see the section at all.
+- **Throttle badge on the header chip array, not a separate row.** Compact, follows the existing chip `when` callback pattern, naturally responsive.
+- **Throttle fetch in `onAfterBuild`, fire-and-forget.** Same pattern as the shared collections wired in lines 1447-1453. Failure is non-fatal — badge just stays hidden.
+- **Clear Rate Limit kebab item is unconditional within the admin-tier kebab.** Cheaper than dynamic kebab visibility; the handler guards against the no-op case.
+- **No TablePage changes.** The existing `is_active` boolean filter pill on UserTablePage / GroupTablePage already provides "Include disabled" semantics for any caller — admin or not. The spec's call for a dedicated toggle is outdated.
+
+### Edge Cases
+
+- **`app.activeUser` not yet loaded** at UserView construction time → `isAdminCaller` returns `false`, non-admin UI renders. Acceptable; re-render after activeUser populates picks up the correct value.
+- **Throttle endpoint returns 403** (caller lacks admin tier) → fetch fails silently; badge stays hidden. Defensive `.catch(() => {})`.
+- **Throttle endpoint returns success but `retry_after_seconds === 0`** → badge `when` callback returns false; not rendered.
+- **Clear-rate-limit fails** → toast `resp.message`. Badge stays as-is (next fetch may pick up correct state).
+- **`hasPermission` not defined on `activeUser`** (unusual but defensive) → optional chaining; getter returns `false`. Matches Phase 3 `UserProfileSection.isAdminCaller`.
+- **Non-admin viewer + UserPermissionsSection in URL** → sidebar gating filters the section; the framework presumably handles missing sections gracefully (renders the first available). Verify during build.
+- **Throttle re-fetch after `Clear Rate Limit`** — if the same admin clears the same key twice in quick succession, second call is a no-op on the backend; toast still succeeds.
+
+### Testing
+
+- `npm run lint && npm run test:unit` — catch unrelated breakage.
+- Manual: open admin Users page → as superuser (or `users`/`manage_users` admin):
+  - Header `is_active` toggle visible. Kebab shows admin items. Sidebar shows Permissions section.
+  - Security section shows MFA / Set Password / Revoke Sessions rows.
+- Manual: as a non-admin viewer (or impersonating one):
+  - Header `is_active` toggle hidden. Kebab limited to `reset-password` / `send-magic-link`. Sidebar hides Permissions.
+  - Security section hides MFA / Set Password / Revoke Sessions rows.
+- Manual throttle: trigger a `Login locked` scenario in the mock backend (seed `retry_after_seconds > 0` on a user), open UserView, verify the danger chip renders. Click "Clear Rate Limit" from the kebab → toast + chip clears after re-fetch.
+- Light + dark themes.
+
+### Docs Impact
+
+- `CHANGELOG.md` — yes.
+- `docs/web-mojo/` — no. Framework primitives unchanged.
+
+### Out of scope
+
+- **GroupView admin-tier gating** — Phase 5 territory (will adopt the same `isAdminCaller` pattern then).
+- **MemberView per-perm gating** + `MEMBER_PERMS_PROTECTION` fetch — Phase 5.
+- **Group throttle badge** — defer with GroupView gating.
+- **"Include disabled" UX work** — the spec's call (lines 97, 230, 359) is outdated. The existing `is_active` boolean filter pill on User/Group TablePages already provides the toggle; no work needed.
+- **Removing dead `sections/AdminProfileSection.js`** — follow-up cleanup.
+- **Refining `app.activeUser` reactivity** so mid-session perm changes auto-rerender views — out of scope; rare in practice.
+- **Backend confirmation of `/api/auth/manage/throttle` body/query shape** — assumed per spec line 215. Verify during build; if shape differs, adjust the one fetch call.
+
+---
+
+Status: **planned** — ready to build.
