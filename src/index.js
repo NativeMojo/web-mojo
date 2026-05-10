@@ -71,6 +71,12 @@ export { default as SegmentControl } from '@core/views/navigation/SegmentControl
 export { default as SimpleSearchView } from '@core/views/navigation/SimpleSearchView.js';
 export { default as SideNavView } from '@core/views/navigation/SideNavView.js';
 export { default as DataView } from '@core/views/data/DataView.js';
+export { default as DetailView, DetailHeaderView } from '@core/views/data/DetailView.js';
+export { default as MetricCard } from '@core/views/data/MetricCard.js';
+export { default as StatusPanel } from '@core/views/data/StatusPanel.js';
+export { default as Timeline } from '@core/views/data/Timeline.js';
+export { default as KnownFieldsCard } from '@core/views/data/KnownFieldsCard.js';
+export { default as FlowStrip } from '@core/views/data/FlowStrip.js';
 export { default as FormView } from '@core/forms/FormView.js';
 export { default as FormBuilder } from '@core/forms/FormBuilder.js';
 export { default as FormPage } from '@core/forms/FormPage.js';

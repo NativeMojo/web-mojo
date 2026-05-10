@@ -530,6 +530,29 @@
       "group": "Navigation"
     },
     {
+      "name": "DetailView",
+      "area": "components",
+      "route": "components/detail-view",
+      "title": "DetailView",
+      "summary": "Standard record-viewer layout: flat header (icon, title, chips, active toggle, actions, X close) + SideNavView. Pair with Modal.detail() inside a Modal.",
+      "docs": "docs/web-mojo/components/DetailView.md",
+      "tags": [
+        "modal",
+        "detail",
+        "header",
+        "sections",
+        "record"
+      ],
+      "page": "DetailViewExample.js",
+      "modulePath": "./examples/components/DetailView/DetailViewExample.js",
+      "sourcePath": "examples/portal/examples/components/DetailView/DetailViewExample.js",
+      "section": "Components",
+      "icon": "bi-card-text",
+      "order": 51,
+      "topic": "components",
+      "group": "Modals & Dialogs"
+    },
+    {
       "name": "SidebarTopNav",
       "area": "components",
       "route": "components/sidebar-top-nav",
@@ -2284,6 +2307,13 @@
               "summary": "Modal.form — host a FormView in a modal, resolve with the submitted data.",
               "icon": "bi-window-stack",
               "docs": "docs/web-mojo/components/Modal.md"
+            },
+            {
+              "route": "components/detail-view",
+              "title": "DetailView",
+              "summary": "Standard record-viewer layout: flat header + SideNavView. Pair with Modal.detail() inside a Modal.",
+              "icon": "bi-card-text",
+              "docs": "docs/web-mojo/components/DetailView.md"
             }
           ]
         },
@@ -3116,6 +3146,13 @@
           "summary": "Section-based detail layout used inside Modal record viewers (FileView, IPSetView, …).",
           "icon": "bi-layout-sidebar",
           "docs": "docs/web-mojo/components/SideNavView.md"
+        },
+        {
+          "route": "components/detail-view",
+          "title": "DetailView",
+          "summary": "Standard record-viewer layout: flat header + SideNavView. Pair with Modal.detail() inside a Modal.",
+          "icon": "bi-card-text",
+          "docs": "docs/web-mojo/components/DetailView.md"
         },
         {
           "route": "components/file-view/inline",

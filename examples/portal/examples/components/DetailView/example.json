@@ -1,0 +1,15 @@
+{
+    "name": "DetailView",
+    "area": "components",
+    "route": "components/detail-view",
+    "title": "DetailView",
+    "summary": "Standard record-viewer layout: flat header (icon, title, chips, active toggle, actions, X close) + SideNavView. Pair with Modal.detail() inside a Modal.",
+    "docs": "docs/web-mojo/components/DetailView.md",
+    "tags": ["modal", "detail", "header", "sections", "record"],
+    "page": "DetailViewExample.js",
+    "menu": {
+        "section": "Components",
+        "icon": "bi-card-text",
+        "order": 51
+    }
+}
