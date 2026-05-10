@@ -1333,10 +1333,10 @@ class UserView extends DetailView {
         ];
 
         // Header chips — only render when value exists (DetailHeaderView
-        // automatically filters chips with `when:` callbacks)
+        // automatically filters chips with `when:` callbacks). Online
+        // status lives in the header aux (presence dot + label) — no
+        // separate chip here.
         const chips = [
-            { text: 'Online', variant: 'success',
-              when: m => isOnline(m) },
             { text: m => {
                 if (m.get('is_superuser')) return 'Superuser';
                 if (m.get('is_staff'))     return 'Staff';
@@ -1495,21 +1495,15 @@ class UserView extends DetailView {
 
     /**
      * Compute the synthetic `_subtitle` field the header binds to.
-     * Format: "{email} · last seen {relative} from {city}"
+     * Format: "{email} · {phone}" — the "last seen" / "active ago"
+     * read-out lives in the header aux (top right), so we don't repeat
+     * it here.
      */
     _refreshComputedFields() {
         const m = this.model;
         const parts = [];
         if (m.get('email')) parts.push(m.get('email'));
         if (m.get('phone_number')) parts.push(m.get('phone_number'));
-        const last = m.get('last_activity');
-        if (last) {
-            const rel = dataFormatter.apply('relative', last) || '';
-            if (rel) parts.push(`last seen ${rel}`);
-        }
-        const lastLogin = this.loginsCollection?.models?.[0];
-        const city = lastLogin?.get?.('city');
-        if (city && parts.length) parts[parts.length - 1] = `${parts[parts.length - 1]} from ${city}`;
         m.attributes._subtitle = parts.join(' · ');
     }
 
@@ -2007,10 +2001,14 @@ function _buildHeaderAux(m) {
     const isActive = !!m.get('is_active');
     const anonymized = _isAnonymized(m);
 
-    // Status badge (always shown). Reason-keyed when disabled; "Active"
-    // green when active.
-    const status = _statusBadge(m);
-    const statusHtml = `<span class="badge text-bg-${status.variant}">${escapeHtml(status.label)}</span>`;
+    // Status badge — only shown when disabled (Blocked / Banned /
+    // Auto-disabled / Anonymized / Self-deactivated). Active state is
+    // already conveyed by the toggle's "Active" label below, so the
+    // duplicate green badge is suppressed.
+    const status = isActive ? null : _statusBadge(m);
+    const statusHtml = status
+        ? `<span class="badge text-bg-${status.variant}">${escapeHtml(status.label)}</span>`
+        : '';
 
     // Active toggle. Hidden for anonymized users (irreversible per spec).
     // Disable: opens optional reason+note form, POSTs {"disable":{...}}.
