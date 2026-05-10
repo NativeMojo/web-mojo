@@ -72,6 +72,28 @@
       border-radius: 0.625rem;
       background: var(--bs-body-bg);
     }
+
+    .section-heading {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--bs-emphasis-color);
+      margin: 2rem 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--bs-border-color);
+    }
+    .section-heading:first-of-type {
+      margin-top: 0;
+    }
+    .section-heading .tag {
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--bs-secondary-color);
+    }
     .mockup-head {
       display: flex;
       align-items: baseline;
@@ -180,15 +202,20 @@
     }
 
     /* ============================================================
-       VARIANT B — Typographic mark + fading rule (currently shipped)
+       VARIANT B — Typographic mark + fading rule
+       (mockup shows the corrected inset alignment — the currently shipped
+       CSS has `padding: 0.375rem 0 0.5rem` and looks worse because the
+       square hangs off the left edge of the card. This mockup applies
+       proper 1rem horizontal padding so the mark aligns with the item
+       icons below.)
        ============================================================ */
     .v-b .gh {
       --accent: var(--bs-primary);
       display: flex;
       align-items: center;
       gap: 0.625rem;
-      padding: 0.5rem 1rem;
-      margin-top: 1rem;
+      padding: 0.75rem 1rem 0.5rem;
+      margin-top: 0.75rem;
       font-size: 0.6875rem;
       font-weight: 600;
       text-transform: uppercase;
@@ -257,6 +284,24 @@
     }
 
     /* ============================================================
+       VARIANT E2 — Centered version of the neutral band (proposed default)
+       ============================================================ */
+    .v-e2 .gh {
+      padding: 0.5rem 1rem;
+      background: var(--bs-tertiary-bg);
+      color: var(--bs-emphasis-color);
+      text-align: center;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      border-bottom: 1px solid var(--bs-border-color-translucent);
+    }
+    .v-e2 .gh:not(:first-child) {
+      border-top: 1px solid var(--bs-border-color-translucent);
+    }
+
+    /* ============================================================
        VARIANT E — Full-width tertiary band, left-aligned (iOS Mail)
        ============================================================ */
     .v-e .gh {
@@ -303,20 +348,24 @@
     </div>
   </header>
 
+  <h2 class="section-heading">
+    Recommended directions
+    <span class="tag">picked from your review · multiple supported via <code>groupHeaderStyle</code></span>
+  </h2>
+
   <div class="mockup-grid">
 
-    <!-- ===== VARIANT A — your request ===== -->
-    <section class="mockup v-a">
+    <!-- ===== VARIANT E2 — Centered version of the neutral band (proposed default) ===== -->
+    <section class="mockup v-e2">
       <div class="mockup-head">
-        <h2>A · Subtle primary strip · centered label</h2>
-        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">your request</span>
+        <h2>E (centered) · Neutral band, label centered</h2>
+        <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">proposed default</span>
       </div>
       <p class="mockup-blurb">
-        Faint <code>--bs-primary-bg-subtle</code> band runs the full width of the items column;
-        small uppercase text centered inside. Reads like an iOS-style date band but tinted with
-        the brand accent. Strong "section break" affordance — a band of color is unmistakable.
-        Trade-off: imposes brand color on every group, which can feel busy in long lists or in
-        apps that don't use the framework's primary as their accent.
+        Same band concept as E (neutral <code>--bs-tertiary-bg</code> tint, full width)
+        but with the label centered instead of left-aligned. Combines E's universality
+        (no brand-color imposition) with A's centered-anchor energy. Strongest "section
+        break" affordance of the recommended set.
       </p>
       <div class="sample-pair">
         <div>
@@ -348,17 +397,19 @@
       </div>
     </section>
 
-    <!-- ===== VARIANT B — currently shipped ===== -->
+    <!-- ===== VARIANT B — Typographic mark + fading rule (corrected inset) ===== -->
     <section class="mockup v-b">
       <div class="mockup-head">
         <h2>B · Typographic mark + fading rule</h2>
-        <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">currently shipped</span>
+        <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">your second pick</span>
       </div>
       <p class="mockup-blurb">
         Sharp 4×4 brand-tinted square + bold uppercase emphasis-color label + directional
         gradient hairline that fades to nothing on the right. Restrained, typographic, plays
-        well with any consumer's brand. Trade-off: less visually punchy than a band — readers
-        skim more easily but the section break is quieter.
+        well with any consumer's brand. <strong>Note:</strong> this mockup uses the corrected
+        inset alignment (mark + label aligned with item icons below) — the currently-shipped
+        CSS has zero horizontal padding, so the square hangs off the left edge of the card.
+        Production CSS will be fixed to match this mockup when this variant ships.
       </p>
       <div class="sample-pair">
         <div>
@@ -390,41 +441,41 @@
       </div>
     </section>
 
-    <!-- ===== VARIANT C — chip-style ===== -->
-    <section class="mockup v-c">
+    <!-- ===== VARIANT E — full-width neutral band, left-aligned ===== -->
+    <section class="mockup v-e">
       <div class="mockup-head">
-        <h2>C · Inline chip on muted background</h2>
+        <h2>E · Full-width neutral band, left-aligned</h2>
       </div>
       <p class="mockup-blurb">
-        Small pill-shaped label on the framework's <code>--bs-secondary-bg</code> tint, sits
-        inline above each group with no rule or band. Light-touch, conversational, very
-        modern — see Linear's grouped views. Trade-off: the section break relies on white
-        space alone; in dense lists the pill can feel orphaned.
+        Same band concept as the centered version above but label left-aligned (closer to
+        iOS Mail / Things 3 section headers). For consumers who prefer the section break to
+        flow with the items' left edge rather than centered. Same neutral
+        <code>--bs-tertiary-bg</code> — no brand-color imposition.
       </p>
       <div class="sample-pair">
         <div>
           <h6>Categorical (role)</h6>
           <div class="mock-list">
-            <div class="gh"><span class="gh-pill">Admin</span></div>
+            <div class="gh">Admin</div>
             <div class="mock-item"><div class="icon"><i class="bi bi-person-circle"></i></div><div class="body"><div class="title">Alice Adams</div><div class="meta">alice@example.com</div></div></div>
             <div class="mock-item"><div class="icon"><i class="bi bi-person-circle"></i></div><div class="body"><div class="title">Eve Estrada</div><div class="meta">eve@example.com</div></div></div>
-            <div class="gh"><span class="gh-pill">Editor</span></div>
+            <div class="gh">Editor</div>
             <div class="mock-item"><div class="icon"><i class="bi bi-person-circle"></i></div><div class="body"><div class="title">Ben Bryant</div><div class="meta">ben@example.com</div></div></div>
             <div class="mock-item"><div class="icon"><i class="bi bi-person-circle"></i></div><div class="body"><div class="title">Dan Dietrich</div><div class="meta">dan@example.com</div></div></div>
-            <div class="gh"><span class="gh-pill">Viewer</span></div>
+            <div class="gh">Viewer</div>
             <div class="mock-item"><div class="icon"><i class="bi bi-person-circle"></i></div><div class="body"><div class="title">Carla Cruz</div><div class="meta">carla@example.com</div></div></div>
           </div>
         </div>
         <div>
           <h6>Chronological (day)</h6>
           <div class="mock-list">
-            <div class="gh"><span class="gh-pill">Today</span></div>
+            <div class="gh">Today</div>
             <div class="mock-item"><div class="icon"><i class="bi bi-shield-check"></i></div><div class="body"><div class="title">alice@example.com</div><div class="meta">San Francisco · 30 min ago</div></div></div>
-            <div class="gh"><span class="gh-pill">Yesterday</span></div>
+            <div class="gh">Yesterday</div>
             <div class="mock-item"><div class="icon"><i class="bi bi-shield-check"></i></div><div class="body"><div class="title">ben@example.com</div><div class="meta">Austin · 1 day ago</div></div></div>
-            <div class="gh"><span class="gh-pill">May 4</span></div>
+            <div class="gh">May 4</div>
             <div class="mock-item"><div class="icon"><i class="bi bi-shield-check"></i></div><div class="body"><div class="title">grace@example.com</div><div class="meta">Toronto · 5 days ago</div></div></div>
-            <div class="gh"><span class="gh-pill">Apr 25</span></div>
+            <div class="gh">Apr 25</div>
             <div class="mock-item"><div class="icon"><i class="bi bi-shield-check"></i></div><div class="body"><div class="title">carla@example.com</div><div class="meta">Lisbon · 2 weeks ago</div></div></div>
           </div>
         </div>
@@ -472,16 +523,25 @@
       </div>
     </section>
 
-    <!-- ===== VARIANT E — full-width neutral band ===== -->
-    <section class="mockup v-e">
+  </div>
+
+  <h2 class="section-heading">
+    Rejected directions
+    <span class="tag">label confused with item content; section break unclear</span>
+  </h2>
+
+  <div class="mockup-grid">
+
+    <!-- ===== REJECTED · VARIANT A — subtle primary strip ===== -->
+    <section class="mockup v-a">
       <div class="mockup-head">
-        <h2>E · Full-width neutral band, left-aligned</h2>
+        <h2>A · Subtle primary strip · centered label</h2>
+        <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">rejected</span>
       </div>
       <p class="mockup-blurb">
-        Same band concept as A but neutral (<code>--bs-tertiary-bg</code>) instead of
-        brand-tinted, label left-aligned instead of centered. Closer to iOS Mail / Things 3
-        section headers. Trade-off: monochrome — the brand color isn't used to signal
-        section, so the divider is purely tonal. Less character but more universally fitting.
+        Faint <code>--bs-primary-bg-subtle</code> band, centered uppercase label. Strong
+        section break but imposes brand color on every group; in dark theme the band reads
+        as a saturated navy strip and starts to feel busy in long lists.
       </p>
       <div class="sample-pair">
         <div>
@@ -513,16 +573,57 @@
       </div>
     </section>
 
-    <!-- ===== VARIANT F — bold heading, no chrome ===== -->
+    <!-- ===== REJECTED · VARIANT C — chip-style ===== -->
+    <section class="mockup v-c">
+      <div class="mockup-head">
+        <h2>C · Inline chip on muted background</h2>
+        <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">rejected</span>
+      </div>
+      <p class="mockup-blurb">
+        Small pill-shaped label sitting alone on whitespace. Light-touch and modern
+        (Linear-style) but the chip can be confused with item content / status badges, and
+        the section break relies on whitespace alone — too quiet for chronological feeds.
+      </p>
+      <div class="sample-pair">
+        <div>
+          <h6>Categorical (role)</h6>
+          <div class="mock-list">
+            <div class="gh"><span class="gh-pill">Admin</span></div>
+            <div class="mock-item"><div class="icon"><i class="bi bi-person-circle"></i></div><div class="body"><div class="title">Alice Adams</div><div class="meta">alice@example.com</div></div></div>
+            <div class="mock-item"><div class="icon"><i class="bi bi-person-circle"></i></div><div class="body"><div class="title">Eve Estrada</div><div class="meta">eve@example.com</div></div></div>
+            <div class="gh"><span class="gh-pill">Editor</span></div>
+            <div class="mock-item"><div class="icon"><i class="bi bi-person-circle"></i></div><div class="body"><div class="title">Ben Bryant</div><div class="meta">ben@example.com</div></div></div>
+            <div class="mock-item"><div class="icon"><i class="bi bi-person-circle"></i></div><div class="body"><div class="title">Dan Dietrich</div><div class="meta">dan@example.com</div></div></div>
+            <div class="gh"><span class="gh-pill">Viewer</span></div>
+            <div class="mock-item"><div class="icon"><i class="bi bi-person-circle"></i></div><div class="body"><div class="title">Carla Cruz</div><div class="meta">carla@example.com</div></div></div>
+          </div>
+        </div>
+        <div>
+          <h6>Chronological (day)</h6>
+          <div class="mock-list">
+            <div class="gh"><span class="gh-pill">Today</span></div>
+            <div class="mock-item"><div class="icon"><i class="bi bi-shield-check"></i></div><div class="body"><div class="title">alice@example.com</div><div class="meta">San Francisco · 30 min ago</div></div></div>
+            <div class="gh"><span class="gh-pill">Yesterday</span></div>
+            <div class="mock-item"><div class="icon"><i class="bi bi-shield-check"></i></div><div class="body"><div class="title">ben@example.com</div><div class="meta">Austin · 1 day ago</div></div></div>
+            <div class="gh"><span class="gh-pill">May 4</span></div>
+            <div class="mock-item"><div class="icon"><i class="bi bi-shield-check"></i></div><div class="body"><div class="title">grace@example.com</div><div class="meta">Toronto · 5 days ago</div></div></div>
+            <div class="gh"><span class="gh-pill">Apr 25</span></div>
+            <div class="mock-item"><div class="icon"><i class="bi bi-shield-check"></i></div><div class="body"><div class="title">carla@example.com</div><div class="meta">Lisbon · 2 weeks ago</div></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== REJECTED · VARIANT F — bold heading, no chrome ===== -->
     <section class="mockup v-f">
       <div class="mockup-head">
         <h2>F · Bold heading, no chrome</h2>
+        <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">rejected</span>
       </div>
       <p class="mockup-blurb">
-        The most restrained: a slightly larger bold label sitting on its own with breathing
-        room. No fills, no rules, no marks. The whitespace is the divider. See Slack channel
-        groups, Notion list view. Trade-off: cleanest possible look but easy to miss in
-        scannable feeds; no visual chrome to anchor the eye on long lists.
+        Most restrained — bold label, breathing room only, no fills/rules/marks. Cleanest
+        possible look but the bold label reads too similarly to item titles below; section
+        break is easy to miss in scannable feeds.
       </p>
       <div class="sample-pair">
         <div>
