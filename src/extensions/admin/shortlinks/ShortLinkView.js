@@ -262,6 +262,7 @@ class ShortLinkConfigurationSection extends View {
     constructor(options = {}) {
         super({
             className: 'shortlink-configuration-section',
+            enableTooltips: true,
             template: `
                 <div class="detail-section-eyebrow">
                     Destination
@@ -271,8 +272,8 @@ class ShortLinkConfigurationSection extends View {
                 </div>
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Original URL</div>
-                    <div class="detail-flat-row-value text-truncate">
-                        {{#hasUrl|bool}}<a href="{{model.url}}" target="_blank" rel="noopener noreferrer">{{model.url}}</a>{{/hasUrl|bool}}
+                    <div class="detail-flat-row-value detail-flat-row-value--url">
+                        {{#hasUrl|bool}}<a href="{{model.url}}" target="_blank" rel="noopener noreferrer" data-bs-toggle="tooltip" title="{{model.url}}">{{model.url}}</a>{{/hasUrl|bool}}
                         {{^hasUrl|bool}}<span class="text-secondary fst-italic">—</span>{{/hasUrl|bool}}
                     </div>
                 </div>
@@ -667,7 +668,9 @@ class ShortLinkView extends DetailView {
                 titleFn: m => m.get('short_link') || getShortUrl(m, options.app) || m.get('code') || 'Short link',
                 subtitleFn: m => {
                     const url = m.get('url') || '';
-                    return url ? `→ ${url}` : '';
+                    if (!url) return '';
+                    const truncated = url.length > 80 ? `${url.slice(0, 80)}…` : url;
+                    return `→ ${truncated}`;
                 },
                 chips,
                 activeField: 'is_active',

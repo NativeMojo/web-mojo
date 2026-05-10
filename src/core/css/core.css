@@ -2943,6 +2943,15 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
     flex-wrap: wrap;
     gap: 0.4rem;
 }
+/* URL modifier — for value cells holding long URLs that would otherwise
+   blow out the row width. Wraps at any character so long paths don't
+   force horizontal overflow inside Modal.detail. */
+.detail-flat-row-value--url {
+    display: block;
+    max-width: 100%;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+}
 .detail-flat-row-action {
     margin-left: auto;
     display: inline-flex;

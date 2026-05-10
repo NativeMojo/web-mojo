@@ -899,12 +899,9 @@ class GeoIPView extends DetailView {
               when: m => !!m.get('is_whitelisted') }
         ];
 
-        const headerActions = [
-            { label: 'Block',       icon: 'bi-slash-circle',     action: 'block-ip' },
-            { label: 'Whitelist',   icon: 'bi-shield-check',     action: 'whitelist-ip' },
-            { label: 'Refresh geo', icon: 'bi-arrow-clockwise',  action: 'refresh-geoip' }
-        ];
-
+        // Header right gutter stays empty — Block/Whitelist live on the
+        // StatusPanel and the Block & Whitelist section's eyebrow pencils;
+        // Refresh geo lives in the context menu.
         const contextItems = [
             { label: 'Refresh geolocation', action: 'refresh-geoip',     icon: 'bi-arrow-clockwise' },
             { label: 'Refresh threat data', action: 'threat-analysis',   icon: 'bi-shield-exclamation' },
@@ -932,7 +929,7 @@ class GeoIPView extends DetailView {
                 titleFn: m => m.get('ip_address') || '—',
                 subtitlePath: '_subtitle',
                 chips,
-                actions: headerActions,
+                actions: [],
                 contextMenu: { items: contextItems }
             },
             sections,

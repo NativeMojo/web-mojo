@@ -99,13 +99,6 @@ class GroupOverviewSection extends View {
                     <div class="detail-flat-row-value">{{model.name|default:'—'}}</div>
                 </div>
                 <div class="detail-flat-row">
-                    <div class="detail-flat-row-label">Kind</div>
-                    <div class="detail-flat-row-value">
-                        {{#hasKind|bool}}<span class="badge text-bg-primary">{{kindLabel}}</span>{{/hasKind|bool}}
-                        {{^hasKind|bool}}<span class="text-secondary fst-italic">—</span>{{/hasKind|bool}}
-                    </div>
-                </div>
-                <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Status</div>
                     <div class="detail-flat-row-value">
                         {{#model.is_active|bool}}<span class="badge text-bg-success">Active</span>{{/model.is_active|bool}}
@@ -773,6 +766,7 @@ class GroupView extends DetailView {
 
         const contextItems = [
             { label: 'Edit Group',     action: 'edit-group',       icon: 'bi-pencil' },
+            { label: 'Invite Member',  action: 'invite-member',    icon: 'bi-person-plus' },
             { label: 'Add Sub-Group',  action: 'add-child-group',  icon: 'bi-diagram-3' }
         ];
         if (model.get('parent')?.id) {
@@ -796,10 +790,7 @@ class GroupView extends DetailView {
                 subtitlePlaceholder: kindLabel(kind) || 'Group',
                 chips,
                 activeField: 'is_active',
-                actions: [
-                    { label: 'Invite', icon: 'bi-person-plus', action: 'invite-member', title: 'Invite member' },
-                    { label: 'Edit',   icon: 'bi-pencil',      action: 'edit-group',    title: 'Edit group' }
-                ],
+                actions: [],
                 // auxFn — small right-gutter readout (last activity / member count).
                 // Trusted HTML; model fields escaped before interpolation.
                 auxFn: m => _buildHeaderAux(m, membersCollection),
