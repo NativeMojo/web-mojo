@@ -1,24 +1,38 @@
 ---
-status: in-progress (paused — waiting on listview-search-filters-pagination)
+status: in-progress
 type: request
 scope: src/extensions/admin/account/{users,groups} · UserView · GroupView · MemberView
 created: 2026-05-09
 parent: detailview-audit-followups.md
-blocked_by: listview-search-filters-pagination.md
 ---
 
-## Status — 2026-05-09
+## Status — 2026-05-10
 
-**Phase 1 + Phase 2 shipped. Paused on Phase 3+ pending ListView toolbar/pagination work.**
+**Unblocked.** The previous pause-blocker [`listview-search-filters-pagination.md`](../done/listview-search-filters-pagination.md) shipped — toolbar / pagination / show-more is in `planning/done/`. The DetailView audit round 2 ([`planning/done/detailview-audit-round-2.md`](../done/detailview-audit-round-2.md)) also landed and incidentally swept several of the table-heavy surfaces this request was waiting on:
 
-Landed:
+- **UserView Audit / Devices / Locations / Groups** all converted from `TableView` to toolbar-equipped `ListView` with `paginationMode: 'pages'` + `pageSize: 5` + `clickAction: 'view'`.
+- The Audit feeds + Logins ListView gained day-grouped headers via the new `groupByDay('created')` primitive.
+- `LoginEventView` was created so Logins-row click opens the proper detail modal.
+- `FileView` migrated to extend `DetailView`.
+
+**Phase 1 + Phase 2** still shipped (commits below). **Phases 3-6** are still TO-DO — round-2 did **not** touch the identity-change flows, field-write protections, GroupView/MemberView spec quirks, or the unified security-events audit feed.
+
+Phase 1 / Phase 2 commits:
 - `52c4712` — Phase 1 (I1 double-fire, I2 force-verify removal, I3 Change Avatar, I4 TOTP/SMS/Passkey rows) + this spec file.
 - `7f37b68` — bonus: badges + KPI counts use `collection.meta.count` instead of fetched-page length.
 - `d6dde92` — Phase 2 (disable lifecycle): reason-keyed status badge, optional reason+note form on toggle-off, silent reactivate on toggle-on, anonymized hides toggle, inactivity-warning row + Reset link, disable-history accordion, mock-backend POST_SAVE_ACTIONS support, seed users get is_active + populated disable blocks.
 
-**Why paused:** the remaining table-heavy sections in UserView (Audit's three tabs, Devices, Locations, Groups membership) feel cramped inside the Modal.detail width. The right fix isn't more table columns — it's swapping those TableViews for ListView with toolbar + show-more pagination. That work is captured in [`listview-search-filters-pagination.md`](./listview-search-filters-pagination.md) and is already fully planned.
+Round-2 commits that incidentally moved the needle on this file's scope (visually, not spec-wise):
+- `538e94c` — UserView Audit feed redesign + Logins timeline (visual primitives Phase 6's unified feed will reuse).
+- `d314ce9` — GroupView Identity row-level edits (lays groundwork for Phase 5's GroupView spec rows).
 
-Resuming this request after ListView lands will likely look like: replace the table-shaped sections with toolbar-equipped ListViews, then continue with **Phase 3** (throttle badge + clear-rate-limit), **Phase 4** (identity-change cards), **Phase 5** (field-write protection gating + "Include disabled" toggle on TablePages), **Phase 6** (Group/Member spec quirks), **Phase 7** (security-events feed).
+**Remaining (still to ship):**
+- **Phase 3** — Identity-change cards for email / phone / username / password (replacing direct pencil edits with managed flows that go through `/api/auth/...` endpoints).
+- **Phase 4** — Wire `NO_SAVE_FIELDS` / `SUPERUSER_ONLY_FIELDS` / `MANAGE_USERS_ONLY_FIELDS` client-side gating + "Include disabled" toggle on Table pages.
+- **Phase 5** — GroupView parent breadcrumb / kind-aware copy / `auth_domain` / `email_template` / `timezone` / `short_name` / `domain` from `metadata.protected`. User → org chip + click-through. MemberView per-group vs system perms split. `MEMBER_PERMS_PROTECTION` gating.
+- **Phase 6** — Replace UserView Audit's triple-tab with a single `/api/account/security-events` feed driven by the canonical category list.
+
+The previously-mentioned "Phase 7" was a numbering glitch in the original status note — Phase 6 is the last phase per the phased plan below.
 
 ---
 
