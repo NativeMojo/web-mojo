@@ -533,6 +533,79 @@ class TablePage extends Page {
   }
 
   /**
+   * Batch-action helper — encapsulates the confirm → save/destroy → toast →
+   * refresh pattern shared by every admin batch handler.
+   *
+   * Pass one of three modes:
+   *   - { field, value, label, message? }            → save({ [field]: value }) on each
+   *   - { destroy: true, label, message? }           → destroy() each
+   *   - { handler: async (model) => …, label, … }    → run handler(model) per item
+   *
+   * Behavior:
+   *   - Resolves to 0 (no-op) when the selection is empty.
+   *   - Confirms via Modal.confirm unless `confirm: false` is passed.
+   *   - Runs items in parallel via Promise.allSettled so one failure
+   *     doesn't abort the rest.
+   *   - Surfaces a ToastService message — success-only or "N succeeded,
+   *     M failed" — based on the settled outcomes.
+   *   - Always clears selection and refreshes the table on a non-cancel
+   *     path so the user sees the partial state on failure.
+   *
+   * @param {object} options
+   * @param {string} [options.field] - Field name to set on each model (save mode).
+   * @param {*}      [options.value] - Value to assign when in save mode.
+   * @param {boolean}[options.destroy=false] - Destroy each model instead of saving.
+   * @param {Function}[options.handler] - Custom async (model) => * handler.
+   * @param {string} [options.label='Action'] - Verb used in the confirm + toast.
+   * @param {string} [options.message] - Override the confirm message.
+   * @param {boolean}[options.confirm=true] - Skip the confirm prompt when false.
+   * @returns {Promise<number>} The count of successful operations.
+   */
+  async batchAction({
+    field,
+    value,
+    destroy = false,
+    handler = null,
+    label = 'Action',
+    message,
+    confirm = true
+  } = {}) {
+    const items = this.tableView ? this.tableView.getSelectedItems() : [];
+    if (!items.length) return 0;
+
+    if (confirm) {
+      const ok = await Modal.confirm(
+        message || `${label} ${items.length} item(s)?`
+      );
+      if (!ok) return 0;
+    }
+
+    const results = await Promise.allSettled(items.map(({ model }) => {
+      if (handler) return handler(model);
+      if (destroy) return model.destroy();
+      return model.save({ [field]: value });
+    }));
+
+    const successes = results.filter(r => r.status === 'fulfilled').length;
+    const failures = results.length - successes;
+
+    const app = this.getApp ? this.getApp() : null;
+    if (failures === 0) {
+      app?.toast?.success?.(`${label}: ${successes} item(s) updated`);
+    } else if (successes === 0) {
+      app?.toast?.error?.(`${label} failed for all ${failures} item(s)`);
+    } else {
+      app?.toast?.warning?.(
+        `${label}: ${successes} succeeded, ${failures} failed`
+      );
+    }
+
+    this.tableView.clearSelection();
+    await this.tableView.refresh();
+    return successes;
+  }
+
+  /**
    * Handle filter edit dialog
    */
   async handleFilterEdit(filterKey) {

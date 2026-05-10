@@ -617,6 +617,87 @@ This also syncs the URL and re-fetches the collection.
 
 ---
 
+### batchAction(options)
+
+Run a batch operation across the currently selected rows. Encapsulates the
+**confirm → save / destroy → toast → refresh** pattern shared by every admin
+batch handler so subclasses don't have to re-implement it.
+
+```javascript
+async batchAction({
+  field,            // save mode: field to set
+  value,            // save mode: value to set
+  destroy = false,  // destroy mode: call model.destroy() instead
+  handler = null,   // handler mode: async (model) => * called per item
+  label = 'Action', // verb used in confirm + toast
+  message,          // override the confirm message
+  confirm = true    // skip the confirm prompt when false
+})
+```
+
+Three modes — pick one per call:
+
+| Mode | What it does |
+|------|--------------|
+| `field` + `value` | `model.save({ [field]: value })` on each selected row |
+| `destroy: true` | `model.destroy()` on each selected row |
+| `handler` | Custom `async (model) => *` callback per row |
+
+Behavior shared by every mode:
+
+- **Empty selection** → resolves to `0`, no Modal opened, no toast.
+- **Confirm cancel** → resolves to `0`, nothing saved, no refresh.
+- **Partial failure** — uses `Promise.allSettled` so one failed item doesn't
+  abort the rest. The toast tier degrades from `success` → `warning` (some
+  failed) → `error` (all failed). The table is always refreshed and the
+  selection is always cleared on a non-cancel path so the user sees the
+  partial state.
+
+Returns the count of successful operations.
+
+**Example — Incident-style status transitions in five lines:**
+
+```javascript
+class IncidentTablePage extends TablePage {
+  // ...
+
+  async onActionBatchResolve() {
+    return this.batchAction({ field: 'status', value: 'resolved', label: 'Resolve' });
+  }
+
+  async onActionBatchOpen() {
+    return this.batchAction({ field: 'status', value: 'open', label: 'Open' });
+  }
+
+  async onActionBatchDelete() {
+    return this.batchAction({ destroy: true, label: 'Delete' });
+  }
+}
+```
+
+For batch flows that need a follow-up form (e.g. an Incident **merge** that
+prompts for a parent), pass `confirm: false` plus a custom `handler` so the
+helper handles the parallel run, toast, and refresh while the page owns the
+form interaction:
+
+```javascript
+async onActionBatchMerge() {
+  const parent = await this._promptForParent();
+  if (!parent) return;
+  return this.batchAction({
+    confirm: false,
+    label: 'Merge',
+    handler: (model) => model.save({ merge_into: parent.id })
+  });
+}
+```
+
+The toast surfaces through `app.toast.success` / `warning` / `error` (the
+PortalApp `ToastService` singleton). Pages that aren't mounted under a
+PortalApp will silently skip the toast — the save / refresh still runs.
+
+---
+
 ### handleFilterEdit(filterKey)
 
 Open a dialog to edit a specific filter:

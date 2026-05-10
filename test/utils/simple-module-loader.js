@@ -293,6 +293,16 @@ class SimpleModuleLoader {
                 path: path.join(this.sourceRoot, 'core/views/table/TableView.js'),
                 dependencies: ['View', 'ListView', 'TableRow', 'dataFormatter', 'DjangoLookups']
             },
+            'TablePage': {
+                // TablePage instantiates TableView inside `onInit()`, not the
+                // constructor — so plain construction is safe even though
+                // TableView pulls in heavy deps. Tests that only need to
+                // exercise prototype methods (e.g. `batchAction`) can
+                // `TablePage.prototype.batchAction.call(stub, …)` without
+                // ever calling the constructor.
+                path: path.join(this.sourceRoot, 'core/pages/TablePage.js'),
+                dependencies: ['Page', 'Modal', 'TableView', 'Collection', 'DjangoLookups']
+            },
             'SegmentControl': {
                 path: path.join(this.sourceRoot, 'core/views/navigation/SegmentControl.js'),
                 dependencies: ['View']
