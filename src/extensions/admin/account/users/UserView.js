@@ -431,22 +431,37 @@ class UserProfileSection extends View {
                         <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-display-name" title="Edit"><i class="bi bi-pencil"></i></button>
                     </div>
                 </div>
-                <div class="detail-flat-row">
-                    <div class="detail-flat-row-label">Username</div>
-                    <div class="detail-flat-row-value"><code>{{model.username|default:'—'}}</code></div>
-                    <div class="detail-flat-row-action">
-                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-username" title="Edit"><i class="bi bi-pencil"></i></button>
+
+                <div class="detail-section-eyebrow">Identity</div>
+
+                <div class="admin-security-item">
+                    <div class="admin-security-icon bg-secondary bg-opacity-10 text-secondary"><i class="bi bi-at"></i></div>
+                    <div class="admin-security-info">
+                        <div class="admin-security-title">Username</div>
+                        <div class="admin-security-desc"><code>{{model.username|default:'—'}}</code></div>
                     </div>
+                    {{#isAdminCaller|bool}}
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-username" title="Edit username"><i class="bi bi-pencil"></i></button>
+                    {{/isAdminCaller|bool}}
+                    {{^isAdminCaller|bool}}
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-action="send-magic-link"><i class="bi bi-link-45deg me-1"></i>Send magic link</button>
+                    {{/isAdminCaller|bool}}
                 </div>
-                <div class="detail-flat-row">
-                    <div class="detail-flat-row-label">Email</div>
-                    <div class="detail-flat-row-value">
-                        {{#hasEmail|bool}}{{{model.email|clipboard}}}{{/hasEmail|bool}}
-                        {{^hasEmail|bool}}<span class="text-secondary">—</span>{{/hasEmail|bool}}
-                        {{#model.is_email_verified|bool}}<span class="badge text-bg-success ms-1"><i class="bi bi-shield-check me-1"></i>verified</span>{{/model.is_email_verified|bool}}
-                        {{^model.is_email_verified|bool}}{{#hasEmail|bool}}<span class="badge text-bg-warning ms-1">unverified</span>{{/hasEmail|bool}}{{/model.is_email_verified|bool}}
+
+                <div class="admin-security-item">
+                    <div class="admin-security-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-envelope"></i></div>
+                    <div class="admin-security-info">
+                        <div class="admin-security-title">
+                            Email
+                            {{#model.is_email_verified|bool}}<span class="badge text-bg-success ms-2"><i class="bi bi-shield-check me-1"></i>verified</span>{{/model.is_email_verified|bool}}
+                            {{^model.is_email_verified|bool}}{{#hasEmail|bool}}<span class="badge text-bg-warning ms-2">unverified</span>{{/hasEmail|bool}}{{/model.is_email_verified|bool}}
+                        </div>
+                        <div class="admin-security-desc">
+                            {{#hasEmail|bool}}{{{model.email|clipboard}}}{{/hasEmail|bool}}
+                            {{^hasEmail|bool}}<span class="text-secondary fst-italic">Not set</span>{{/hasEmail|bool}}
+                        </div>
                     </div>
-                    <div class="detail-flat-row-action">
+                    {{#isAdminCaller|bool}}
                         {{#hasEmail|bool}}
                             {{#model.is_email_verified|bool}}
                                 <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="unverify-email" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
@@ -456,19 +471,28 @@ class UserProfileSection extends View {
                             {{/model.is_email_verified|bool}}
                         {{/hasEmail|bool}}
                         <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="change-email" title="Edit email"><i class="bi bi-pencil"></i></button>
-                    </div>
+                    {{/isAdminCaller|bool}}
+                    {{^isAdminCaller|bool}}
+                        {{#hasEmail|bool}}<button type="button" class="btn btn-sm btn-outline-secondary" data-action="send-magic-link"><i class="bi bi-link-45deg me-1"></i>Send magic link</button>{{/hasEmail|bool}}
+                    {{/isAdminCaller|bool}}
                 </div>
-                <div class="detail-flat-row">
-                    <div class="detail-flat-row-label">Phone</div>
-                    <div class="detail-flat-row-value">
-                        {{#hasPhone|bool}}
-                            <code>{{model.phone_number}}</code>
-                            {{#model.is_phone_verified|bool}}<span class="badge text-bg-success ms-1"><i class="bi bi-shield-check me-1"></i>verified</span>{{/model.is_phone_verified|bool}}
-                            {{^model.is_phone_verified|bool}}<span class="badge text-bg-warning ms-1">unverified</span>{{/model.is_phone_verified|bool}}
-                        {{/hasPhone|bool}}
-                        {{^hasPhone|bool}}<span class="text-secondary fst-italic">Not set</span>{{/hasPhone|bool}}
+
+                <div class="admin-security-item">
+                    <div class="admin-security-icon bg-info bg-opacity-10 text-info"><i class="bi bi-telephone"></i></div>
+                    <div class="admin-security-info">
+                        <div class="admin-security-title">
+                            Phone
+                            {{#hasPhone|bool}}
+                                {{#model.is_phone_verified|bool}}<span class="badge text-bg-success ms-2"><i class="bi bi-shield-check me-1"></i>verified</span>{{/model.is_phone_verified|bool}}
+                                {{^model.is_phone_verified|bool}}<span class="badge text-bg-warning ms-2">unverified</span>{{/model.is_phone_verified|bool}}
+                            {{/hasPhone|bool}}
+                        </div>
+                        <div class="admin-security-desc">
+                            {{#hasPhone|bool}}<code>{{model.phone_number}}</code>{{/hasPhone|bool}}
+                            {{^hasPhone|bool}}<span class="text-secondary fst-italic">Not set</span>{{/hasPhone|bool}}
+                        </div>
                     </div>
-                    <div class="detail-flat-row-action">
+                    {{#isAdminCaller|bool}}
                         {{#hasPhone|bool}}
                             {{#model.is_phone_verified|bool}}
                                 <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="unverify-phone" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
@@ -476,9 +500,22 @@ class UserProfileSection extends View {
                             {{^model.is_phone_verified|bool}}
                                 <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="force-verify-phone" title="Force verify"><i class="bi bi-patch-check"></i></button>
                             {{/model.is_phone_verified|bool}}
+                            <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="remove-phone" title="Clear phone"><i class="bi bi-x-lg"></i></button>
+                            <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="change-phone" title="Edit phone"><i class="bi bi-pencil"></i></button>
                         {{/hasPhone|bool}}
-                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="change-phone" title="Edit phone"><i class="bi bi-pencil"></i></button>
+                        {{^hasPhone|bool}}
+                            <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="set-phone" title="Set phone"><i class="bi bi-plus-lg"></i></button>
+                        {{/hasPhone|bool}}
+                    {{/isAdminCaller|bool}}
+                </div>
+
+                <div class="admin-security-item">
+                    <div class="admin-security-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-key"></i></div>
+                    <div class="admin-security-info">
+                        <div class="admin-security-title">Password</div>
+                        <div class="admin-security-desc">{{#hasEmail|bool}}Send a password reset link to {{model.email}}{{/hasEmail|bool}}{{^hasEmail|bool}}<span class="text-secondary fst-italic">No email on file</span>{{/hasEmail|bool}}</div>
                     </div>
+                    {{#hasEmail|bool}}<button type="button" class="btn btn-sm btn-outline-secondary" data-action="reset-password"><i class="bi bi-envelope me-1"></i>Send Reset Link</button>{{/hasEmail|bool}}
                 </div>
 
                 <div class="detail-section-eyebrow">
@@ -567,6 +604,20 @@ class UserProfileSection extends View {
     get hasPhone()     { return !!this.model?.get?.('phone_number'); }
     get hasTimezone()  { return !!this.model?.get?.('metadata')?.timezone; }
     get timezone()     { return this.model?.get?.('metadata')?.timezone || ''; }
+
+    /**
+     * Admin tier == `users` / `manage_users` / `is_superuser`. Backend was
+     * relaxed (django-mojo `2e5ebcc`+) so this single boolean now gates
+     * direct credential writes (email / username / phone replace) and
+     * force-verify on `is_email_verified` / `is_phone_verified`.
+     * Non-admin viewers see read-only rows + "Send magic-login link".
+     */
+    get isAdminCaller() {
+        const u = this.getApp()?.activeUser;
+        if (!u) return false;
+        if (u.get?.('is_superuser')) return true;
+        return !!u.hasPermission?.(['users', 'manage_users']);
+    }
 
     /** Trusted HTML — providers list rendered as small inline badges. */
     get linkedProvidersHtml() {
@@ -1574,6 +1625,27 @@ class UserView extends DetailView {
         );
         if (typeof phone !== 'string' || !phone.trim()) return true;
         await this._savePersonalField({ phone_number: phone.trim() }, 'Phone number');
+        return true;
+    }
+
+    async onActionSetPhone() {
+        const phone = await Modal.prompt(
+            'Phone number:',
+            'Set Phone',
+            { placeholder: '+1 555 123 4567' }
+        );
+        if (typeof phone !== 'string' || !phone.trim()) return true;
+        await this._savePersonalField({ phone_number: phone.trim() }, 'Phone number');
+        return true;
+    }
+
+    async onActionRemovePhone() {
+        const confirmed = await Modal.confirm(
+            'Clear this user\'s phone number?',
+            'Clear Phone'
+        );
+        if (!confirmed) return true;
+        await this._savePersonalField({ phone_number: null }, 'Phone number');
         return true;
     }
 

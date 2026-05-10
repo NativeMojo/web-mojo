@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Admin UserView · identity cards (Phase 3)
+
+- **UserView Profile section now renders Username / Email / Phone / Password as managed `.admin-security-item` cards.** Display Name keeps its existing pencil row under the "Personal" eyebrow; the four identity cards live under a new "Identity" eyebrow. Per `planning/done/admin-users-spec-alignment.md`.
+- **Admin-tier gating via single `isAdminCaller` getter** on `UserProfileSection` — reads `app.activeUser.is_superuser` or `hasPermission(['users','manage_users'])`. Admin-tier callers see direct-edit pencils + force-verify icon-buttons + Set/Clear-phone buttons; non-admin viewers see read-only rows with a "Send magic-login link" affordance pointing to user self-service.
+- **No auth/change endpoints.** Admins direct-edit Username / Email / Phone via `POST /api/user/<id>` field writes — backend was relaxed (django-mojo `2e5ebcc`+) so `users` / `manage_users` callers can write these without superuser. `/api/auth/{email,phone,username}/change/*` stay reserved for user-driven self-service flows that verify channel ownership via OTP/link.
+- **New `onActionSetPhone` and `onActionRemovePhone`** on UserView for phone-no-value and phone-clear cases.
+- **AdminSecuritySection cleanup.** Removed the broken "Send Email Verification" row and handler — `/api/auth/email/verify` is JWT-scoped (self-only) and an admin clicking it operated on the admin's own pending state rather than the target user's. Admins now route the user through "Send Magic Login Link" instead so the user verifies their own email after logging in. Deduplicated the `onActionSendPasswordReset` and `onActionSendMagicLink` handlers — they now bubble to UserView's existing `onActionResetPassword` / `onActionSendMagicLink` (renamed the section's `data-action="send-password-reset"` to `reset-password` to match). "Set Password" affordance kept (operationally required, backend-audited); switched the body field name from `password` to `new_password` per the django-mojo relaxation note.
+
 ### Admin extension · TablePage UX sweep
 
 Cross-cutting cleanup of every `TablePage` under `src/extensions/admin/`

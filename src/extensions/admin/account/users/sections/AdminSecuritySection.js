@@ -17,7 +17,7 @@ export default class AdminSecuritySection extends View {
             template: `
                 <div class="detail-section-eyebrow">Authentication</div>
 
-                <div class="admin-security-item" data-action="send-password-reset">
+                <div class="admin-security-item" data-action="reset-password">
                     <div class="admin-security-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-envelope"></i></div>
                     <div class="admin-security-info">
                         <div class="admin-security-title">Send Password Reset</div>
@@ -34,17 +34,6 @@ export default class AdminSecuritySection extends View {
                     </div>
                     <span class="badge text-bg-light border">Send</span>
                 </div>
-
-                {{^model.is_email_verified|bool}}
-                <div class="admin-security-item" data-action="send-email-verification">
-                    <div class="admin-security-icon bg-success bg-opacity-10 text-success"><i class="bi bi-envelope-check"></i></div>
-                    <div class="admin-security-info">
-                        <div class="admin-security-title">Send Email Verification</div>
-                        <div class="admin-security-desc">Send a verification email to {{model.email}}</div>
-                    </div>
-                    <span class="badge text-bg-light border">Send</span>
-                </div>
-                {{/model.is_email_verified|bool}}
 
                 <div class="admin-security-item" data-action="set-password">
                     <div class="admin-security-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-key"></i></div>
@@ -160,63 +149,16 @@ export default class AdminSecuritySection extends View {
     }
 
     // ── Password actions ────────────────────────────
-
-    async onActionSendPasswordReset() {
-        const app = this.getApp();
-        const email = this.model.get('email');
-
-        const confirmed = await Modal.confirm(
-            `Send a password reset email to <strong>${email}</strong>?`,
-            'Send Password Reset'
-        );
-        if (!confirmed) return true;
-
-        const resp = await rest.POST('/api/auth/password/reset', { email });
-        if (resp.success) {
-            app?.toast?.success('Password reset email sent');
-        } else {
-            app?.toast?.error(resp.message || 'Failed to send password reset');
-        }
-        return true;
-    }
-
-    async onActionSendEmailVerification() {
-        const app = this.getApp();
-        const email = this.model.get('email');
-
-        const confirmed = await Modal.confirm(
-            `Send a verification email to <strong>${email}</strong>?`,
-            'Send Email Verification'
-        );
-        if (!confirmed) return true;
-
-        const resp = await rest.POST('/api/auth/email/verify', { email });
-        if (resp.success) {
-            app?.toast?.success('Verification email sent');
-        } else {
-            app?.toast?.error(resp.message || 'Failed to send verification email');
-        }
-        return true;
-    }
-
-    async onActionSendMagicLink() {
-        const app = this.getApp();
-        const email = this.model.get('email');
-
-        const confirmed = await Modal.confirm(
-            `Send a magic login link to <strong>${email}</strong>? They will be able to sign in with one click.`,
-            'Send Magic Login Link'
-        );
-        if (!confirmed) return true;
-
-        const resp = await rest.POST('/api/auth/magic-link', { email });
-        if (resp.success) {
-            app?.toast?.success('Magic login link sent');
-        } else {
-            app?.toast?.error(resp.message || 'Failed to send magic link');
-        }
-        return true;
-    }
+    //
+    // `reset-password` and `send-magic-link` rows have no section-local
+    // handler; events bubble to UserView's `onActionResetPassword` (sends
+    // /api/auth/password/reset) and `onActionSendMagicLink`. Single
+    // canonical handler per action across kebab + Profile card + this
+    // section. The earlier `send-email-verification` affordance was
+    // removed — `/api/auth/email/verify` is JWT-scoped (self-only) and
+    // can't be admin-targeted at another user; admins use Send Magic
+    // Login Link instead so the user verifies their own email after
+    // logging in.
 
     async onActionSetPassword() {
         const app = this.getApp();
@@ -235,7 +177,9 @@ export default class AdminSecuritySection extends View {
             return true;
         }
 
-        const resp = await this.model.save({ password: data.password });
+        // Backend accepts `new_password` for admin-tier direct reset
+        // without `current_password` (django-mojo relaxation).
+        const resp = await this.model.save({ new_password: data.password });
         if (resp.status === 200) {
             app?.toast?.success('Password updated');
         } else {
