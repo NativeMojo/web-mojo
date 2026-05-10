@@ -28,6 +28,7 @@ import DetailView from '@core/views/data/DetailView.js';
 import TabView from '@core/views/navigation/TabView.js';
 import TableView from '@core/views/table/TableView.js';
 import ListView from '@core/views/list/ListView.js';
+import { groupByDay } from '@core/views/list/grouping.js';
 import FormView from '@core/forms/FormView.js';
 import MetricCard from '@core/views/data/MetricCard.js';
 import Timeline from '@core/views/data/Timeline.js';
@@ -832,6 +833,7 @@ class UserAuditSection extends View {
             clickAction: 'view',
             hideActivePillNames: ['uid'],
             emptyMessage: 'No activity recorded yet.',
+            ...groupByDay('created'),
             itemTemplate: `
                 <div class="user-audit-row user-audit-row-{{model.level|levelTone}}">
                     <div class="user-audit-icon"><i class="bi {{model.level|levelIcon}}"></i></div>
@@ -859,6 +861,7 @@ class UserAuditSection extends View {
             clickAction: 'view',
             hideActivePillNames: ['model_id', 'model_name'],
             emptyMessage: 'No events for this user.',
+            ...groupByDay('created'),
             itemTemplate: `
                 <div class="user-audit-row user-audit-row-info">
                     <div class="user-audit-icon"><i class="bi bi-shield-exclamation"></i></div>
@@ -887,6 +890,7 @@ class UserAuditSection extends View {
             permissions: 'view_logs',
             hideActivePillNames: ['model_id', 'model_name'],
             emptyMessage: 'No record changes logged.',
+            ...groupByDay('created'),
             itemTemplate: `
                 <div class="user-audit-row user-audit-row-{{model.level|levelTone}}">
                     <div class="user-audit-icon"><i class="bi {{model.level|levelIcon}}"></i></div>
@@ -1234,6 +1238,7 @@ class UserView extends DetailView {
             clickAction: 'view',
             hideActivePillNames: ['user'],
             emptyMessage: 'No login events on file.',
+            ...groupByDay('created'),
             itemTemplate: `
                 <div class="user-login-row">
                     <span class="user-login-dot user-login-dot-{{model.event_type|loginTone}}"></span>
