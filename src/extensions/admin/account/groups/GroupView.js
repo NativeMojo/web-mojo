@@ -341,17 +341,24 @@ class GroupIdentitySection extends View {
     constructor(options = {}) {
         super({
             className: 'group-identity-section',
+            enableTooltips: true,
             template: `
                 <div class="detail-section-eyebrow">Profile</div>
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Name</div>
                     <div class="detail-flat-row-value">{{model.name|default:'—'}}</div>
+                    <div class="detail-flat-row-action">
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-name" title="Edit"><i class="bi bi-pencil"></i></button>
+                    </div>
                 </div>
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Kind</div>
                     <div class="detail-flat-row-value">
                         {{#hasKind|bool}}<span class="badge text-bg-primary">{{kindLabel}}</span>{{/hasKind|bool}}
-                        {{^hasKind|bool}}<span class="text-secondary fst-italic">—</span>{{/hasKind|bool}}
+                        {{^hasKind|bool}}<span class="text-secondary fst-italic">Not set</span>{{/hasKind|bool}}
+                    </div>
+                    <div class="detail-flat-row-action">
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-kind" title="Edit"><i class="bi bi-pencil"></i></button>
                     </div>
                 </div>
                 <div class="detail-flat-row">
@@ -374,44 +381,56 @@ class GroupIdentitySection extends View {
                 </div>
 
                 <div class="detail-section-eyebrow">Settings</div>
-                {{#hasTimezone|bool}}
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Timezone</div>
-                    <div class="detail-flat-row-value"><code>{{timezone}}</code></div>
+                    <div class="detail-flat-row-value">
+                        {{#hasTimezone|bool}}<code>{{timezone}}</code>{{/hasTimezone|bool}}
+                        {{^hasTimezone|bool}}<span class="text-secondary fst-italic">Not set</span>{{/hasTimezone|bool}}
+                    </div>
+                    <div class="detail-flat-row-action">
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-timezone" title="Edit"><i class="bi bi-pencil"></i></button>
+                    </div>
                 </div>
-                {{/hasTimezone|bool}}
-                {{#hasEodHour|bool}}
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">EOD hour</div>
-                    <div class="detail-flat-row-value">{{eodHourLabel}}</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasEodHour|bool}}{{eodHourLabel}}{{/hasEodHour|bool}}
+                        {{^hasEodHour|bool}}<span class="text-secondary fst-italic">Not set</span>{{/hasEodHour|bool}}
+                    </div>
+                    <div class="detail-flat-row-action">
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-eod-hour" title="Edit"><i class="bi bi-pencil"></i></button>
+                    </div>
                 </div>
-                {{/hasEodHour|bool}}
-                {{#hasDomain|bool}}
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Domain</div>
-                    <div class="detail-flat-row-value"><code>{{domain}}</code></div>
+                    <div class="detail-flat-row-value">
+                        {{#hasDomain|bool}}<code>{{domain}}</code>{{/hasDomain|bool}}
+                        {{^hasDomain|bool}}<span class="text-secondary fst-italic">Not set</span>{{/hasDomain|bool}}
+                    </div>
+                    <div class="detail-flat-row-action">
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-domain" title="Edit"><i class="bi bi-pencil"></i></button>
+                    </div>
                 </div>
-                {{/hasDomain|bool}}
-                {{#hasPortal|bool}}
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Portal</div>
                     <div class="detail-flat-row-value">
-                        <a href="{{portal}}" target="_blank" rel="noopener">{{portal}}</a>
+                        {{#hasPortal|bool}}<a href="{{portal}}" target="_blank" rel="noopener">{{portal}}</a>{{/hasPortal|bool}}
+                        {{^hasPortal|bool}}<span class="text-secondary fst-italic">Not set</span>{{/hasPortal|bool}}
+                    </div>
+                    <div class="detail-flat-row-action">
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-portal" title="Edit"><i class="bi bi-pencil"></i></button>
                     </div>
                 </div>
-                {{/hasPortal|bool}}
-                {{#hasEmailTemplate|bool}}
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Email template</div>
-                    <div class="detail-flat-row-value"><code>{{emailTemplate}}</code></div>
+                    <div class="detail-flat-row-value">
+                        {{#hasEmailTemplate|bool}}<code>{{emailTemplate}}</code>{{/hasEmailTemplate|bool}}
+                        {{^hasEmailTemplate|bool}}<span class="text-secondary fst-italic">Not set</span>{{/hasEmailTemplate|bool}}
+                    </div>
+                    <div class="detail-flat-row-action">
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-email-template" title="Edit"><i class="bi bi-pencil"></i></button>
+                    </div>
                 </div>
-                {{/hasEmailTemplate|bool}}
-                {{^hasAnySettings|bool}}
-                <div class="detail-flat-row">
-                    <div class="detail-flat-row-label">Settings</div>
-                    <div class="detail-flat-row-value text-secondary fst-italic">No settings configured</div>
-                </div>
-                {{/hasAnySettings|bool}}
 
                 <div class="detail-section-eyebrow">Dates</div>
                 <div class="detail-flat-row">
@@ -472,6 +491,131 @@ class GroupIdentitySection extends View {
     async onActionViewParent(event) {
         event?.preventDefault?.();
         this.emit('navigate:parent');
+    }
+
+    // ── Per-row edit handlers ──────────────────────────
+
+    async onActionEditName() {
+        const name = await Modal.prompt(
+            'Group name:',
+            'Edit Name',
+            { defaultValue: this.model.get('name') || '' }
+        );
+        if (typeof name !== 'string' || !name.trim()) return true;
+        await this._saveField({ name: name.trim() }, 'Name');
+        return true;
+    }
+
+    async onActionEditKind() {
+        const kindOptions = Object.entries(Group.GroupKinds || {}).map(([value, text]) => ({ value, text }));
+        const data = await Modal.form({
+            title: 'Edit Kind',
+            size: 'sm',
+            fields: [{
+                name: 'kind', type: 'select', label: 'Kind', cols: 12,
+                options: [{ value: '', text: '(none)' }, ...kindOptions]
+            }],
+            data: { kind: this.model.get('kind') || '' }
+        });
+        if (!data) return true;
+        await this._saveField({ kind: data.kind || null }, 'Kind');
+        return true;
+    }
+
+    async onActionEditTimezone() {
+        const meta = this.model.get('metadata') || {};
+        const data = await Modal.form({
+            title: 'Edit Timezone',
+            size: 'sm',
+            fields: [{
+                name: 'timezone', type: 'select', label: 'Timezone', cols: 12,
+                options: [
+                    { value: '', text: '(none)' },
+                    { value: 'America/New_York',    text: 'Eastern Time (ET)' },
+                    { value: 'America/Chicago',     text: 'Central Time (CT)' },
+                    { value: 'America/Denver',      text: 'Mountain Time (MT)' },
+                    { value: 'America/Los_Angeles', text: 'Pacific Time (PT)' },
+                    { value: 'America/Anchorage',   text: 'Alaska Time (AKT)' },
+                    { value: 'Pacific/Honolulu',    text: 'Hawaii Time (HT)' },
+                    { value: 'UTC',                 text: 'UTC' },
+                    { value: 'Europe/London',       text: 'London (GMT/BST)' },
+                    { value: 'Europe/Paris',        text: 'Paris (CET/CEST)' },
+                    { value: 'Europe/Berlin',       text: 'Berlin (CET/CEST)' },
+                    { value: 'Asia/Tokyo',          text: 'Tokyo (JST)' },
+                    { value: 'Asia/Shanghai',       text: 'Shanghai (CST)' },
+                    { value: 'Australia/Sydney',    text: 'Sydney (AEST)' }
+                ]
+            }],
+            data: { timezone: meta.timezone || '' }
+        });
+        if (!data) return true;
+        await this._saveField({ metadata: { timezone: data.timezone || null } }, 'Timezone');
+        return true;
+    }
+
+    async onActionEditEodHour() {
+        const meta = this.model.get('metadata') || {};
+        const data = await Modal.form({
+            title: 'Edit EOD Hour',
+            size: 'sm',
+            fields: [{
+                name: 'eod_hour', type: 'number', label: 'EOD hour', cols: 12,
+                min: 0, max: 23, placeholder: '0–23',
+                tooltip: 'Hour of the day (24h, 0–23) when this group rolls over.'
+            }],
+            data: { eod_hour: (meta.eod_hour ?? '') }
+        });
+        if (!data) return true;
+        const raw = data.eod_hour;
+        const eod = (raw === '' || raw == null) ? null : Math.max(0, Math.min(23, parseInt(raw, 10) || 0));
+        await this._saveField({ metadata: { eod_hour: eod } }, 'EOD hour');
+        return true;
+    }
+
+    async onActionEditDomain() {
+        const meta = this.model.get('metadata') || {};
+        const domain = await Modal.prompt(
+            'Domain:',
+            'Edit Domain',
+            { defaultValue: meta.domain || '' }
+        );
+        if (typeof domain !== 'string') return true;
+        await this._saveField({ metadata: { domain: domain.trim() || null } }, 'Domain');
+        return true;
+    }
+
+    async onActionEditPortal() {
+        const meta = this.model.get('metadata') || {};
+        const portal = await Modal.prompt(
+            'Portal URL:',
+            'Edit Portal',
+            { defaultValue: meta.portal || '', placeholder: 'https://…' }
+        );
+        if (typeof portal !== 'string') return true;
+        await this._saveField({ metadata: { portal: portal.trim() || null } }, 'Portal');
+        return true;
+    }
+
+    async onActionEditEmailTemplate() {
+        const meta = this.model.get('metadata') || {};
+        const template = await Modal.prompt(
+            'Email template name:',
+            'Edit Email Template',
+            { defaultValue: meta.email_template || '' }
+        );
+        if (typeof template !== 'string') return true;
+        await this._saveField({ metadata: { email_template: template.trim() || null } }, 'Email template');
+        return true;
+    }
+
+    async _saveField(fields, label) {
+        const resp = await this.model.save(fields);
+        if (resp && resp.status === 200) {
+            this.getApp()?.toast?.success(`${label} updated`);
+            await this.render();
+        } else {
+            this.getApp()?.toast?.error(resp?.message || `Failed to update ${label.toLowerCase()}`);
+        }
     }
 }
 
