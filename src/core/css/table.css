@@ -920,3 +920,24 @@ div.batch-select-end {
         animation: none;
     }
 }
+
+/* ========================================================================
+   Row stripe (severity-coded left-edge color)
+
+   TableView companion to `list-view.css` — same `rowStripe:` callback,
+   same Bootstrap variant tokens. Rows are `<tr>`s, so we paint the
+   stripe with `box-shadow: inset` on the leftmost `<td>` rather than
+   `border-left` on the row (the row-level border doesn't render under
+   `border-collapse: separate`, which is Bootstrap's `.table` default,
+   and `border-left` on the cell would push column widths).
+
+   When the table is selectable, `td:first-child` is the checkbox cell
+   — that's the intended leftmost-edge placement.
+   ======================================================================== */
+
+.table-view-component .table > tbody > tr.list-row-stripe-danger    > td:first-child { box-shadow: inset 4px 0 0 var(--bs-danger); }
+.table-view-component .table > tbody > tr.list-row-stripe-warning   > td:first-child { box-shadow: inset 4px 0 0 var(--bs-warning); }
+.table-view-component .table > tbody > tr.list-row-stripe-info      > td:first-child { box-shadow: inset 4px 0 0 var(--bs-info); }
+.table-view-component .table > tbody > tr.list-row-stripe-success   > td:first-child { box-shadow: inset 4px 0 0 var(--bs-success); }
+.table-view-component .table > tbody > tr.list-row-stripe-primary   > td:first-child { box-shadow: inset 4px 0 0 var(--bs-primary); }
+.table-view-component .table > tbody > tr.list-row-stripe-secondary > td:first-child { box-shadow: inset 4px 0 0 var(--bs-secondary); }

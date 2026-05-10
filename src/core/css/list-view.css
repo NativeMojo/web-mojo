@@ -326,3 +326,25 @@
     height: 1px;
     background: var(--bs-border-color);
 }
+
+/* ========================================================================
+   Row stripe (severity-coded left-edge color)
+
+   Opt-in via the ListView constructor option `rowStripe: (model) => token`.
+   The callback returns a Bootstrap variant token (`danger / warning /
+   success / info / primary / secondary`) and ListView applies the
+   matching class to each item's outer element. Token values resolve via
+   `--bs-*` CSS variables so light + dark themes track automatically.
+
+   TableView rows are `<tr>`s — the equivalent rules live in `table.css`
+   (using `box-shadow: inset` on `td:first-child` because `border-left`
+   on a `<tr>` doesn't render under Bootstrap's `border-collapse:
+   separate`).
+   ======================================================================== */
+
+.list-view-item.list-row-stripe-danger    { border-left: 4px solid var(--bs-danger); }
+.list-view-item.list-row-stripe-warning   { border-left: 4px solid var(--bs-warning); }
+.list-view-item.list-row-stripe-info      { border-left: 4px solid var(--bs-info); }
+.list-view-item.list-row-stripe-success   { border-left: 4px solid var(--bs-success); }
+.list-view-item.list-row-stripe-primary   { border-left: 4px solid var(--bs-primary); }
+.list-view-item.list-row-stripe-secondary { border-left: 4px solid var(--bs-secondary); }

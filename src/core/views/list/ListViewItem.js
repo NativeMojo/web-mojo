@@ -171,6 +171,12 @@ class ListViewItem extends View {
       this.addClass('clickable');
       this._wireClickableHandler();
     }
+    // Parent ListView owns the row-stripe mapping; the row just signals
+    // "I rendered, refresh me". Piggybacks on View's automatic
+    // `model:change → render()` so stripes auto-update on model change.
+    if (this.listView?.rowStripe && typeof this.listView._applyRowStripe === 'function') {
+      this.listView._applyRowStripe(this);
+    }
   }
 
   _wireClickableHandler() {

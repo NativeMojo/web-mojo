@@ -1414,6 +1414,29 @@ TableView emits the following events (in addition to ListView events):
 
 ---
 
+## Row Stripe (severity-coded)
+
+TableView inherits ListView's `rowStripe:` primitive — a per-row callback that paints a 4px theme-aware left-edge stripe based on a Bootstrap variant token. See [ListView.md → Row stripe](./ListView.md#row-stripe-severity-coded-left-edge-color) for the full API.
+
+```javascript
+new TableView({
+  collection,
+  columns: [...],
+  rowStripe: (model) => {
+    const level = model.get('level');
+    if (level >= 5) return 'danger';
+    if (level >= 4) return 'warning';
+    return null;
+  }
+});
+```
+
+The consumer-facing API is identical to ListView. The CSS path differs internally: TableView paints the stripe via `box-shadow: inset 4px 0 0 var(--bs-<token>)` on `td:first-child` (because `border-left` on a `<tr>` doesn't render reliably under Bootstrap's `border-collapse: separate`). When `selectable: true`, the checkbox `<td>` is the first child — the stripe lands on it (intended leftmost-edge placement).
+
+Forwarded by TablePage — pass `rowStripe:` at the page level.
+
+---
+
 ## Custom TableRow Subclass
 
 For custom row rendering, extend `TableRow`:

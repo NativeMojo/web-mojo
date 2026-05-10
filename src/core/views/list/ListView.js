@@ -69,6 +69,15 @@ class ListView extends View {
    */
   static GROUP_HEADER_STYLES = ['banner', 'mark', 'band', 'rule'];
 
+  /**
+   * Bootstrap variant tokens accepted by the `rowStripe` callback. A return
+   * matching one of these maps to the canonical `list-row-stripe-<token>`
+   * class (defined in list-view.css / table.css). Any other non-empty
+   * string returned by the callback is treated as a consumer-defined
+   * class name and passed through verbatim.
+   */
+  static ROW_STRIPE_TOKENS = ['danger', 'warning', 'success', 'info', 'primary', 'secondary'];
+
   constructor(options = {}) {
     super({
       className: options.className || 'list-view',
@@ -172,6 +181,20 @@ class ListView extends View {
     this.clickable = options.clickable === true
       || !!this.onItemClick
       || (this.clickAction && this.clickAction !== 'none');
+
+    // -------- Row stripe (severity-coded left-edge color) --------
+    // Optional per-row callback (model) => token | className | null.
+    // Tokens in `ROW_STRIPE_TOKENS` map to `list-row-stripe-<token>`;
+    // any other non-empty string is treated as a consumer-defined class
+    // name and passed through. Null/undefined/empty = no stripe.
+    //
+    // The stripe re-applies automatically on every row render — and
+    // since View binds `model:change → render()` in the base class,
+    // a `model.set()` that flips the callback's input drives a stripe
+    // refresh with no extra wiring. For stripes that depend on
+    // external (non-model) state, call `refreshStripes()` from the
+    // consumer's own event hook.
+    this.rowStripe = typeof options.rowStripe === 'function' ? options.rowStripe : null;
 
     // -------- Grouped rows — opt-in via groupBy --------
     // `groupBy` is a function (model) => key OR a string (model field name).
@@ -1381,6 +1404,71 @@ class ListView extends View {
       return await this.collection.fetch();
     }
     this._buildItems();
+  }
+
+  // ============================================================
+  // Row stripe (severity-coded left-edge color)
+  // ============================================================
+
+  /**
+   * Resolve the row-stripe class for a given model. Returns null when no
+   * `rowStripe` callback is set, when the callback returns falsy/empty,
+   * or when it throws. Bootstrap variant tokens in
+   * `ListView.ROW_STRIPE_TOKENS` map to `list-row-stripe-<token>`; any
+   * other non-empty string passes through as a class name.
+   *
+   * @private
+   */
+  _stripeClassFor(model) {
+    if (!this.rowStripe || !model) return null;
+    let raw;
+    try {
+      raw = this.rowStripe(model);
+    } catch (err) {
+      console.warn('ListView: rowStripe callback threw — treating as no stripe', err);
+      return null;
+    }
+    if (raw === null || raw === undefined || raw === '') return null;
+    if (typeof raw !== 'string') return null;
+    if (ListView.ROW_STRIPE_TOKENS.includes(raw)) {
+      return `list-row-stripe-${raw}`;
+    }
+    return raw;
+  }
+
+  /**
+   * Strip any existing `list-row-stripe*` class from the itemView's
+   * element, then apply the freshly-resolved class (if any). Called from
+   * ListViewItem.onAfterRender so the stripe re-evaluates on every row
+   * render — including the implicit re-renders View triggers when the
+   * model emits `change`.
+   *
+   * @private
+   */
+  _applyRowStripe(itemView) {
+    if (!itemView || !itemView.element) return;
+    const classes = itemView.element.classList;
+    // Remove any prior stripe class so the row reflects current state
+    // even when the level/decision downgrades.
+    for (const cls of Array.from(classes)) {
+      if (cls.startsWith('list-row-stripe')) classes.remove(cls);
+    }
+    const next = this._stripeClassFor(itemView.model);
+    if (next) classes.add(next);
+  }
+
+  /**
+   * Re-evaluate the row stripe for every current itemView. Useful when
+   * the callback depends on state outside the model (parent filter,
+   * threshold, etc.) — call this from the consumer's own event hook
+   * after the external state changes.
+   *
+   * No-op when no `rowStripe` callback is configured.
+   */
+  refreshStripes() {
+    if (!this.rowStripe) return this;
+    this.forEachItem((itemView) => this._applyRowStripe(itemView));
+    return this;
   }
 
   // ============================================================

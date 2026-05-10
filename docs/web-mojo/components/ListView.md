@@ -427,6 +427,97 @@ Headers do **not** participate in `clickAction: 'view'` / `onItemClick` / `item:
 - Multi-level / nested grouping.
 - Group-level batch actions ("Delete all in this group").
 - Server-side grouping primitives (the collection delivers a flat ordered list; grouping is purely render-side).
+
+## Row stripe (severity-coded left-edge color)
+
+A 4px colored left-edge stripe on each row, driven by a per-row callback. Use it for severity-coded audit feeds (Events, Logs, Bouncer signals) where the level/decision reads at peripheral-vision speed as a colored edge — red bar = stop, amber bar = caution, no bar = routine.
+
+Inherited by TableView. Forwarded by TablePage.
+
+### Quick start
+
+```javascript
+new ListView({
+  collection,
+  rowStripe: (model) => {
+    const level = model.get('level');
+    if (level >= 5) return 'danger';
+    if (level >= 4) return 'warning';
+    if (level >= 3) return 'info';
+    return null;  // no stripe
+  }
+});
+```
+
+### Callback contract
+
+`rowStripe: (model) => string | null`. The return is interpreted by ListView:
+
+| Return value | Result |
+|---|---|
+| `'danger' \| 'warning' \| 'success' \| 'info' \| 'primary' \| 'secondary'` | Applies the canonical `list-row-stripe-<token>` class. Resolves via `--bs-<token>` so light + dark themes track automatically. |
+| Any other non-empty string | Treated as a consumer-defined class name and applied verbatim — supply your own CSS to paint it. |
+| `null` / `undefined` / `''` | No stripe rendered. |
+| Callback throws | Logged + treated as no stripe. The render is never broken. |
+
+### Auto re-eval on model change
+
+The stripe re-applies on every row render. Because `View` binds `model:change → render()` in the base class ([View.js:79-108](src/core/View.js:79)), any `model.set()` that flips the callback's input drives a stripe refresh automatically — no manual wiring.
+
+```javascript
+// Initial render: level 3 → list-row-stripe-info
+model.set('level', 5);
+// Row re-renders → onAfterRender re-applies → list-row-stripe-danger
+```
+
+### External-state callbacks: `refreshStripes()`
+
+If the stripe depends on state outside the model (a parent filter, a per-page threshold, a date cutoff), call `listView.refreshStripes()` from your own event hook to re-evaluate every row.
+
+```javascript
+threshold = newThreshold;
+listView.refreshStripes();
+```
+
+No-op when no `rowStripe` callback is configured.
+
+### Custom class example
+
+```javascript
+new ListView({
+  collection,
+  rowStripe: (model) => model.get('archived') ? 'row-archived' : null
+});
+```
+
+```css
+.list-view-item.row-archived { border-left: 4px solid var(--bs-tertiary-color); opacity: 0.6; }
+.table-view-component .table > tbody > tr.row-archived > td:first-child {
+  box-shadow: inset 4px 0 0 var(--bs-tertiary-color);
+}
+```
+
+### Rendering mechanics
+
+- ListView items (`<div>` rows): the stripe is a `border-left` on the row element. See `src/core/css/list-view.css`.
+- TableView rows (`<tr>`): the stripe is a `box-shadow: inset 4px 0 0 ...` on `td:first-child`. `border-left` on `<tr>` doesn't render reliably under Bootstrap's `border-collapse: separate`. See `src/core/css/table.css`. When `selectable: true`, the checkbox `<td>` is the first child — the stripe lands on it (intended leftmost-edge placement).
+
+### Constructor options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `rowStripe` | `Function` | `null` | `(model) => token \| className \| null`. Per-row callback. Token returns map to `list-row-stripe-<token>`; other strings pass through as class names. |
+
+### Method
+
+- `refreshStripes()` — re-evaluate the stripe class for every current itemView. Used when the callback depends on external state. No-op when `rowStripe` is not set.
+
+### Out of scope
+
+- Full row-level background tints (the whole row colored, not just the edge).
+- Multiple stripes per row (e.g. priority left + status right).
+- Per-cell highlighting based on value.
+- Animated stripe transitions on change.
 - Collapsible group headers — consumers can build on top of `groupHeaderTemplate` if they want.
 
 ---

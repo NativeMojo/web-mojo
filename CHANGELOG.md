@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Framework · ListView / TableView `rowStripe:` (severity-coded left-edge color)
+
+- **New `rowStripe:` constructor option on ListView**, inherited by TableView and forwarded by TablePage. Per-row callback `(model) => 'danger' | 'warning' | 'success' | 'info' | 'primary' | 'secondary' | <custom-class> | null` paints a 4px theme-aware left-edge stripe on each row. Bootstrap variant tokens resolve via `--bs-<token>` CSS variables, so light + dark themes track automatically; any other non-empty string is treated as a consumer-defined class name and passes through verbatim. Per `planning/done/framework-listview-severity-stripe.md`.
+- **Auto re-eval on model change.** The stripe re-applies on every row render — and because `View` already binds `model:change → render()` in the base class, a `model.set()` that flips the callback's input drives a stripe refresh with zero extra wiring. Throwing callbacks are logged and treated as no-stripe so a bad row can never break the render.
+- **`refreshStripes()` method** for external-state callbacks (stripe depends on a parent filter / threshold / cutoff). No-op when no `rowStripe` is configured.
+- **Rendering mechanics.** ListView items (`<div>`) use `border-left: 4px solid`; TableView rows (`<tr>`) use `box-shadow: inset 4px 0 0` on `td:first-child` (because `<tr>` border-left doesn't render under Bootstrap's `border-collapse: separate`, and `border-left` on the cell would shift column widths). When `selectable: true`, the checkbox `<td>` is `td:first-child` — the stripe lands on it, which is the intended leftmost-edge placement.
+- **Tests.** New `test/unit/ListView.rowStripe.test.js` (15 cases — token mapping, null/undefined/throw handling, six-token parameterized table, custom-class passthrough, auto re-eval on `model.set()`, `refreshStripes()`). New `test/unit/TableView.rowStripe.test.js` (5 cases — verifies `<tr>` class application via the inheritance path). Extended `test/unit/TablePage.option-forwarding.test.js` with `rowStripe` forwarding regression.
+- **Docs.** New "Row stripe (severity-coded left-edge color)" section in `docs/web-mojo/components/ListView.md` (API surface, callback contract, auto re-eval, `refreshStripes()`, custom-class example, rendering mechanics, constructor options table). Cross-link added to `docs/web-mojo/components/TableView.md`.
+
 ### Admin TablePage · phone-first column breakpoints
 
 Follow-up to the previous TablePage UX sweep, applying a phone-first lens (≤375px) on top of the desktop-first breakpoints the sweep landed. Each affected table now shows at most three real data columns on a phone — primary identifier + state + timestamp. Pure column-option edits; no row-template rewrites, no framework changes. Per `planning/done/admin-tablepages-mobile-breakpoint-pass.md`.

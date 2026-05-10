@@ -88,6 +88,9 @@ class TablePage extends Page {
       groupHeaderLabel: options.groupHeaderLabel,
       groupHeaderStyle: options.groupHeaderStyle,
 
+      // Row stripe — same forwarding pattern.
+      rowStripe: options.rowStripe,
+
       // Display options for the HTML table element
       tableOptions: {
         striped: true,

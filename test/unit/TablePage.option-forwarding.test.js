@@ -88,6 +88,12 @@ module.exports = async function (testContext) {
       expect(page.tableViewConfig.groupHeaderLabel).toBe(groupHeaderLabel);
     });
 
+    it('forwards `rowStripe` callback', () => {
+      const fn = (model) => (model.get('level') >= 5 ? 'danger' : null);
+      const page = fixturePage({ rowStripe: fn });
+      expect(page.tableViewConfig.rowStripe).toBe(fn);
+    });
+
     it('omitting these options leaves them undefined (no defaults)', () => {
       const page = fixturePage();
       expect(page.tableViewConfig.dayRangeFilter).toBeUndefined();
@@ -95,6 +101,7 @@ module.exports = async function (testContext) {
       expect(page.tableViewConfig.groupHeaderTemplate).toBeUndefined();
       expect(page.tableViewConfig.groupHeaderLabel).toBeUndefined();
       expect(page.tableViewConfig.groupHeaderStyle).toBeUndefined();
+      expect(page.tableViewConfig.rowStripe).toBeUndefined();
     });
   });
 };
