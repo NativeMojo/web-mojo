@@ -80,6 +80,14 @@ class TablePage extends Page {
       hideActivePillNames: options.hideActivePillNames || [],
       searchPlacement: options.searchPlacement || 'toolbar',
 
+      // Toolbar day-range segment + chronological grouping. ListView /
+      // TableView own the implementation; TablePage just forwards.
+      dayRangeFilter: options.dayRangeFilter,
+      groupBy: options.groupBy,
+      groupHeaderTemplate: options.groupHeaderTemplate,
+      groupHeaderLabel: options.groupHeaderLabel,
+      groupHeaderStyle: options.groupHeaderStyle,
+
       // Display options for the HTML table element
       tableOptions: {
         striped: true,
