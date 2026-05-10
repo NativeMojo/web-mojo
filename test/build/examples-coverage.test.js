@@ -39,7 +39,7 @@ module.exports = async function(testContext) {
         services: ['Rest', 'ToastService', 'WebSocketClient', 'FileUpload'],
         components: [
             'Dialog', 'Modal', 'ListView', 'TableView', 'TabView',
-            'DataView', 'FileView', 'ImageFields', 'SidebarTopNav', 'ContextMenu',
+            'DataView', 'DetailView', 'FileView', 'ImageFields', 'SidebarTopNav', 'ContextMenu',
             'SideNavView', 'ActiveGroup', 'ChatView',
         ],
         extensions: [

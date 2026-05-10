@@ -3,9 +3,17 @@
 | Field | Value |
 |-------|-------|
 | Type | request |
-| Status | open |
+| Status | rejected |
 | Date | 2026-05-10 |
 | Priority | medium |
+
+## Rejected — 2026-05-10
+
+User direction during the design walkthrough: don't pursue the form-config-to-model-statics migration. Hand-rolled `Modal.form({...fields})` calls inside page action handlers are immediately legible and don't need to be lifted onto the model class — that adds an indirection layer for no UX gain.
+
+The exception (table-in-modal picker UIs) is a separate UX problem. None of the items in this request had that shape.
+
+The User / EmailDomain / EmailMailbox / FileManager / ShortLink / IPSet items listed below are all rejected. The related "remove context menus from table rows" work is captured in a separate request (`admin-tablepages-context-menu-removal.md`) — that is the actually-wanted follow-up, since context menus on rows fail on touchscreens (heavy mobile use).
 
 ## Description
 

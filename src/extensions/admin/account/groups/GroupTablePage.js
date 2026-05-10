@@ -57,6 +57,14 @@ class GroupTablePage extends TablePage {
                     }
                 },
                 {
+                    key: 'member_count',
+                    label: 'Members',
+                    sortable: true,
+                    align: 'right',
+                    visibility: 'md',
+                    class: 'text-muted'
+                },
+                {
                     key: 'is_active|yesnoicon',
                     label: 'Enabled',
                     visibility: 'lg'
