@@ -745,7 +745,7 @@ class TableView extends ListView {
     const actionsCol = (this.actions || this.contextMenu) ? 1 : 0;
     return {
       tagName: 'tr',
-      className: 'list-group-header-row',
+      className: `list-group-header-row list-group-header-row--${this.groupHeaderStyle}`,
       colspan: Math.max(1, dataCols + selectCol + actionsCol)
     };
   }

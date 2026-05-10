@@ -535,7 +535,7 @@ Totals are automatically recalculated when the collection changes (add, remove, 
 
 ## Grouped rows
 
-The same `groupBy` / `groupHeaderTemplate` / `groupHeaderLabel` options [documented on ListView](./ListView.md#grouped-rows) work on TableView. The difference is the default header markup: TableView emits a full-width `<tr class="list-group-header-row"><th colspan="N" class="list-group-header-cell">{{key}}</th></tr>` so the header sits in the table grid and spans all columns (data cols + selection col + actions col).
+The same `groupBy` / `groupHeaderTemplate` / `groupHeaderLabel` / `groupHeaderStyle` options [documented on ListView](./ListView.md#grouped-rows) work on TableView. The difference is the default header markup: TableView emits a full-width `<tr class="list-group-header-row list-group-header-row--<style>"><th colspan="N" class="list-group-header-cell">{{key}}</th></tr>` so the header sits in the table grid and spans all columns (data cols + selection col + actions col). The `groupHeaderStyle` modifier lands on the `<tr>` outer; CSS in `list-view.css` cascades the style through to the inner `<th>` cell.
 
 ```js
 const table = new TableView({

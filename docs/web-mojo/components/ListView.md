@@ -234,6 +234,35 @@ Accepts either a field-name string (`groupByDay('created')`) or an accessor func
 
 Additional helpers (`groupByField`, `groupByMonth`, `groupByYear`, `groupByLetter`) are tracked in `planning/requests/listview-grouping-helpers.md` and ship when a real consumer asks. Until then, write the resolver inline.
 
+### Visual styles
+
+Pick one of four built-in visual treatments via `groupHeaderStyle`:
+
+| Style | Look | When |
+|---|---|---|
+| `'banner'` *(default)* | Neutral full-width tinted band, label centered | Most chronological / categorical feeds — strong section break, no brand-color imposition |
+| `'mark'` | Small accent square + bold label + directional fading hairline | Restrained / typographic; lists where chrome should be quiet |
+| `'band'` | Same neutral band as `'banner'` but label left-aligned | When the section break should flow with the items' left edge |
+| `'rule'` | Editorial fieldset-legend — label centered between symmetric hairlines | Long sections / infrequent breaks; magazine feel |
+
+```js
+new ListView({
+  collection: events,
+  itemTemplate: '...',
+  ...groupByDay('created'),
+  groupHeaderStyle: 'mark'   // override the default
+});
+```
+
+Each style applies a CSS modifier class (`.list-group-header--<style>` on the list shape, `.list-group-header-row--<style>` on the table shape) — overridable in your own stylesheet if you want to retune one for your app. The `'mark'` style additionally exposes `--list-group-header-accent` (defaults to `--bs-primary`) so consumers can retint the accent square per-instance:
+
+```html
+<div class="list-group-header list-group-header--mark"
+     style="--list-group-header-accent: var(--bs-success)">
+```
+
+If `groupHeaderStyle` receives an unknown value, it silently falls back to `'banner'`.
+
 ### Pagination math
 
 **Pagination counts items only** — page-size 5 still means 5 items per page, regardless of how many group headers fall into the page. Headers are decorative; the user thinks "5 logins per page," not "5 rows."
@@ -258,6 +287,7 @@ Headers do **not** participate in `clickAction: 'view'` / `onItemClick` / `item:
 | `groupHeaderTemplate` | `string` | `'{{key}}'` | Mustache template for the header. Receives `{{key}}` and `{{model.*}}`. |
 | `groupHeaderLabel` | `Function` | `null` | Optional `(rawKey) => displayKey` formatter applied before the template renders. |
 | `groupHeaderClass` | `Class` | `ListGroupHeaderView` | Custom View subclass for headers (escape hatch — full control over outer element + behavior). |
+| `groupHeaderStyle` | `'banner' \| 'mark' \| 'band' \| 'rule'` | `'banner'` | Visual treatment for the divider. See [Visual styles](#visual-styles) above. Applies a CSS modifier class on the header view's outer element. |
 
 ### Naming caveat
 

@@ -91,114 +91,152 @@
 /* ========================================================================
    Group header rows (groupBy primitive)
 
-   Composition: a small sharp brand-tinted square anchors a bold uppercase
-   label, followed by a directional gradient hairline that fades to nothing
-   on the right. Generous breathing room above each group; tight gap below
-   so items feel owned by their header.
+   Four opt-in styles, selected via the ListView constructor option
+   `groupHeaderStyle: 'banner' | 'mark' | 'band' | 'rule'`. Each renders a
+   modifier class on the header view's outer element:
 
-   The accent color is exposed as a CSS variable so consumers can retint a
-   single header (e.g. severity tone) without rewriting the template:
-       <div class="list-group-header" style="--list-group-header-accent: var(--bs-success)">
+     'banner' (default) — neutral full-width tint, label centered
+     'mark'             — small accent square + bold label + fading hairline
+     'band'             — neutral full-width tint, label left-aligned
+     'rule'             — editorial fieldset-legend, label centered between rules
+
+   The accent color (used by 'mark') is exposed as a CSS variable so
+   consumers can retint a single header (e.g. severity tone) without
+   rewriting the template:
+       <div class="list-group-header list-group-header--mark"
+            style="--list-group-header-accent: var(--bs-success)">
 
    Light + dark from a single block: every property uses Bootstrap tokens
    that re-skin under [data-bs-theme="dark"], so no override block needed.
+
+   TableView shape uses the same modifier vocabulary on the `<tr>` outer
+   (`.list-group-header-row--<style>`) and the styles cascade through
+   descendant selectors to the `<th class="list-group-header-cell">` inside.
    ======================================================================== */
 
+/* Base — every variant gets these. Behavior only (no decoration) so the
+   modifier class owns the visual. */
 .list-group-header {
-    --list-group-header-accent: var(--bs-primary);
-
-    display: flex;
-    align-items: center;
-    gap: 0.625rem;
-
-    margin-top: 1.5rem;
-    padding: 0.375rem 0 0.5rem;
-
-    font-size: 0.6875rem;          /* 11px — slightly larger than 0.7 for legibility */
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--bs-emphasis-color);
-
     pointer-events: none;          /* never participate in row-click affordances */
 }
-
-/* Leading typographic mark — a sharp 4×4 square in the accent color. Reads
-   as section punctuation, not a brand stamp. Sharp corners (no border-radius)
-   give it a more "designed" feel than a soft dot. */
-.list-group-header::before {
-    content: '';
-    width: 4px;
-    height: 4px;
-    flex-shrink: 0;
-    background: var(--list-group-header-accent);
-}
-
-/* Trailing hairline — solid for the first ~24px after the label, then fades
-   to transparent. The directional fade is the "section break" affordance:
-   the eye reads label first, then the rule extends past it into the items. */
-.list-group-header::after {
-    content: '';
-    flex-grow: 1;
-    height: 1px;
-    background: linear-gradient(
-        to right,
-        var(--bs-border-color),
-        var(--bs-border-color) 1.5rem,
-        transparent
-    );
-}
-
-/* First header in the list collapses the leading breathing room — the list
-   container's own padding handles the top edge. */
-.list-group-header:first-child,
-.list-items > .list-group-header:first-child,
-.list-view-wrapper .list-items > .list-group-header:first-child {
-    margin-top: 0;
-}
-
-/* TableView shape — same composition (mark + label + fading rule) but the
-   `<tr>` is the row and the `<th colspan="N">` is itself the flex container.
-   Cell padding controls vertical rhythm in place of the list version's
-   margin-top, since `<tr>` margins don't apply inside `<tbody>`. */
 
 .list-group-header-row {
     background: transparent;
 }
 
 .list-group-header-row .list-group-header-cell {
+    border-top: 0;
+    border-bottom: 0;
+    background: transparent;
+    pointer-events: none;
+}
+
+/* ============================================================
+   Style: 'banner' — neutral full-width tint, label centered (default)
+   ============================================================ */
+
+.list-group-header--banner {
+    display: block;
+    padding: 0.5rem 1rem;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-emphasis-color);
+    text-align: center;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+}
+.list-group-header--banner:not(:first-child) {
+    border-top: 1px solid var(--bs-border-color-translucent);
+}
+
+.list-group-header-row--banner .list-group-header-cell {
+    padding: 0.5rem 1rem;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-emphasis-color);
+    text-align: center;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+}
+.list-group-header-row--banner:not(:first-child) .list-group-header-cell {
+    border-top: 1px solid var(--bs-border-color-translucent);
+}
+
+/* ============================================================
+   Style: 'band' — neutral full-width tint, label left-aligned
+   ============================================================ */
+
+.list-group-header--band {
+    display: block;
+    padding: 0.5rem 1rem;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-secondary-color);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+}
+.list-group-header--band:not(:first-child) {
+    border-top: 1px solid var(--bs-border-color-translucent);
+}
+
+.list-group-header-row--band .list-group-header-cell {
+    padding: 0.5rem 1rem;
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-secondary-color);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+}
+.list-group-header-row--band:not(:first-child) .list-group-header-cell {
+    border-top: 1px solid var(--bs-border-color-translucent);
+}
+
+/* ============================================================
+   Style: 'mark' — small accent square + bold label + fading hairline
+
+   Composition: a sharp 4×4 brand-tinted square anchors a bold uppercase
+   label, followed by a directional gradient hairline that fades to
+   transparent on the right. Mark + label aligned with item icons below
+   (1rem horizontal padding).
+   ============================================================ */
+
+.list-group-header--mark {
     --list-group-header-accent: var(--bs-primary);
 
     display: flex;
     align-items: center;
     gap: 0.625rem;
 
-    padding: 1.25rem 0.5rem 0.5rem;
+    margin-top: 0.75rem;
+    padding: 0.5rem 1rem 0.375rem;
 
     font-size: 0.6875rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--bs-emphasis-color);
-
-    border-top: 0;
-    border-bottom: 0;
-    background: transparent;
 }
-
-.list-group-header-row:first-child .list-group-header-cell {
-    padding-top: 0.5rem;
+.list-group-header--mark:first-child,
+.list-items > .list-group-header--mark:first-child,
+.list-view-wrapper .list-items > .list-group-header--mark:first-child {
+    margin-top: 0;
 }
-
-.list-group-header-row .list-group-header-cell::before {
+.list-group-header--mark::before {
     content: '';
     width: 4px;
     height: 4px;
     flex-shrink: 0;
     background: var(--list-group-header-accent);
 }
-
-.list-group-header-row .list-group-header-cell::after {
+.list-group-header--mark::after {
     content: '';
     flex-grow: 1;
     height: 1px;
@@ -208,4 +246,83 @@
         var(--bs-border-color) 1.5rem,
         transparent
     );
+}
+
+.list-group-header-row--mark .list-group-header-cell {
+    --list-group-header-accent: var(--bs-primary);
+
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+
+    padding: 1rem 1rem 0.5rem;
+
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--bs-emphasis-color);
+}
+.list-group-header-row--mark:first-child .list-group-header-cell {
+    padding-top: 0.5rem;
+}
+.list-group-header-row--mark .list-group-header-cell::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    flex-shrink: 0;
+    background: var(--list-group-header-accent);
+}
+.list-group-header-row--mark .list-group-header-cell::after {
+    content: '';
+    flex-grow: 1;
+    height: 1px;
+    background: linear-gradient(
+        to right,
+        var(--bs-border-color),
+        var(--bs-border-color) 1.5rem,
+        transparent
+    );
+}
+
+/* ============================================================
+   Style: 'rule' — editorial fieldset-legend, label centered between rules
+   ============================================================ */
+
+.list-group-header--rule {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 1rem 1rem 0.625rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--bs-emphasis-color);
+}
+.list-group-header--rule::before,
+.list-group-header--rule::after {
+    content: '';
+    flex-grow: 1;
+    height: 1px;
+    background: var(--bs-border-color);
+}
+
+.list-group-header-row--rule .list-group-header-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 1rem 1rem 0.625rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--bs-emphasis-color);
+}
+.list-group-header-row--rule .list-group-header-cell::before,
+.list-group-header-row--rule .list-group-header-cell::after {
+    content: '';
+    flex-grow: 1;
+    height: 1px;
+    background: var(--bs-border-color);
 }

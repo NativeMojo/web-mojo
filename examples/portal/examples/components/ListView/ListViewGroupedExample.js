@@ -6,15 +6,14 @@ import { Page, ListView, Collection, groupByDay } from 'web-mojo';
  * Doc:    docs/web-mojo/components/ListView.md#grouped-rows
  * Route:  components/list-view/grouped
  *
- * Two shapes shown side by side:
- *   1. Raw `groupBy: 'role'` shorthand + `groupHeaderLabel` formatter — bucketing
- *      a static categorical field (the user's role) and uppercasing the label.
- *   2. `...groupByDay('created')` built-in helper — chronological day-bucketing
- *      with stable YYYY-MM-DD bucket keys and 'Today' / 'Yesterday' / 'May 5'
- *      / 'May 5, 2025' display labels.
+ * Demonstrates:
+ *   1. Raw `groupBy: 'role'` shorthand + `groupHeaderLabel` formatter.
+ *   2. `...groupByDay('created')` built-in helper for chronological feeds.
+ *   3. The four built-in `groupHeaderStyle` visual treatments side-by-side.
  *
- * The raw seed below pre-sorts by role so headers don't repeat. The framework
- * does NOT enforce a sort order to match grouping — that's the consumer's call.
+ * The seeds below pre-sort by their group key so headers don't repeat. The
+ * framework does NOT enforce a sort order to match grouping — that's the
+ * consumer's call.
  */
 const SEED_USERS = [
     { id: 1, name: 'Alice Adams', role: 'Admin', email: 'alice@example.com' },
@@ -37,6 +36,23 @@ const SEED_LOGINS = [
     { id: 'l6', actor: 'carla@example.com', location: 'Lisbon · PT',         created: NOW - 14 * DAY },
 ];
 
+const STYLE_OPTIONS = [
+    { id: 'banner', label: 'banner', tag: 'default' },
+    { id: 'mark',   label: 'mark',   tag: '' },
+    { id: 'band',   label: 'band',   tag: '' },
+    { id: 'rule',   label: 'rule',   tag: '' },
+];
+
+const ITEM_TEMPLATE = `
+    <div class="d-flex align-items-center gap-3 p-3 border-bottom">
+        <i class="bi bi-shield-check fs-5 text-secondary"></i>
+        <div class="flex-grow-1">
+            <div class="fw-semibold">{{model.actor}}</div>
+            <div class="small text-muted">{{model.location}} · {{model.created|relative}}</div>
+        </div>
+    </div>
+`;
+
 class ListViewGroupedExample extends Page {
     static pageName = 'components/list-view/grouped';
     static route = 'components/list-view/grouped';
@@ -54,10 +70,10 @@ class ListViewGroupedExample extends Page {
     async onInit() {
         await super.onInit();
 
-        const usersByRole = new Collection(SEED_USERS);
+        // Section 1 — raw groupBy + groupHeaderLabel on a categorical field
         this.byRoleList = new ListView({
             containerId: 'by-role-slot',
-            collection: usersByRole,
+            collection: new Collection(SEED_USERS),
             itemTemplate: `
                 <div class="d-flex align-items-center gap-3 p-3 border-bottom">
                     <i class="bi bi-person-circle fs-4 text-secondary"></i>
@@ -72,22 +88,27 @@ class ListViewGroupedExample extends Page {
         });
         this.addChild(this.byRoleList);
 
-        const loginEvents = new Collection(SEED_LOGINS);
+        // Section 2 — groupByDay helper on chronological data
         this.byDayList = new ListView({
             containerId: 'by-day-slot',
-            collection: loginEvents,
-            itemTemplate: `
-                <div class="d-flex align-items-center gap-3 p-3 border-bottom">
-                    <i class="bi bi-shield-check fs-4 text-secondary"></i>
-                    <div class="flex-grow-1">
-                        <div><strong>{{model.actor}}</strong></div>
-                        <div class="small text-muted">{{model.location}} · {{model.created|relative}}</div>
-                    </div>
-                </div>
-            `,
+            collection: new Collection(SEED_LOGINS),
+            itemTemplate: ITEM_TEMPLATE,
             ...groupByDay('created'),
         });
         this.addChild(this.byDayList);
+
+        // Section 3 — the four built-in groupHeaderStyle visual treatments
+        STYLE_OPTIONS.forEach((opt) => {
+            const list = new ListView({
+                containerId: `style-${opt.id}-slot`,
+                collection: new Collection(SEED_LOGINS),
+                itemTemplate: ITEM_TEMPLATE,
+                ...groupByDay('created'),
+                groupHeaderStyle: opt.id,
+            });
+            this[`style_${opt.id}`] = list;
+            this.addChild(list);
+        });
     }
 
     static TEMPLATE = `
@@ -95,8 +116,9 @@ class ListViewGroupedExample extends Page {
             <h1>ListView — grouped rows</h1>
             <p class="example-summary">
                 Synthetic header rows between consecutive items where a derived
-                group key changes. Two shapes — a raw <code>groupBy: 'role'</code>
-                shorthand and the built-in <code>groupByDay</code> helper.
+                group key changes. Configure with <code>groupBy</code> +
+                <code>groupHeaderLabel</code>, the <code>groupByDay</code> helper,
+                and pick a visual treatment via <code>groupHeaderStyle</code>.
             </p>
             <p class="example-docs-link">
                 <i class="bi bi-book"></i>
@@ -113,9 +135,50 @@ class ListViewGroupedExample extends Page {
             </div>
 
             <h5 class="mt-4">Group by day (<code>...groupByDay('created')</code>)</h5>
-            <div class="card">
+            <div class="card mb-4">
                 <div class="card-body p-0">
                     <div data-container="by-day-slot"></div>
+                </div>
+            </div>
+
+            <h5 class="mt-5">Visual styles · <code>groupHeaderStyle</code></h5>
+            <p class="text-secondary small mb-3">
+                Same data and item template across all four — the only
+                difference is <code>groupHeaderStyle</code>.
+            </p>
+            <div class="row g-3">
+                <div class="col-12 col-lg-6">
+                    <div class="d-flex align-items-baseline gap-2 mb-2">
+                        <code class="fs-6">'banner'</code>
+                        <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">default</span>
+                    </div>
+                    <div class="card"><div class="card-body p-0">
+                        <div data-container="style-banner-slot"></div>
+                    </div></div>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <div class="d-flex align-items-baseline gap-2 mb-2">
+                        <code class="fs-6">'mark'</code>
+                    </div>
+                    <div class="card"><div class="card-body p-0">
+                        <div data-container="style-mark-slot"></div>
+                    </div></div>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <div class="d-flex align-items-baseline gap-2 mb-2">
+                        <code class="fs-6">'band'</code>
+                    </div>
+                    <div class="card"><div class="card-body p-0">
+                        <div data-container="style-band-slot"></div>
+                    </div></div>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <div class="d-flex align-items-baseline gap-2 mb-2">
+                        <code class="fs-6">'rule'</code>
+                    </div>
+                    <div class="card"><div class="card-body p-0">
+                        <div data-container="style-rule-slot"></div>
+                    </div></div>
                 </div>
             </div>
         </div>

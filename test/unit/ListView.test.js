@@ -829,6 +829,82 @@ module.exports = async function (testContext) {
       expect(listView._renderOrder.length).toBe(0);
       expect(listView.groupHeaderViews.size).toBe(0);
     });
+
+    it('default groupHeaderStyle is "banner" — outer element gets the banner modifier class', async () => {
+      const collection = new Collection([
+        { id: 1, bucket: 'alpha' },
+        { id: 2, bucket: 'beta' }
+      ]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.id}}</div>',
+        groupBy: 'bucket'
+      });
+      await listView.render();
+
+      expect(listView.groupHeaderStyle).toBe('banner');
+      const header = listView.element.querySelector('.list-group-header');
+      expect(header).not.toBeNull();
+      expect(header.classList.contains('list-group-header--banner')).toBe(true);
+    });
+
+    it('respects groupHeaderStyle: "mark"', async () => {
+      const collection = new Collection([{ id: 1, bucket: 'alpha' }, { id: 2, bucket: 'beta' }]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.id}}</div>',
+        groupBy: 'bucket',
+        groupHeaderStyle: 'mark'
+      });
+      await listView.render();
+
+      const header = listView.element.querySelector('.list-group-header');
+      expect(header.classList.contains('list-group-header--mark')).toBe(true);
+      expect(header.classList.contains('list-group-header--banner')).toBe(false);
+    });
+
+    it('respects groupHeaderStyle: "band"', async () => {
+      const collection = new Collection([{ id: 1, bucket: 'alpha' }, { id: 2, bucket: 'beta' }]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.id}}</div>',
+        groupBy: 'bucket',
+        groupHeaderStyle: 'band'
+      });
+      await listView.render();
+
+      const header = listView.element.querySelector('.list-group-header');
+      expect(header.classList.contains('list-group-header--band')).toBe(true);
+    });
+
+    it('respects groupHeaderStyle: "rule"', async () => {
+      const collection = new Collection([{ id: 1, bucket: 'alpha' }, { id: 2, bucket: 'beta' }]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.id}}</div>',
+        groupBy: 'bucket',
+        groupHeaderStyle: 'rule'
+      });
+      await listView.render();
+
+      const header = listView.element.querySelector('.list-group-header');
+      expect(header.classList.contains('list-group-header--rule')).toBe(true);
+    });
+
+    it('falls back to "banner" when an unknown groupHeaderStyle is passed', async () => {
+      const collection = new Collection([{ id: 1, bucket: 'alpha' }]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.id}}</div>',
+        groupBy: 'bucket',
+        groupHeaderStyle: 'invalid-style'
+      });
+      await listView.render();
+
+      expect(listView.groupHeaderStyle).toBe('banner');
+      const header = listView.element.querySelector('.list-group-header');
+      expect(header.classList.contains('list-group-header--banner')).toBe(true);
+    });
   });
 
   // --------------------------------------------------------------
@@ -924,7 +1000,7 @@ module.exports = async function (testContext) {
   // TableView grouping default — `<tr><th colspan="N">` shape
   // --------------------------------------------------------------
   describe('TableView (grouped)', () => {
-    it('default group header renders as <tr class="list-group-header-row"><th colspan="N">', async () => {
+    it('default group header renders as <tr class="list-group-header-row list-group-header-row--banner"><th colspan="N">', async () => {
       const TableView = loadModule('TableView');
       const collection = new Collection([
         { id: 1, name: 'A', bucket: 'alpha' },
@@ -943,12 +1019,33 @@ module.exports = async function (testContext) {
 
       const headerRows = tableView.element.querySelectorAll('tr.list-group-header-row');
       expect(headerRows.length).toBe(2);
+      // Default style modifier lands on the <tr> outer.
+      expect(headerRows[0].classList.contains('list-group-header-row--banner')).toBe(true);
 
       // colspan = data cols (2) + actions col (1) = 3.
       const firstHeaderCell = headerRows[0].querySelector('th.list-group-header-cell');
       expect(firstHeaderCell).not.toBeNull();
       expect(firstHeaderCell.getAttribute('colspan')).toBe('3');
       expect(firstHeaderCell.textContent.trim()).toBe('alpha');
+    });
+
+    it('respects groupHeaderStyle on TableView (modifier lands on <tr>)', async () => {
+      const TableView = loadModule('TableView');
+      const collection = new Collection([
+        { id: 1, name: 'A', bucket: 'alpha' },
+        { id: 2, name: 'B', bucket: 'beta' }
+      ]);
+      const tableView = new TableView({
+        collection,
+        columns: [{ key: 'id' }, { key: 'name' }],
+        groupBy: 'bucket',
+        groupHeaderStyle: 'mark'
+      });
+      await tableView.render();
+
+      const headerRow = tableView.element.querySelector('tr.list-group-header-row');
+      expect(headerRow.classList.contains('list-group-header-row--mark')).toBe(true);
+      expect(headerRow.classList.contains('list-group-header-row--banner')).toBe(false);
     });
   });
 };

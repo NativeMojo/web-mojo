@@ -62,6 +62,12 @@ import ListViewItem from './ListViewItem.js';
 import ListGroupHeaderView from './ListGroupHeaderView.js';
 
 class ListView extends View {
+  /**
+   * Valid values for the `groupHeaderStyle` constructor option. Each maps
+   * to a CSS modifier class — see `src/core/css/list-view.css`.
+   */
+  static GROUP_HEADER_STYLES = ['banner', 'mark', 'band', 'rule'];
+
   constructor(options = {}) {
     super({
       className: options.className || 'list-view',
@@ -181,6 +187,14 @@ class ListView extends View {
     this.groupHeaderTemplate = options.groupHeaderTemplate || null;
     this.groupHeaderLabel = typeof options.groupHeaderLabel === 'function' ? options.groupHeaderLabel : null;
     this.groupHeaderClass = options.groupHeaderClass || ListGroupHeaderView;
+    // Visual style — selects the CSS modifier class on each header view.
+    // Valid values: 'banner' (default — neutral full-width tint, label centered),
+    // 'mark' (small accent square + bold label + fading hairline), 'band'
+    // (neutral full-width tint, label left-aligned), 'rule' (editorial
+    // fieldset-legend, label centered between rules). See list-view.css.
+    this.groupHeaderStyle = ListView.GROUP_HEADER_STYLES.includes(options.groupHeaderStyle)
+      ? options.groupHeaderStyle
+      : 'banner';
     this.groupHeaderViews = new Map();
     this._renderOrder = [];
 
@@ -952,11 +966,15 @@ class ListView extends View {
 
   /**
    * Subclass hook for extra constructor options on the header view (TableView
-   * uses this to set `tagName`, `className`, `colspan`). Default: no extras.
+   * uses this to set `tagName: 'tr'`, `colspan`, and the table-shape modifier
+   * className). Default: applies the `.list-group-header--<style>` modifier
+   * for the configured `groupHeaderStyle`.
    * @protected
    */
   _groupHeaderViewOptions(_model, _key, _index) {
-    return {};
+    return {
+      className: `list-group-header list-group-header--${this.groupHeaderStyle}`
+    };
   }
 
   /**
