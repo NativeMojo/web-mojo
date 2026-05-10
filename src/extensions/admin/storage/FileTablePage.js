@@ -27,7 +27,8 @@ class FileTablePage extends TablePage {
 
             viewDialogOptions: {
                 header: false,
-                size: 'xl'
+                noBodyPadding: true,
+                buttons: []
             },
 
             // Column definitions
