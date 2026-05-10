@@ -1,8 +1,17 @@
 /**
- * JobsTablePage - All jobs, filterable by status
+ * JobsTablePage - All jobs, filterable by status.
  *
- * Wraps JobTableSection with no status filter (shows all jobs)
- * and full column config, search, and filter support.
+ * Wraps JobTableSection with no status filter (shows all jobs) and full
+ * column config, search, and filter support.
+ *
+ * NOTE: This is intentionally a `Page` (not `TablePage`) — it composes a
+ * reusable `JobTableSection` View that owns the table internally. That
+ * pattern is the documented escape hatch for cases where a table is one
+ * of several panels on a page or needs to be embedded in a different
+ * surface (e.g. a JobDashboardPage with metrics + table). For the
+ * standard "page = single table with URL sync" shape, extend `TablePage`
+ * directly. See docs/web-mojo/pages/TablePage.md → "Embedding a TableView
+ * in a non-TablePage" for the contract.
  *
  * Route: system/jobs/list
  */

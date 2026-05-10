@@ -8,6 +8,7 @@
 import Page from '@core/Page.js';
 import TabView from '@core/views/navigation/TabView.js';
 import TableView from '@core/views/table/TableView.js';
+import { groupByDay } from '@core/views/list/grouping.js';
 import { LoginEventList } from '@ext/admin/models/LoginEvent.js';
 import LoginLocationMapView from './LoginLocationMapView.js';
 
@@ -46,19 +47,26 @@ class UserDeviceLocationTablePage extends Page {
         const loginEventsTable = new TableView({
             collection: new LoginEventList({ params: { size: 20 } }),
             searchable: true,
+            searchPlaceholder: 'Search user, IP, or city',
             sortable: true,
             filterable: true,
             paginated: true,
             showRefresh: true,
             showExport: true,
+
+            // Day-range segment + day-grouped headers, matching the rest of
+            // the admin audit feeds (logs, signals, sent messages, etc.).
+            dayRangeFilter: true,
+            ...groupByDay('created'),
+
             columns: [
                 { key: 'created', label: 'Date', formatter: 'datetime', sortable: true, width: '160px' },
                 { key: 'user.display_name', label: 'User', sortable: true },
                 { key: 'ip_address', label: 'IP Address', sortable: true },
                 { key: 'city', label: 'City', formatter: "default('—')" },
-                { key: 'region', label: 'Region', formatter: "default('—')" },
+                { key: 'region', label: 'Region', formatter: "default('—')", visibility: 'lg' },
                 { key: 'country_code', label: 'Country', sortable: true },
-                { key: 'source', label: 'Source', sortable: true },
+                { key: 'source', label: 'Source', sortable: true, visibility: 'lg' },
                 { key: 'is_new_country', label: 'New Country', formatter: 'boolean', sortable: true, width: '110px' }
             ]
         });

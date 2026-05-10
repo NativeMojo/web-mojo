@@ -102,7 +102,155 @@ Use TablePage when you need:
 - **URL-synced state** so users can bookmark, share, or use browser back/forward
 - A **quick setup** — pass your Collection, columns, and actions and get a complete page
 
-If you need a table **embedded inside another view** (not as a top-level page), use [TableView](./TableView.md) directly instead.
+If you need a table **embedded inside another view** (not as a top-level page), use [TableView](./TableView.md) directly instead. See also [Embedding a TableView in a non-TablePage](#embedding-a-tableview-in-a-non-tablepage) for the canonical wrapping pattern.
+
+---
+
+## Canonical pattern: model statics drive forms and view dialogs
+
+The cleanest TablePage subclass declares `Collection`, `columns`, and toolbar
+flags — and **nothing else**. The Add / Edit / View dialogs, the form
+shape, and the dialog config are all resolved by TableView from static
+properties on the model class. Page-level overrides exist as escape
+hatches; reach for them only when you have a real reason.
+
+```javascript
+// Model file:
+import { Setting, SettingList, SettingForms } from '@core/models/Settings.js';
+import SettingView from './SettingView.js';
+
+Setting.ADD_FORM   = SettingForms.create;
+Setting.EDIT_FORM  = SettingForms.edit;
+Setting.VIEW_CLASS = SettingView;
+
+// Page file:
+class SettingTablePage extends TablePage {
+  constructor(options = {}) {
+    super({
+      ...options,
+      pageName: 'Settings',
+      Collection: SettingList,
+      columns: [
+        { key: 'key',   label: 'Key',    sortable: true },
+        { key: 'value', label: 'Value' }
+      ],
+      searchable: true,
+      showAdd: true
+    });
+  }
+}
+```
+
+That's the whole page. Add → opens `Setting.ADD_FORM`. Row click →
+opens `Setting.VIEW_CLASS`. No `formCreate:` / `formEdit:` /
+`itemViewClass:` lines in the constructor — the resolution chain in
+`ListView.getAddFormConfig()` / `getEditFormConfig()` / `getItemViewClass()`
+takes care of it.
+
+**Where to register the static:**
+
+| Static                              | Recommended location                              |
+|-------------------------------------|---------------------------------------------------|
+| `Model.ADD_FORM`, `Model.EDIT_FORM` | Bottom of the **model** file (next to forms).     |
+| `Model.VIEW_CLASS`                  | Top of the **TablePage** file. The view class is a sibling import that the model file shouldn't reach for (avoids core→ext deps). |
+| `Model.FORM_DIALOG_CONFIG`          | Bottom of the **model** file when present.        |
+| `Model.DELETE_TEMPLATE`             | Bottom of the **model** file when present.        |
+
+Reference implementations (use these as the visual baseline when
+auditing or editing other pages):
+[`ApiKeyTablePage`](https://github.com/NativeMojo/web-mojo/blob/main/src/extensions/admin/account/api_keys/ApiKeyTablePage.js)
+· [`SettingTablePage`](https://github.com/NativeMojo/web-mojo/blob/main/src/extensions/admin/settings/SettingTablePage.js)
+· [`ScheduledTaskTablePage`](https://github.com/NativeMojo/web-mojo/blob/main/src/extensions/admin/jobs/ScheduledTaskTablePage.js).
+
+When a page genuinely needs a different form per usage (e.g.
+`EmailTemplateTablePage` + a "preview-only" page sharing the same model),
+override at the page level with `formCreate:` / `formEdit:` /
+`itemViewClass:` — those still take precedence over the static.
+
+---
+
+## When to use `dayRangeFilter` vs. column `daterange` filter
+
+Both are supported, and they're complementary — not alternatives. Pick
+based on what the user is doing.
+
+| Feature              | `dayRangeFilter`                       | Column `daterange` filter             |
+|----------------------|----------------------------------------|---------------------------------------|
+| Where it lives       | Toolbar (1d / 7d / 30d / 90d segment) | Filter dropdown / pill                |
+| What it writes       | `${field}__gte` (start only)           | Both `${field}__gte` and `${field}__lte` |
+| Best for             | "Last N days" exploration              | "Between Apr 5 and Apr 12" precision  |
+| Default              | None — opt-in per page                 | None — opt-in per column              |
+
+Time-series admin tables (logs, signals, sent messages, login events,
+shortlink clicks) typically benefit from **both** — the segment for fast
+exploration, the column filter for precise narrow ranges. They write
+distinct query keys, so they don't clobber each other unless you point
+both at the exact same field name; in that case the last write wins.
+
+```javascript
+class LogTablePage extends TablePage {
+  constructor(options = {}) {
+    super({
+      ...options,
+      Collection: LogList,
+      dayRangeFilter: true,                     // toolbar segment, writes created__gte
+      columns: [
+        { key: 'created', label: 'Timestamp',
+          filter: { type: 'daterange' } },      // pill, writes created__gte + created__lte
+        // ...
+      ]
+    });
+  }
+}
+```
+
+Combine with `groupByDay('created')` (from `@core/views/list/grouping.js`)
+for chronological feeds where day-grouped headers make scanning easier.
+
+---
+
+## Embedding a TableView in a non-TablePage
+
+The standard "page = single table with URL sync" shape extends
+`TablePage`. Sometimes you want a table that's *one of several panels*
+on a page — a dashboard with metrics + a recent-activity table, a
+detail view with a related-items table at the bottom, a tabbed page
+with a map tab plus a table tab. For those cases:
+
+1. Extend `Page` directly (not `TablePage`).
+2. Construct a `TableView` instance inside `onInit()`.
+3. Register it as a child view via `addChild()` with a `containerId`.
+4. Skip URL sync — `TablePage`'s URL sync is bound to its single owned
+   table. A page with multiple tables would need to fan out param keys
+   per table; that's intentionally out of scope.
+
+```javascript
+class JobsTablePage extends Page {
+  constructor(options = {}) {
+    super({ pageName: 'Jobs', ...options });
+    this.template = `
+      <div class="jobs-table-container">
+        <p class="text-muted mb-3">All jobs across all channels</p>
+        <div data-container="jobs-section"></div>
+      </div>
+    `;
+  }
+
+  async onInit() {
+    this.jobTableSection = new JobTableSection({
+      containerId: 'jobs-section',
+      sort: '-created',
+      title: 'All Jobs',
+      selectable: true
+    });
+    this.addChild(this.jobTableSection);
+  }
+}
+```
+
+Two real examples in this codebase: `JobsTablePage` (single embedded
+section) and `UserDeviceLocationTablePage` (TabView with a map tab and
+a table tab). Both deliberately do **not** extend TablePage.
 
 ---
 
