@@ -224,4 +224,8 @@ const BouncerSignatureForms = {
     }
 };
 
+// Wire form statics so admin TablePages can drop inline form configuration.
+BouncerSignature.ADD_FORM = BouncerSignatureForms.create;
+BouncerSignature.EDIT_FORM = BouncerSignatureForms.edit;
+
 export { BouncerDevice, BouncerDeviceList, BouncerSignal, BouncerSignalList, BouncerSignature, BouncerSignatureList, BouncerSignatureForms };

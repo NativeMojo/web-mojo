@@ -4,8 +4,10 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { MailboxList, MailboxForms, Mailbox } from '@ext/admin/models/Email.js';
+import { MailboxList, Mailbox } from '@ext/admin/models/Email.js';
 import Modal from '@core/views/feedback/Modal.js';
+
+// Mailbox.ADD_FORM / EDIT_FORM are registered on the model (Email.js).
 
 class EmailMailboxTablePage extends TablePage {
     constructor(options = {}) {
@@ -16,8 +18,6 @@ class EmailMailboxTablePage extends TablePage {
             router: 'admin/email/mailboxes',
             Collection: MailboxList,
 
-            formCreate: MailboxForms.create,
-            formEdit: MailboxForms.edit,
             clickAction: "edit",
 
             // Table columns

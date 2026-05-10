@@ -6,8 +6,13 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { GeoLocatedIPList } from '@core/models/System.js';
+import { GeoLocatedIP, GeoLocatedIPList } from '@core/models/System.js';
 import GeoIPView from '../account/devices/GeoIPView.js';
+
+// Idempotent — GeoLocatedIPTablePage also registers this static. Setting
+// it here too means BlockedIPsTablePage works when imported directly,
+// not just via admin/index.js's eager-load order.
+GeoLocatedIP.VIEW_CLASS = GeoIPView;
 
 export default class BlockedIPsTablePage extends TablePage {
     constructor(options = {}) {
@@ -17,7 +22,6 @@ export default class BlockedIPsTablePage extends TablePage {
             pageName: 'Blocked IPs',
             router: 'admin/security/blocked-ips',
             Collection: GeoLocatedIPList,
-            itemViewClass: GeoIPView,
 
             viewDialogOptions: {
                 header: false,

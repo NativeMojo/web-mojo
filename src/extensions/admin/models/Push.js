@@ -114,8 +114,11 @@ const PushTemplateForms = {
 PushConfigForms.create = PushConfigForms.edit;
 PushTemplateForms.create = PushTemplateForms.edit;
 
-// Wire view dispatch — TableView uses ModelClass.VIEW_CLASS to resolve the
-// detail view when clickAction: 'view' fires.
+// Wire form + view-class statics so admin TablePages can drop inline config.
+PushConfig.ADD_FORM = PushConfigForms.create;
+PushConfig.EDIT_FORM = PushConfigForms.edit;
+PushTemplate.ADD_FORM = PushTemplateForms.create;
+PushTemplate.EDIT_FORM = PushTemplateForms.edit;
 PushDevice.VIEW_CLASS = PushDeviceView;
 
 

@@ -21,6 +21,10 @@ import {
 } from '@core/models/ShortLink.js';
 import ShortLinkView, { getShortUrl } from './ShortLinkView.js';
 
+// Page-level Add/Edit are custom (OG metadata flatten/unflatten — see
+// _handleAdd / _handleEdit). VIEW_CLASS goes through the standard path.
+ShortLink.VIEW_CLASS = ShortLinkView;
+
 class ShortLinkTablePage extends TablePage {
     constructor(options = {}) {
         super({
@@ -29,7 +33,6 @@ class ShortLinkTablePage extends TablePage {
             pageName: 'Shortlinks',
             router: 'admin/shortlinks/links',
             Collection: ShortLinkList,
-            itemViewClass: ShortLinkView,
             onAdd: () => this._handleAdd(),
             onItemEdit: (model) => this._handleEdit(model),
 

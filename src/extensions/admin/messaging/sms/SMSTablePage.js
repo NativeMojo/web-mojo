@@ -4,8 +4,10 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { SMSList } from '@ext/admin/models/Phonehub.js';
+import { SMS, SMSList } from '@ext/admin/models/Phonehub.js';
 import SMSView from './SMSView.js';
+
+SMS.VIEW_CLASS = SMSView;
 
 class SMSTablePage extends TablePage {
   constructor(options = {}) {
@@ -20,8 +22,6 @@ class SMSTablePage extends TablePage {
       // Data source
       Collection: SMSList,
 
-      // Item view configuration
-      itemViewClass: SMSView,
       viewDialogOptions: {
         header: false,
         size: 'xl'

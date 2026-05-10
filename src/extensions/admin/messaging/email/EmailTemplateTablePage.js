@@ -4,8 +4,11 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { EmailTemplateList, EmailTemplateForms } from '@ext/admin/models/Email.js';
+import { EmailTemplate, EmailTemplateList } from '@ext/admin/models/Email.js';
 import EmailTemplateView from './EmailTemplateView.js';
+
+// EmailTemplate.ADD_FORM / EDIT_FORM are registered on the model (Email.js).
+EmailTemplate.VIEW_CLASS = EmailTemplateView;
 
 class EmailTemplateTablePage extends TablePage {
     constructor(options = {}) {
@@ -16,9 +19,6 @@ class EmailTemplateTablePage extends TablePage {
             router: 'admin/email/templates',
             Collection: EmailTemplateList,
 
-            formCreate: EmailTemplateForms.create,
-            formEdit: EmailTemplateForms.edit,
-            itemViewClass: EmailTemplateView,
             clickAction: "edit",
 
             viewDialogOptions: {

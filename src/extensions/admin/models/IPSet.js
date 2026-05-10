@@ -223,6 +223,10 @@ const IPSetForms = {
     }
 };
 
+// IPSet.EDIT_FORM is wired so IPSetTablePage can drop the inline `formEdit:`.
+// No ADD_FORM is registered: the page owns a custom `onAdd` flow that
+// transforms a country code into name/source/description before save —
+// see IPSetTablePage._handleAdd() (commit 5 of the UX sweep).
 IPSet.EDIT_FORM = IPSetForms.edit;
 
 export {

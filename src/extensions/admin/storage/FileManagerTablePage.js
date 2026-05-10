@@ -4,9 +4,10 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { FileManagerList, FileManagerForms } from '@core/models/Files.js';
+import { FileManagerList } from '@core/models/Files.js';
 import Modal from '@core/views/feedback/Modal.js';
 
+// FileManager.ADD_FORM / EDIT_FORM are registered on the model (Files.js).
 class FileManagerTablePage extends TablePage {
     constructor(options = {}) {
         super({
@@ -15,9 +16,6 @@ class FileManagerTablePage extends TablePage {
             pageName: 'Manage Storage Backends',
             router: "admin/file-managers",
             Collection: FileManagerList,
-
-            formCreate: FileManagerForms.create,
-            formEdit: FileManagerForms.edit,
 
             // Column definitions
             columns: [

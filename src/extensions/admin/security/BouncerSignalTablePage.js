@@ -6,8 +6,10 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { BouncerSignalList } from '@ext/admin/models/Bouncer.js';
+import { BouncerSignal, BouncerSignalList } from '@ext/admin/models/Bouncer.js';
 import BouncerSignalView from './BouncerSignalView.js';
+
+BouncerSignal.VIEW_CLASS = BouncerSignalView;
 
 export default class BouncerSignalTablePage extends TablePage {
     constructor(options = {}) {
@@ -17,7 +19,6 @@ export default class BouncerSignalTablePage extends TablePage {
             pageName: 'Bouncer Signals',
             router: 'admin/security/bouncer-signals',
             Collection: BouncerSignalList,
-            itemViewClass: BouncerSignalView,
 
             viewDialogOptions: {
                 header: false,

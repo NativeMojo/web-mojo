@@ -4,8 +4,9 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { S3BucketList, S3BucketForms } from '@ext/admin/models/AWS.js';
+import { S3BucketList } from '@ext/admin/models/AWS.js';
 
+// S3Bucket.ADD_FORM / EDIT_FORM are registered on the model (AWS.js).
 class S3BucketTablePage extends TablePage {
     constructor(options = {}) {
         super({
@@ -14,9 +15,6 @@ class S3BucketTablePage extends TablePage {
             pageName: 'Manage S3 Buckets',
             router: "admin/s3-buckets",
             Collection: S3BucketList,
-            
-            formCreate: S3BucketForms.create,
-            formEdit: S3BucketForms.edit,
 
             // Column definitions
             columns: [

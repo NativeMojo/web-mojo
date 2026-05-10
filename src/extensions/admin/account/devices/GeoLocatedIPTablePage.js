@@ -7,6 +7,12 @@ import TablePage from '@core/pages/TablePage.js';
 import { GeoLocatedIPList, GeoLocatedIP } from '@core/models/System.js';
 import GeoIPView from './GeoIPView.js';
 
+// Both GeoLocatedIPTablePage and BlockedIPsTablePage rely on this binding
+// (they share the GeoLocatedIP model). Registering it here is fine: the
+// admin extension index.js eagerly imports both pages, so by the time
+// either renders the static is already present.
+GeoLocatedIP.VIEW_CLASS = GeoIPView;
+
 class GeoLocatedIPTablePage extends TablePage {
     constructor(options = {}) {
         super({
@@ -16,7 +22,6 @@ class GeoLocatedIPTablePage extends TablePage {
             router: "admin/system/geoip",
             Collection: GeoLocatedIPList,
 
-            itemViewClass: GeoIPView,
             viewDialogOptions: {
                 header: false,
                 noBodyPadding: true,

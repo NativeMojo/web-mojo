@@ -6,7 +6,9 @@
 import TablePage from '@core/pages/TablePage.js';
 import Modal from '@core/views/feedback/Modal.js';
 import View from '@core/View.js';
-import { EmailDomain, EmailDomainList, EmailDomainForms } from '@ext/admin/models/Email.js';
+import { EmailDomain, EmailDomainList } from '@ext/admin/models/Email.js';
+
+// EmailDomain.ADD_FORM / EDIT_FORM are registered on the model (Email.js).
 
 class EmailDomainTablePage extends TablePage {
   constructor(options = {}) {
@@ -16,8 +18,6 @@ class EmailDomainTablePage extends TablePage {
       pageName: 'Email Domains',
       router: 'admin/email/domains',
       Collection: EmailDomainList,
-      formCreate: EmailDomainForms.create,
-      formEdit: EmailDomainForms.edit,
 
       // Column definitions
       columns: [

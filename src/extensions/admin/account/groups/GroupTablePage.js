@@ -4,8 +4,12 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { GroupList, GroupForms, Group } from '@core/models/Group.js';
+import { GroupList, Group } from '@core/models/Group.js';
 import GroupView from './GroupView.js';
+
+// Group.ADD_FORM / EDIT_FORM are registered on the model itself
+// (src/core/models/Group.js). Wire the page-level view dialog here.
+Group.VIEW_CLASS = GroupView;
 
 class GroupTablePage extends TablePage {
     constructor(options = {}) {
@@ -15,10 +19,6 @@ class GroupTablePage extends TablePage {
             pageName: 'Manage Groups',
             router: "admin/groups",
             Collection: GroupList,
-
-            formCreate: GroupForms.create,
-            formEdit: GroupForms.edit,
-            itemViewClass: GroupView,
 
             viewDialogOptions: {
                 header: false,

@@ -4,8 +4,10 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { UserDeviceList } from '@core/models/User.js';
+import { UserDevice, UserDeviceList } from '@core/models/User.js';
 import DeviceView from './DeviceView.js';
+
+UserDevice.VIEW_CLASS = DeviceView;
 
 class UserDeviceTablePage extends TablePage {
     constructor(options = {}) {
@@ -16,7 +18,6 @@ class UserDeviceTablePage extends TablePage {
             router: "admin/user/devices",
             Collection: UserDeviceList,
 
-            itemViewClass: DeviceView,
             viewDialogOptions: {
                 header: false,
                 noBodyPadding: true,

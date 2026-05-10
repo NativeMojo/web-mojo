@@ -4,9 +4,13 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { File, FileList, FileForms } from '@core/models/Files.js';
+import { File, FileList } from '@core/models/Files.js';
 import FileView from '@core/views/data/FileView.js';
 import applyFileDropMixin from '@core/mixins/FileDropMixin.js';
+
+// File.EDIT_FORM is registered on the model (Files.js). Add is custom (file
+// upload mixin), so no ADD_FORM is wired.
+File.VIEW_CLASS = FileView;
 
 class FileTablePage extends TablePage {
     constructor(options = {}) {
@@ -16,11 +20,7 @@ class FileTablePage extends TablePage {
             router: "admin/files",
             Collection: FileList,
 
-            // Don't use formCreate - we have custom file upload handling
-            formEdit: FileForms.edit,
-            itemViewClass: FileView,
-            
-            // Custom add handler for file uploads
+            // Custom add handler for file uploads (no formCreate / Model.ADD_FORM).
             onAdd: async (event) => {
                 await this.handleFileUpload(event);
             },

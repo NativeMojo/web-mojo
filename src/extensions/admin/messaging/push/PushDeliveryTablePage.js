@@ -1,6 +1,8 @@
 import TablePage from '@core/pages/TablePage.js';
-import { PushDeliveryList } from '@ext/admin/models/Push.js';
+import { PushDelivery, PushDeliveryList } from '@ext/admin/models/Push.js';
 import PushDeliveryView from './PushDeliveryView.js';
+
+PushDelivery.VIEW_CLASS = PushDeliveryView;
 
 class PushDeliveryTablePage extends TablePage {
     constructor(options = {}) {
@@ -10,7 +12,6 @@ class PushDeliveryTablePage extends TablePage {
             pageName: 'Push Deliveries',
             router: "admin/push/deliveries",
             Collection: PushDeliveryList,
-            itemViewClass: PushDeliveryView,
             viewDialogOptions: {
                 header: false,
                 size: 'md'

@@ -4,8 +4,11 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { IncidentList, IncidentForms } from '@ext/admin/models/Incident.js';
+import { Incident, IncidentList } from '@ext/admin/models/Incident.js';
 import IncidentView from './IncidentView.js';
+
+// Incident.ADD_FORM / EDIT_FORM are registered on the model (Incident.js).
+Incident.VIEW_CLASS = IncidentView;
 
 class IncidentTablePage extends TablePage {
     constructor(options = {}) {
@@ -15,10 +18,6 @@ class IncidentTablePage extends TablePage {
             pageName: 'Manage Incidents',
             router: "admin/incidents",
             Collection: IncidentList,
-
-            formCreate: IncidentForms.create,
-            formEdit: IncidentForms.edit,
-            itemViewClass: IncidentView,
 
             viewDialogOptions: {
                 header: false,

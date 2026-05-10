@@ -7,6 +7,8 @@ import TablePage from '@core/pages/TablePage.js';
 import { PhoneNumberList, PhoneNumber } from '@ext/admin/models/Phonehub.js';
 import PhoneNumberView from './PhoneNumberView.js';
 
+PhoneNumber.VIEW_CLASS = PhoneNumberView;
+
 class PhoneNumberTablePage extends TablePage {
   constructor(options = {}) {
     super({
@@ -20,8 +22,6 @@ class PhoneNumberTablePage extends TablePage {
       // Data source
       Collection: PhoneNumberList,
 
-      // Item view configuration
-      itemViewClass: PhoneNumberView,
       viewDialogOptions: {
         header: false,
         // size: 'xl'

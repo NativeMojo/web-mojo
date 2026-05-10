@@ -1,6 +1,10 @@
 import TablePage from '@core/pages/TablePage.js';
-import { RuleSetList, RuleSetForms, BundleByOptions } from '@ext/admin/models/Incident.js';
+import { RuleSet, RuleSetList, BundleByOptions } from '@ext/admin/models/Incident.js';
 import RuleSetView from './RuleSetView.js';
+
+// RuleSet.ADD_FORM / EDIT_FORM are registered on the model (Incident.js).
+// Wire the page-level view dialog here.
+RuleSet.VIEW_CLASS = RuleSetView;
 
 class RuleSetTablePage extends TablePage {
     constructor(options = {}) {
@@ -10,9 +14,6 @@ class RuleSetTablePage extends TablePage {
             pageName: 'Rule Engine',
             router: "admin/rulesets",
             Collection: RuleSetList,
-            itemViewClass: RuleSetView,
-            formCreate: RuleSetForms.create,
-            formEdit: RuleSetForms.edit,
 
             viewDialogOptions: {
                 header: false,

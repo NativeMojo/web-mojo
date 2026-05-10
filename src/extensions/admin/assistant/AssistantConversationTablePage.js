@@ -3,9 +3,11 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { AssistantConversationList } from '@ext/admin/models/Assistant.js';
+import { AssistantConversation, AssistantConversationList } from '@ext/admin/models/Assistant.js';
 import AssistantConversationView from './AssistantConversationView.js';
 import Modal from '@core/views/feedback/Modal.js';
+
+AssistantConversation.VIEW_CLASS = AssistantConversationView;
 
 class AssistantConversationTablePage extends TablePage {
     constructor(options = {}) {
@@ -14,7 +16,6 @@ class AssistantConversationTablePage extends TablePage {
             pageName: 'Conversation History',
             router: 'admin/assistant/conversations',
             Collection: AssistantConversationList,
-            itemViewClass: AssistantConversationView,
 
             viewDialogOptions: {
                 header: false,

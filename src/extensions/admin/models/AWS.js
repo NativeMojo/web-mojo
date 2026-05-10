@@ -75,4 +75,8 @@ const S3BucketForms = {
     },
 };
 
+// Wire form statics so S3BucketTablePage can drop inline form configuration.
+S3Bucket.ADD_FORM = S3BucketForms.create;
+S3Bucket.EDIT_FORM = S3BucketForms.edit;
+
 export { S3Bucket, S3BucketList, S3BucketForms };

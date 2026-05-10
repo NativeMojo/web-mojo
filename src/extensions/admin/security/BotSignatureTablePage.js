@@ -6,8 +6,9 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { BouncerSignatureList, BouncerSignatureForms } from '@ext/admin/models/Bouncer.js';
+import { BouncerSignatureList } from '@ext/admin/models/Bouncer.js';
 
+// BouncerSignature.ADD_FORM / EDIT_FORM are registered on the model (Bouncer.js).
 export default class BotSignatureTablePage extends TablePage {
     constructor(options = {}) {
         super({
@@ -16,9 +17,6 @@ export default class BotSignatureTablePage extends TablePage {
             pageName: 'Bot Signatures',
             router: 'admin/security/bot-signatures',
             Collection: BouncerSignatureList,
-
-            formCreate: BouncerSignatureForms.create,
-            formEdit: BouncerSignatureForms.edit,
 
             viewDialogOptions: {
                 size: 'lg'

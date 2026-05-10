@@ -4,8 +4,12 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { MemberList, MemberForms } from '@core/models/Member.js';
+import { Member, MemberList } from '@core/models/Member.js';
 import MemberView from './MemberView.js';
+
+// Member.EDIT_FORM is registered on the model (src/core/models/Member.js).
+// Wire the page-level view dialog here.
+Member.VIEW_CLASS = MemberView;
 
 class MemberTablePage extends TablePage {
     constructor(options = {}) {
@@ -15,10 +19,7 @@ class MemberTablePage extends TablePage {
             pageName: 'Manage Members',
             router: "admin/members",
             Collection: MemberList,
-            
-            formEdit: MemberForms.edit,
-            itemViewClass: MemberView,
-            
+
             viewDialogOptions: {
                 header: false,
                 noBodyPadding: true,

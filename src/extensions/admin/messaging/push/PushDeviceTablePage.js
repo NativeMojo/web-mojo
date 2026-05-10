@@ -1,7 +1,7 @@
 import TablePage from '@core/pages/TablePage.js';
 import { PushDeviceList } from '@ext/admin/models/Push.js';
-import PushDeviceView from './PushDeviceView.js';
 
+// PushDevice.VIEW_CLASS is registered on the model (Push.js).
 class PushDeviceTablePage extends TablePage {
     constructor(options = {}) {
         super({
@@ -10,7 +10,6 @@ class PushDeviceTablePage extends TablePage {
             pageName: 'Registered Devices',
             router: "admin/push/devices",
             Collection: PushDeviceList,
-            itemViewClass: PushDeviceView,
             viewDialogOptions: {
                 header: false,
                 size: 'lg'

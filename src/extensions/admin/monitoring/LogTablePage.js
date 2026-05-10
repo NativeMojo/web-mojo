@@ -4,8 +4,10 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { LogList } from '@core/models/Log.js';
+import { Log, LogList } from '@core/models/Log.js';
 import LogView from './LogView.js';
+
+Log.VIEW_CLASS = LogView;
 
 class LogTablePage extends TablePage {
     constructor(options = {}) {
@@ -16,7 +18,6 @@ class LogTablePage extends TablePage {
             router: "admin/logs",
             Collection: LogList,
 
-            itemViewClass: LogView,
             viewDialogOptions: {
                 header: false,
                 size: 'xl'

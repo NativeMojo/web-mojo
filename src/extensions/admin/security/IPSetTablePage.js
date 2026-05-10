@@ -12,6 +12,10 @@ import Modal from '@core/views/feedback/Modal.js';
 import { IPSet, IPSetList, IPSetForms, IPSetKindBadgeOptions, IPSetSourceOptions, CommonBlockCountries } from '@ext/admin/models/IPSet.js';
 import IPSetView from './IPSetView.js';
 
+// IPSet.EDIT_FORM is registered on the model (IPSet.js). Add is custom (see
+// _handleAdd) because of the country-code → name/source/description transform.
+IPSet.VIEW_CLASS = IPSetView;
+
 class IPSetTablePage extends TablePage {
     constructor(options = {}) {
         super({
@@ -20,8 +24,6 @@ class IPSetTablePage extends TablePage {
             pageName: 'IP Sets',
             router: 'admin/security/ipsets',
             Collection: IPSetList,
-            itemViewClass: IPSetView,
-            formEdit: IPSetForms.edit,
             onAdd: () => this._handleAdd(),
 
             viewDialogOptions: {

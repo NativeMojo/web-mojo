@@ -457,6 +457,14 @@ const FileForms = {
     },
 };
 
+// Wire form statics so admin TablePages can drop inline form configuration.
+FileManager.ADD_FORM = FileManagerForms.create;
+FileManager.EDIT_FORM = FileManagerForms.edit;
+File.EDIT_FORM = FileForms.edit;
+// File.ADD_FORM is intentionally not registered: file creation goes through
+// the upload mixin (FileTablePage uses a custom drag/drop + file picker
+// flow), not the standard add-dialog path.
+
 export {
     FileManager,
     FileManagerList,

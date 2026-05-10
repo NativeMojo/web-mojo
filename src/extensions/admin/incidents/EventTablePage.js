@@ -4,8 +4,11 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { IncidentEventList, IncidentEventForms } from '@ext/admin/models/Incident.js';
+import { IncidentEvent, IncidentEventList } from '@ext/admin/models/Incident.js';
 import EventView from './EventView.js';
+
+// IncidentEvent.EDIT_FORM is registered on the model (Incident.js).
+IncidentEvent.VIEW_CLASS = EventView;
 
 class EventTablePage extends TablePage {
     constructor(options = {}) {
@@ -15,9 +18,6 @@ class EventTablePage extends TablePage {
             pageName: 'System Events',
             router: "admin/events",
             Collection: IncidentEventList,
-
-            formEdit: IncidentEventForms.edit,
-            itemViewClass: EventView,
 
             viewDialogOptions: {
                 header: false,

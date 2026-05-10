@@ -1,6 +1,7 @@
 import TablePage from '@core/pages/TablePage.js';
-import { PushTemplateList, PushTemplateForms } from '@ext/admin/models/Push.js';
+import { PushTemplateList } from '@ext/admin/models/Push.js';
 
+// PushTemplate.ADD_FORM / EDIT_FORM are registered on the model (Push.js).
 class PushTemplateTablePage extends TablePage {
     constructor(options = {}) {
         super({
@@ -9,8 +10,6 @@ class PushTemplateTablePage extends TablePage {
             pageName: 'Push Templates',
             router: "admin/push/templates",
             Collection: PushTemplateList,
-            formCreate: PushTemplateForms.create,
-            formEdit: PushTemplateForms.edit,
 
             columns: [
                 { key: 'id', label: 'ID', width: '70px' },

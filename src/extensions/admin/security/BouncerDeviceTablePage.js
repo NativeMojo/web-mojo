@@ -6,8 +6,10 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { BouncerDeviceList } from '@ext/admin/models/Bouncer.js';
+import { BouncerDevice, BouncerDeviceList } from '@ext/admin/models/Bouncer.js';
 import BouncerDeviceView from './BouncerDeviceView.js';
+
+BouncerDevice.VIEW_CLASS = BouncerDeviceView;
 
 export default class BouncerDeviceTablePage extends TablePage {
     constructor(options = {}) {
@@ -17,7 +19,6 @@ export default class BouncerDeviceTablePage extends TablePage {
             pageName: 'Bouncer Devices',
             router: 'admin/security/bouncer-devices',
             Collection: BouncerDeviceList,
-            itemViewClass: BouncerDeviceView,
 
             viewDialogOptions: {
                 header: false,

@@ -4,8 +4,10 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { SentMessageList } from '@ext/admin/models/Email.js';
+import { SentMessage, SentMessageList } from '@ext/admin/models/Email.js';
 import EmailView from './EmailView.js';
+
+SentMessage.VIEW_CLASS = EmailView;
 
 class SentMessageTablePage extends TablePage {
     constructor(options = {}) {
@@ -15,8 +17,7 @@ class SentMessageTablePage extends TablePage {
             pageName: 'Sent Messages',
             router: 'admin/email/sent',
             Collection: SentMessageList,
-            
-            itemViewClass: EmailView,
+
             viewDialogOptions: {
                 header: false,
                 size: 'xl',

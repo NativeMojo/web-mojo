@@ -6,8 +6,13 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { LogList } from '@core/models/Log.js';
+import { Log, LogList } from '@core/models/Log.js';
 import LogView from '../monitoring/LogView.js';
+
+// Idempotent — LogTablePage also registers this static. Setting it here too
+// means FirewallLogTablePage works when imported directly, not just via
+// admin/index.js's eager-load order.
+Log.VIEW_CLASS = LogView;
 
 export default class FirewallLogTablePage extends TablePage {
     constructor(options = {}) {
@@ -17,7 +22,6 @@ export default class FirewallLogTablePage extends TablePage {
             pageName: 'Firewall Log',
             router: 'admin/security/firewall-log',
             Collection: LogList,
-            itemViewClass: LogView,
 
             viewDialogOptions: {
                 header: false,

@@ -137,7 +137,10 @@ module.exports = async function (testContext) {
     });
   });
 
-  describe('Bug #7: itemView → itemViewClass naming', () => {
+  describe('Bug #7: legacy `itemView:` config alias', () => {
+    // After commit 3, several admin pages drop `itemViewClass:` entirely
+    // because Model.VIEW_CLASS now provides the dialog. The standing rule
+    // is just: never use the legacy `itemView:` (without `Class`) form.
     const offenders = [
       'messaging/sms/PhoneNumberTablePage.js',
       'messaging/sms/SMSTablePage.js',
@@ -145,14 +148,12 @@ module.exports = async function (testContext) {
     ];
 
     offenders.forEach((rel) => {
-      it(`${rel} — uses \`itemViewClass:\` not the legacy alias`, () => {
+      it(`${rel} — does not use the legacy \`itemView:\` constructor key`, () => {
         const src = read(rel);
-        // `itemView:` (without `Class`) at a constructor option site.
-        // Note: comments and string literals can mention "itemView" — the
-        // bare config-key shape is `itemView:` immediately after whitespace.
-        const legacy = /^\s*itemView\s*:/m;
+        // Match the bare config-key shape: `itemView:` immediately after
+        // whitespace at the start of a line, NOT followed by `Class`.
+        const legacy = /^\s*itemView\s*:(?!\s*\w*Class)/m;
         expect(legacy.test(src)).toBe(false);
-        expect(/itemViewClass\s*:/.test(src)).toBe(true);
       });
     });
   });

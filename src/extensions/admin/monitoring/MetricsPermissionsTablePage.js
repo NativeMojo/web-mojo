@@ -1,6 +1,9 @@
 import TablePage from '@core/pages/TablePage.js';
-import { MetricsPermissionList, MetricsForms } from '@core/models/Metrics.js';
+import { MetricsPermission, MetricsPermissionList, MetricsForms } from '@core/models/Metrics.js';
 import MetricsPermissionsView from './MetricsPermissionsView.js';
+
+MetricsPermission.EDIT_FORM = MetricsForms.edit;
+MetricsPermission.VIEW_CLASS = MetricsPermissionsView;
 
 class MetricsPermissionsTablePage extends TablePage {
     constructor(options = {}) {
@@ -10,8 +13,6 @@ class MetricsPermissionsTablePage extends TablePage {
             pageName: 'Metrics Permissions',
             router: "admin/metrics/permissions",
             Collection: MetricsPermissionList,
-            formEdit: MetricsForms.edit,
-            itemViewClass: MetricsPermissionsView,
             viewDialogOptions: {
                 header: false,
                 size: 'lg'

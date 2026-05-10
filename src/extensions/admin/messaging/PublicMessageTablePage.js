@@ -7,11 +7,14 @@
 
 import TablePage from '@core/pages/TablePage.js';
 import {
+    PublicMessage,
     PublicMessageList,
     PublicMessageKindOptions,
     PublicMessageStatusOptions,
 } from '@ext/admin/models/PublicMessage.js';
 import PublicMessageView from './PublicMessageView.js';
+
+PublicMessage.VIEW_CLASS = PublicMessageView;
 
 class PublicMessageTablePage extends TablePage {
     constructor(options = {}) {
@@ -22,7 +25,6 @@ class PublicMessageTablePage extends TablePage {
             router: 'admin/messaging/public-messages',
             Collection: PublicMessageList,
 
-            itemViewClass: PublicMessageView,
             viewDialogOptions: {
                 header: false,
                 size: 'lg',

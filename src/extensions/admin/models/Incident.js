@@ -347,6 +347,11 @@ class RelatedIncidentsList extends IncidentList {
 }
 
 
+// Wire form statics so admin TablePages can drop inline form configuration.
+Incident.ADD_FORM = IncidentForms.create;
+Incident.EDIT_FORM = IncidentForms.edit;
+IncidentEvent.EDIT_FORM = IncidentEventForms.edit;
+
 export {
     IncidentEvent,
     IncidentEventList,

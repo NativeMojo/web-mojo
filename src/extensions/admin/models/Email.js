@@ -729,6 +729,14 @@ const EmailTemplateForms = {
   }
 };
 
+// Wire form statics so admin TablePages can drop inline form configuration.
+EmailDomain.ADD_FORM = EmailDomainForms.create;
+EmailDomain.EDIT_FORM = EmailDomainForms.edit;
+Mailbox.ADD_FORM = MailboxForms.create;
+Mailbox.EDIT_FORM = MailboxForms.edit;
+EmailTemplate.ADD_FORM = EmailTemplateForms.create;
+EmailTemplate.EDIT_FORM = EmailTemplateForms.edit;
+
 export {
   EmailDomain,
   EmailDomainList,

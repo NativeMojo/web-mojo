@@ -3,8 +3,10 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { AssistantSkillList } from '@ext/admin/models/Assistant.js';
+import { AssistantSkill, AssistantSkillList } from '@ext/admin/models/Assistant.js';
 import AssistantSkillView from './AssistantSkillView.js';
+
+AssistantSkill.VIEW_CLASS = AssistantSkillView;
 
 const TIER_BADGE = {
     global: 'bg-primary',
@@ -19,7 +21,6 @@ class AssistantSkillTablePage extends TablePage {
             pageName: 'Assistant Skills',
             router: 'admin/assistant/skills',
             Collection: AssistantSkillList,
-            itemViewClass: AssistantSkillView,
 
             viewDialogOptions: {
                 header: false

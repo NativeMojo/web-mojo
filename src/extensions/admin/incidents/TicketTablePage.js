@@ -1,6 +1,9 @@
 import TablePage from '@core/pages/TablePage.js';
-import { TicketList, TicketForms, TicketCategories } from '@ext/admin/models/Tickets.js';
+import { Ticket, TicketList, TicketCategories } from '@ext/admin/models/Tickets.js';
 import TicketView from './TicketView.js';
+
+// Ticket.ADD_FORM / EDIT_FORM are registered on the model (Tickets.js).
+Ticket.VIEW_CLASS = TicketView;
 
 const STATUS_PILL = {
     new:         'tt-pill-new',
@@ -55,10 +58,6 @@ class TicketTablePage extends TablePage {
             pageName: 'Tickets',
             router: 'admin/tickets',
             Collection: TicketList,
-
-            formCreate: TicketForms.create,
-            formEdit: TicketForms.edit,
-            itemViewClass: TicketView,
 
             viewDialogOptions: {
                 header: false

@@ -1,6 +1,7 @@
 import TablePage from '@core/pages/TablePage.js';
-import { PushConfigList, PushConfigForms } from '@ext/admin/models/Push.js';
+import { PushConfigList } from '@ext/admin/models/Push.js';
 
+// PushConfig.ADD_FORM / EDIT_FORM are registered on the model (Push.js).
 class PushConfigTablePage extends TablePage {
     constructor(options = {}) {
         super({
@@ -9,8 +10,6 @@ class PushConfigTablePage extends TablePage {
             pageName: 'Push Configurations',
             router: "admin/push/configs",
             Collection: PushConfigList,
-            formCreate: PushConfigForms.create,
-            formEdit: PushConfigForms.edit,
 
             columns: [
                 { key: 'id', label: 'ID', width: '70px' },

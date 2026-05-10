@@ -117,4 +117,8 @@ class TicketNoteList extends Collection {
     }
 }
 
+// Wire form statics so TicketTablePage can drop inline form configuration.
+Ticket.ADD_FORM = TicketForms.create;
+Ticket.EDIT_FORM = TicketForms.edit;
+
 export { Ticket, TicketList, TicketNote, TicketNoteList, TicketForms, TicketCategories };
