@@ -305,6 +305,22 @@ Manual smoke test in the example portal: drop a temporary `...groupByDay('create
 
 ### Follow-ups
 
-- **First-consumer migration** — reopen [`detailview-audit-round-2.md`](detailview-audit-round-2.md) R2 to wire `...groupByDay('created')` into UserView's Logins ListView.
-- **Second-consumer migration** — file a separate request to migrate `src/extensions/admin/assistant/AssistantConversationListView.js`'s hand-rolled `_groupByDate` (~80 lines of imperative DOM stitching) to a one-line `groupByDay` spread on a real ListView.
-- **Additional helpers** — `groupByField` / `groupByMonth` / `groupByYear` / `groupByLetter` (anchored) and `groupByRange` / `groupByBoolean` (speculative) tracked in [`listview-grouping-helpers.md`](listview-grouping-helpers.md). Promote one at a time as real consumers ask, per the file's promotion checklist.
+- **First-consumer migration — DONE** in commit `8e2a8a9` (UserView R2 follow-up): UserView's Logins ListView and the three Audit feeds now use `...groupByDay('created')`. Closes the loop on the original motivating request from `detailview-audit-round-2.md` R2.
+- **Second-consumer migration** — still pending: migrate `src/extensions/admin/assistant/AssistantConversationListView.js`'s hand-rolled `_groupByDate` (~80 lines of imperative DOM stitching) to a one-line `groupByDay` spread on a real ListView. File a separate request when ready.
+- **Additional helpers** — `groupByField` / `groupByMonth` / `groupByYear` / `groupByLetter` (anchored) and `groupByRange` / `groupByBoolean` (speculative) tracked in [`listview-grouping-helpers.md`](../requests/listview-grouping-helpers.md). Promote one at a time as real consumers ask, per the file's promotion checklist.
+
+### Post-resolution commits
+
+The resolution section above was written after commit `2d92065`. Subsequent
+work landed under the same feature umbrella and is captured here for
+historical accuracy:
+
+- **`4736cd1`** — Visual redesign of the default group-header look. Replaced the muted-eyebrow + thin top hairline with a typographic-mark + fading-rule composition (4×4 brand-tinted square + bold uppercase emphasis-color label + directional gradient hairline). Triggered by user feedback that the initial default looked generic.
+- **`57c72a5`** — Aligned the CHANGELOG and this resolution section with the redesigned visual.
+- **`88ec927`** + **`a4945bc`** — Self-contained design-review mockup page at [`planning/mockups/listview-groups/`](../mockups/listview-groups/) comparing six visual treatments side-by-side, then reorganized into "Recommended" / "Rejected" sections per the user's review.
+- **`619dcd8`** — `groupHeaderStyle` option lands four built-in visual treatments (`'banner'` default, `'mark'`, `'band'`, `'rule'`). Each maps to a CSS modifier class on the header view's outer element. Default flipped from the original `'mark'`-only look to `'banner'` (neutral full-width band with centered label) per design review. Per-instance accent override via `--list-group-header-accent` CSS variable. Five new tests; 906/906 passing.
+- **`d911e17`** — Packaging fix: `build:css` script in `package.json` was missing `cp src/core/css/list-view.css dist/list-view.css`, so standalone-CSS-file consumers (those who pick CSS via `<link>` rather than letting their bundler resolve `import 'web-mojo'`) reaching for `dist/list-view.css` got a 404. Bug had existed since the file was first added in commit `66340ba`.
+
+### Status
+
+**Closed.** All acceptance criteria met. First-consumer migration done. Multi-style API shipped. Packaging gap fixed. The follow-on request file [`listview-grouping-helpers.md`](../requests/listview-grouping-helpers.md) tracks future helper additions on a real-consumer-driven cadence.
