@@ -23,7 +23,11 @@ class UserTablePage extends TablePage {
 
             defaultQuery: {
                 sort: '-last_activity',
-                is_active: true
+                // String 'true' matches the boolean filter's wire format —
+                // keeps the URL and the active filter pill in sync from first
+                // paint. Backend normalizes 'true' / 1 / true to the same
+                // boolean.
+                is_active: 'true'
             },
 
             // Column definitions

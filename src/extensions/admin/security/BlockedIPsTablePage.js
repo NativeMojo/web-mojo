@@ -35,7 +35,11 @@ export default class BlockedIPsTablePage extends TablePage {
 
             defaultQuery: {
                 sort: '-modified',
-                is_blocked: true,
+                // String 'true' matches GeoLocatedIPTablePage's boolean filter
+                // wire format — keeps the URL stable across reloads (URL sync
+                // serializes boolean `true` as 'true' anyway, so pre-stringing
+                // avoids the first-paint desync).
+                is_blocked: 'true',
             },
 
             columns: [
