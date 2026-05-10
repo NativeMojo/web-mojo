@@ -1,14 +1,15 @@
 ---
-status: in-progress
+status: done
 type: request
 scope: src/extensions/admin/account/{users,groups} · UserView · GroupView · MemberView
 created: 2026-05-09
+resolved: 2026-05-10
 parent: detailview-audit-followups.md
 ---
 
-## Status — 2026-05-10 (handoff for new session)
+## Status — 2026-05-10 (resolved)
 
-**Unblocked.** The previous pause-blocker [`listview-search-filters-pagination.md`](../done/listview-search-filters-pagination.md) shipped — toolbar / pagination / show-more is in `planning/done/`. The [DetailView audit round 2](../done/detailview-audit-round-2.md) also landed and incidentally swept several of the table-heavy surfaces this request was waiting on. **Phases 3 / 4 / 5 / 6 are still real work and ready to pick up.**
+**Done.** Phases 1-5 shipped (commits `52c4712`, `d6dde92`, `ba960ae`, `7d65fdc` + `4d7f272`, `b8e6873`). Phase 6 deferred — the user opted to keep the existing Audit triple-tab rather than pay the cost of an endpoint switch with unclear admin-filter contract; revisit if/when backend confirms `?user=N` admin support.
 
 ### Backend update — 2026-05-10 (django-mojo `9b0ac23`, `fc5e7c8`, `c3d9e1a`, `2e5ebcc`, `3f54b82`, `ad2b5c2`)
 
@@ -127,8 +128,8 @@ The permission gate collapsed to one tier: `app.activeUser.has_permission(['user
 
 Note: round-2 already added per-row pencils to `GroupIdentitySection` (commit `d314ce9`) for `name` / `kind` / `timezone` / `eod_hour` / `domain` / `portal` / `email_template`. Phase 5 builds on that — add the remaining `auth_domain` / `short_name` rows and the parent breadcrumb.
 
-**Phase 6 — Unified security-events audit feed**
-Replace UserView Audit tab's triple-tab (Activity / Events / Audit Log) with a single feed driven by `GET /api/account/security-events`. Categories per spec: `login, password_reset, mfa, email_change, phone_change, username_change, sessions, oauth, passkey, magic_login, deactivate`. Reuse the `.user-audit-row` template + `groupByDay('created')` already in place on the existing tabs.
+**Phase 6 — Unified security-events audit feed — DEFERRED (2026-05-10)**
+Spec called for replacing UserView Audit's triple-tab with a single feed driven by `GET /api/account/security-events`. **Deferred — the existing tabs work and the user opted not to pay the cost.** Open question on the endpoint's admin-filter contract (whether `?user=N` works for `manage_users` callers) was the primary risk; rather than ship a hybrid that didn't actually use security-events, we keep the working triple-tab as-is. Revisit if/when backend confirms admin-filter support and the cost/value math changes.
 
 ### Where to start
 

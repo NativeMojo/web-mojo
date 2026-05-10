@@ -115,11 +115,14 @@ Each chip resolves text and is filtered by an optional predicate:
     variant: 'primary',                  // bg-* variant; defaults to 'light'
     when: m => m.get('flag'),            // optional — chip omitted when false
     tooltip: 'Source IP is on the allow list',  // optional — Bootstrap tooltip
-    tooltip: m => `Verified by ${m.get('verified_by')}`  // OR function form
+    tooltip: m => `Verified by ${m.get('verified_by')}`,  // OR function form
+    action: 'view-org'                   // optional — renders chip as a <button>; click dispatches onActionViewOrg on the parent view
 }
 ```
 
 Variants pick up the global soft-badge styling (`primary`, `secondary`, `success`, `warning`, `danger`, `info`, `light`). When `tooltip` is set the badge gains `data-bs-toggle="tooltip" title="…"` and Bootstrap's auto-init wires up the hover. The default `enableTooltips: true` on `DetailHeaderView` keeps this working without per-consumer setup.
+
+When `action` is set, the chip renders as a `<button>` element carrying `data-action="<value>"` instead of a static `<span>`. The click dispatches through the standard `data-action` / `onAction<KebabCase>` pipeline on the nearest parent view — identical to how header `actions[]` buttons work. Chips without `action` keep the static-span markup unchanged, so existing consumers are not affected.
 
 ### Icon HTML slot
 
