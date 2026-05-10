@@ -3141,22 +3141,22 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
 /* Reserve space on the right of the title row so a long name doesn't run
    under the absolute-positioned actions. */
 .detail-header .dh-meta { padding-right: 200px; }
-/* Mobile reflow — sm-breakpoint (matches Bootstrap's `sm` cutoff). At
-   narrow widths the absolute-positioned action cluster would crowd the
-   title; stack instead, with a tighter icon + title and the aux block
-   spanning the full row underneath. */
+/* Mobile reflow — sm-breakpoint (matches Bootstrap's `sm` cutoff).
+   ⋮ ✕ stay pinned top-right (don't stack below the title); muted aux
+   content (relative-time meta line, "Online"/"Offline" label, inactivity
+   warnings) hides to keep the cluster compact. The active toggle and
+   the icon-only chrome stay visible. */
 @media (max-width: 575.98px) {
     .detail-header { padding: 1rem 1rem; }
     .detail-header > .d-flex.align-items-start { gap: 0.6rem !important; }
+    /* Keep the action cluster pinned top-right, just tighter */
     .detail-header .dh-actions {
-        position: static;
-        margin-top: 0.5rem;
-        width: 100%;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        row-gap: 0.4rem;
+        top: 1rem;
+        right: 1rem;
+        gap: 0.1rem;
     }
-    .detail-header .dh-meta { padding-right: 0; }
+    /* Reserve room only for the compressed top-right cluster */
+    .detail-header .dh-meta { padding-right: 100px; }
     .detail-header .dh-icon {
         width: 36px;
         height: 36px;
@@ -3164,14 +3164,17 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
     }
     .detail-header .dh-name { font-size: 1.05rem; }
     .detail-header .dh-subtitle { font-size: 0.8rem; }
-    .detail-header .dh-aux {
-        align-items: flex-start;
-        text-align: left;
-        flex: 1 1 auto;
-        min-width: 0;
-    }
-    .detail-header .dh-aux-top { flex-wrap: wrap; gap: 0.5rem; row-gap: 0.25rem; }
-    /* Group separator gets in the way when actions wrap — hide it */
+    /* Hide muted secondary aux content — the toggle and dot stay; the
+       relative-time / Online-Offline / warning rows go away to fit the
+       tighter top-right cluster. The full info is still reachable inside
+       the modal sections. */
+    .detail-header .dh-aux .dh-aux-meta,
+    .detail-header .dh-aux .dh-aux-warning { display: none; }
+    .detail-header .dh-aux .dh-aux-presence > span:not(.dh-aux-dot) { display: none; }
+    .detail-header .dh-active-switch .dh-track-label { display: none; }
+    .detail-header .dh-aux-top { gap: 0.4rem; }
+    /* Group separator hides — there's no Group 1 / Group 2 visual division
+       worth keeping at mobile width. */
     .detail-header .dh-group-sep { display: none; }
 }
 
@@ -3325,10 +3328,10 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
 .detail-header .dh-group-sep {
     display: inline-block;
     width: 1px;
-    height: 18px;
+    height: 16px;
     background: var(--bs-border-color);
-    margin: 0 0.45rem 0 0.35rem;
-    opacity: 0.6;
+    margin: 0 0.2rem 0 0.1rem;
+    opacity: 0.5;
 }
 
 /* Active toggle — small, subtle, secondary-text label. Tuned to read as
