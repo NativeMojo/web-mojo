@@ -91,47 +91,121 @@
 /* ========================================================================
    Group header rows (groupBy primitive)
 
+   Composition: a small sharp brand-tinted square anchors a bold uppercase
+   label, followed by a directional gradient hairline that fades to nothing
+   on the right. Generous breathing room above each group; tight gap below
+   so items feel owned by their header.
+
+   The accent color is exposed as a CSS variable so consumers can retint a
+   single header (e.g. severity tone) without rewriting the template:
+       <div class="list-group-header" style="--list-group-header-accent: var(--bs-success)">
+
    Light + dark from a single block: every property uses Bootstrap tokens
    that re-skin under [data-bs-theme="dark"], so no override block needed.
    ======================================================================== */
 
 .list-group-header {
-    padding: 0.5rem 0.25rem 0.25rem;
-    font-size: 0.7rem;
+    --list-group-header-accent: var(--bs-primary);
+
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+
+    margin-top: 1.5rem;
+    padding: 0.375rem 0 0.5rem;
+
+    font-size: 0.6875rem;          /* 11px — slightly larger than 0.7 for legibility */
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--bs-secondary-color);
-    border-top: 1px solid var(--bs-border-color-translucent);
-    pointer-events: none; /* never participate in row-click affordances */
+    letter-spacing: 0.08em;
+    color: var(--bs-emphasis-color);
+
+    pointer-events: none;          /* never participate in row-click affordances */
 }
 
+/* Leading typographic mark — a sharp 4×4 square in the accent color. Reads
+   as section punctuation, not a brand stamp. Sharp corners (no border-radius)
+   give it a more "designed" feel than a soft dot. */
+.list-group-header::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    flex-shrink: 0;
+    background: var(--list-group-header-accent);
+}
+
+/* Trailing hairline — solid for the first ~24px after the label, then fades
+   to transparent. The directional fade is the "section break" affordance:
+   the eye reads label first, then the rule extends past it into the items. */
+.list-group-header::after {
+    content: '';
+    flex-grow: 1;
+    height: 1px;
+    background: linear-gradient(
+        to right,
+        var(--bs-border-color),
+        var(--bs-border-color) 1.5rem,
+        transparent
+    );
+}
+
+/* First header in the list collapses the leading breathing room — the list
+   container's own padding handles the top edge. */
 .list-group-header:first-child,
 .list-items > .list-group-header:first-child,
 .list-view-wrapper .list-items > .list-group-header:first-child {
-    border-top: 0;
-    padding-top: 0;
+    margin-top: 0;
 }
 
-/* TableView shape — same eyebrow typography as the list variant, but
-   inside a `<tr><th>` pair so it sits in the table grid. */
+/* TableView shape — same composition (mark + label + fading rule) but the
+   `<tr>` is the row and the `<th colspan="N">` is itself the flex container.
+   Cell padding controls vertical rhythm in place of the list version's
+   margin-top, since `<tr>` margins don't apply inside `<tbody>`. */
 
 .list-group-header-row {
     background: transparent;
 }
 
 .list-group-header-row .list-group-header-cell {
-    padding: 0.5rem 0.5rem 0.25rem;
-    font-size: 0.7rem;
+    --list-group-header-accent: var(--bs-primary);
+
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+
+    padding: 1.25rem 0.5rem 0.5rem;
+
+    font-size: 0.6875rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--bs-secondary-color);
-    border-top: 1px solid var(--bs-border-color-translucent);
+    letter-spacing: 0.08em;
+    color: var(--bs-emphasis-color);
+
+    border-top: 0;
     border-bottom: 0;
     background: transparent;
 }
 
 .list-group-header-row:first-child .list-group-header-cell {
-    border-top: 0;
+    padding-top: 0.5rem;
+}
+
+.list-group-header-row .list-group-header-cell::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    flex-shrink: 0;
+    background: var(--list-group-header-accent);
+}
+
+.list-group-header-row .list-group-header-cell::after {
+    content: '';
+    flex-grow: 1;
+    height: 1px;
+    background: linear-gradient(
+        to right,
+        var(--bs-border-color),
+        var(--bs-border-color) 1.5rem,
+        transparent
+    );
 }
