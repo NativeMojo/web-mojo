@@ -9,6 +9,7 @@
 
 import TablePage from '@core/pages/TablePage.js';
 import { ShortLinkClickList } from '@core/models/ShortLink.js';
+import { groupByDay } from '@core/views/list/grouping.js';
 
 class ShortLinkClickTablePage extends TablePage {
     constructor(options = {}) {
@@ -18,6 +19,9 @@ class ShortLinkClickTablePage extends TablePage {
             pageName: 'Shortlink Click History',
             router: 'admin/shortlinks/clicks',
             Collection: ShortLinkClickList,
+
+            dayRangeFilter: true,
+            ...groupByDay('created'),
 
             defaultQuery: {
                 sort: '-created',
@@ -91,10 +95,6 @@ class ShortLinkClickTablePage extends TablePage {
                 bordered: false,
                 hover: true,
                 responsive: false,
-                actions: [],
-                pageSizes: [25, 50, 100],
-                defaultPageSize: 50,
-                emptyIcon: 'bi-cursor',
             },
         });
     }

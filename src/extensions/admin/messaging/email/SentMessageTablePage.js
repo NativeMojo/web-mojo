@@ -5,6 +5,7 @@
 
 import TablePage from '@core/pages/TablePage.js';
 import { SentMessage, SentMessageList } from '@ext/admin/models/Email.js';
+import { groupByDay } from '@core/views/list/grouping.js';
 import EmailView from './EmailView.js';
 
 SentMessage.VIEW_CLASS = EmailView;
@@ -18,6 +19,14 @@ class SentMessageTablePage extends TablePage {
             router: 'admin/email/sent',
             Collection: SentMessageList,
 
+            dayRangeFilter: true,
+            ...groupByDay('created'),
+            searchPlaceholder: 'Search recipient, subject, or status',
+
+            defaultQuery: {
+                sort: '-created'
+            },
+
             viewDialogOptions: {
                 header: false,
                 size: 'xl',
@@ -27,11 +36,11 @@ class SentMessageTablePage extends TablePage {
             // Table columns
             columns: [
                 { key: 'id', label: 'ID', width: '70px', sortable: true, class: 'text-muted' },
-                { key: 'mailbox.email', label: 'From', sortable: true },
+                { key: 'mailbox.email', label: 'From', sortable: true, visibility: 'lg' },
                 { key: 'to_addresses', label: 'To', sortable: false, formatter: "list" },
                 { key: 'subject', label: 'Subject', sortable: true },
                 { key: 'status', label: 'Status', formatter: 'badge' },
-                { key: 'status_reason', label: 'Reason', formatter: "truncate(80)|default('—')" },
+                { key: 'status_reason', label: 'Reason', formatter: "truncate(80)|default('—')", visibility: 'lg' },
                 { key: 'created', label: 'Created', formatter: 'datetime' }
             ],
 

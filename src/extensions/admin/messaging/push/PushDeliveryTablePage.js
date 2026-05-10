@@ -1,5 +1,6 @@
 import TablePage from '@core/pages/TablePage.js';
 import { PushDelivery, PushDeliveryList } from '@ext/admin/models/Push.js';
+import { groupByDay } from '@core/views/list/grouping.js';
 import PushDeliveryView from './PushDeliveryView.js';
 
 PushDelivery.VIEW_CLASS = PushDeliveryView;
@@ -12,6 +13,15 @@ class PushDeliveryTablePage extends TablePage {
             pageName: 'Push Deliveries',
             router: "admin/push/deliveries",
             Collection: PushDeliveryList,
+
+            dayRangeFilter: true,
+            ...groupByDay('created'),
+            searchPlaceholder: 'Search title, user, or device',
+
+            defaultQuery: {
+                sort: '-created'
+            },
+
             viewDialogOptions: {
                 header: false,
                 size: 'md'
@@ -21,12 +31,12 @@ class PushDeliveryTablePage extends TablePage {
                 { key: 'id', label: 'ID', width: '70px' },
                 { key: 'created', label: 'Timestamp', formatter: 'datetime' },
                 { key: 'user.display_name', label: 'User' },
-                { key: 'device.device_name', label: 'Device' },
+                { key: 'device.device_name', label: 'Device', visibility: 'md' },
                 { key: 'title', label: 'Title' },
-                { key: 'category', label: 'Category' },
+                { key: 'category', label: 'Category', visibility: 'lg' },
                 { key: 'status', label: 'Status', formatter: 'badge' },
             ],
-            
+
             actions: ["view"],
             emptyMessage: 'No deliveries found.',
 

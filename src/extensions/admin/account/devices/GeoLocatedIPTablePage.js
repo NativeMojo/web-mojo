@@ -65,31 +65,21 @@ class GeoLocatedIPTablePage extends TablePage {
                 {
                     key: 'is_blocked',
                     label: 'Blocked',
-                    type: 'select',
-                    options: [
-                        { label: 'Yes', value: 'true' },
-                        { label: 'No', value: 'false' }
-                    ]
+                    type: 'boolean'
                 },
                 {
                     key: 'is_vpn',
                     label: 'VPN',
-                    type: 'select',
-                    options: [
-                        { label: 'Yes', value: 'true' },
-                        { label: 'No', value: 'false' }
-                    ]
+                    type: 'boolean'
                 },
                 {
                     key: 'is_tor',
                     label: 'TOR',
-                    type: 'select',
-                    options: [
-                        { label: 'Yes', value: 'true' },
-                        { label: 'No', value: 'false' }
-                    ]
+                    type: 'boolean'
                 }
             ],
+
+            searchPlaceholder: 'Search IP, country, or ISP',
 
             // Table features
             selectable: true,

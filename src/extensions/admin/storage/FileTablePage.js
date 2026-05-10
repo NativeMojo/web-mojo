@@ -46,22 +46,26 @@ class FileTablePage extends TablePage {
                 {
                     key: 'content_type',
                     label: 'Type',
-                    formatter: "default('Unknown')"
+                    formatter: "default('Unknown')",
+                    visibility: 'md'
                 },
                 {
                     key: 'file_size',
                     label: 'Size',
-                    formatter: "filesize"
+                    formatter: "filesize",
+                    align: 'right'
                 },
                 {
                     key: 'group.name',
                     label: 'Group',
-                    formatter: "default('No Group')"
+                    formatter: "default('No Group')",
+                    visibility: 'lg'
                 },
                 {
                     key: 'upload_status',
                     label: 'Status',
-                    formatter: "badge"
+                    formatter: "badge",
+                    visibility: 'lg'
                 },
                 {
                     key: 'created',
@@ -69,6 +73,8 @@ class FileTablePage extends TablePage {
                     formatter: "epoch|datetime"
                 }
             ],
+
+            searchPlaceholder: 'Search filename or content type',
 
             // Table features
             selectable: true,

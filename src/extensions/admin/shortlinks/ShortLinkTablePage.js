@@ -36,6 +36,9 @@ class ShortLinkTablePage extends TablePage {
             onAdd: () => this._handleAdd(),
             onItemEdit: (model) => this._handleEdit(model),
 
+            dayRangeFilter: true,
+            searchPlaceholder: 'Search code, URL, or source',
+
             viewDialogOptions: {
                 header: false,
                 noBodyPadding: true,
@@ -98,6 +101,8 @@ class ShortLinkTablePage extends TablePage {
                     label: 'Hits',
                     width: '80px',
                     sortable: true,
+                    align: 'right',
+                    footer_total: true,
                 },
                 {
                     key: 'track_clicks',

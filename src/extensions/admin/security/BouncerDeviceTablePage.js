@@ -20,6 +20,9 @@ export default class BouncerDeviceTablePage extends TablePage {
             router: 'admin/security/bouncer-devices',
             Collection: BouncerDeviceList,
 
+            dayRangeFilter: { field: 'last_seen', value: '30d' },
+            searchPlaceholder: 'Search MUID or IP',
+
             viewDialogOptions: {
                 header: false,
                 size: 'xl'
@@ -59,12 +62,18 @@ export default class BouncerDeviceTablePage extends TablePage {
                 {
                     key: 'event_count',
                     label: 'Events',
-                    sortable: true
+                    sortable: true,
+                    visibility: 'md',
+                    align: 'right',
+                    footer_total: true
                 },
                 {
                     key: 'block_count',
                     label: 'Blocks',
-                    sortable: true
+                    sortable: true,
+                    visibility: 'md',
+                    align: 'right',
+                    footer_total: true
                 },
                 {
                     key: 'last_seen_ip',

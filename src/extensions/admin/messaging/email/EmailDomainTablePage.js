@@ -37,7 +37,8 @@ class EmailDomainTablePage extends TablePage {
           key: 'region',
           label: 'Region',
           sortable: true,
-          formatter: "default('—')"
+          formatter: "default('—')",
+          visibility: 'md'
         },
         {
           key: 'receiving_enabled',
@@ -52,14 +53,18 @@ class EmailDomainTablePage extends TablePage {
         {
           key: 'can_recv',
           label: 'Recv Verified',
-          formatter: "boolean|badge"
+          formatter: "boolean|badge",
+          visibility: 'md'
         },
         {
           key: 'created',
           label: 'Created',
-          formatter: "epoch|datetime"
+          formatter: "epoch|datetime",
+          visibility: 'lg'
         }
       ],
+
+      searchPlaceholder: 'Search domain or region',
 
       // Table features
       selectable: true,

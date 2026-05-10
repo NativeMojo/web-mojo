@@ -30,6 +30,9 @@ class IncidentTablePage extends TablePage {
                 status: "new",
             },
 
+            dayRangeFilter: true,
+            searchPlaceholder: 'Search title, message, or ID',
+
             // Column definitions
             columns: [
                 {

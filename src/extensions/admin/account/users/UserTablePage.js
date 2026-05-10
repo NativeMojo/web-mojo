@@ -117,6 +117,7 @@ class UserTablePage extends TablePage {
             // Table features
             selectable: true,
             searchable: true,
+            searchPlaceholder: 'Search name, email, or username',
             sortable: true,
             filterable: true,
             paginated: true,

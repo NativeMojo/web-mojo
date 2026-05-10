@@ -26,6 +26,9 @@ export default class BotSignatureTablePage extends TablePage {
                 sort: '-modified',
             },
 
+            dayRangeFilter: true,
+            searchPlaceholder: 'Search signature value or notes',
+
             columns: [
                 {
                     key: 'sig_type',
@@ -75,11 +78,9 @@ export default class BotSignatureTablePage extends TablePage {
                             : '<span class="badge bg-secondary">OFF</span>';
                     },
                     filter: {
-                        type: 'select',
-                        options: [
-                            { label: 'Active', value: 'true' },
-                            { label: 'Inactive', value: 'false' }
-                        ]
+                        type: 'boolean',
+                        trueLabel: 'Active',
+                        falseLabel: 'Inactive'
                     }
                 },
                 {

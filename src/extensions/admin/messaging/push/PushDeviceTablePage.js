@@ -10,6 +10,10 @@ class PushDeviceTablePage extends TablePage {
             pageName: 'Registered Devices',
             router: "admin/push/devices",
             Collection: PushDeviceList,
+
+            dayRangeFilter: { field: 'last_seen', value: '30d' },
+            searchPlaceholder: 'Search user or device name',
+
             viewDialogOptions: {
                 header: false,
                 size: 'lg'
@@ -19,8 +23,8 @@ class PushDeviceTablePage extends TablePage {
                 { key: 'id', label: 'ID', width: '70px' },
                 { key: 'user.display_name', label: 'User' },
                 { key: 'device_name', label: 'Device Name' },
-                { key: 'platform', label: 'Platform', formatter: 'badge' },
-                { key: 'app_version', label: 'App Version' },
+                { key: 'platform', label: 'Platform', formatter: 'badge', visibility: 'md' },
+                { key: 'app_version', label: 'App Version', visibility: 'lg' },
                 { key: 'push_enabled', label: 'Push Enabled', formatter: 'boolean' },
                 { key: 'last_seen', label: 'Last Seen', formatter: 'datetime' },
             ],

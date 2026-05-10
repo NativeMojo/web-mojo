@@ -18,6 +18,9 @@ class UserDeviceTablePage extends TablePage {
             router: "admin/user/devices",
             Collection: UserDeviceList,
 
+            dayRangeFilter: { field: 'last_seen', value: '30d' },
+            searchPlaceholder: 'Search user, IP, or device ID',
+
             viewDialogOptions: {
                 header: false,
                 noBodyPadding: true,
@@ -27,12 +30,12 @@ class UserDeviceTablePage extends TablePage {
             // Column definitions
             columns: [
                 { key: 'id', label: 'ID', width: '70px', sortable: true, class: 'text-muted' },
-                { key: 'duid', label: 'Device ID', sortable: true, formatter: 'truncate_middle(16)' },
+                { key: 'duid', label: 'Device ID', sortable: true, formatter: 'truncate_middle(16)', visibility: 'xl' },
                 { key: 'user.display_name', label: 'User', sortable: true, formatter: "default('—')" },
                 { key: 'device_info.user_agent.family', label: 'Browser', formatter: "default('—')" },
-                { key: 'device_info.os.family', label: 'OS', formatter: "default('—')" },
+                { key: 'device_info.os.family', label: 'OS', formatter: "default('—')", visibility: 'lg' },
                 { key: 'last_ip', label: 'Last IP', sortable: true },
-                { key: 'first_seen', label: 'First Seen', formatter: "epoch|datetime" },
+                { key: 'first_seen', label: 'First Seen', formatter: "epoch|datetime", visibility: 'lg' },
                 { key: 'last_seen', label: 'Last Seen', formatter: "epoch|datetime" }
             ],
 

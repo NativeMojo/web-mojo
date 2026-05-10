@@ -21,6 +21,9 @@ class EmailTemplateTablePage extends TablePage {
 
             clickAction: "edit",
 
+            dayRangeFilter: true,
+            searchPlaceholder: 'Search template name',
+
             viewDialogOptions: {
                 header: false,
                 size: 'xl',

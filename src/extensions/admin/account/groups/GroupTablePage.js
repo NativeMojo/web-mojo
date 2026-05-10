@@ -84,13 +84,13 @@ class GroupTablePage extends TablePage {
                 {
                     key: 'is_active',
                     label: 'Active',
-                    type: 'select',
-                    options: [
-                        { label: 'Active', value: true },
-                        { label: 'Inactive', value: false }
-                    ]
+                    type: 'boolean',
+                    trueLabel: 'Active',
+                    falseLabel: 'Inactive'
                 }
             ],
+
+            searchPlaceholder: 'Search name or kind',
 
             contextMenu: [
                 {

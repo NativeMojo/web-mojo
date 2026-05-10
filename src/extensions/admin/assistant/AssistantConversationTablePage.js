@@ -26,6 +26,9 @@ class AssistantConversationTablePage extends TablePage {
                 sort: '-modified'
             },
 
+            dayRangeFilter: { field: 'modified', value: '7d' },
+            searchPlaceholder: 'Search title or user',
+
             columns: [
                 { key: 'id', label: 'ID', width: '70px', sortable: true, class: 'text-muted' },
                 { key: 'user.username', label: 'User', sortable: true },

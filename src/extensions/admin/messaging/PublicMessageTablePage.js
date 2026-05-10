@@ -35,6 +35,9 @@ class PublicMessageTablePage extends TablePage {
                 sort: '-created',
             },
 
+            dayRangeFilter: true,
+            searchPlaceholder: 'Search name, email, or subject',
+
             columns: [
                 {
                     key: 'status',

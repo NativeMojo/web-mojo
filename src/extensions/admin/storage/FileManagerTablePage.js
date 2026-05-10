@@ -33,7 +33,8 @@ class FileManagerTablePage extends TablePage {
                 {
                     key: 'backend_url',
                     label: 'Backend URL',
-                    sortable: true
+                    sortable: true,
+                    visibility: 'lg'
                 },
                 {
                     key: 'is_default',
@@ -48,7 +49,8 @@ class FileManagerTablePage extends TablePage {
                 {
                     key: 'is_public',
                     label: 'Public',
-                    formatter: "boolean|badge"
+                    formatter: "boolean|badge",
+                    visibility: 'lg'
                 },
                 {
                     key: 'backend_type',
@@ -58,9 +60,12 @@ class FileManagerTablePage extends TablePage {
                 {
                     key: 'created',
                     label: 'Created',
-                    formatter: "epoch|datetime"
+                    formatter: "epoch|datetime",
+                    visibility: 'lg'
                 }
             ],
+
+            searchPlaceholder: 'Search backend name or URL',
 
             contextMenu: [
                 { icon: 'bi-pencil', action: 'edit', label: 'Edit Name' },

@@ -31,11 +31,9 @@ class RuleSetTablePage extends TablePage {
                     key: 'is_active', label: 'Active', width: '70px', sortable: true,
                     formatter: 'yesnoicon',
                     filter: {
-                        type: 'select',
-                        options: [
-                            { value: 'true', label: 'Active' },
-                            { value: 'false', label: 'Inactive' }
-                        ]
+                        type: 'boolean',
+                        trueLabel: 'Active',
+                        falseLabel: 'Inactive'
                     }
                 },
                 {

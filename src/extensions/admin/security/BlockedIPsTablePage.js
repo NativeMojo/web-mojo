@@ -23,6 +23,9 @@ export default class BlockedIPsTablePage extends TablePage {
             router: 'admin/security/blocked-ips',
             Collection: GeoLocatedIPList,
 
+            dayRangeFilter: { field: 'blocked_at', value: '7d' },
+            searchPlaceholder: 'Search IP, country, or rule',
+
             viewDialogOptions: {
                 header: false,
                 size: 'xl',

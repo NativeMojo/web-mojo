@@ -6,9 +6,10 @@ import TablePage from '@core/pages/TablePage.js';
 import { Setting, SettingList, SettingForms } from '@core/models/Settings.js';
 import SettingView from './SettingView.js';
 
-// Register the add/edit forms on the model class so TableView can find them automatically
+// Register the add/edit/view statics on the model class so TableView resolves them automatically.
 Setting.ADD_FORM = SettingForms.create;
 Setting.EDIT_FORM = SettingForms.edit;
+Setting.VIEW_CLASS = SettingView;
 
 class SettingTablePage extends TablePage {
     constructor(options = {}) {
@@ -19,7 +20,8 @@ class SettingTablePage extends TablePage {
             router: 'admin/settings',
             Collection: SettingList,
 
-            itemViewClass: SettingView,
+            searchPlaceholder: 'Search key or group',
+
             viewDialogOptions: {
                 header: false,
                 size: 'lg'

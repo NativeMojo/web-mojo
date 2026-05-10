@@ -40,11 +40,9 @@ class IPSetTablePage extends TablePage {
                     key: 'is_enabled', label: 'Active', width: '70px', sortable: true,
                     formatter: 'yesnoicon',
                     filter: {
-                        type: 'select',
-                        options: [
-                            { value: 'true', label: 'Enabled' },
-                            { value: 'false', label: 'Disabled' }
-                        ]
+                        type: 'boolean',
+                        trueLabel: 'Enabled',
+                        falseLabel: 'Disabled'
                     }
                 },
                 { key: 'name', label: 'Name', sortable: true },
@@ -61,9 +59,10 @@ class IPSetTablePage extends TablePage {
                 },
                 {
                     key: 'description', label: 'Description',
-                    formatter: "truncate(40)|default('—')"
+                    formatter: "truncate(40)|default('—')",
+                    visibility: 'lg'
                 },
-                { key: 'cidr_count', label: 'CIDRs', width: '80px', sortable: true },
+                { key: 'cidr_count', label: 'CIDRs', width: '80px', sortable: true, align: 'right' },
                 {
                     key: 'source', label: 'Source', width: '110px',
                     formatter: (value) => {
@@ -73,9 +72,11 @@ class IPSetTablePage extends TablePage {
                 },
                 {
                     key: 'last_synced|datetime', label: 'Last Synced', width: '160px', sortable: true,
+                    visibility: 'lg'
                 },
                 {
                     key: 'sync_error', label: 'Status', width: '80px',
+                    visibility: 'lg',
                     formatter: (value) => {
                         if (value) return '<span class="text-danger" title="' + value + '"><i class="bi bi-exclamation-triangle"></i> Error</span>';
                         return '<span class="text-success"><i class="bi bi-check-circle"></i></span>';
@@ -85,6 +86,7 @@ class IPSetTablePage extends TablePage {
 
             selectable: true,
             searchable: true,
+            searchPlaceholder: 'Search name, description, or kind',
             sortable: true,
             filterable: true,
             paginated: true,

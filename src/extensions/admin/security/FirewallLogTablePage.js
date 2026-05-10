@@ -7,6 +7,7 @@
 
 import TablePage from '@core/pages/TablePage.js';
 import { Log, LogList } from '@core/models/Log.js';
+import { groupByDay } from '@core/views/list/grouping.js';
 import LogView from '../monitoring/LogView.js';
 
 // Idempotent — LogTablePage also registers this static. Setting it here too
@@ -22,6 +23,12 @@ export default class FirewallLogTablePage extends TablePage {
             pageName: 'Firewall Log',
             router: 'admin/security/firewall-log',
             Collection: LogList,
+
+            // Already has a column-level daterange filter; the day-range
+            // segment + day-grouping make the audit feed easier to scan.
+            dayRangeFilter: true,
+            ...groupByDay('created'),
+            searchPlaceholder: 'Search IP, action, or rule',
 
             viewDialogOptions: {
                 header: false,

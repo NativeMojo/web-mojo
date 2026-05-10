@@ -40,6 +40,7 @@ class ApiKeyTablePage extends TablePage {
 
             selectable: true,
             searchable: true,
+            searchPlaceholder: 'Search name or group',
             sortable: true,
             filterable: true,
             paginated: true,

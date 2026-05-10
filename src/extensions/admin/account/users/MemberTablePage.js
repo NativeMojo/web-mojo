@@ -63,9 +63,12 @@ class MemberTablePage extends TablePage {
                 {
                     key: 'created',
                     label: 'Added',
-                    formatter: "epoch|datetime"
+                    formatter: "epoch|datetime",
+                    visibility: 'lg'
                 }
             ],
+
+            searchPlaceholder: 'Search name, email, or username',
 
             // Table features
             selectable: true,

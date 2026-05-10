@@ -5,6 +5,7 @@
 
 import TablePage from '@core/pages/TablePage.js';
 import { IncidentEvent, IncidentEventList } from '@ext/admin/models/Incident.js';
+import { groupByDay } from '@core/views/list/grouping.js';
 import EventView from './EventView.js';
 
 // IncidentEvent.EDIT_FORM is registered on the model (Incident.js).
@@ -18,6 +19,15 @@ class EventTablePage extends TablePage {
             pageName: 'System Events',
             router: "admin/events",
             Collection: IncidentEventList,
+
+            // 1d/7d/30d/90d range picker writes `created__gte`. Complements the
+            // column-level daterange filter (start+end).
+            dayRangeFilter: true,
+
+            // Day-grouped chronological feed.
+            ...groupByDay('created'),
+
+            searchPlaceholder: 'Search title, message, or ID',
 
             viewDialogOptions: {
                 header: false,
@@ -87,6 +97,7 @@ class EventTablePage extends TablePage {
                 { key: 'title', label: 'Title', sortable: true, formatter: 'truncate(50)' },
                 {
                     key: 'source_ip', label: 'Source IP', sortable: true,
+                    visibility: 'md',
                     filter: {
                         type: "text"
                     }
@@ -94,6 +105,7 @@ class EventTablePage extends TablePage {
                 {
                     key: 'metadata.server', label: 'Server',
                     sortable: true,
+                    visibility: 'lg',
                     filter: {
                         type: "text"
                     }

@@ -33,12 +33,14 @@ class PhoneNumberTablePage extends TablePage {
         { key: 'carrier', label: 'Carrier', sortable: true, formatter: "default('—')" },
         { key: 'line_type', label: 'Line Type', sortable: true, formatter: "capitalize" },
         { key: 'is_mobile', label: 'Mobile', formatter: 'yesnoicon' },
-        { key: 'is_voip', label: 'VOIP', formatter: 'yesnoicon' },
+        { key: 'is_voip', label: 'VOIP', formatter: 'yesnoicon', visibility: 'lg' },
         { key: 'is_valid', label: 'Valid', formatter: 'yesnoicon' },
-        { key: 'registered_owner', label: 'Owner', sortable: true, formatter: "default('—')" },
-        { key: 'owner_type', label: 'Owner Type', formatter: "capitalize" },
+        { key: 'registered_owner', label: 'Owner', sortable: true, formatter: "default('—')", visibility: 'lg' },
+        { key: 'owner_type', label: 'Owner Type', formatter: "capitalize", visibility: 'lg' },
         { key: 'last_lookup_at|relative', label: 'Last Lookup', sortable: true},
       ],
+
+      searchPlaceholder: 'Search number or owner',
 
       // Table features
       selectable: true,

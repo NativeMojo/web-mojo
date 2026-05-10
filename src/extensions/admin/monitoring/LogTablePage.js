@@ -5,6 +5,7 @@
 
 import TablePage from '@core/pages/TablePage.js';
 import { Log, LogList } from '@core/models/Log.js';
+import { groupByDay } from '@core/views/list/grouping.js';
 import LogView from './LogView.js';
 
 Log.VIEW_CLASS = LogView;
@@ -17,6 +18,15 @@ class LogTablePage extends TablePage {
             pageName: 'Manage Logs',
             router: "admin/logs",
             Collection: LogList,
+
+            // 1d/7d/30d/90d range picker writes `created__gte`. Complements the
+            // column-level daterange filter (start+end).
+            dayRangeFilter: true,
+
+            // Day-grouped chronological feed.
+            ...groupByDay('created'),
+
+            searchPlaceholder: 'Search title, message, or ID',
 
             viewDialogOptions: {
                 header: false,

@@ -7,6 +7,7 @@
 
 import TablePage from '@core/pages/TablePage.js';
 import { BouncerSignal, BouncerSignalList } from '@ext/admin/models/Bouncer.js';
+import { groupByDay } from '@core/views/list/grouping.js';
 import BouncerSignalView from './BouncerSignalView.js';
 
 BouncerSignal.VIEW_CLASS = BouncerSignalView;
@@ -19,6 +20,10 @@ export default class BouncerSignalTablePage extends TablePage {
             pageName: 'Bouncer Signals',
             router: 'admin/security/bouncer-signals',
             Collection: BouncerSignalList,
+
+            dayRangeFilter: true,
+            ...groupByDay('created'),
+            searchPlaceholder: 'Search IP, country, or rule',
 
             viewDialogOptions: {
                 header: false,

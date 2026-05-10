@@ -72,12 +72,9 @@ class ScheduledTaskTablePage extends TablePage {
                 {
                     key: 'enabled',
                     label: 'Status',
-                    type: 'select',
-                    options: [
-                        { value: '', label: 'All' },
-                        { value: 'true', label: 'Enabled' },
-                        { value: 'false', label: 'Disabled' }
-                    ]
+                    type: 'boolean',
+                    trueLabel: 'Enabled',
+                    falseLabel: 'Disabled'
                 },
                 {
                     key: 'task_type',
