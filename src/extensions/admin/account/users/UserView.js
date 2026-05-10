@@ -389,17 +389,20 @@ class UserProfileSection extends View {
             className: 'user-profile-section',
             enableTooltips: true,
             template: `
-                <div class="detail-section-eyebrow">
-                    Personal
-                    <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-personal" title="Edit personal info"><i class="bi bi-pencil"></i></button>
-                </div>
+                <div class="detail-section-eyebrow">Personal</div>
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Display name</div>
                     <div class="detail-flat-row-value">{{model.display_name|default:'—'}}</div>
+                    <div class="detail-flat-row-action">
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-display-name" title="Edit"><i class="bi bi-pencil"></i></button>
+                    </div>
                 </div>
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Username</div>
                     <div class="detail-flat-row-value"><code>{{model.username|default:'—'}}</code></div>
+                    <div class="detail-flat-row-action">
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-username" title="Edit"><i class="bi bi-pencil"></i></button>
+                    </div>
                 </div>
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Email</div>
@@ -418,6 +421,7 @@ class UserProfileSection extends View {
                                 <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="force-verify-email" title="Force verify"><i class="bi bi-patch-check"></i></button>
                             {{/model.is_email_verified|bool}}
                         {{/hasEmail|bool}}
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="change-email" title="Edit email"><i class="bi bi-pencil"></i></button>
                     </div>
                 </div>
                 <div class="detail-flat-row">
@@ -439,6 +443,7 @@ class UserProfileSection extends View {
                                 <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="force-verify-phone" title="Force verify"><i class="bi bi-patch-check"></i></button>
                             {{/model.is_phone_verified|bool}}
                         {{/hasPhone|bool}}
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="change-phone" title="Edit phone"><i class="bi bi-pencil"></i></button>
                     </div>
                 </div>
 
@@ -1155,7 +1160,6 @@ class UserView extends DetailView {
             pageSize: 5,
             clickAction: 'view',
             hideActivePillNames: ['user'],
-            clickAction: 'view',
             viewDialogOptions: { header: false, noBodyPadding: true, buttons: [] },
             emptyMessage: 'This user has no group memberships.',
             itemTemplate: `
@@ -1475,22 +1479,58 @@ class UserView extends DetailView {
 
     // ── Profile section pencils ────────────────────────────
 
-    async onActionEditPersonal() {
-        const resp = await Modal.modelForm({
-            title: 'Edit personal info',
-            model: this.model,
-            size: 'md',
-            formConfig: {
-                fields: [
-                    { name: 'display_name',  type: 'text',  label: 'Display name', columns: 12 },
-                    { name: 'username',      type: 'text',  label: 'Username',     columns: 12 },
-                    { name: 'email',         type: 'email', label: 'Email',        columns: 12 },
-                    { name: 'phone_number',  type: 'text',  label: 'Phone',        columns: 12 }
-                ]
-            }
-        });
-        if (resp) await this._fullRefresh();
+    async onActionEditDisplayName() {
+        const name = await Modal.prompt(
+            'Display name:',
+            'Edit Display Name',
+            { defaultValue: this.model.get('display_name') || '' }
+        );
+        if (typeof name !== 'string' || !name.trim()) return true;
+        await this._savePersonalField({ display_name: name.trim() }, 'Display name');
         return true;
+    }
+
+    async onActionEditUsername() {
+        const username = await Modal.prompt(
+            'Username:',
+            'Edit Username',
+            { defaultValue: this.model.get('username') || '' }
+        );
+        if (typeof username !== 'string' || !username.trim()) return true;
+        await this._savePersonalField({ username: username.trim() }, 'Username');
+        return true;
+    }
+
+    async onActionChangeEmail() {
+        const email = await Modal.prompt(
+            'Email address:',
+            'Change Email',
+            { defaultValue: this.model.get('email') || '' }
+        );
+        if (typeof email !== 'string' || !email.trim()) return true;
+        await this._savePersonalField({ email: email.trim() }, 'Email');
+        return true;
+    }
+
+    async onActionChangePhone() {
+        const phone = await Modal.prompt(
+            'Phone number:',
+            'Change Phone',
+            { defaultValue: this.model.get('phone_number') || '' }
+        );
+        if (typeof phone !== 'string' || !phone.trim()) return true;
+        await this._savePersonalField({ phone_number: phone.trim() }, 'Phone number');
+        return true;
+    }
+
+    async _savePersonalField(fields, label) {
+        const resp = await this.model.save(fields);
+        if (resp.status === 200) {
+            this.getApp()?.toast?.success(`${label} updated`);
+            await this._fullRefresh();
+        } else {
+            this.getApp()?.toast?.error(resp.message || `Failed to update ${label.toLowerCase()}`);
+        }
     }
 
     async onActionEditAccount() {
