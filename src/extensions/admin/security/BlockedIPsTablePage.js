@@ -111,35 +111,11 @@ export default class BlockedIPsTablePage extends TablePage {
         });
     }
 
-    async onActionBatchUnblock() {
-        const selected = this.tableView.getSelectedItems();
-        if (!selected.length) return;
-
-        const confirmed = await this.getApp().confirm(
-            `Unblock ${selected.length} IP${selected.length > 1 ? 's' : ''}?`
-        );
-        if (!confirmed) return;
-
-        await Promise.all(selected.map(item =>
-            item.model.save({ unblock: 'Bulk unblock from admin' })
-        ));
-        this.getApp().toast.success(`${selected.length} IP(s) unblocked`);
-        this.tableView.collection.fetch();
+    onActionBatchUnblock() {
+        return this.batchAction({ field: 'unblock',   value: 'Bulk unblock from admin',   label: 'Unblock' });
     }
 
-    async onActionBatchWhitelist() {
-        const selected = this.tableView.getSelectedItems();
-        if (!selected.length) return;
-
-        const confirmed = await this.getApp().confirm(
-            `Whitelist ${selected.length} IP${selected.length > 1 ? 's' : ''}?`
-        );
-        if (!confirmed) return;
-
-        await Promise.all(selected.map(item =>
-            item.model.save({ whitelist: 'Bulk whitelist from admin' })
-        ));
-        this.getApp().toast.success(`${selected.length} IP(s) whitelisted`);
-        this.tableView.collection.fetch();
+    onActionBatchWhitelist() {
+        return this.batchAction({ field: 'whitelist', value: 'Bulk whitelist from admin', label: 'Whitelist' });
     }
 }

@@ -5,7 +5,6 @@
 import TablePage from '@core/pages/TablePage.js';
 import { AssistantConversation, AssistantConversationList } from '@ext/admin/models/Assistant.js';
 import AssistantConversationView from './AssistantConversationView.js';
-import Modal from '@core/views/feedback/Modal.js';
 
 AssistantConversation.VIEW_CLASS = AssistantConversationView;
 
@@ -68,29 +67,8 @@ class AssistantConversationTablePage extends TablePage {
         });
     }
 
-    async onActionBatchDelete() {
-        const selected = this.tableView.getSelectedItems();
-        if (!selected || selected.length === 0) return;
-
-        const confirmed = await Modal.confirm(
-            `Delete ${selected.length} conversation${selected.length > 1 ? 's' : ''}? This cannot be undone.`,
-            'Delete Conversations',
-            { confirmText: 'Delete', confirmClass: 'btn-danger' }
-        );
-        if (!confirmed) return;
-
-        let deleted = 0;
-        for (const item of selected) {
-            try {
-                await item.destroy();
-                deleted++;
-            } catch (_e) {
-                // continue
-            }
-        }
-
-        this.getApp()?.toast?.success(`Deleted ${deleted} conversation${deleted !== 1 ? 's' : ''}`);
-        await this.tableView.refresh();
+    onActionBatchDelete() {
+        return this.batchAction({ destroy: true, label: 'Delete' });
     }
 }
 

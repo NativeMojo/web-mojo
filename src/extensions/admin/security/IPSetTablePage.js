@@ -149,59 +149,11 @@ class IPSetTablePage extends TablePage {
 
     // ── Batch Actions ──
 
-    async onActionBatchEnable() {
-        const selected = this.tableView.getSelectedItems();
-        if (!selected.length) return;
-        const confirmed = await this.getApp().confirm(`Enable ${selected.length} IP set(s)? They will be synced to the fleet.`);
-        if (!confirmed) return;
-        await Promise.all(selected.map(item => item.model.save({ enable: 1 })));
-        this.getApp().toast.success(`${selected.length} IP set(s) enabled`);
-        this.tableView.collection.fetch();
-    }
-
-    async onActionBatchDisable() {
-        const selected = this.tableView.getSelectedItems();
-        if (!selected.length) return;
-        const confirmed = await this.getApp().confirm(`Disable ${selected.length} IP set(s)? They will be removed from the fleet.`);
-        if (!confirmed) return;
-        await Promise.all(selected.map(item => item.model.save({ disable: 1 })));
-        this.getApp().toast.success(`${selected.length} IP set(s) disabled`);
-        this.tableView.collection.fetch();
-    }
-
-    async onActionBatchSync() {
-        const selected = this.tableView.getSelectedItems();
-        if (!selected.length) return;
-        const confirmed = await this.getApp().confirm(`Sync ${selected.length} IP set(s) to all fleet instances?`);
-        if (!confirmed) return;
-        await Promise.all(selected.map(item => item.model.save({ sync: 1 })));
-        this.getApp().toast.success(`${selected.length} IP set(s) syncing to fleet`);
-        this.tableView.collection.fetch();
-    }
-
-    async onActionBatchRefresh() {
-        const selected = this.tableView.getSelectedItems();
-        if (!selected.length) return;
-        const confirmed = await this.getApp().confirm(`Refresh source data for ${selected.length} IP set(s)?`);
-        if (!confirmed) return;
-        await Promise.all(selected.map(item => item.model.save({ refresh_source: 1 })));
-        this.getApp().toast.success(`${selected.length} IP set(s) refreshing`);
-        this.tableView.collection.fetch();
-    }
-
-    async onActionBatchDelete() {
-        const selected = this.tableView.getSelectedItems();
-        if (!selected.length) return;
-        const confirmed = await Modal.confirm(
-            `Delete ${selected.length} IP set(s)? They will be removed from all fleet instances. This cannot be undone.`,
-            'Delete IP Sets',
-            { confirmText: 'Delete', confirmClass: 'btn-danger' }
-        );
-        if (!confirmed) return;
-        await Promise.all(selected.map(item => item.model.destroy()));
-        this.getApp().toast.success(`${selected.length} IP set(s) deleted`);
-        this.tableView.collection.fetch();
-    }
+    onActionBatchEnable()  { return this.batchAction({ field: 'enable',         value: 1, label: 'Enable' }); }
+    onActionBatchDisable() { return this.batchAction({ field: 'disable',        value: 1, label: 'Disable' }); }
+    onActionBatchSync()    { return this.batchAction({ field: 'sync',           value: 1, label: 'Sync' }); }
+    onActionBatchRefresh() { return this.batchAction({ field: 'refresh_source', value: 1, label: 'Refresh' }); }
+    onActionBatchDelete()  { return this.batchAction({ destroy: true,                     label: 'Delete' }); }
 }
 
 export default IPSetTablePage;

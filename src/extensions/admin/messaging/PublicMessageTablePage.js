@@ -94,27 +94,8 @@ class PublicMessageTablePage extends TablePage {
         });
     }
 
-    async onActionBatchMarkClosed() {
-        const selected = this.tableView.getSelectedItems();
-        if (!selected.length) return;
-
-        const confirmed = await this.getApp().confirm(
-            `Mark ${selected.length} message${selected.length > 1 ? 's' : ''} as closed?`
-        );
-        if (!confirmed) return;
-
-        const results = await Promise.allSettled(selected.map(item =>
-            item.model.save({ status: 'closed' })
-        ));
-        const failed = results.filter(r => r.status === 'rejected').length;
-        const succeeded = results.length - failed;
-        if (succeeded) {
-            this.getApp().toast.success(`${succeeded} message(s) closed`);
-        }
-        if (failed) {
-            this.getApp().toast.error(`${failed} message(s) failed to update`);
-        }
-        this.tableView.collection.fetch();
+    onActionBatchMarkClosed() {
+        return this.batchAction({ field: 'status', value: 'closed', label: 'Mark Closed' });
     }
 }
 

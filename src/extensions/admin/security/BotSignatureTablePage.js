@@ -118,35 +118,7 @@ export default class BotSignatureTablePage extends TablePage {
         });
     }
 
-    async onActionBatchEnable() {
-        const selected = this.tableView.getSelectedItems();
-        if (!selected.length) return;
-
-        await Promise.all(selected.map(item => item.model.save({ is_active: true })));
-        this.getApp().toast.success(`${selected.length} signature(s) enabled`);
-        this.tableView.collection.fetch();
-    }
-
-    async onActionBatchDisable() {
-        const selected = this.tableView.getSelectedItems();
-        if (!selected.length) return;
-
-        await Promise.all(selected.map(item => item.model.save({ is_active: false })));
-        this.getApp().toast.success(`${selected.length} signature(s) disabled`);
-        this.tableView.collection.fetch();
-    }
-
-    async onActionBatchDelete() {
-        const selected = this.tableView.getSelectedItems();
-        if (!selected.length) return;
-
-        const confirmed = await this.getApp().confirm(
-            `Delete ${selected.length} signature${selected.length > 1 ? 's' : ''}? This cannot be undone.`
-        );
-        if (!confirmed) return;
-
-        await Promise.all(selected.map(item => item.model.destroy()));
-        this.getApp().toast.success(`${selected.length} signature(s) deleted`);
-        this.tableView.collection.fetch();
-    }
+    onActionBatchEnable()  { return this.batchAction({ field: 'is_active', value: true,  label: 'Enable' }); }
+    onActionBatchDisable() { return this.batchAction({ field: 'is_active', value: false, label: 'Disable' }); }
+    onActionBatchDelete()  { return this.batchAction({ destroy: true,                    label: 'Delete' }); }
 }

@@ -145,48 +145,19 @@ class IncidentTablePage extends TablePage {
         });
     }
 
-    async onActionBatchResolve(event, element) {
-        const selected = this.tableView.getSelectedItems();
-        if (!selected.length) return;
+    onActionBatchResolve() { return this.batchAction({ field: 'status', value: 'resolved', label: 'Resolve' }); }
+    onActionBatchOpen()    { return this.batchAction({ field: 'status', value: 'open',     label: 'Open' }); }
+    onActionBatchPause()   { return this.batchAction({ field: 'status', value: 'paused',   label: 'Pause' }); }
+    onActionBatchIgnore()  { return this.batchAction({ field: 'status', value: 'ignored',  label: 'Ignore' }); }
 
-        const app = this.getApp();
-        const result = await app.confirm(`Are you sure you want to close ${selected.length} incidents?`);
-        if (!result) return;
-        await Promise.all(selected.map(item => item.model.save({status: 'resolved'})));
-        this.tableView.collection.fetch();
-    }
-
-    async onActionBatchOpen(event, element) {
-        const selected = this.tableView.getSelectedItems();
-        if (!selected.length) return;
-
-        const app = this.getApp();
-        const result = await app.confirm(`Are you sure you want to open ${selected.length} incidents?`);
-        if (!result) return;
-        await Promise.all(selected.map(item => item.model.save({status: 'open'})));
-        this.tableView.collection.fetch();
-    }
-
-    async onActionBatchPause(event, element) {
-        const selected = this.tableView.getSelectedItems();
-        if (!selected.length) return;
-
-        const app = this.getApp();
-        const result = await app.confirm(`Are you sure you want to pause ${selected.length} incidents?`);
-        if (!result) return;
-        await Promise.all(selected.map(item => item.model.save({status: 'paused'})));
-        this.tableView.collection.fetch();
-    }
-
-    async onActionBatchIgnore(event, element) {
-        const selected = this.tableView.getSelectedItems();
-        if (!selected.length) return;
-
-        const app = this.getApp();
-        const result = await app.confirm(`Are you sure you want to ignore ${selected.length} incidents?`);
-        if (!result) return;
-        await Promise.all(selected.map(item => item.model.save({status: 'ignored'})));
-        this.tableView.collection.fetch();
+    onActionBatchProtect() {
+        // Nested-field save — use a custom handler so the helper still
+        // confirms / toasts / refreshes for free.
+        return this.batchAction({
+            label: 'Protect',
+            message: `Protect ${this.tableView.getSelectedItems().length} incident(s) from deletion?`,
+            handler: (model) => model.save({ metadata: { do_not_delete: true } })
+        });
     }
 
     async onActionBatchMerge(_event, _element) {
@@ -219,19 +190,8 @@ class IncidentTablePage extends TablePage {
 
         // Save the merge operation to the parent model
         await parentModel.save({ merge: mergeIds });
-        this.tableView.collection.fetch();
-    }
-
-    async onActionBatchProtect(event, element) {
-        const selected = this.tableView.getSelectedItems();
-        if (!selected.length) return;
-
-        const app = this.getApp();
-        const result = await app.confirm(`Protect ${selected.length} incident(s) from deletion?`);
-        if (!result) return;
-        await Promise.all(selected.map(item => item.model.save({ metadata: { do_not_delete: true } })));
-        app.toast?.success(`${selected.length} incident(s) protected`);
-        this.tableView.collection.fetch();
+        this.tableView.clearSelection();
+        await this.tableView.refresh();
     }
 }
 
