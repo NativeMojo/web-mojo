@@ -143,7 +143,9 @@ const TOPIC_TAXONOMY = [
                     'components/table-view/batch-actions',
                     'components/table-view/custom-row',
                     'components/table-view/server-collection',
+                    'components/table-view/day-range-filter',
                     'components/data-view',
+                    'components/detail-view',
                 ],
             },
             {

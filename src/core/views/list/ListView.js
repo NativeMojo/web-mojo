@@ -438,12 +438,12 @@ class ListView extends View {
 
   _buildTitleBlockTemplate() {
     if (!this.title && !this.eyebrow) return '';
-    const eyebrow = this.eyebrow
-      ? `<div class="text-body-secondary text-uppercase small fw-semibold rs-table-eyebrow" style="letter-spacing: 0.05em; line-height: 1.2;">${this.escapeHtml(this.eyebrow)}</div>`
-      : '';
-    const title = this.title
-      ? `<h5 class="mb-0 rs-table-title">${this.escapeHtml(this.title)}</h5>`
-      : '';
+    // Use Mustache `{{eyebrow}}` / `{{title}}` so setEyebrow / setTitle
+    // (and any other code path that mutates these props) survive a
+    // re-render — the value is read from the view context at render
+    // time, not baked at construction time.
+    const eyebrow = `{{#eyebrow}}<div class="text-body-secondary text-uppercase small fw-semibold rs-table-eyebrow" style="letter-spacing: 0.05em; line-height: 1.2;">{{eyebrow}}</div>{{/eyebrow}}`;
+    const title = `{{#title}}<h5 class="mb-0 rs-table-title">{{title}}</h5>{{/title}}`;
     return `<div class="rs-table-title-block">${eyebrow}${title}</div>`;
   }
 
@@ -872,12 +872,18 @@ class ListView extends View {
 
     if (this.collection?.restEnabled) {
       try {
+        // fetch:end already triggers a render via _onFetchEnd, so no
+        // trailing render() here — calling one would revert any
+        // setEyebrow / setTitle updates a `range:change` listener made
+        // (the toolbar template is baked at construction time).
         await this.collection.fetch();
       } catch (err) {
         console.error('Failed to fetch day-range data:', err);
+        await this.render();
       }
+    } else {
+      await this.render();
     }
-    await this.render();
   }
 
   /**
@@ -2274,6 +2280,10 @@ class ListView extends View {
   }
 
   // -------- Toolbar text mutators --------
+  // `_buildTitleBlockTemplate` emits `{{title}}` / `{{eyebrow}}` Mustache
+  // vars (resolved at render time from `this.title` / `this.eyebrow`),
+  // so setters update the instance prop and patch the live DOM node;
+  // the next render() picks up the value automatically.
   setTitle(value) {
     this.title = value || null;
     const el = this.element?.querySelector('.rs-table-title');

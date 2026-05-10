@@ -81,7 +81,9 @@ Single canonical example per documented component. Pages are organized by topic 
 | [TableView — batch actions](../../examples/portal/examples/components/TableView/TableViewBatchActionsExample.js) | Multi-select rows + bulk actions wired to the in-memory Collection. | [components/TableView.md](../../docs/web-mojo/components/TableView.md) |
 | [TableView — custom row class](../../examples/portal/examples/components/TableView/TableViewCustomRowExample.js) | Custom itemClass (TableRow subclass) with avatar, badges, and expand-on-click. | [components/TableView.md](../../docs/web-mojo/components/TableView.md) |
 | [TableView — server collection](../../examples/portal/examples/components/TableView/TableViewServerExample.js) | Bound to UserList against the live backend, with fetch:error handling. | [components/TableView.md](../../docs/web-mojo/components/TableView.md) |
+| [TableView — day-range filter](../../examples/portal/examples/components/TableView/TableViewDayRangeFilterExample.js) | `dayRangeFilter: true` drops a 1d/7d/30d/90d SegmentControl into the toolbar and auto-applies `created__gte` to the collection. | [components/TableView.md](../../docs/web-mojo/components/TableView.md) |
 | [DataView](../../examples/portal/examples/components/DataView/DataViewExample.js) | Structured key/value display with field types for email, URL, boolean, dates, and JSON. | [components/DataView.md](../../docs/web-mojo/components/DataView.md) |
+| [DetailView](../../examples/portal/examples/components/DetailView/DetailViewExample.js) | Standard record-viewer layout: flat header (icon, title, chips, active toggle, actions, X close) + SideNavView. Pair with Modal.detail() inside a Modal. | [components/DetailView.md](../../docs/web-mojo/components/DetailView.md) |
 
 ### Files
 

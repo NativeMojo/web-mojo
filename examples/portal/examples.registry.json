@@ -1,6 +1,6 @@
 {
   "generatedAt": "static",
-  "pageCount": 89,
+  "pageCount": 91,
   "pages": [
     {
       "name": "ActiveGroup",
@@ -111,6 +111,29 @@
       "section": "Components",
       "icon": "bi-card-list",
       "order": 40,
+      "topic": "components",
+      "group": "Lists & Tables"
+    },
+    {
+      "name": "DetailView",
+      "area": "components",
+      "route": "components/detail-view",
+      "title": "DetailView",
+      "summary": "Standard record-viewer layout: flat header (icon, title, chips, active toggle, actions, X close) + SideNavView. Pair with Modal.detail() inside a Modal.",
+      "docs": "docs/web-mojo/components/DetailView.md",
+      "tags": [
+        "modal",
+        "detail",
+        "header",
+        "sections",
+        "record"
+      ],
+      "page": "DetailViewExample.js",
+      "modulePath": "./examples/components/DetailView/DetailViewExample.js",
+      "sourcePath": "examples/portal/examples/components/DetailView/DetailViewExample.js",
+      "section": "Components",
+      "icon": "bi-card-text",
+      "order": 51,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -530,29 +553,6 @@
       "group": "Navigation"
     },
     {
-      "name": "DetailView",
-      "area": "components",
-      "route": "components/detail-view",
-      "title": "DetailView",
-      "summary": "Standard record-viewer layout: flat header (icon, title, chips, active toggle, actions, X close) + SideNavView. Pair with Modal.detail() inside a Modal.",
-      "docs": "docs/web-mojo/components/DetailView.md",
-      "tags": [
-        "modal",
-        "detail",
-        "header",
-        "sections",
-        "record"
-      ],
-      "page": "DetailViewExample.js",
-      "modulePath": "./examples/components/DetailView/DetailViewExample.js",
-      "sourcePath": "examples/portal/examples/components/DetailView/DetailViewExample.js",
-      "section": "Components",
-      "icon": "bi-card-text",
-      "order": 51,
-      "topic": "components",
-      "group": "Modals & Dialogs"
-    },
-    {
       "name": "SidebarTopNav",
       "area": "components",
       "route": "components/sidebar-top-nav",
@@ -706,6 +706,30 @@
       "section": "Components",
       "icon": "bi-table",
       "order": 32,
+      "topic": "components",
+      "group": "Lists & Tables"
+    },
+    {
+      "name": "TableView",
+      "area": "components",
+      "route": "components/table-view/day-range-filter",
+      "title": "TableView — day-range filter",
+      "summary": "`dayRangeFilter: true` drops a 1d/7d/30d/90d SegmentControl into the toolbar and auto-applies `created__gte` to the collection.",
+      "docs": "docs/web-mojo/components/TableView.md",
+      "tags": [
+        "table",
+        "collection",
+        "sort",
+        "filter",
+        "pagination",
+        "batch-actions"
+      ],
+      "page": "TableViewDayRangeFilterExample.js",
+      "modulePath": "./examples/components/TableView/TableViewDayRangeFilterExample.js",
+      "sourcePath": "examples/portal/examples/components/TableView/TableViewDayRangeFilterExample.js",
+      "section": "Components",
+      "icon": "bi-table",
+      "order": 34,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -2307,13 +2331,6 @@
               "summary": "Modal.form — host a FormView in a modal, resolve with the submitted data.",
               "icon": "bi-window-stack",
               "docs": "docs/web-mojo/components/Modal.md"
-            },
-            {
-              "route": "components/detail-view",
-              "title": "DetailView",
-              "summary": "Standard record-viewer layout: flat header + SideNavView. Pair with Modal.detail() inside a Modal.",
-              "icon": "bi-card-text",
-              "docs": "docs/web-mojo/components/DetailView.md"
             }
           ]
         },
@@ -2399,11 +2416,25 @@
               "docs": "docs/web-mojo/components/TableView.md"
             },
             {
+              "route": "components/table-view/day-range-filter",
+              "title": "TableView — day-range filter",
+              "summary": "`dayRangeFilter: true` drops a 1d/7d/30d/90d SegmentControl into the toolbar and auto-applies `created__gte` to the collection.",
+              "icon": "bi-table",
+              "docs": "docs/web-mojo/components/TableView.md"
+            },
+            {
               "route": "components/data-view",
               "title": "DataView",
               "summary": "Structured key/value display with field types for email, URL, boolean, dates, and JSON.",
               "icon": "bi-card-list",
               "docs": "docs/web-mojo/components/DataView.md"
+            },
+            {
+              "route": "components/detail-view",
+              "title": "DetailView",
+              "summary": "Standard record-viewer layout: flat header (icon, title, chips, active toggle, actions, X close) + SideNavView. Pair with Modal.detail() inside a Modal.",
+              "icon": "bi-card-text",
+              "docs": "docs/web-mojo/components/DetailView.md"
             }
           ]
         },
@@ -3127,6 +3158,13 @@
           "docs": "docs/web-mojo/components/TableView.md"
         },
         {
+          "route": "components/table-view/day-range-filter",
+          "title": "TableView — day-range filter",
+          "summary": "`dayRangeFilter: true` drops a 1d/7d/30d/90d SegmentControl into the toolbar and auto-applies `created__gte` to the collection.",
+          "icon": "bi-table",
+          "docs": "docs/web-mojo/components/TableView.md"
+        },
+        {
           "route": "components/data-view",
           "title": "DataView",
           "summary": "Structured key/value display with field types for email, URL, boolean, dates, and JSON.",
@@ -3150,7 +3188,7 @@
         {
           "route": "components/detail-view",
           "title": "DetailView",
-          "summary": "Standard record-viewer layout: flat header + SideNavView. Pair with Modal.detail() inside a Modal.",
+          "summary": "Standard record-viewer layout: flat header (icon, title, chips, active toggle, actions, X close) + SideNavView. Pair with Modal.detail() inside a Modal.",
           "icon": "bi-card-text",
           "docs": "docs/web-mojo/components/DetailView.md"
         },

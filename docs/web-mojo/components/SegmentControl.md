@@ -99,6 +99,8 @@ If you need a different palette, override the styling with selectors scoped to y
 
 ### Bound to a Collection's params
 
+> **Tip:** If you are wiring a day-range picker to a ListView or TableView toolbar, the built-in `dayRangeFilter` option automates this wiring — it mounts the SegmentControl, writes `${field}__gte` to `collection.params`, and refetches automatically. See [ListView — Day-range filter](./ListView.md#day-range-filter). Use SegmentControl directly when you need a range control outside of a list/table toolbar, or when the param translation is non-standard.
+
 ```js
 class IncidentsSection extends View {
     async onInit() {

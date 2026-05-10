@@ -351,6 +351,7 @@ await table.mount('#users-table');
 | `defaultQuery` | `object` | `undefined` | Default query params for the collection |
 | `collectionParams` | `object` | `undefined` | Parameters merged into the collection |
 | `itemClass` | `Class` | `TableRow` | Custom row class (must extend TableRow or ListViewItem) |
+| `dayRangeFilter` | `boolean \| object` | `false` | Mounts a `1d / 7d / 30d / 90d` SegmentControl in the toolbar and writes `${field}__gte` to `collection.params` on every change (auto-refetches). `true` → defaults `{ field: 'created', value: '7d' }`. Object form merges over those defaults. Emits `range:change` `{ field, value, previous, params }`. See [Day-range filter](./ListView.md#day-range-filter). |
 
 ---
 
@@ -1397,6 +1398,7 @@ TableView emits the following events (in addition to ListView events):
 | `selection:change` | `{ selected, item, model }` | Selection state changed |
 | `list:empty` | — | Collection became empty |
 | `list:loaded` | `{ count }` | Collection loaded items |
+| `range:change` | `{ field, value, previous, params }` | Day-range picker value changed (only when `dayRangeFilter` is set) |
 
 ---
 
