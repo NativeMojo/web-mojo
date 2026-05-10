@@ -96,8 +96,8 @@ class LogTablePage extends TablePage {
                 sort: '-created'
             },
 
-            // Table features
-            selectable: true,
+            // Logs are an immutable audit feed — no selection, no batch actions,
+            // no row mutations. View + export only.
             searchable: true,
             sortable: true,
             filterable: true,
@@ -105,20 +105,11 @@ class LogTablePage extends TablePage {
 
             // Toolbar
             showRefresh: true,
-            showAdd: false, // Logs are typically not manually created
+            showAdd: false,
             showExport: true,
 
             // Empty state
             emptyMessage: 'No log entries found.',
-
-            // Batch actions
-            batchBarLocation: 'top',
-            batchActions: [
-                { label: "Export", icon: "bi bi-download", action: "batch-export" },
-                { label: "Archive", icon: "bi bi-archive", action: "batch-archive" },
-                { label: "Delete", icon: "bi bi-trash", action: "batch-delete" },
-                { label: "Mark as Reviewed", icon: "bi bi-check2", action: "batch-reviewed" }
-            ],
 
             // Table display options
             tableOptions: {

@@ -168,8 +168,8 @@ class EventTablePage extends TablePage {
                 },
             ],
 
-            // Table features
-            selectable: true,
+            // Events are an immutable audit feed — no selection, no batch
+            // actions, no row mutations. View + export only.
             searchable: true,
             sortable: true,
             filterable: true,

@@ -21,7 +21,7 @@ class PhoneNumberTablePage extends TablePage {
       Collection: PhoneNumberList,
 
       // Item view configuration
-      itemView: PhoneNumberView,
+      itemViewClass: PhoneNumberView,
       viewDialogOptions: {
         header: false,
         // size: 'xl'
@@ -93,7 +93,7 @@ class PhoneNumberTablePage extends TablePage {
       if (data && data.number) {
           const resp = await PhoneNumber.lookup(data.number);
           if (resp.model) {
-              this.tableView._onRowView(resp);
+              await this.showItemDialog(resp.model);
           }
       }
   }

@@ -34,8 +34,8 @@ class SentMessageTablePage extends TablePage {
                 { key: 'created', label: 'Created', formatter: 'datetime' }
             ],
 
-            // Features
-            selectable: true,
+            // Sent messages are an immutable outbox log — no selection, no
+            // batch actions, no row mutations. View + export only.
             searchable: true,
             sortable: true,
             filterable: true,

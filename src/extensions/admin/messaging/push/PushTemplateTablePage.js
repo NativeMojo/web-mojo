@@ -18,23 +18,18 @@ class PushTemplateTablePage extends TablePage {
                 { key: 'category', label: 'Category' },
                 { key: 'group.name', label: 'Group', formatter: "default('Default')" },
                 { key: 'priority', label: 'Priority' },
-                { key: 'is_active', label: 'Active', format: 'boolean' },
+                { key: 'is_active', label: 'Active', formatter: 'boolean' },
             ],
+
+            actions: ["edit", "delete"],
+            emptyMessage: 'No push templates found.',
 
             searchable: true,
             sortable: true,
             paginated: true,
             showRefresh: true,
             showAdd: true,
-            showExport: true,
-
-            tableOptions: {
-                pageSizes: [10, 25, 50],
-                defaultPageSize: 25,
-                emptyMessage: 'No push templates found.',
-                emptyIcon: 'bi-file-earmark-text',
-                actions: ["edit", "delete"],
-            }
+            showExport: true
         });
     }
 }

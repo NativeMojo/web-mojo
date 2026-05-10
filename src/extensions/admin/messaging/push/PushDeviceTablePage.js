@@ -22,22 +22,17 @@ class PushDeviceTablePage extends TablePage {
                 { key: 'device_name', label: 'Device Name' },
                 { key: 'platform', label: 'Platform', formatter: 'badge' },
                 { key: 'app_version', label: 'App Version' },
-                { key: 'push_enabled', label: 'Push Enabled', format: 'boolean' },
+                { key: 'push_enabled', label: 'Push Enabled', formatter: 'boolean' },
                 { key: 'last_seen', label: 'Last Seen', formatter: 'datetime' },
             ],
-            
+
+            actions: ["view", "delete"],
+            emptyMessage: 'No devices found.',
+
             searchable: true,
             sortable: true,
             paginated: true,
-            showRefresh: true,
-
-            tableOptions: {
-                pageSizes: [10, 25, 50],
-                defaultPageSize: 25,
-                emptyMessage: 'No devices found.',
-                emptyIcon: 'bi-phone',
-                actions: ["view", "delete"],
-            }
+            showRefresh: true
         });
     }
 }

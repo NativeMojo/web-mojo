@@ -23,21 +23,18 @@ class MetricsPermissionsTablePage extends TablePage {
                 { key: 'write_permissions', label: 'Write Permissions', formatter: 'list|badge' },
             ],
 
+            actions: ["view", "edit", "delete"],
+            emptyMessage: 'No metrics permissions found.',
+
             selectable: true,
             searchable: true,
             sortable: true,
             paginated: true,
             showRefresh: true,
-            showAdd: true,
-            showExport: true,
-
-            tableOptions: {
-                pageSizes: [10, 25, 50],
-                defaultPageSize: 25,
-                emptyMessage: 'No metrics permissions found.',
-                emptyIcon: 'bi-bar-chart-line',
-                actions: ["view", "edit", "delete"],
-            }
+            // Add flow not wired (no MetricsForms.create exists today). Existing rows
+            // are managed via edit/delete; new rows come from the metrics ingest path.
+            showAdd: false,
+            showExport: true
         });
     }
 }

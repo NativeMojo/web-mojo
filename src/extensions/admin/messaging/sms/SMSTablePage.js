@@ -21,7 +21,7 @@ class SMSTablePage extends TablePage {
       Collection: SMSList,
 
       // Item view configuration
-      itemView: SMSView,
+      itemViewClass: SMSView,
       viewDialogOptions: {
         header: false,
         size: 'xl'

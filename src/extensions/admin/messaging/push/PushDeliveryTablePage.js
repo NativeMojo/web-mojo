@@ -26,18 +26,13 @@ class PushDeliveryTablePage extends TablePage {
                 { key: 'status', label: 'Status', formatter: 'badge' },
             ],
             
+            actions: ["view"],
+            emptyMessage: 'No deliveries found.',
+
             searchable: true,
             sortable: true,
             paginated: true,
-            showRefresh: true,
-
-            tableOptions: {
-                pageSizes: [10, 25, 50],
-                defaultPageSize: 25,
-                emptyMessage: 'No deliveries found.',
-                emptyIcon: 'bi-send',
-                actions: ["view"],
-            }
+            showRefresh: true
         });
     }
 }

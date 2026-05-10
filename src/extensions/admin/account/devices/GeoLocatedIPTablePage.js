@@ -16,7 +16,7 @@ class GeoLocatedIPTablePage extends TablePage {
             router: "admin/system/geoip",
             Collection: GeoLocatedIPList,
 
-            itemView: GeoIPView,
+            itemViewClass: GeoIPView,
             viewDialogOptions: {
                 header: false,
                 noBodyPadding: true,
@@ -138,7 +138,7 @@ class GeoLocatedIPTablePage extends TablePage {
         if (data && data.ip) {
             const model = await GeoLocatedIP.lookup(data.ip);
             if (model) {
-                this.tableView._onRowView({ model });
+                await this.showItemDialog(model);
             }
         }
     }
