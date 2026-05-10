@@ -280,7 +280,7 @@ Manual smoke test in the example portal: drop a temporary `...groupByDay('create
 **Modified:**
 - `src/core/views/list/ListView.js` — `groupBy` / `groupHeaderTemplate` / `groupHeaderLabel` / `groupHeaderClass` constructor opts; `_buildGroupHeaders`, `_rebuildGroupHeaders`, `_createGroupHeaderView`, `_groupHeaderViewOptions`, `_defaultGroupHeaderTemplate`. Hooks into `_buildItems`, `_renderChildren` (interleave), `_clearItems` (teardown), `_onModelsAdded` (Show More rebuild).
 - `src/core/views/table/TableView.js` — overrides `_defaultGroupHeaderTemplate` to emit `<th colspan="{{colspan}}">` and `_groupHeaderViewOptions` to set `tagName: 'tr'` + `colspan = data + selection + actions cols (clamped >=1)`.
-- `src/core/css/list-view.css` — `.list-group-header` (visual list) + `.list-group-header-row` / `.list-group-header-cell` (table). Token-based, dark theme automatic. `pointer-events: none` on the default header.
+- `src/core/css/list-view.css` — `.list-group-header` (visual list) + `.list-group-header-row` / `.list-group-header-cell` (table). Token-based, dark theme automatic. `pointer-events: none` on the default header. Visual treatment: typographic mark + fading rule composition (4×4 brand-tinted square + bold uppercase emphasis-color label + directional gradient hairline). Per-instance accent override via `--list-group-header-accent` CSS variable. (Redesigned post-resolution in commit 4736cd1 after the user flagged the initial muted-eyebrow look as generic.)
 - `src/index.js` — exports `ListGroupHeaderView` and `groupByDay`.
 - `docs/web-mojo/components/ListView.md` — new "Grouped rows" section + TOC + Key Features bullet.
 - `docs/web-mojo/components/TableView.md` — cross-reference section + TableView shape note.
