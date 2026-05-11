@@ -99,7 +99,7 @@ class LoginLocationMapView extends View {
                 height: this.height,
                 style: this.mapStyle,
                 zoom: 1.3,
-                center: [10, 20],
+                center: [-98.58, 39.83], // contiguous US centroid
                 pitch: 15,
                 bearing: 0,
                 showNavigationControl: true,
