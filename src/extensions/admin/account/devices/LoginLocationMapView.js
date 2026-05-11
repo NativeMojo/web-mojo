@@ -24,6 +24,7 @@
 
 import View from '@core/View.js';
 import MapLibreView from '@ext/map/MapLibreView.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 // Event-type → marker color (matches the login tone palette in the Logins tab)
 const EVENT_COLORS = {
@@ -51,6 +52,9 @@ class LoginLocationMapView extends View {
         this.drStart   = options.drStart   || null;
         this.drEnd     = options.drEnd     || null;
         this.viewMode  = options.viewMode  || 'summary'; // 'summary' | 'list'
+
+        // Cache of userId -> raw user object from login events (for the open-user action)
+        this._userDataMap  = new Map();
 
         // Drill-down state (summary mode only)
         this._drillCountry = null;
@@ -285,17 +289,40 @@ class LoginLocationMapView extends View {
             return;
         }
 
+        // Rebuild user cache so onActionOpenUser can retrieve full user data
+        this._userDataMap.clear();
+        if (!this.userId) {
+            for (const ev of plottable) {
+                if (ev.user?.id && !this._userDataMap.has(ev.user.id)) {
+                    this._userDataMap.set(ev.user.id, ev.user);
+                }
+            }
+        }
+
         const markers = plottable.map(ev => {
             const loc  = [ev.city, ev.region, ev.country_code].filter(Boolean).join(', ');
             const date = ev.created
                 ? new Date(ev.created * 1000).toLocaleString()
                 : '\u2014';
+
+            // Show a "View User" link in the popup when we have user data and
+            // are in system-wide mode (per-user context already shows that user).
+            const userLink = (!this.userId && ev.user?.id)
+                ? `<button class="btn btn-outline-primary mt-2 w-100"
+                          style="font-size:0.7rem;padding:2px 8px;"
+                          data-action="open-user"
+                          data-user-id="${ev.user.id}">
+                       <i class="bi bi-person me-1"></i>${ev.user.display_name || ev.user.username || 'View User'}
+                   </button>`
+                : '';
+
             const popup = `
                 <div style="min-width:160px;">
                     <div class="fw-semibold">${loc || '\u2014'}</div>
                     <div class="text-muted small"><code>${ev.ip_address || ''}</code></div>
                     <div class="text-muted small">${date}</div>
                     ${ev.source ? `<div class="text-muted small">via ${ev.source}</div>` : ''}
+                    ${userLink}
                 </div>
             `;
             return {
@@ -309,6 +336,27 @@ class LoginLocationMapView extends View {
 
         this.mapView.updateMarkers(markers);
         this._setStatus(`${markers.length.toLocaleString()} login${markers.length !== 1 ? 's' : ''} plotted`);
+    }
+
+    async onActionOpenUser(event, element) {
+        const userId = Number(element?.dataset?.userId);
+        if (!userId) return;
+
+        const userData = this._userDataMap.get(userId);
+        try {
+            const [{ default: UserView }, { User }] = await Promise.all([
+                import('../users/UserView.js'),
+                import('@core/models/User.js')
+            ]);
+            const model = new User(userData || { id: userId });
+            // If we only have the minimal embedded snapshot, fetch the full record.
+            if (!userData || !userData.email) {
+                try { await model.fetch(); } catch (_) {}
+            }
+            await Modal.detail(new UserView({ model }));
+        } catch (err) {
+            console.error('LoginLocationMapView: failed to open user', err);
+        }
     }
 
     _getEventColor(eventType) {
