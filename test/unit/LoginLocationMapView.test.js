@@ -106,13 +106,13 @@ module.exports = async function (testContext) {
 
     describe('LoginLocationMapView._fetchList() — endpoint selection', () => {
 
-        it('always calls /api/account/logins with graph=list and size=500', async () => {
+        it('always calls /api/account/logins with graph=list and size=1000', async () => {
             const { rest, lastCall } = makeMockRest(LOGIN_EVENTS);
             const view = makeView({}, rest);
             await view._fetchList();
             expect(lastCall.url).toBe('/api/account/logins');
             expect(lastCall.params.graph).toBe('list');
-            expect(lastCall.params.size).toBe(500);
+            expect(lastCall.params.size).toBe(1000);
         });
 
         it('global (no userId): no user param', async () => {

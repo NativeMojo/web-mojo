@@ -195,7 +195,7 @@ class LoginLocationMapView extends View {
         const rest = this.getApp()?.rest;
         if (!rest) throw new Error('REST client unavailable');
 
-        const params = { graph: 'list', size: 500, sort: '-created' };
+        const params = { graph: 'list', size: 1000, sort: '-created' };
         if (this.drStart) params.dr_start = this.drStart;
         if (this.drEnd)   params.dr_end   = this.drEnd;
         if (this.userId)  params.user      = this.userId;
