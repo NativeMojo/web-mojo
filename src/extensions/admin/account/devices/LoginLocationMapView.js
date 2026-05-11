@@ -79,7 +79,9 @@ class LoginLocationMapView extends View {
         this._refreshing = true;
         this._setStatus('Loading locations\u2026');
         try {
-            const data = await this._fetchSummary();
+            const data = this.userId
+                ? await this._fetchAndGroupUserLogins()
+                : await this._fetchSummary();
             this._applyMarkers(data);
             this._setStatus('');
         } catch (error) {
@@ -88,6 +90,53 @@ class LoginLocationMapView extends View {
         } finally {
             this._refreshing = false;
         }
+    }
+
+    // Fetch raw login events for a specific user (last 30 days), then group
+    // by unique coordinates so each distinct location gets one sized marker.
+    async _fetchAndGroupUserLogins() {
+        const rest = this.getApp()?.rest;
+        if (!rest) throw new Error('REST client unavailable');
+
+        const thirtyDaysAgo = Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60);
+        const response = await rest.GET('/api/account/logins', {
+            user: this.userId,
+            size: 200,
+            sort: '-created',
+            created__gte: thirtyDaysAgo
+        });
+
+        if (!response.success || !response.data?.status) {
+            throw new Error(response.data?.error || 'Login events API error');
+        }
+
+        const events = response.data.data || [];
+        return this._groupByLocation(events);
+    }
+
+    _groupByLocation(events) {
+        const byCoord = new Map();
+        for (const ev of events) {
+            if (!ev.latitude || !ev.longitude) continue;
+            const key = `${ev.latitude},${ev.longitude}`;
+            if (!byCoord.has(key)) {
+                byCoord.set(key, {
+                    latitude: ev.latitude,
+                    longitude: ev.longitude,
+                    city: ev.city || null,
+                    region: ev.region || null,
+                    country_code: ev.country_code || null,
+                    count: 0,
+                    new_country_count: 0,
+                    new_region_count: 0
+                });
+            }
+            const entry = byCoord.get(key);
+            entry.count++;
+            if (ev.is_new_country) entry.new_country_count++;
+            if (ev.is_new_region)  entry.new_region_count++;
+        }
+        return Array.from(byCoord.values());
     }
 
     async _fetchSummary(countryCode = null) {
@@ -99,9 +148,6 @@ class LoginLocationMapView extends View {
         if (this.drEnd) params.dr_end = this.drEnd;
 
         const url = '/api/account/logins/summary';
-        if (this.userId) {
-            params.user = this.userId;
-        }
 
         if (countryCode) {
             params.country_code = countryCode;
@@ -131,8 +177,8 @@ class LoginLocationMapView extends View {
             .map(entry => {
                 const intensity = entry.count / (maxCount || 1);
                 const markerSize = Math.round(18 + intensity * 26);
-                const isRegion = !!entry.region;
-                const label = isRegion ? entry.region : entry.country_code;
+                const isRegion = !!entry.region && !entry.city;
+                const label = entry.city || (isRegion ? entry.region : entry.country_code);
                 const newCount = isRegion ? (entry.new_region_count || 0) : (entry.new_country_count || 0);
                 const newLabel = isRegion ? 'new region' : 'new country';
 
@@ -157,8 +203,9 @@ class LoginLocationMapView extends View {
 
         this.mapView.updateMarkers(markers);
 
-        // Attach click handlers for drill-down (country → region)
-        if (!this._drillCountry) {
+        // Attach click handlers for drill-down (country → region).
+        // Per-user mode plots city-level data, so drill-down is not applicable.
+        if (!this._drillCountry && !this.userId) {
             this._attachMarkerClicks(markers);
         }
     }
