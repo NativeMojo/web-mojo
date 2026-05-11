@@ -62,6 +62,13 @@ Only one marker appears. All other login locations are missing from the map.
 - [ ] Regression test added covering the corrected endpoint selection
 
 ---
-<!-- Filled in on resolution -->
 ## Resolution
-**Status**: open
+**Status**: Resolved — 2026-05-10
+**Root cause:** `_fetchSummary()` branched to `/api/account/logins/user` with `user_id=` for per-user mode. That endpoint returns raw login events, not the aggregated geo-summary (`count`, `latitude`, `longitude`, `country_code`) that `_applyMarkers()` requires. Fixed by always calling `/api/account/logins/summary` and passing `user: this.userId` as a query param.
+**Files changed:**
+- `src/extensions/admin/account/devices/LoginLocationMapView.js` — removed per-user URL branch in `_fetchSummary()`
+- `test/unit/LoginLocationMapView.test.js` — new regression test (6 cases)
+- `CHANGELOG.md` — unreleased Fixed entry added by docs-updater agent
+**Tests added/updated:** `test/unit/LoginLocationMapView.test.js` — 6/6 pass
+**Validation:** Full unit suite 1105/1112 pass. The 7 failures are pre-existing `IncidentView` / `ListView is not a constructor` errors unrelated to this change.
+**Security note (backend action required):** Security review flagged that the fix assumes the backend applies `user=<id>` as a proper row-level filter on `GET /api/account/logins/summary`. Before shipping, verify: (1) the backend enforces the `user=` filter and does not return system-wide data; (2) access-control on `/summary?user=<id>` is at least as strict as the old `/logins/user` endpoint.
