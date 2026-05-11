@@ -25,6 +25,7 @@
 import View from '@core/View.js';
 import MapLibreView from '@ext/map/MapLibreView.js';
 import Modal from '@core/views/feedback/Modal.js';
+import { User } from '@core/models/User.js';
 
 // Event-type → marker color (matches the login tone palette in the Logins tab)
 const EVENT_COLORS = {
@@ -52,9 +53,6 @@ class LoginLocationMapView extends View {
         this.drStart   = options.drStart   || null;
         this.drEnd     = options.drEnd     || null;
         this.viewMode  = options.viewMode  || 'summary'; // 'summary' | 'list'
-
-        // Cache of userId -> raw user object from login events (for the open-user action)
-        this._userDataMap  = new Map();
 
         // Drill-down state (summary mode only)
         this._drillCountry = null;
@@ -289,16 +287,6 @@ class LoginLocationMapView extends View {
             return;
         }
 
-        // Rebuild user cache so onActionOpenUser can retrieve full user data
-        this._userDataMap.clear();
-        if (!this.userId) {
-            for (const ev of plottable) {
-                if (ev.user?.id && !this._userDataMap.has(ev.user.id)) {
-                    this._userDataMap.set(ev.user.id, ev.user);
-                }
-            }
-        }
-
         const markers = plottable.map(ev => {
             const loc  = [ev.city, ev.region, ev.country_code].filter(Boolean).join(', ');
             const date = ev.created
@@ -342,18 +330,15 @@ class LoginLocationMapView extends View {
         const userId = Number(element?.dataset?.userId);
         if (!userId) return;
 
-        const userData = this._userDataMap.get(userId);
+        // USER_VIEW_CLASS is registered by UserView.js at load time.
+        // Same pattern as DeviceView.onActionViewUser().
+        const ViewClass = User.VIEW_CLASS;
+        if (!ViewClass) {
+            console.warn('LoginLocationMapView: User.VIEW_CLASS not registered');
+            return;
+        }
         try {
-            const [{ default: UserView }, { User }] = await Promise.all([
-                import('../users/UserView.js'),
-                import('@core/models/User.js')
-            ]);
-            const model = new User(userData || { id: userId });
-            // If we only have the minimal embedded snapshot, fetch the full record.
-            if (!userData || !userData.email) {
-                try { await model.fetch(); } catch (_) {}
-            }
-            await Modal.detail(new UserView({ model }));
+            await Modal.showModelById(User, userId);
         } catch (err) {
             console.error('LoginLocationMapView: failed to open user', err);
         }
