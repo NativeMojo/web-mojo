@@ -13,12 +13,14 @@
 import View from '@core/View.js';
 import { MetricsCountryMapView } from '@ext/map/index.js';
 import Modal from '@core/views/feedback/Modal.js';
+import LoginLocationMapView from '../../account/devices/LoginLocationMapView.js';
 
 const FAMILIES = [
-    { key: 'events',   label: 'Events',    category: 'incident_events_by_country' },
-    { key: 'incidents',label: 'Incidents', category: 'incidents_by_country' },
-    { key: 'firewall', label: 'Firewall',  category: 'firewall_blocks_by_country' },
-    { key: 'logins',   label: 'Logins',    category: 'logins' }
+    { key: 'events',   label: 'Events',    category: 'incident_events_by_country', account: 'incident' },
+    { key: 'incidents',label: 'Incidents', category: 'incidents_by_country',        account: 'incident' },
+    { key: 'firewall', label: 'Firewall',  category: 'firewall_blocks_by_country',  account: 'incident' },
+    // Logins use the account logins API directly, not the metrics system
+    { key: 'logins',   label: 'Logins',    category: null,                          account: null }
 ];
 
 class GeographyPanel extends View {
@@ -100,17 +102,29 @@ class GeographyPanel extends View {
         // Inline map only when explicitly opted in. Compact mode mounts
         // the map lazily inside the modal when "Show map" is clicked.
         if (this.inlineMap) {
-            this.map = new MetricsCountryMapView({
-                containerId: 'inline-map',
-                category: this._currentCategory(),
-                account: 'incident',
-                granularity: 'days',
-                maxCountries: 20,
-                metricLabel: this._currentLabel(),
-                height: 360,
-                mapStyle: 'dark',
-                mapOptions: { interactive: false }
-            });
+            if (this.activeFamily === 'logins') {
+                const drEnd   = new Date().toISOString().slice(0, 10);
+                const drStart = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+                this.map = new LoginLocationMapView({
+                    containerId: 'inline-map',
+                    height:   360,
+                    mapStyle: 'dark',
+                    drStart,
+                    drEnd
+                });
+            } else {
+                this.map = new MetricsCountryMapView({
+                    containerId: 'inline-map',
+                    category:    this._currentCategory(),
+                    account:     this._currentAccount(),
+                    granularity: 'days',
+                    maxCountries: 20,
+                    metricLabel: this._currentLabel(),
+                    height:      360,
+                    mapStyle:    'dark',
+                    mapOptions:  { interactive: false }
+                });
+            }
             this.addChild(this.map);
         }
         await this._fetchLeaderboard();
@@ -123,24 +137,36 @@ class GeographyPanel extends View {
      * container resizes).
      */
     async onActionShowMap() {
-        const map = new MetricsCountryMapView({
-            category: this._currentCategory(),
-            account: 'incident',
-            granularity: 'days',
-            maxCountries: 30,
-            metricLabel: this._currentLabel(),
-            height: 560,
-            mapStyle: 'dark',
-            // Allow interaction in the modal — the map is the focal
-            // point there, not a thumbnail next to other widgets.
-            mapOptions: { interactive: true }
-        });
+        let map;
+        if (this.activeFamily === 'logins') {
+            // Logins use LoginLocationMapView (pin map from the logins API),
+            // not MetricsCountryMapView (which reads the metrics series API).
+            const drEnd   = new Date().toISOString().slice(0, 10);
+            const drStart = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+            map = new LoginLocationMapView({
+                height:   560,
+                mapStyle: 'dark',
+                drStart,
+                drEnd
+            });
+        } else {
+            map = new MetricsCountryMapView({
+                category:     this._currentCategory(),
+                account:      this._currentAccount(),
+                granularity:  'days',
+                maxCountries: 30,
+                metricLabel:  this._currentLabel(),
+                height:       560,
+                mapStyle:     'dark',
+                mapOptions:   { interactive: true }
+            });
+        }
         await Modal.drawer({
             eyebrow: 'Geography',
-            title: this._currentLabel() + ' by Country',
+            title:   this._currentLabel() + ' by Country',
             meta: [
                 { icon: 'bi bi-calendar3', text: 'Last 7 days' },
-                { icon: 'bi bi-cursor', text: 'Drag, zoom, click markers' }
+                { icon: 'bi bi-cursor',    text: 'Drag, zoom, click markers' }
             ],
             view: map,
             size: 'xl'
@@ -155,22 +181,48 @@ class GeographyPanel extends View {
             return;
         }
         try {
-            const drStart = Math.floor((Date.now() - 7 * 86400000) / 1000);
-            const resp = await rest.GET('/api/metrics/fetch', {
-                category: this._currentCategory(),
-                account: 'incident',
-                granularity: 'days',
-                with_labels: true,
-                dr_start: drStart,
-                _: Date.now()
-            });
-            const metrics = resp?.data?.data?.data || {};
-            this.leaderboard = this._buildLeaderboard(metrics);
+            if (this.activeFamily === 'logins') {
+                await this._fetchLoginsLeaderboard(rest);
+            } else {
+                await this._fetchMetricsLeaderboard(rest);
+            }
         } catch (err) {
             console.warn('[GeographyPanel] leaderboard fetch failed:', err);
             this.leaderboard = [];
         }
         this.leaderboardEmpty = this.leaderboard.length === 0;
+    }
+
+    async _fetchMetricsLeaderboard(rest) {
+        const family  = FAMILIES.find(f => f.key === this.activeFamily);
+        const drStart = Math.floor((Date.now() - 7 * 86400000) / 1000);
+        const resp = await rest.GET('/api/metrics/fetch', {
+            category:    family.category,
+            account:     family.account,
+            granularity: 'days',
+            with_labels: true,
+            dr_start:    drStart,
+            _:           Date.now()
+        });
+        const metrics = resp?.data?.data?.data || {};
+        this.leaderboard = this._buildLeaderboard(metrics);
+    }
+
+    async _fetchLoginsLeaderboard(rest) {
+        // The logins summary endpoint returns country-level aggregation directly —
+        // no need to go through the metrics API.
+        const drStart = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+        const resp = await rest.GET('/api/account/logins/summary', { dr_start: drStart });
+        if (!resp?.success || !resp.data?.status) {
+            this.leaderboard = [];
+            return;
+        }
+        const entries = resp.data.data || [];
+        this.leaderboard = entries
+            .filter(e => e.country_code && e.count > 0)
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 10)
+            .map(e => ({ cc: e.country_code, name: e.country_code, total: e.count }));
     }
 
     _buildLeaderboard(metrics) {
@@ -218,6 +270,10 @@ class GeographyPanel extends View {
 
     _currentCategory() {
         return FAMILIES.find(f => f.key === this.activeFamily)?.category || FAMILIES[0].category;
+    }
+
+    _currentAccount() {
+        return FAMILIES.find(f => f.key === this.activeFamily)?.account || FAMILIES[0].account;
     }
 
     _currentLabel() {
