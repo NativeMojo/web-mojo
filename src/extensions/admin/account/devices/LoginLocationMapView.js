@@ -98,7 +98,7 @@ class LoginLocationMapView extends View {
                 containerId: 'map',
                 height: this.height,
                 style: this.mapStyle,
-                zoom: 1.3,
+                zoom: 3.3,
                 center: [-98.58, 39.83], // contiguous US centroid
                 pitch: 15,
                 bearing: 0,
