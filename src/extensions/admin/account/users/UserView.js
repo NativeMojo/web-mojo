@@ -1283,7 +1283,8 @@ class UserView extends DetailView {
         const loginMapView = new LoginLocationMapView({
             userId,
             height: 300,
-            mapStyle: 'dark'
+            mapStyle: 'dark',
+            viewMode: 'list'
         });
         const loginEventsTable = new ListView({
             collection: loginsCollection,
@@ -1348,7 +1349,7 @@ class UserView extends DetailView {
             { key: 'ApiKeys',       label: 'API Keys',      icon: 'bi-key',              view: apiKeysSection },
             { type: 'divider', label: 'Activity' },
             { key: 'Devices',       label: 'Devices',       icon: 'bi-laptop',           view: devicesSection },
-            { key: 'Locations',     label: 'Locations',     icon: 'bi-geo-alt',          view: locationsSection },
+            { key: 'Logins',        label: 'Logins',        icon: 'bi-geo-alt',          view: locationsSection },
             { key: 'Audit',         label: 'Audit',         icon: 'bi-clock-history',    view: auditSection,
               permissions: 'view_logs' },
             { type: 'divider', label: 'Settings' },
