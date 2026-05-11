@@ -118,15 +118,42 @@ class EventView extends View {
                 model: this.model,
                 data: (m) => m.get('metadata') || {},
                 knownKeys: [
-                    { key: 'source_ip',     label: 'Source IP' },
-                    { key: 'hostname',      label: 'Hostname' },
-                    { key: 'user_agent',    label: 'User agent' },
-                    { key: 'http_url',      label: 'URL' },
-                    { key: 'http_method',   label: 'HTTP method' },
-                    { key: 'http_status',   label: 'HTTP status' },
-                    { key: 'request_path',  label: 'Request path' },
-                    { key: 'error_class',   label: 'Error class' },
-                    { key: 'error_message', label: 'Error message' }
+                    // ── Request ──────────────────────────────
+                    { key: 'source_ip',        label: 'Source IP' },
+                    { key: 'request_ip',       label: 'Request IP' },
+                    { key: 'http_method',      label: 'Method' },
+                    { key: 'http_host',        label: 'Host' },
+                    { key: 'http_path',        label: 'Path' },
+                    { key: 'http_protocol',    label: 'Protocol' },
+                    { key: 'http_query_string',label: 'Query string' },
+                    { key: 'http_status',      label: 'HTTP status' },
+                    { key: 'http_user_agent',  label: 'User agent' },
+                    // ── Server ───────────────────────────────
+                    { key: 'server',           label: 'Server' },
+                    // ── Geo ──────────────────────────────────
+                    { key: 'city',             label: 'City' },
+                    { key: 'region',           label: 'Region' },
+                    { key: 'country_name',     label: 'Country' },
+                    { key: 'country_code',     label: 'Country code' },
+                    { key: 'timezone',         label: 'Timezone' },
+                    { key: 'latitude',         label: 'Latitude' },
+                    { key: 'longitude',        label: 'Longitude' },
+                    // ── Event context ─────────────────────────
+                    { key: 'scope',            label: 'Scope' },
+                    { key: 'category',         label: 'Category' },
+                    { key: 'title',            label: 'Title' },
+                    { key: 'details',          label: 'Details' },
+                    { key: 'level',            label: 'Level' },
+                    // ── Related model ─────────────────────────
+                    { key: 'model_name',       label: 'Model' },
+                    { key: 'model_id',         label: 'Model ID' },
+                    // ── Error (other event types) ─────────────
+                    { key: 'error_class',      label: 'Error class' },
+                    { key: 'error_message',    label: 'Error message' },
+                    { key: 'hostname',         label: 'Hostname' },
+                    { key: 'user_agent',       label: 'User agent (legacy)' },
+                    { key: 'http_url',         label: 'URL (legacy)' },
+                    { key: 'request_path',     label: 'Request path (legacy)' }
                 ],
                 rawLabel: 'Raw metadata'
             });
