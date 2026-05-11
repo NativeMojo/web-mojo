@@ -40,20 +40,25 @@ const TOKEN_REFERENCE = [
     { id: 't-secondary', token: 'secondary', label: 'secondary', when: 'Muted · low-emphasis' },
 ];
 
+// `min-width: 0` on the flex-grow column lets it shrink below intrinsic
+// content width — without it, a long message would force the row wider
+// than its container. The message itself wraps via `word-break: break-word`
+// (matches the DetailView header pattern); the actor/timestamp meta line
+// stays single-line via `text-truncate` so it ellipses cleanly.
 const EVENT_TEMPLATE = `
     <div class="d-flex align-items-center gap-3 p-3 border-bottom">
-        <span class="badge text-bg-light font-monospace" style="min-width: 2.25rem;">L{{model.level}}</span>
-        <div class="flex-grow-1">
-            <div class="fw-semibold">{{model.message}}</div>
-            <div class="small text-muted">{{model.actor}} · {{model.ts|relative}}</div>
+        <span class="badge text-bg-light font-monospace flex-shrink-0" style="min-width: 2.25rem;">L{{model.level}}</span>
+        <div class="flex-grow-1" style="min-width: 0;">
+            <div class="fw-semibold" style="word-break: break-word; overflow-wrap: anywhere;">{{model.message}}</div>
+            <div class="small text-muted text-truncate">{{model.actor}} · {{model.ts|relative}}</div>
         </div>
     </div>
 `;
 
 const TOKEN_TEMPLATE = `
     <div class="d-flex align-items-center gap-3 p-3 border-bottom">
-        <code class="fs-6">{{model.label}}</code>
-        <div class="small text-muted flex-grow-1">{{model.when}}</div>
+        <code class="fs-6 flex-shrink-0">{{model.label}}</code>
+        <div class="small text-muted flex-grow-1 text-truncate" style="min-width: 0;">{{model.when}}</div>
     </div>
 `;
 

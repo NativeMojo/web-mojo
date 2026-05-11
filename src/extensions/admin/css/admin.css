@@ -3762,3 +3762,267 @@
     margin-bottom: 1.5rem;
 }
 .group-hierarchy-tree-rows { line-height: 1.7; }
+
+
+/* ========================================================================
+   Incident-domain list items (.ili)
+   ========================================================================
+   Reusable ListView card chassis used by EventListItem / TicketListItem /
+   IncidentListItem (in src/extensions/admin/incidents/). All three render
+   into the same `.ili-card` shell so the visual language stays consistent
+   across embedded sub-lists in IncidentView (Events / Tickets / Related)
+   and any future surface that lists these models. Cards layer on top of
+   ListView's `rowStripe` (severity edge) and `clickAction` (whole-card
+   click-to-view); this section owns only the inside-the-row design
+   language — chip pills, priority dots, meta row, id slot.
+*/
+/* The list-view-item is a flex child of .list-items (column flex). Without
+   min-width: 0 the child won't shrink below its intrinsic content width —
+   long titles, status pills, and meta lines escape narrow panels (DetailView
+   sections, modal bodies). Constrain at the item level. */
+.event-list-item,
+.ticket-list-item,
+.incident-list-item {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.ili-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+    transition: background 0.1s;
+    min-width: 0;
+    max-width: 100%;
+}
+.list-view-item:last-child .ili-card { border-bottom: none; }
+.list-view-item.clickable .ili-card { cursor: pointer; }
+.list-view-item.clickable:hover .ili-card { background: var(--bs-tertiary-bg); }
+
+.ili-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    max-width: 100%;
+}
+.ili-title {
+    flex: 1 1 0;
+    min-width: 0;
+    font-weight: 500;
+    color: var(--bs-body-color);
+    /* Wrap long titles instead of truncating — matches the DetailView
+       header pattern (`word-break: break-word`). Long error strings like
+       stack-trace lines stay readable across two/three lines. */
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+.ili-eyebrow {
+    flex: 0 0 auto;
+    font-size: 0.78rem;
+    color: var(--bs-secondary-color);
+    white-space: nowrap;
+}
+
+.ili-meta {
+    color: var(--bs-secondary-color);
+    font-size: 0.78rem;
+}
+.ili-meta > * { white-space: nowrap; }
+/* Free-text slot in the meta row (category line, hostname). Truncates
+   with ellipsis so the right-aligned #id stays put. Single-line in the
+   meta row keeps the card height predictable. */
+.ili-meta-text {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ili-meta-dim { color: var(--bs-tertiary-color); }
+
+.ili-id {
+    margin-left: auto;
+    font-family: var(--bs-font-monospace);
+    color: var(--bs-tertiary-color);
+}
+
+/* Status / category chip — toned background + matching text colour.
+   `flex-shrink: 0` keeps the pill from being squeezed when its sibling
+   title is long. */
+.ili-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: lowercase;
+    letter-spacing: 0.01em;
+    flex-shrink: 0;
+}
+.ili-chip-info     { background: rgba(var(--bs-info-rgb), 0.10);    color: var(--bs-info); }
+.ili-chip-success  { background: rgba(var(--bs-success-rgb), 0.10); color: var(--bs-success); }
+.ili-chip-warning  { background: rgba(var(--bs-warning-rgb), 0.12); color: var(--bs-warning); }
+.ili-chip-danger   { background: rgba(var(--bs-danger-rgb), 0.10);  color: var(--bs-danger); }
+.ili-chip-muted    { background: var(--bs-secondary-bg);            color: var(--bs-secondary-color); }
+.ili-chip-cat      { background: var(--bs-secondary-bg);            color: var(--bs-secondary-color); }
+
+/* Priority chip — boxy, monospace number */
+.ili-pri {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    font-family: var(--bs-font-monospace);
+}
+.ili-pri-hi { background: rgba(var(--bs-danger-rgb), 0.10);  color: var(--bs-danger); }
+.ili-pri-md { background: rgba(var(--bs-warning-rgb), 0.12); color: var(--bs-warning); }
+.ili-pri-lo { color: var(--bs-secondary-color); }
+
+/* Category dot — 6px circle preceding the category label in the meta row */
+.ili-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+.ili-dot-primary { background: var(--bs-primary); }
+.ili-dot-success { background: var(--bs-success); }
+.ili-dot-warning { background: var(--bs-warning); }
+.ili-dot-danger  { background: var(--bs-danger); }
+.ili-dot-muted   { background: var(--bs-secondary-color); }
+
+
+/* ═══════════════════════════════════════════════════════════
+   TicketView — Lite Modal
+   Compact, clickable-field header. Clicking pills / fields
+   triggers inline edits; description is read-only preview.
+   ═══════════════════════════════════════════════════════════ */
+
+.ticket-view .tv-body { padding: 14px 8px 4px; }
+
+.ticket-view .tv-header {
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+}
+.ticket-view .tv-title-row { display: flex; align-items: flex-start; gap: 6px; }
+.ticket-view .tv-title-block { flex: 1; min-width: 0; }
+.ticket-view .tv-id-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.ticket-view .tv-id { font-family: var(--bs-font-monospace); font-size: 0.72rem; color: var(--bs-secondary-color); }
+.ticket-view .tv-time { font-size: 0.7rem; color: var(--bs-secondary-color); display: inline-flex; align-items: center; gap: 3px; }
+.ticket-view .tv-time i { font-size: 0.64rem; }
+
+.ticket-view .tv-pill {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 1px 8px; border-radius: 10px;
+    font-size: 0.68rem; font-weight: 500;
+    cursor: pointer; transition: filter 0.12s;
+}
+.ticket-view .tv-pill:hover { filter: brightness(0.92); }
+.ticket-view .tv-pill i { font-size: 0.52rem; }
+.ticket-view .tv-pill-new      { background: rgba(var(--bs-info-rgb), 0.1);     color: var(--bs-info); }
+.ticket-view .tv-pill-open     { background: rgba(var(--bs-success-rgb), 0.1);  color: var(--bs-success); }
+.ticket-view .tv-pill-prog     { background: rgba(var(--bs-warning-rgb), 0.1);  color: var(--bs-warning); }
+.ticket-view .tv-pill-resolved { background: rgba(var(--bs-success-rgb), 0.1);  color: var(--bs-success); }
+.ticket-view .tv-pill-closed   { background: var(--bs-secondary-bg);            color: var(--bs-secondary-color); }
+
+.ticket-view .tv-title { font-size: 1rem; font-weight: 600; color: var(--bs-emphasis-color); line-height: 1.35; margin-bottom: 6px; }
+
+.ticket-view .tv-fields { display: inline-flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.ticket-view .tv-field {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 0.74rem; color: var(--bs-secondary-color);
+    padding: 2px 7px; border-radius: 5px;
+    cursor: pointer; transition: all 0.12s;
+    border: 1px solid transparent;
+}
+.ticket-view .tv-field:hover { background: var(--bs-tertiary-bg); border-color: var(--bs-border-color); color: var(--bs-body-color); }
+.ticket-view .tv-field i.tv-field-icon { font-size: 0.7rem; }
+.ticket-view .tv-field .caret { font-size: 0.55rem; opacity: 0; transition: opacity 0.12s; margin-left: -1px; }
+.ticket-view .tv-field:hover .caret { opacity: 0.6; }
+.ticket-view .tv-sep { color: var(--bs-secondary-color); font-size: 0.6rem; margin: 0 1px; user-select: none; }
+
+.ticket-view .tv-btns { display: flex; gap: 2px; align-items: center; flex-shrink: 0; }
+.ticket-view .tv-btn {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; background: none;
+    color: var(--bs-secondary-color);
+    border-radius: 6px; cursor: pointer;
+    font-size: 0.9rem; transition: all 0.12s;
+}
+.ticket-view .tv-btn:hover { background: var(--bs-tertiary-bg); color: var(--bs-body-color); }
+
+/* Linked incident — compact one-liner replaces the old yellow-bordered card */
+.ticket-view .tv-linked {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px;
+    margin-bottom: 12px;
+    background: var(--bs-tertiary-bg);
+    border-radius: 6px;
+    font-size: 0.75rem;
+    color: var(--bs-secondary-color);
+    cursor: pointer;
+    transition: background 0.12s;
+}
+.ticket-view .tv-linked:hover { background: var(--bs-secondary-bg); }
+.ticket-view .tv-linked .tv-linked-icon { color: var(--bs-warning); font-size: 0.78rem; flex-shrink: 0; }
+.ticket-view .tv-linked .ltitle { color: var(--bs-body-color); font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ticket-view .tv-linked .lpill { font-size: 0.62rem; padding: 0 5px; border-radius: 3px; background: rgba(var(--bs-warning-rgb), 0.1); color: var(--bs-warning); font-weight: 500; flex-shrink: 0; }
+.ticket-view .tv-linked .ltrail { color: var(--bs-secondary-color); font-size: 0.7rem; flex-shrink: 0; }
+
+/* Description — read-only preview, headings scaled to body */
+.ticket-view .tv-desc { position: relative; margin-bottom: 12px; }
+.ticket-view .tv-desc-edit {
+    position: absolute; top: -2px; right: 0;
+    font-size: 0.72rem; color: var(--bs-secondary-color);
+    background: none; border: none; padding: 2px 6px;
+    border-radius: 4px; cursor: pointer;
+    opacity: 0; transition: opacity 0.12s, background 0.12s;
+}
+.ticket-view .tv-desc:hover .tv-desc-edit { opacity: 0.7; }
+.ticket-view .tv-desc-edit:hover { opacity: 1; background: var(--bs-tertiary-bg); color: var(--bs-body-color); }
+.ticket-view .tv-desc-empty { font-size: 0.78rem; color: var(--bs-secondary-color); font-style: italic; }
+.ticket-view .tv-desc-empty.tv-desc-add { cursor: pointer; font-style: normal; }
+.ticket-view .tv-desc-empty.tv-desc-add:hover { color: var(--bs-primary); }
+
+.ticket-view .tv-desc-body { font-size: 0.85rem; line-height: 1.6; color: var(--bs-body-color); }
+.ticket-view .tv-desc-body p { margin-bottom: 8px; }
+.ticket-view .tv-desc-body p:last-child { margin-bottom: 0; }
+.ticket-view .tv-desc-body h1,
+.ticket-view .tv-desc-body h2,
+.ticket-view .tv-desc-body h3,
+.ticket-view .tv-desc-body h4,
+.ticket-view .tv-desc-body h5,
+.ticket-view .tv-desc-body h6 {
+    font-size: 0.9rem; font-weight: 600; line-height: 1.35;
+    margin: 14px 0 4px; color: var(--bs-emphasis-color);
+}
+.ticket-view .tv-desc-body h1 { font-size: 0.95rem; }
+.ticket-view .tv-desc-body > h1:first-child,
+.ticket-view .tv-desc-body > h2:first-child,
+.ticket-view .tv-desc-body > h3:first-child,
+.ticket-view .tv-desc-body > h4:first-child { margin-top: 0; }
+.ticket-view .tv-desc-body hr { margin: 12px 0; opacity: 0.5; }
+.ticket-view .tv-desc-body pre { background: var(--bs-tertiary-bg); border-radius: 6px; padding: 10px 14px; font-size: 0.8rem; overflow-x: auto; }
+.ticket-view .tv-desc-body code { font-size: 0.85em; padding: 1px 5px; background: var(--bs-tertiary-bg); border-radius: 4px; }
+.ticket-view .tv-desc-body pre code { padding: 0; background: none; }
+.ticket-view .tv-desc-body ul, .ticket-view .tv-desc-body ol { padding-left: 20px; margin-bottom: 8px; }
+.ticket-view .tv-desc-body blockquote { margin: 6px 0; padding: 4px 12px; border-left: 3px solid var(--bs-border-color); color: var(--bs-secondary-color); }
+.ticket-view .tv-desc-body table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin: 8px 0; }
+.ticket-view .tv-desc-body th, .ticket-view .tv-desc-body td { padding: 5px 8px; border: 1px solid var(--bs-border-color); text-align: left; }
+.ticket-view .tv-desc-body th { background: var(--bs-tertiary-bg); font-weight: 600; }
+
+

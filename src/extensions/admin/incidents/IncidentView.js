@@ -21,6 +21,10 @@ import View from '@core/View.js';
 import DetailView from '@core/views/data/DetailView.js';
 import DataView from '@core/views/data/DataView.js';
 import TableView from '@core/views/table/TableView.js';
+import ListView from '@core/views/list/ListView.js';
+import EventListItem from './EventListItem.js';
+import TicketListItem from './TicketListItem.js';
+import IncidentListItem from './IncidentListItem.js';
 import StackTraceView from '@core/views/data/StackTraceView.js';
 import StatusPanel from '@core/views/data/StatusPanel.js';
 import Timeline from '@core/views/data/Timeline.js';
@@ -1433,22 +1437,20 @@ class IncidentTicketsSection extends View {
     }
 
     async onInit() {
-        this.ticketsTable = new TableView({
+        this.ticketsTable = new ListView({
             containerId: 'tickets-table',
             collection: this.collection,
-            hideActivePillNames: ['incident'],
-            columns: [
-                { key: 'id', label: 'ID', width: '60px', sortable: true },
-                { key: 'created', label: 'Created', formatter: 'epoch|datetime', sortable: true, width: '160px' },
-                { key: 'status', label: 'Status', formatter: 'badge', width: '100px' },
-                { key: 'category', label: 'Category', formatter: 'badge', width: '120px' },
-                { key: 'priority', label: 'Priority', width: '80px', sortable: true },
-                { key: 'title', label: 'Title' }
-            ],
-            actions: ['view'],
-            showAdd: false,
+            itemClass: TicketListItem,
+            clickAction: 'view',
+            rowStripe: (m) => {
+                const p = parseInt(m.get('priority'), 10);
+                if (!Number.isFinite(p)) return null;
+                if (p >= 8) return 'danger';
+                if (p >= 5) return 'warning';
+                return null;
+            },
             paginated: true,
-            size: 10,
+            pageSize: 10,
             emptyMessage: 'No tickets linked to this incident.'
         });
         this.addChild(this.ticketsTable);
@@ -1479,25 +1481,20 @@ class RelatedIncidentsSection extends View {
     }
 
     async onInit() {
-        this.relatedTable = new TableView({
+        this.relatedTable = new ListView({
             containerId: 'related-table',
             collection: this.collection,
-            hideActivePillNames: [
-                'id__not', 'source_ip', 'rule_set', 'group',
-                'hostname', 'category', 'status'
-            ],
-            columns: [
-                { key: 'id', label: 'ID', width: '60px', sortable: true },
-                { key: 'created', label: 'Created', formatter: 'epoch|datetime', sortable: true, width: '160px' },
-                { key: 'status', label: 'Status', formatter: 'badge', width: '100px' },
-                { key: 'category', label: 'Category', formatter: 'badge' },
-                { key: 'priority', label: 'Priority', width: '80px', sortable: true },
-                { key: 'title', label: 'Title', formatter: "truncate(60)|default('—')" }
-            ],
-            actions: ['view'],
-            showAdd: false,
+            itemClass: IncidentListItem,
+            clickAction: 'view',
+            rowStripe: (m) => {
+                const p = parseInt(m.get('priority'), 10);
+                if (!Number.isFinite(p)) return null;
+                if (p >= 8) return 'danger';
+                if (p >= 5) return 'warning';
+                return null;
+            },
             paginated: true,
-            size: 10,
+            pageSize: 10,
             emptyMessage: 'No related incidents found.'
         });
         this.addChild(this.relatedTable);
@@ -1641,27 +1638,19 @@ class IncidentView extends DetailView {
         // ── Section views ─────────────────────────────────
         const overviewSection = new IncidentOverviewSection({ model });
 
-        const eventsSection = new TableView({
+        const eventsSection = new ListView({
             collection: eventsCollection,
-            hideActivePillNames: ['incident'],
-            columns: [
-                { key: 'id', label: 'ID', width: '50px', sortable: true },
-                {
-                    key: 'created', label: 'Date / Category', sortable: true, width: '160px',
-                    template: `<div>{{{model.created|epoch|datetime}}}</div><div class="text-secondary small">{{{model.category|badge}}}</div>`
-                },
-                {
-                    key: 'source_ip', label: 'Source', sortable: true, width: '130px',
-                    template: `<div>{{model.hostname}}</div><div class="text-secondary small">{{model.source_ip}}</div>`,
-                    filter: { type: 'text' }
-                },
-                { key: 'title', label: 'Title', sortable: true, formatter: "truncate(80)|default('—')" },
-                { key: 'level', label: 'Level', sortable: true, width: '60px', filter: { type: 'text' } }
-            ],
-            showAdd: false,
-            actions: ['view'],
+            itemClass: EventListItem,
+            clickAction: 'view',
+            rowStripe: (m) => {
+                const lvl = Number(m.get('level'));
+                if (lvl >= 5) return 'danger';
+                if (lvl >= 4) return 'warning';
+                return null;
+            },
             paginated: true,
-            size: 10
+            pageSize: 10,
+            emptyMessage: 'No events on this incident.'
         });
 
         const sourceSection = sourceIP

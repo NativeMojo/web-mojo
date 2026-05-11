@@ -1297,11 +1297,19 @@ class ListView extends View {
 
   _onFetchStart() {
     this.loading = true;
+    // During a Show More fetch, onActionShowMore owns the render lifecycle
+    // (it renders to show "Loading…" on the button and again after the
+    // fetch resolves). Rendering here would replace the existing items
+    // with the full-list spinner AND race with the post-fetch render —
+    // canRender() drops the second one as a no-op, leaving the button
+    // stuck on "Loading…".
+    if (this.loadingMore) return;
     if (this.isMounted()) this.render();
   }
 
   _onFetchEnd() {
     this.loading = false;
+    if (this.loadingMore) return;
     if (this.isMounted()) this.render();
   }
 
