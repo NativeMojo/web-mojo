@@ -98,8 +98,7 @@ class LoginLocationMapView extends View {
                 containerId: 'map',
                 height: this.height,
                 style: this.mapStyle,
-                zoom: 3.3,
-                center: [-98.58, 39.83], // contiguous US centroid
+                ...this._defaultView(),
                 pitch: 15,
                 bearing: 0,
                 showNavigationControl: true,
@@ -127,7 +126,17 @@ class LoginLocationMapView extends View {
         this.element?.querySelectorAll('[data-action="set-mode"]').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.mode === this.viewMode);
         });
+        // Fly to the appropriate default view for the new mode
+        const { center, zoom } = this._defaultView();
+        this.mapView?.map?.flyTo({ center, zoom, duration: 600 });
         await this.refresh();
+    }
+
+    /** Default center + zoom per view mode. */
+    _defaultView() {
+        return this.viewMode === 'list'
+            ? { center: [-98.58, 39.83], zoom: 3.3 }  // contiguous US centroid
+            : { center: [10, 20],        zoom: 1.3 };  // world overview
     }
 
     // ── Data fetching ────────────────────────────────
