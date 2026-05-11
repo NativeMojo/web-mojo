@@ -5,6 +5,7 @@
 import Page from '@core/Page.js';
 import View from '@core/View.js';
 import { MetricsChart, MetricsMiniChart, MetricsMiniChartWidget, exportChartPng } from '@ext/charts/index.js';
+import LoginLocationMapView from './devices/LoginLocationMapView.js';
 
 // Embedded HeaderView for dashboard statistics
 class AdminHeaderView extends View {
@@ -277,6 +278,22 @@ export default class AdminDashboardPage extends Page {
           </div>
         </div>
 
+        <!-- Login Locations Map -->
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="card border-0 shadow-sm">
+              <div class="card-header bg-transparent border-bottom d-flex align-items-center gap-2">
+                <i class="bi bi-geo-alt"></i>
+                <span class="fw-semibold">Login Locations</span>
+                <span class="text-muted small ms-1">— last 30 days</span>
+              </div>
+              <div class="card-body p-0">
+                <div data-container="login-map"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- System Status Footer -->
         <div class="row">
           <div class="col-12">
@@ -309,6 +326,18 @@ export default class AdminDashboardPage extends Page {
       containerId: 'admin-header'
     });
     this.addChild(this.headerView);
+
+    // Login locations map — system-wide, last 30 days
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    this.loginMapView = new LoginLocationMapView({
+      containerId: 'login-map',
+      height: 360,
+      mapStyle: 'dark',
+      drStart: thirtyDaysAgo.toISOString().slice(0, 10),
+      drEnd: now.toISOString().slice(0, 10)
+    });
+    this.addChild(this.loginMapView);
 
     // Create API Metrics Chart
     this.apiMetricsChart = new MetricsChart({
@@ -345,7 +374,8 @@ export default class AdminDashboardPage extends Page {
       // Refresh all charts
       const promises = [
         this.headerView?.loadValues(),
-        this.apiMetricsChart?.refresh()
+        this.apiMetricsChart?.refresh(),
+        this.loginMapView?.refresh()
       ].filter(Boolean);
 
       await Promise.allSettled(promises);
