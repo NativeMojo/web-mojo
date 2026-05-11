@@ -18,7 +18,10 @@ import LoginLocationMapView from '../../account/devices/LoginLocationMapView.js'
 const FAMILIES = [
     { key: 'events',   label: 'Events',    category: 'incident_events_by_country', account: 'incident' },
     { key: 'incidents',label: 'Incidents', category: 'incidents_by_country',        account: 'incident' },
-    { key: 'firewall', label: 'Firewall',  category: 'firewall_blocks_by_country',  account: 'incident' },
+    // Slug format: firewall:blocks:country:US — category 'firewall' returns all per-country slugs
+    { key: 'firewall', label: 'Firewall',  category: 'firewall',                    account: 'incident' },
+    // Slug format: bouncer:blocks:country:US — real-time risk-scorer decisions
+    { key: 'bouncer',  label: 'Bouncer',   category: 'bouncer',                     account: 'incident' },
     // Logins use the account logins API directly, not the metrics system
     { key: 'logins',   label: 'Logins',    category: null,                          account: null }
 ];
