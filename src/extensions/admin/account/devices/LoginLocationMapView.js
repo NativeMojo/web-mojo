@@ -53,6 +53,7 @@ class LoginLocationMapView extends View {
         this.drStart   = options.drStart   || null;
         this.drEnd     = options.drEnd     || null;
         this.viewMode  = options.viewMode  || 'summary'; // 'summary' | 'list'
+        this.listZoom  = options.listZoom  ?? 3.3;       // zoom used in list mode
 
         // Drill-down state (summary mode only)
         this._drillCountry = null;
@@ -135,8 +136,8 @@ class LoginLocationMapView extends View {
     /** Default center + zoom per view mode. */
     _defaultView() {
         return this.viewMode === 'list'
-            ? { center: [-98.58, 39.83], zoom: 3.3 }  // contiguous US centroid
-            : { center: [10, 20],        zoom: 1.3 };  // world overview
+            ? { center: [-98.58, 39.83], zoom: this.listZoom }  // contiguous US centroid
+            : { center: [10, 20],        zoom: 1.3 };           // world overview
     }
 
     // ── Data fetching ────────────────────────────────

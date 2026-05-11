@@ -1284,7 +1284,8 @@ class UserView extends DetailView {
             userId,
             height: 300,
             mapStyle: 'dark',
-            viewMode: 'list'
+            viewMode: 'list',
+            listZoom: 2.3
         });
         const loginEventsTable = new ListView({
             collection: loginsCollection,
