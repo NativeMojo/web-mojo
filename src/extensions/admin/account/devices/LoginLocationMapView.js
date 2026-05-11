@@ -98,12 +98,9 @@ class LoginLocationMapView extends View {
         if (this.drStart) params.dr_start = this.drStart;
         if (this.drEnd) params.dr_end = this.drEnd;
 
-        let url;
+        const url = '/api/account/logins/summary';
         if (this.userId) {
-            url = '/api/account/logins/user';
-            params.user_id = this.userId;
-        } else {
-            url = '/api/account/logins/summary';
+            params.user = this.userId;
         }
 
         if (countryCode) {
