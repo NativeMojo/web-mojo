@@ -23,12 +23,18 @@ class TicketNoteAdapter {
 
     transform(note) {
         const metadata = note.get('metadata') || {};
+        const hasActionMeta = metadata.action && typeof metadata.action === 'object';
+        const hasCompatContext = metadata.type === 'context' && metadata.references;
+        const noteText = note.get('note') || '';
+        const hasLlmPrefix = !note.get('user') && noteText.startsWith('[LLM Agent]');
+        const isLlm = !note.get('user') && (hasActionMeta || hasCompatContext || hasLlmPrefix);
         const msg = {
             id: note.get('id'),
-            type: note.get('user') ? 'user_comment' : 'system_event',
+            type: note.get('user') ? 'user_comment' : (isLlm ? 'llm_response' : 'system_event'),
+            role: isLlm ? 'assistant' : undefined,
             author: {
                 id: note.get('user.id'),
-                name: note.get('user.display_name') || 'System',
+                name: note.get('user.display_name') || (isLlm ? 'AI Agent' : 'System'),
                 avatarUrl: note.get('user.avatar.url')
             },
             timestamp: note.get('created'),

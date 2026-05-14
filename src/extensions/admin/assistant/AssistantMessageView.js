@@ -533,7 +533,7 @@ class AssistantMessageView extends ChatMessageView {
         const app = this.getApp();
         const ModelClass = app?.getModelByRef(modelRef);
         if (ModelClass?.VIEW_CLASS) {
-            Modal.showModel(new ModelClass({ id: pk }));
+            Modal.showModelById(ModelClass, pk);
         }
     }
 

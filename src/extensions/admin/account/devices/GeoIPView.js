@@ -1125,7 +1125,7 @@ class GeoIPView extends DetailView {
                         { value: 2592000, label: '30 days' },
                         { value: 0,       label: 'Permanent' }
                     ],
-                    value: 86400
+                    value: 0
                 }
             ]
         });
