@@ -1,11 +1,11 @@
 # Sidebar & TopNav
 
-The `Sidebar` and `TopNav` are MOJO's built-in portal navigation components. They are configured in `PortalApp` and automatically handle route changes, active states, permission filtering, group switching, and responsive behavior.
+The `Sidebar` and `TopNav` are MOJO's built-in portal navigation components. They are configured through `PortalApp` and automatically handle route changes, active states, permission filtering, group switching, and responsive behaviour.
 
-- **Sidebar** — collapsible left-hand navigation with multi-menu support, hierarchical items, and group-based switching
-- **TopNav** — Bootstrap navbar with brand, nav links, dropdowns, user menu, and sidebar-toggle integration
+- **Sidebar** — collapsible left-hand navigation with multi-menu support, hierarchical items, parent/child submenus, group-based switching, and per-item permission guards
+- **TopNav** — Bootstrap navbar with brand, nav links, dropdowns, user menu, group selector, and sidebar-toggle integration
 
-Both components are instantiated by `PortalApp` — you rarely construct them directly. You configure them through the `PortalApp` options and interact with them via `app.sidebar` and `app.topnav`.
+Both components are instantiated by `PortalApp`. You configure them through `PortalApp` options and interact with them via `app.sidebar` and `app.topnav`.
 
 ---
 
@@ -40,7 +40,7 @@ const app = new PortalApp({
         label: 'John Doe',
         icon: 'bi-person-circle',
         items: [
-          { label: 'Profile', icon: 'bi-person',         action: 'profile' },
+          { label: 'Profile', icon: 'bi-person',          action: 'profile' },
           { label: 'Logout',  icon: 'bi-box-arrow-right', action: 'logout' }
         ]
       }
@@ -62,13 +62,15 @@ await app.start();
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `menus` | `Array` | `[]` | Array of menu config objects (see below) |
-| `menu` | `Object` | — | Shorthand for a single menu (name defaults to `"default"`) |
+| `menu` | `Object` | — | Shorthand for a single menu (`name` defaults to `"default"`) |
 | `defaultMenu` | `string` | — | Name of the menu to show when no route match or page override applies. Falls back to the first non-group menu if not set. |
 | `theme` | `string` | `'sidebar-light'` | CSS class added to the `<nav>` element |
-| `showToggle` | `boolean` | `true` | Show the collapse toggle button |
-| `autoCollapseMobile` | `boolean` | `true` | Auto-collapse on small screens |
-| `groupSelectorMode` | `'inline'\|'dialog'` | `'inline'` | How the group selector is displayed |
-| `groupHeader` | `string` | built-in | Mustache template for the group header row |
+| `showToggle` | `boolean` | `true` | Show the collapse/expand toggle button in the sidebar header |
+| `autoCollapseMobile` | `boolean` | `true` | Add `sidebar-mobile` class on screens ≤ 768 px |
+| `groupSelectorMode` | `'inline'\|'dialog'` | `'inline'` | How the group search/selector is shown: `'inline'` replaces the sidebar content; `'dialog'` opens a modal with a searchable tree |
+| `groupHeader` | `string` | built-in | Mustache template for the group header row rendered above items when a group is active. The default template shows the group name and a chevron to open the group search, and a parent-group bar when the active group has a `parent`. |
+
+---
 
 ### Menu Configuration
 
@@ -78,11 +80,11 @@ Each entry in the `menus` array accepts:
 |---|---|---|
 | `name` | `string` | **Required.** Unique menu identifier |
 | `items` | `Array` | Menu item definitions (see item types below) |
-| `header` | `string` | Raw HTML rendered above the item list |
-| `footer` | `string` | Raw HTML rendered below the item list. For group-kind menus, a "Settings" link is automatically appended when the active user has `manage_groups` or `manage_group` permission (see below). |
-| `className` | `string` | CSS classes applied to the `<nav>` when this menu is active |
-| `groupKind` | `string\|string[]` | If set, this menu only activates for groups of that kind (use `'any'` for all groups) |
-| `data` | `Object` | Extra data available to the header/footer template |
+| `header` | `string` | Raw HTML rendered above the item list. Interpolated as a Mustache template with `{ group, user, version }` in scope. |
+| `footer` | `string` | Raw HTML rendered below the item list. Same Mustache context as `header`. |
+| `className` | `string` | Full CSS class string applied to the `<nav>` element while this menu is active (e.g. `'sidebar sidebar-dark'`) |
+| `groupKind` | `string\|string[]` | If set, this menu is only activated for groups of that kind. Use `'any'` to match all group kinds not claimed by a more specific menu. |
+| `data` | `Object` | Extra key/value pairs merged into the Mustache context for the menu's `header` and `footer` templates |
 
 ```js
 sidebar: {
@@ -90,44 +92,69 @@ sidebar: {
     {
       name: 'default',
       className: 'sidebar sidebar-light',
-      header: '<div class="px-3 py-2 fs-6 fw-semibold">Navigation</div>',
-      footer: '<div class="px-3 py-2 text-muted small">v2.0.0</div>',
+      header: '<div class="px-3 py-2 fs-6 fw-semibold">{{data.appName}}</div>',
+      footer: '<div class="px-3 py-2 text-muted small">v{{version}}</div>',
+      data: { appName: 'My App' },
       items: [ /* ... */ ]
     }
   ]
 }
 ```
 
-#### Auto-generated Group Settings footer link
+#### Header / Footer Mustache Context
 
-When a menu has `groupKind` set and a group is active, the Sidebar automatically appends a "Settings" nav link to the footer for users who hold the `manage_groups` or `manage_group` permission. Clicking it opens a `GroupView` dialog for the active group — no additional configuration is required.
+The `header` and `footer` strings are processed as Mustache templates. Available variables:
 
-The injected link uses `data-action="group-settings"` and is appended after any HTML you supply in `footer`. If the user does not have the required permission the link is not rendered.
+| Variable | Value |
+|---|---|
+| `{{version}}` | `app.version` |
+| `{{group.*}}` | Active group fields (`group.name`, `group.kind`, etc.) |
+| `{{user.*}}` | Active user fields |
+| `{{data.*}}` | Anything you pass in `menu.data` |
+
+#### Auto-generated Group Settings link
+
+When a menu has `groupKind` set and the active user holds `manage_groups` or `manage_group` permission, the sidebar automatically injects a **Group Settings** item (`data-action="group-settings"`) into the items list — before the first `spacer` item if one exists, otherwise appended at the end. Clicking it opens a `GroupView` modal for the active group. No additional configuration is required.
 
 ---
 
 ### Menu Item Types
+
+All item types support the following common fields unless noted otherwise:
+
+| Property | Type | Description |
+|---|---|---|
+| `permissions` | `string\|string[]` | Hide this item unless the active user holds all listed permissions |
+| `requiresGroupKind` | `string\|string[]` | Hide this item unless the active group's `kind` matches |
 
 #### Route item — navigate to a page
 
 ```js
 {
   text:  'Dashboard',
-  route: '?page=dashboard',
+  route: '?page=dashboard',   // full query string or /path
   icon:  'bi-speedometer2',
 }
+```
+
+Alternatively use `page` as a shorthand — it is converted to `?page=<value>` automatically:
+
+```js
+{ text: 'Dashboard', page: 'dashboard', icon: 'bi-speedometer2' }
 ```
 
 | Property | Type | Description |
 |---|---|---|
 | `text` | `string` | Label displayed next to the icon |
 | `route` | `string` | URL or query string passed to the router |
-| `icon` | `string` | Bootstrap Icon class (`bi-*`) — preferred for standard icons |
-| `iconHtml` | `string` | Raw HTML rendered in place of `icon` (triple-brace, unescaped). Use for custom SVG images or non-Bootstrap icon markup. Takes precedence over `icon` when both are set. |
-| `badge` | `Object` | `{ text, class }` — optional badge shown at the right |
-| `tooltip` | `string` | Tooltip shown in collapsed state |
+| `page` | `string` | Page name shorthand — equivalent to `route: '?page=<value>'` |
+| `icon` | `string` | Bootstrap Icon class (`bi-*`) |
+| `iconHtml` | `string` | Raw HTML rendered in place of `icon` (triple-brace, unescaped). Use for custom SVGs or non-Bootstrap markup. Takes precedence over `icon` when both are set. |
+| `badge` | `Object` | `{ text, class }` — badge shown at the right of the item |
+| `tooltip` | `string` | Tooltip shown in collapsed state (also auto-derived from `text` when collapsed) |
 | `disabled` | `boolean` | Grays out and disables the item |
-| `permissions` | `string\|string[]` | Only show when the active user has these permissions |
+
+When the sidebar is in the **collapsed** state (icon-only strip), Bootstrap tooltips are automatically initialised on all nav links using the item's `text`. Tooltips are destroyed when the sidebar expands.
 
 #### Action item — triggers a handler
 
@@ -136,28 +163,33 @@ The injected link uses `data-action="group-settings"` and is appended after any 
   text:    'Open Report',
   action:  'open-report',
   icon:    'bi-file-earmark-bar-graph',
-  handler: async (action, event, el) => {
+  handler: async (action, event, el, app) => {
     app.showDialog({ body: new ReportView() });
   }
 }
 ```
 
-The `handler` function runs when the item is clicked. If no `handler` is provided the action is dispatched to `onActionDefault` on the sidebar (which re-emits it as `portal:action` on the app event bus).
+If no `handler` is supplied, the action is dispatched to `portal:action` on the app event bus (see [Action Handling](#action-handling)).
 
-#### Submenu item — collapsible children
+#### Submenu item — collapsible parent with children
+
+A parent item has a `children` array. The parent renders as a collapsible toggle; children render as an indented sub-list below it.
 
 ```js
 {
   text: 'Reports',
   icon: 'bi-graph-up',
   children: [
-    { text: 'Sales',  route: '?page=sales-report',  icon: 'bi-bar-chart' },
-    { text: 'People', route: '?page=people-report', icon: 'bi-people' },
+    { text: 'Sales',    route: '?page=sales-report',    icon: 'bi-bar-chart' },
+    { text: 'People',   route: '?page=people-report',   icon: 'bi-people'    },
+    { text: 'Export',   action: 'export-all',           icon: 'bi-download'  },
   ]
 }
 ```
 
-Children support the same properties as top-level items (including nested `action`, `badge`, `permissions`). Submenu nesting beyond **two levels** is not recommended.
+- Children support `route`, `page`, `action`, `icon`, `iconHtml`, `badge`, `permissions`, and `requiresGroupKind` — the same properties as top-level items.
+- When any child is active, the parent is also marked active and the collapse is held open.
+- Nesting beyond **two levels** is not supported.
 
 #### Divider
 
@@ -173,30 +205,34 @@ Renders a horizontal `<hr>` rule between items.
 { spacer: true }
 ```
 
-Inserts a blank gap (useful for pushing items to the bottom).
+Inserts a flex gap (useful for pushing items to the bottom of the sidebar).
 
-#### Label
+#### Label (section heading)
 
 ```js
-{ label: 'Settings', type: 'label' }
+{ text: 'Configuration', kind: 'label' }
 ```
 
-Renders a non-interactive category heading.
+Renders a non-interactive section heading. Use `text` for the label content and `kind: 'label'` to flag the item type.
+
+> **Note:** The `kind` property (not `type`) is what the sidebar reads. The rendered partial uses `{{text}}`.
 
 ---
 
 ### Multiple Menus
 
-Register multiple menus and switch between them programmatically. This is the recommended pattern for apps that have distinct modes (e.g. a default view and an admin view, or per-group menus).
+Register multiple menus and switch between them programmatically or automatically via route matching.
 
 ```js
 sidebar: {
+  defaultMenu: 'main',
   menus: [
     {
-      name: 'default',
+      name: 'main',
       className: 'sidebar sidebar-light',
       items: [
-        { text: 'Home', route: '?page=home', icon: 'bi-house' },
+        { text: 'Home',     route: '?page=home',     icon: 'bi-house'   },
+        { text: 'Projects', route: '?page=projects', icon: 'bi-kanban'  },
       ]
     },
     {
@@ -204,10 +240,10 @@ sidebar: {
       className: 'sidebar sidebar-dark',
       header: "<div class='text-center py-2'><i class='bi bi-shield-lock'></i> Admin</div>",
       items: [
-        { text: 'Users',  route: '?page=admin-users',  icon: 'bi-people' },
-        { text: 'System', route: '?page=admin-system', icon: 'bi-cpu' },
+        { text: 'Users',      route: '?page=admin-users',   icon: 'bi-people'    },
+        { text: 'System',     route: '?page=admin-system',  icon: 'bi-cpu'       },
         { divider: true },
-        { text: 'Exit Admin', action: 'exit-admin', icon: 'bi-door-open' }
+        { text: 'Exit Admin', action: 'exit-admin',          icon: 'bi-door-open' }
       ]
     }
   ]
@@ -217,14 +253,11 @@ sidebar: {
 Switch menus at runtime:
 
 ```js
-// Switch to the admin menu
 await app.sidebar.setActiveMenu('admin');
-
-// Switch back
-await app.sidebar.setActiveMenu('default');
+await app.sidebar.setActiveMenu('main');
 ```
 
-The sidebar auto-switches menus on route changes: if the new route is found in a different menu, that menu becomes active. See [Homeless Pages](#homeless-pages) for handling routes that aren't in any menu.
+The sidebar auto-switches on route changes: if the incoming route is found in a different menu, that menu becomes active. Pages that aren't in any menu use the fallback chain — see [Homeless Pages](#homeless-pages).
 
 ---
 
@@ -235,23 +268,50 @@ Set `groupKind` on a menu to make it activate automatically when the user select
 ```js
 {
   name: 'org-menu',
-  groupKind: 'organization',   // also accepts an array: ['org', 'company']
-  header: // see groupHeader option — auto-set if groupKind is provided
+  groupKind: 'organization',    // also accepts an array: ['org', 'company']
+  // header is auto-set to the built-in group header template when groupKind is present
   items: [
-    { text: 'Overview',  route: '?page=org-overview', icon: 'bi-building' },
-    { text: 'Members',   route: '?page=org-members',  icon: 'bi-people' },
-    { divider: true },
-    { text: 'Leave Org', action: 'leave-group',       icon: 'bi-box-arrow-left' }
+    { text: 'Overview', route: '?page=org-overview', icon: 'bi-building'       },
+    { text: 'Members',  route: '?page=org-members',  icon: 'bi-people'         },
+    { spacer: true },
+    { text: 'Leave Org', action: 'leave-group',      icon: 'bi-box-arrow-left' }
   ]
 },
 {
   name: 'any-group-menu',
-  groupKind: 'any',   // shows for any group type not matched above
-  items: [/* ... */]
+  groupKind: 'any',   // catch-all — activates for any group not matched above
+  items: [ /* ... */ ]
 }
 ```
 
-`groupKind: 'any'` is a catch-all — it activates for any group that doesn't match a more specific `groupKind`. The Sidebar evaluates menus in registration order.
+`groupKind: 'any'` is a catch-all evaluated after all specific-kind menus. The sidebar evaluates menus in registration order.
+
+#### Built-in group header
+
+When `groupKind` is set and no custom `header` is provided, the sidebar renders its built-in group header. It includes:
+
+- A **parent group bar** (when the active group has a `parent`) — click it to navigate up to the parent group after a confirmation prompt.
+- A **selected-group row** showing the group name and kind — click it to open the group search/selector.
+
+You can override the entire header with `groupHeader` at the `Sidebar` constructor level, or per-menu with the `header` property.
+
+---
+
+### Group Selector Mode
+
+The group selector is triggered when clicking the group header. The display mode is controlled by `groupSelectorMode`:
+
+| Value | Behaviour |
+|---|---|
+| `'inline'` (default) | Replaces the sidebar content with an inline search list. An **Exit** button returns to the menu. |
+| `'dialog'` | Opens a modal with a searchable, tree-structured group list. Useful when the sidebar should remain visible during selection. |
+
+```js
+sidebar: {
+  groupSelectorMode: 'dialog',
+  menus: [ /* ... */ ]
+}
+```
 
 ---
 
@@ -265,25 +325,25 @@ app.sidebar.addMenu('my-menu', {
   items: [{ text: 'Item', route: '?page=item', icon: 'bi-circle' }]
 });
 
-// Switch the active menu
+// Switch the active menu (async — await when order matters)
 await app.sidebar.setActiveMenu('admin');
 
 // Check existence
 if (app.sidebar.hasMenu('admin')) { /* ... */ }
 
-// Get menu config (returns object, live reference — mutations take effect on next render)
+// Get a menu's config object (live reference — mutations take effect on next render)
 const config = app.sidebar.getMenuConfig('default');
 
-// Get the currently active menu config
+// Get the currently active menu's config
 const current = app.sidebar.getCurrentMenuConfig();
 
-// Update a menu (merges updates and re-renders if active)
+// Merge updates into a menu and re-render if it is currently active
 app.sidebar.updateMenu('default', {
   header: '<div class="p-3 fw-bold">Updated Header</div>',
-  items:  [ /* new items */ ]
+  items:  [ /* new item list */ ]
 });
 
-// Remove a menu (falls back to first remaining menu)
+// Remove a menu (falls back to the first remaining menu)
 app.sidebar.removeMenu('old-menu');
 
 // Remove all menus
@@ -291,31 +351,43 @@ app.sidebar.clearMenus();
 
 // Get an array of all registered menu names
 const names = app.sidebar.getMenuNames(); // ['default', 'admin', ...]
+
+// Add a single item to an existing menu's item list and re-render
+app.sidebar.addSimpleMenuItem('default', 'New Page', '?page=new', 'bi-plus-circle');
+
+// Replace a menu entirely and switch to it (convenience wrapper)
+app.sidebar.setSimpleMenu('quick', '<div>Quick</div>', [
+  { text: 'A', route: '?page=a', icon: 'bi-circle' }
+]);
 ```
 
-#### Item Data
+#### Menu Data (header/footer template variables)
 
 ```js
-// Update the `data` bag available to header/footer templates of a menu
-app.sidebar.setMenuData('default', { version: '2.1.0', username: 'Alice' });
+// Merge extra data into the active menu's Mustache context for header/footer templates
+app.sidebar.setMenuData({ version: '2.1.0', username: 'Alice' });
 
 // Read it back
-const data = app.sidebar.getMenuData('default');
+const data = app.sidebar.getMenuData();
 ```
+
+> **Important:** `setMenuData` and `getMenuData` operate on the **currently active menu** only. To update a specific menu's data, use `app.sidebar.updateMenu(name, { data: { ... } })`.
 
 #### State & Collapse
 
 ```js
-app.sidebar.collapse();          // Collapse to icon-only strip
-app.sidebar.expand();            // Expand to full width
+app.sidebar.collapse();          // Collapse to icon-only strip (adds 'collapse-sidebar' class to portal)
+app.sidebar.expand();            // Restore full width
 app.sidebar.toggleSidebar();     // Toggle between collapsed / expanded
 
-// Set state explicitly: 'normal' | 'collapsed' | 'hidden'
-app.sidebar.setSidebarState('collapsed');
+// Set state explicitly
+app.sidebar.setSidebarState('normal');    // full width
+app.sidebar.setSidebarState('collapsed'); // icon-only strip with tooltips
+app.sidebar.setSidebarState('hidden');    // completely hidden (no space taken)
 
 // Read state
-const state      = app.sidebar.getSidebarState();   // 'normal' | 'collapsed' | 'hidden'
-const collapsed  = app.sidebar.isCollapsedState();  // boolean
+const state     = app.sidebar.getSidebarState();  // 'normal' | 'collapsed' | 'hidden'
+const collapsed = app.sidebar.isCollapsedState(); // boolean
 
 // Enable / disable the collapse toggle button
 app.sidebar.setToggleEnabled(false);
@@ -327,8 +399,8 @@ app.sidebar.pulseToggle();
 #### Visibility
 
 ```js
-app.sidebar.show();   // Remove hide-sidebar class
-app.sidebar.hide();   // Add hide-sidebar class (no space taken)
+app.sidebar.show();   // setSidebarState('normal')
+app.sidebar.hide();   // setSidebarState('hidden')
 ```
 
 #### Active Item
@@ -337,15 +409,25 @@ app.sidebar.hide();   // Add hide-sidebar class (no space taken)
 // Programmatically set active item by route
 app.sidebar.setActiveItemByRoute('?page=dashboard');
 
-// Refresh active item for the current route
-await app.sidebar.updateActiveItem();
+// Refresh active item for the current route (also re-renders)
+await app.sidebar.updateActiveItem(route);
 ```
 
-#### Group Search
+#### Group Search / Selector
 
 ```js
-app.sidebar.showGroupSearch();  // Show inline group search / open dialog
-app.sidebar.hideGroupSearch();  // Hide it
+app.sidebar.showGroupSearch();  // Show inline search or open dialog (per groupSelectorMode)
+app.sidebar.hideGroupSearch();  // Dismiss inline search or close dialog
+```
+
+#### Custom View
+
+Replace the entire sidebar content with any view:
+
+```js
+const myView = new MyCustomSidebarView();
+app.sidebar.setCustomView(myView);  // renders myView inside the sidebar
+app.sidebar.clearCustomView();       // restores the normal menu
 ```
 
 #### Theming
@@ -375,26 +457,19 @@ app.sidebar.on('menu-changed', ({ menuName }) => {
 
 ### Sidebar Themes
 
-The `className` on a menu config controls the full class string on the `<nav>` element when that menu is active. Built-in options:
+The `className` on a menu config controls the full class string on the `<nav>` element when that menu is active.
 
 | Class | Appearance |
 |---|---|
-| `sidebar sidebar-light` | White background, dark text (default) |
+| `sidebar sidebar-light` | White/light-surface background, dark text (default) |
 | `sidebar sidebar-dark` | Dark background, light text |
 
-`sidebar-light` and `sidebar-dark` are *theme-agnostic* — they work independently of `data-bs-theme` so you can mix any sidebar treatment with either light or dark global theme. Under `data-bs-theme="dark"`, `sidebar-light` automatically renders against a softer dark surface (a step lighter than the page background) so the visual hierarchy is preserved.
+`sidebar-light` and `sidebar-dark` are theme-agnostic — they work independently of `data-bs-theme`. Under `data-bs-theme="dark"`, `sidebar-light` renders against a slightly lighter surface than the page background to preserve visual hierarchy.
 
-```js
-// Programmatic switch (applies to current menu)
-app.sidebar.setSidebarTheme('sidebar-dark');
-```
-
-Custom themes are easy — just add your own CSS:
+Custom themes — add your own CSS:
 
 ```css
-.sidebar-brand {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
+.sidebar-brand { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
 .sidebar-brand .nav-link { color: rgba(255,255,255,0.85); }
 .sidebar-brand .nav-link.active,
 .sidebar-brand .nav-link:hover { color: #fff; background: rgba(255,255,255,0.12); }
@@ -411,34 +486,37 @@ Custom themes are easy — just add your own CSS:
 | `brand` | `string` | `'MOJO App'` | Brand text |
 | `brandIcon` | `string` | `'bi bi-play-circle'` | Bootstrap Icon class for brand |
 | `brandRoute` | `string` | `'/'` | Route navigated to when brand is clicked |
-| `theme` | `string` | `'light'` | Named theme: `'light'`, `'dark'`, `'clean'`, `'gradient'`, or `'auto'` (follow `<html data-bs-theme>` live — see [Auto theme](#auto-theme)) |
-| `shadow` | `string` | — | Optional shadow class suffix (e.g. `'sm'` → `topnav-shadow-sm`, or `'auto'` to follow `<html data-bs-theme>` live) |
-| `displayMode` | `string` | `'both'` | What to show left of the nav — see [Display Modes](#display-modes) |
-| `showSidebarToggle` | `boolean` | `false` | Show sidebar collapse toggle in the navbar |
-| `sidebarToggleAction` | `string` | `'toggle-sidebar'` | Action name for the toggle button |
+| `theme` | `string` | `'light'` | Named theme: `'light'`, `'dark'`, `'clean'`, `'gradient'`, or `'auto'` |
+| `shadow` | `string` | — | Optional shadow suffix: `'sm'`, `'light'`, `'dark'`, or `'auto'` |
+| `displayMode` | `string` | `'both'` | What to show in the left section (see Display Modes) |
+| `showSidebarToggle` | `boolean` | `false` | Show a sidebar collapse toggle button in the navbar |
+| `sidebarToggleAction` | `string` | `'toggle-sidebar'` | `data-action` value for the toggle button |
 | `navItems` | `Array` | `[]` | Left-side nav links |
-| `rightItems` | `Array` | `[]` | Right-side items (buttons, dropdowns, user menu) |
-| `showPageIcon` | `boolean` | `true` | Show page icon next to page name in `page`/`both` mode |
-| `showPageDescription` | `boolean` | `false` | Show page description below page name |
-| `groupIcon` | `string` | `'bi-building'` | Icon shown before group name in group display modes |
+| `rightItems` | `Array` | `[]` | Right-side items (buttons, dropdowns, user menu, group selector) |
+| `showPageIcon` | `boolean` | `true` | Show the page icon next to the page name in `page`/`both` mode |
+| `showPageDescription` | `boolean` | `false` | Show the page `description` below the page name |
+| `groupIcon` | `string` | `'bi-building'` | Icon shown before the group name in `group` display modes |
+
+---
 
 ### Display Modes
 
-The `displayMode` option controls what appears to the left of the navbar links:
+Controls what appears in the left section of the navbar:
 
 | Mode | Left content |
 |---|---|
-| `'brand'` | Logo + app name (link to `brandRoute`) |
+| `'brand'` | Logo + app name (links to `brandRoute`) |
 | `'page'` | Current page icon + name |
-| `'both'` | Current page icon + name (same as `'page'` for now) |
-| `'menu'` | Nav links only, no brand/page block |
-| `'group'` | Active group name (clickable → opens group selector) |
-| `'group_page_titles'` | Group name + current page name side by side |
+| `'both'` | Current page icon + name (same as `'page'`) |
+| `'menu'` | Left-side nav links only — no brand or page block |
+| `'group'` | Active group name (click → opens group selector) |
+| `'group_page_titles'` | Active group name **+** current page name side by side |
 
 ```js
 topbar: {
   displayMode: 'group_page_titles',
-  groupIcon: 'bi-building'
+  groupIcon:   'bi-people',
+  // ...
 }
 ```
 
@@ -446,230 +524,203 @@ topbar: {
 
 ### TopNav Themes
 
-| Theme | Classes applied |
+| Theme | CSS classes applied |
 |---|---|
 | `'light'` | `navbar navbar-expand-lg navbar-light topnav-light` |
 | `'dark'` | `navbar navbar-expand-lg navbar-dark topnav-dark` |
 | `'clean'` | `navbar navbar-expand-lg navbar-light topnav-clean` |
 | `'gradient'` | `navbar navbar-expand-lg navbar-dark topnav-gradient` |
 
-```js
-topbar: { theme: 'dark' }
-```
+#### Auto Theme
 
-Custom Bootstrap theme:
+Pass `theme: 'auto'` (and optionally `shadow: 'auto'`) to follow `<html data-bs-theme>` live. A `MutationObserver` swaps the theme class tokens whenever the global theme changes — no re-render needed.
 
 ```js
-topbar: { theme: 'dark' }  // then in CSS:
+topbar: { theme: 'auto', shadow: 'auto' }
 ```
-```css
-.topnav-dark { background: #1a1a2e; }
-```
-
-#### Auto theme
-
-Pass `theme: 'auto'` (and optionally `shadow: 'auto'`) to follow the framework's global theme live:
-
-```js
-topbar: {
-    theme: 'auto',     // 'light' or 'dark' from <html data-bs-theme>
-    shadow: 'auto'     // matches the resolved theme (light or dark shadow)
-}
-```
-
-`'auto'` resolves to `'light'` or `'dark'` at construction time (read from `<html data-bs-theme>`, defaulting to `'light'` if unset). A `MutationObserver` then watches `<html>` for `data-bs-theme` changes and surgically swaps the navbar's theme class tokens (`navbar-light`/`navbar-dark`, `topnav-light`/`topnav-dark`, `topnav-shadow-light`/`topnav-shadow-dark`) on the fly. Consumer-supplied classes on the navbar element are preserved — only the framework-managed tokens are touched.
-
-The observer is automatically disconnected on `destroy()`.
-
-`'clean'` and `'gradient'` are static themes — `'auto'` only resolves to `'light'` or `'dark'`. If you want a clean-style topbar that follows dark mode, build it with custom CSS rather than `'auto'`.
 
 ---
 
 ### Right Items
 
-Right items appear at the far right of the navbar. Each item's rendered type is determined automatically by its properties.
-
 #### Button
+
+A right item is rendered as a `<button>` when `buttonClass` is supplied.
 
 ```js
 {
-  id: 'notifications',
-  icon: 'bi-bell',
-  action: 'show-notifications',
+  id:          'notifications',
+  icon:        'bi-bell',
+  action:      'show-notifications',
   buttonClass: 'btn btn-link text-white position-relative',
-  tooltip: 'Notifications',
-  badge: '5'        // rendered as a small badge on the icon
+  tooltip:     'Notifications',
+  badge:       '5'
 }
 ```
 
-A right item becomes a **button** when `buttonClass` is provided. Use `icon` for a Bootstrap Icon class (`bi-*`) or `iconHtml` for a raw HTML string (e.g. an `<img>` tag) — `iconHtml` takes precedence when both are set.
+| Property | Description |
+|---|---|
+| `id` | Unique identifier — used to find/replace this item via `findMenuItem`/`replaceMenuItem` |
+| `icon` | Bootstrap Icon class |
+| `iconHtml` | Raw HTML icon (triple-brace rendered — use for custom images or non-Bootstrap icons) |
+| `action` | `data-action` value dispatched on click |
+| `buttonClass` | CSS classes for the `<button>` element |
+| `tooltip` | Bootstrap tooltip text |
+| `badge` | Badge text (displayed inside the button) |
+| `handler` | Inline function `(action, event, el) => {}` — bypasses `portal:action` |
+| `permissions` | `string\|string[]` — hide unless the active user holds these permissions |
 
-#### Dropdown menu
+#### Dropdown Menu
+
+A right item is rendered as a dropdown when it has an `items` array.
 
 ```js
 {
-  id: 'tools',
+  id:    'tools',
   label: 'Tools',
-  icon: 'bi-tools',
+  icon:  'bi-tools',
   items: [
-    { label: 'Import', action: 'import-data', icon: 'bi-upload' },
+    { label: 'Import', action: 'import-data', icon: 'bi-upload'   },
     { divider: true },
-    { label: 'Export', action: 'export-data', icon: 'bi-download' }
+    { header: 'Exports' },
+    { label: 'Export', action: 'export-data', icon: 'bi-download' },
+    { text:  'Last export: <strong>today</strong>' }
   ]
 }
 ```
 
-A right item becomes a **dropdown** when it has `items`.
-
-Dropdown `items` support four distinct entry types:
+Dropdown `items` support four entry shapes:
 
 | Shape | Renders as |
 |---|---|
-| `{ label, action?, icon? }` | Clickable `dropdown-item` |
+| `{ label, action?, route?, icon? }` | Clickable `dropdown-item`. Use `action` to emit; use `route` to navigate. |
 | `{ divider: true }` | `<hr class="dropdown-divider">` |
-| `{ header: 'Section name' }` | Bootstrap `dropdown-header` (non-clickable heading) |
-| `{ text: 'Any <strong>HTML</strong>' }` | `dropdown-item-text` — non-clickable, HTML rendered |
+| `{ header: 'Section name' }` | Bootstrap `dropdown-header` |
+| `{ text: 'Any <strong>HTML</strong>' }` | `dropdown-item-text` — non-clickable, HTML rendered unescaped |
 
-Full example with all types:
-
-```js
-{
-  id: 'tools',
-  icon: 'bi-tools',
-  label: 'Tools',
-  permissions: ['admin_compliance', 'verify_tool_access'],
-  items: [
-    { text: 'Run as <strong>Admin</strong>' },          // raw HTML note
-    { header: 'IP Tools' },                              // section heading
-    { label: 'IP Lookup',         icon: 'bi-globe',        action: 'tool-ip-lookup' },
-    { label: 'Reverse IP (PTR)',  icon: 'bi-arrow-repeat', action: 'tool-reverse-ip-lookup' },
-    { label: 'Domain IP Lookup',  icon: 'bi-hdd-network',  action: 'tool-domain-ip-lookup' },
-    { divider: true },
-    { header: 'Domain Tools' },
-    { label: 'SSL Domain Lookup', icon: 'bi-shield-lock',  action: 'tool-ssl-domain-lookup' },
-    { label: 'Domain Lookup',     icon: 'bi-globe2',       action: 'tool-domain-lookup' },
-  ]
-}
-```
-
-> **`{ text }` renders raw HTML.** Never put user-supplied content there — it is inserted with `{{{triple braces}}}` and is not escaped.
+Each item can also have:
+- `permissions` — hide unless the active user holds these permissions
+- `handler` — inline function `(action, event, el) => {}` — bypasses `portal:action`
 
 #### Link
 
+A right item is rendered as a plain `<a>` link when it has `href` but no `buttonClass`.
+
 ```js
 {
-  id: 'docs',
-  label: 'Docs',
-  icon: 'bi-book',
-  href: 'https://nativemojo.com/web-mojo/',
+  id:       'docs',
+  label:    'Docs',
+  icon:     'bi-book',
+  href:     'https://docs.example.com/',
   external: true
 }
 ```
 
-A right item becomes an `<a>` link when it has `href` but no `buttonClass`.
+#### User Menu (special dropdown)
 
-#### User menu (special dropdown)
-
-The user menu is a dropdown with `id: 'user'`. TopNav automatically updates its `label` when `setUser()` is called.
+The item with `id: 'user'` is the conventional user menu. Call `app.topnav.setUser(userModel)` to populate it with the logged-in user's name and avatar; call `setUser(null)` to revert to the login menu.
 
 ```js
 rightItems: [
   {
-    id: 'user',
-    label: 'Account',           // overwritten by setUser()
-    icon: 'bi-person-circle',
+    id:    'user',
+    label: 'Account',
+    icon:  'bi-person-circle',
     items: [
-      { label: 'Profile',  icon: 'bi-person',          action: 'profile'  },
-      { label: 'Settings', icon: 'bi-gear',             route: '?page=settings' },
+      { label: 'Profile',  icon: 'bi-person',          action: 'profile'        },
+      { label: 'Settings', icon: 'bi-gear',             route:  '?page=settings' },
       { divider: true },
-      { label: 'Logout',   icon: 'bi-box-arrow-right',  action: 'logout'   }
+      { label: 'Logout',   icon: 'bi-box-arrow-right',  action: 'logout'         }
     ]
   }
 ]
 ```
 
 ```js
-// When the user logs in
-app.topnav.setUser(userModel);   // updates the label + triggers re-render
-
-// When the user logs out — swaps back to the loginMenu (if configured)
-app.topnav.setUser(null);
+app.topnav.setUser(userModel);  // sets label + avatar from model, triggers re-render
+app.topnav.setUser(null);       // swaps back to loginMenu
 ```
 
-#### Group Selector button
+When a `userModel` is set, `display_name` is used as the label. If the model has an `avatar` (with `url` or `renditions.square_sm.url`), it is shown as a small circular image replacing the icon.
 
-Add a live group-selector widget directly in the navbar:
+#### Group Selector Button
+
+Inserts a `GroupSelectorButton` component into the navbar. Clicking it opens a searchable group picker.
 
 ```js
 rightItems: [
   {
-    id: 'group-selector',
-    type: 'group-selector',
-    // All GroupSelectorButton options are passed through:
+    id:          'group-selector',
+    type:        'group-selector',
     defaultText: 'Select Group',
     buttonClass: 'btn btn-outline-light btn-sm'
   }
 ]
 ```
 
+All options pass through directly to `GroupSelectorButton`:
+
+| Property | Description |
+|---|---|
+| `defaultText` | Button label when no group is selected |
+| `buttonClass` | CSS classes for the trigger button |
+| `buttonIcon` | Bootstrap Icon class for the trigger button |
+| `Collection` | Group collection class (defaults to `GroupList`) |
+| `collection` | Pre-instantiated collection instance |
+| `currentGroup` | Initially selected group |
+| `itemTemplate` | Mustache template for each group row in the picker |
+| `searchFields` | Fields to search on (default: `['name']`) |
+| `headerText` | Text shown above the search input |
+| `searchPlaceholder` | Placeholder for the search field |
+| `autoSetActiveGroup` | If `true` (default), calls `app.setActiveGroup()` on selection |
+| `onGroupSelected` | Callback `(group) => {}` invoked on selection |
+
 ---
 
 ### Permission-Based Items
 
-Any item (nav, right, dropdown child) can declare `permissions`. The item is hidden if the active user does not satisfy the requirement.
+Any right item or nav item accepts a `permissions` field. Items are hidden unless the active user holds all listed permissions.
 
 ```js
-{
-  label: 'Admin Panel',
-  icon: 'bi-shield-lock',
-  action: 'open-admin',
-  permissions: 'view_admin'          // single permission string
-},
-{
-  label: 'Management',
-  icon: 'bi-briefcase',
-  permissions: ['manage_users', 'manage_groups'],   // user must have ALL
-  items: [ /* ... */ ]
-}
+rightItems: [
+  { label: 'Admin Panel', icon: 'bi-shield-lock',  action: 'open-admin',    permissions: 'view_admin'                         },
+  { label: 'Management',  icon: 'bi-briefcase',    permissions: ['manage_users', 'manage_groups'], items: [ /* ... */ ] }
+]
 ```
-
-Sidebar items support the same `permissions` property.
 
 ---
 
 ### Nav Items (left side)
 
-`navItems` populate the `<ul>` on the left of the collapse. Each item needs `text` and `route`:
+`navItems` renders as `<li class="nav-item">` links inside the navbar collapse area (left of the rightItems). Use for top-level horizontal navigation links.
 
 ```js
 navItems: [
-  { text: 'Home',    route: '?page=home',    icon: 'bi-house'   },
+  { text: 'Home',    route: '?page=home',    icon: 'bi-house'    },
   { text: 'Reports', route: '?page=reports', icon: 'bi-graph-up' },
 ]
 ```
 
-Active state is automatically set based on the current route.
+The currently active item is highlighted automatically based on route matching.
 
 ---
 
 ### TopNav Methods
 
 ```js
-// Swap brand text (and optionally icon)
+// Update brand name and optionally icon
 app.topnav.setBrand('New Brand Name', 'bi-star');
 
-// Sync user menu label
-app.topnav.setUser(userModel);   // model.get('display_name') is used as label
+// Set the logged-in user (populates the 'user' dropdown item)
+app.topnav.setUser(userModel);
+app.topnav.setUser(null);          // revert to login menu
 
-// Find a nav item or right item by id
+// Find an item by id (searches navItems then rightItems)
 const item = app.topnav.findMenuItem('user');
 
-// Replace a menu item (triggers re-render)
+// Replace an item by id (works for navItems and rightItems)
 app.topnav.replaceMenuItem('user', {
-  id: 'user',
-  label: 'Alice',
-  icon: 'bi-person-circle',
-  items: [ /* ... */ ]
+  id: 'user', label: 'Alice', icon: 'bi-person-circle', items: [ /* ... */ ]
 });
 ```
 
@@ -677,112 +728,87 @@ app.topnav.replaceMenuItem('user', {
 
 ### Action Handling
 
-Actions emitted by both Sidebar and TopNav propagate to the app event bus so you can handle them from one place:
+Actions from nav items, sidebar items, and right items are dispatched through a common pipeline:
+
+1. **Inline `handler`** on the item — called directly; `portal:action` is **not** emitted.
+2. **`onAction<CamelCase>`** method on the component — e.g. `onActionLogout` on `TopNav`.
+3. **`portal:action` event** on the app event bus — the catch-all for anything not handled above.
 
 ```js
+// Listen for all unhandled actions
 app.events.on('portal:action', ({ action, event, el }) => {
   switch (action) {
-    case 'profile':
-      app.navigate('?page=profile');
-      break;
-    case 'logout':
-      app.logout();
-      break;
-    case 'show-notifications':
-      app.showDialog({ body: new NotificationsView() });
-      break;
+    case 'profile':             app.navigate('?page=profile');              break;
+    case 'logout':              app.logout();                               break;
+    case 'show-notifications':  app.showDialog({ body: new NotifView() }); break;
+    case 'exit-admin':          app.sidebar.setActiveMenu('main');          break;
   }
 });
 ```
 
-For sidebar items with inline `handler` functions the handler is called directly and `portal:action` is **not** emitted:
+Inline handlers bypass the event bus entirely — use them for self-contained, local interactions:
 
 ```js
-items: [
-  {
-    text: 'Refresh',
-    action: 'refresh',
-    icon: 'bi-arrow-clockwise',
-    handler: async (action, event, el) => {
-      await app.sidebar.updateActiveItem();
-    }
+{
+  text:    'Refresh',
+  action:  'refresh',
+  icon:    'bi-arrow-clockwise',
+  handler: async (action, event, el, app) => {
+    await app.sidebar.updateActiveItem(app.router.getCurrentPath());
   }
-]
+}
 ```
 
 ---
 
 ## Menu Selection Order
 
-When a route change fires, the Sidebar resolves the active menu using this chain:
+When a route change fires, the sidebar resolves the active menu using this priority chain:
 
-1. **`page.sidebarMenu`** — if the page declares `sidebarMenu`, that menu is used. This is the highest-priority override and works for **all** pages, not just homeless ones.
-2. **Route match** — if any registered menu contains the new route in its items, switch to it.
-3. **`defaultMenu`** — if configured, switch to the named default menu.
-4. **First non-group menu with visible items** — skips menus where every item is hidden by permissions or group requirements.
-5. **First non-group menu** — last resort, even if the user can't see any items.
+1. **`page.sidebarMenu`** — the page class declares `sidebarMenu = 'menu-name'`. Highest priority, always wins.
+2. **Route match** — the incoming route is found in a registered menu's items (including children). The sidebar switches to that menu.
+3. **`defaultMenu`** — if configured and the route is not found anywhere.
+4. **First non-group menu with visible items** — skips menus where every item is hidden by permissions or `requiresGroupKind`.
+5. **First non-group menu** — last resort.
 
-This chain also applies on initial load (e.g. first login with no route in the URL).
+---
 
 ## Homeless Pages
 
-A **homeless page** is a page whose route is not listed in any sidebar menu.
+A **homeless page** is a page whose route does not appear in any sidebar menu's items.
 
 ### Declaring a Menu on a Page
 
-Add `sidebarMenu = 'menuName'` to your `Page` class. This is the **highest-priority** override — it takes precedence over route-based matching, so it works for both homeless pages and pages whose route appears in a different menu.
-
 ```js
-import { Page } from 'web-mojo';
-
 export default class SettingsPage extends Page {
-  // Always show the 'default' sidebar on this page,
-  // even if its route appears in another menu.
-  sidebarMenu = 'default';
+  sidebarMenu = 'default';    // pin to this menu regardless of route
 
   get title() { return 'Settings'; }
   get icon()  { return 'bi-gear'; }
-
-  template = `
-    <div class="p-4">
-      <h1>Settings</h1>
-      <!-- ... -->
-    </div>
-  `;
+  template = `<div class="p-4"><h1>Settings</h1></div>`;
 }
 ```
 
-Now when the user navigates to `?page=settings`, the `default` menu stays active and no spurious menu-switch occurs.
-
-### Pinning to a Specific Menu with a Route Prefix
-
-For a whole group of homeless pages (e.g. all admin detail pages) you can keep them out of the sidebar but always show the `admin` menu:
+### Pinning a Family of Pages via Inheritance
 
 ```js
-// Base class for all admin detail pages
+// Base class declares the menu
 class AdminDetailPage extends Page {
   sidebarMenu = 'admin';
 }
 
-class UserDetailPage extends AdminDetailPage {
-  // route: ?page=user-detail&id=123
-  // Not in any sidebar menu, but admin sidebar stays visible
-}
-
-class GroupDetailPage extends AdminDetailPage {
-  // route: ?page=group-detail&id=456
-}
+// All subclasses inherit the menu pin — no extra config needed
+class UserDetailPage   extends AdminDetailPage { /* route: ?page=user-detail&id=123  */ }
+class GroupDetailPage  extends AdminDetailPage { /* route: ?page=group-detail&id=456 */ }
+class AuditDetailPage  extends AdminDetailPage { /* route: ?page=audit-detail&id=789 */ }
 ```
 
 ### When No `sidebarMenu` Is Declared
 
-If a page doesn't declare `sidebarMenu` and its route isn't in any menu, the sidebar uses the fallback chain:
-
-1. **`defaultMenu`** — if configured, that menu is used.
-2. **First non-group menu with visible items** — skips menus where the user can't see anything (all items permission-gated).
-3. **First non-group menu** — last resort.
-
-Use `defaultMenu` to make this explicit:
+The sidebar falls through:
+1. `defaultMenu` (if configured).
+2. First non-group menu with at least one visible item.
+3. First non-group menu (absolute last resort).
 
 ```js
 sidebar: {
@@ -795,153 +821,176 @@ sidebar: {
 }
 ```
 
-Without `defaultMenu`, the sidebar falls back by registration order — register your menus in the desired fallback order.
-
 ---
 
 ## Complete Example
 
 ```js
-import PortalApp from 'web-mojo/PortalApp';
-import { Page } from 'web-mojo';
+import PortalApp    from 'web-mojo/PortalApp';
+import Page         from 'web-mojo/Page';
 
-// ── Pages ──────────────────────────────────────────────────
+// ── Pages ────────────────────────────────────────────────────────────────────
+
 class DashboardPage extends Page {
-  get title() { return 'Dashboard'; }
-  get icon()  { return 'bi-speedometer2'; }
+  get title()  { return 'Dashboard'; }
+  get icon()   { return 'bi-speedometer2'; }
   template = `<div class="p-4"><h1>Dashboard</h1></div>`;
 }
 
 class UsersPage extends Page {
-  get title() { return 'Users'; }
-  get icon()  { return 'bi-people'; }
+  get title()  { return 'Users'; }
+  get icon()   { return 'bi-people'; }
   template = `<div class="p-4"><h1>Users</h1></div>`;
 }
 
-// Homeless page — not in any menu, but wants the 'admin' sidebar
+// Homeless page — pinned to 'main' menu via sidebarMenu
 class UserDetailPage extends Page {
-  sidebarMenu = 'admin';
-  get title() { return 'User Detail'; }
-  get icon()  { return 'bi-person'; }
-  template = `<div class="p-4"><h1>User {{id}}</h1></div>`;
+  sidebarMenu = 'main';
+  get title()  { return 'User Detail'; }
+  get icon()   { return 'bi-person'; }
+  template = `<div class="p-4"><h2>{{model.display_name}}</h2></div>`;
   async onBeforeRender() {
-    await super.onBeforeRender();
-    this.id = this.params?.id || '—';
+    this.model = await User.fetch(this.options.params?.id);
   }
 }
 
-// Another homeless page — falls back to first non-group menu
+// Another homeless page — pinned to 'admin' menu
 class ChangelogPage extends Page {
-  get title() { return 'Changelog'; }
+  sidebarMenu = 'admin';
+  get title()  { return 'Changelog'; }
   template = `<div class="p-4"><h1>Changelog</h1></div>`;
 }
 
-// ── App ───────────────────────────────────────────────────
+// ── App ──────────────────────────────────────────────────────────────────────
+
 const app = new PortalApp({
-  api: { baseURL: 'https://api.example.com' },
+  api: { baseURL: '/api' },
 
   sidebar: {
+    defaultMenu: 'main',
+    groupSelectorMode: 'dialog',
+
     menus: [
+      // ── Main menu ─────────────────────────────────────────────────────────
       {
-        name: 'default',
+        name:      'main',
         className: 'sidebar sidebar-light',
-        header: '<div class="px-3 py-3 fw-bold fs-6">Main</div>',
+        header:    '<div class="px-3 py-2 fw-semibold fs-6">{{data.appName}}</div>',
+        footer:    '<div class="px-3 py-2 text-muted small">v{{version}}</div>',
+        data:      { appName: 'My App' },
         items: [
           { text: 'Dashboard', route: '?page=dashboard', icon: 'bi-speedometer2' },
           { divider: true },
-          { text: 'Profile',   action: 'profile',        icon: 'bi-person-circle' }
+          { text: 'Admin Area', action: 'enter-admin', icon: 'bi-shield-lock',
+            permissions: 'view_admin' },
         ]
       },
+
+      // ── Admin menu ────────────────────────────────────────────────────────
       {
-        name: 'admin',
+        name:      'admin',
         className: 'sidebar sidebar-dark',
-        header: '<div class="px-3 py-3 fw-bold">Admin</div>',
+        header:    '<div class="text-center py-3"><i class="bi bi-shield-lock fs-4"></i><div class="fw-bold mt-1">Admin</div></div>',
         items: [
-          { text: 'Users',     route: '?page=users',  icon: 'bi-people' },
-          { text: 'System',    route: '?page=system', icon: 'bi-cpu'    },
+          { text: 'Users',   route: '?page=users',     icon: 'bi-people'    },
+          { text: 'System',  route: '?page=system',    icon: 'bi-cpu'       },
           { divider: true },
+          // Submenu parent with collapsible children
+          { text: 'Reports', icon: 'bi-graph-up',
+            children: [
+              { text: 'Traffic',  route: '?page=report-traffic',  icon: 'bi-bar-chart'  },
+              { text: 'Security', route: '?page=report-security', icon: 'bi-shield'     },
+            ]
+          },
+          { divider: true },
+          { text: 'Changelog', route: '?page=changelog', icon: 'bi-clock-history' },
+          { spacer: true },
           { text: 'Exit Admin', action: 'exit-admin', icon: 'bi-door-open' }
         ]
       },
+
+      // ── Group-kind menu ───────────────────────────────────────────────────
       {
-        name: 'org-menu',
+        name:      'org-menu',
         groupKind: 'organization',
+        // header auto-set to built-in group header (name, kind, parent bar)
         items: [
-          { text: 'Overview', route: '?page=org-overview', icon: 'bi-building' },
-          { text: 'Members',  route: '?page=org-members',  icon: 'bi-people'   },
-          { divider: true },
-          { text: 'Leave',    action: 'leave-group', icon: 'bi-box-arrow-left' }
+          { text: 'Overview', route: '?page=org-overview', icon: 'bi-building'       },
+          { text: 'Members',  route: '?page=org-members',  icon: 'bi-people'         },
+          { spacer: true },
+          // requiresGroupKind: only shown when a sub-org is active
+          { text: 'Sub-orgs', route: '?page=org-children', icon: 'bi-diagram-3',
+            requiresGroupKind: 'sub-organization' },
+          { text: 'Leave',    action: 'leave-org',          icon: 'bi-box-arrow-left' }
         ]
       }
     ]
   },
 
   topbar: {
-    brand: 'Acme Portal',
-    brandIcon: 'bi bi-lightning-charge',
-    brandRoute: '?page=dashboard',
-    theme: 'dark',
+    brand:             'My App',
+    brandIcon:         'bi bi-play-circle',
+    brandRoute:        '?page=dashboard',
+    theme:             'auto',
+    shadow:            'auto',
     showSidebarToggle: true,
-    displayMode: 'group_page_titles',
+    displayMode:       'page',
 
     rightItems: [
+      // Notification button
       {
-        id: 'notifications',
-        icon: 'bi-bell',
-        action: 'show-notifications',
-        buttonClass: 'btn btn-link text-white',
-        tooltip: 'Notifications'
+        id:          'notifications',
+        icon:        'bi-bell',
+        action:      'show-notifications',
+        buttonClass: 'btn btn-link text-white position-relative',
+        tooltip:     'Notifications',
+        badge:       '3'
       },
+
+      // Tools dropdown with permission guard
       {
-        id: 'user',
-        label: 'Account',
-        icon: 'bi-person-circle',
+        id:          'tools',
+        label:       'Tools',
+        icon:        'bi-tools',
+        permissions: 'view_admin',
         items: [
-          { label: 'Profile',  icon: 'bi-person',          action: 'profile' },
-          { label: 'Settings', icon: 'bi-gear',             action: 'settings' },
+          { label: 'Import', action: 'import-data', icon: 'bi-upload'   },
+          { label: 'Export', action: 'export-data', icon: 'bi-download' }
+        ]
+      },
+
+      // User dropdown (populated by app.topnav.setUser after login)
+      {
+        id:    'user',
+        label: 'Account',
+        icon:  'bi-person-circle',
+        items: [
+          { label: 'Profile',  icon: 'bi-person',          action: 'profile'        },
+          { label: 'Settings', icon: 'bi-gear',             route:  '?page=settings' },
           { divider: true },
-          { label: 'Logout',   icon: 'bi-box-arrow-right',  action: 'logout' }
+          { label: 'Logout',   icon: 'bi-box-arrow-right',  action: 'logout'         }
         ]
       }
     ]
   }
 });
 
-// Register pages
-app.registerPage('dashboard',   DashboardPage);
-app.registerPage('users',       UsersPage);
+// ── Register pages ────────────────────────────────────────────────────────────
+app.registerPage('dashboard',  DashboardPage);
+app.registerPage('users',      UsersPage);
 app.registerPage('user-detail', UserDetailPage);
-app.registerPage('changelog',   ChangelogPage);
+app.registerPage('changelog',  ChangelogPage);
 
-// Handle portal actions (fallback for items without inline handlers)
-app.events.on('portal:action', ({ action }) => {
+// ── Action handler ────────────────────────────────────────────────────────────
+app.events.on('portal:action', async ({ action }) => {
   switch (action) {
-    case 'profile':
-      app.navigate('?page=profile');
-      break;
-    case 'settings':
-      app.navigate('?page=settings');
-      break;
-    case 'logout':
-      app.logout();
-      break;
-    case 'show-notifications':
-      app.showInfo('No new notifications');
-      break;
-    case 'exit-admin':
-      app.sidebar.setActiveMenu('default');
-      app.navigate('?page=dashboard');
-      break;
-    case 'leave-group':
-      app.clearActiveGroup();
-      app.sidebar.setActiveMenu('default');
-      break;
+    case 'profile':             app.navigate('?page=profile');                      break;
+    case 'logout':              app.logout();                                        break;
+    case 'show-notifications':  app.showDialog({ body: new NotifView() });          break;
+    case 'enter-admin':         await app.sidebar.setActiveMenu('admin');           break;
+    case 'exit-admin':          await app.sidebar.setActiveMenu('main');            break;
+    case 'leave-org':           app.setActiveGroup(null);                           break;
   }
-});
-
-// When the user authenticates, push the user model to TopNav
-app.events.on('auth:success', ({ user }) => {
-  app.topnav.setUser(user);
 });
 
 await app.start();
@@ -951,98 +1000,58 @@ await app.start();
 
 ## Dynamic Menu Updates
 
+Mutate a menu config and call `updateMenu` to re-render:
+
 ```js
-// Add a menu item at runtime
 const config = app.sidebar.getMenuConfig('default');
 config.items.push({
-  text:   'New Feature',
-  route:  '?page=new-feature',
-  icon:   'bi-plus-circle',
-  badge:  { text: 'NEW', class: 'badge bg-success rounded-pill ms-auto' }
+  text:  'New Feature',
+  route: '?page=new-feature',
+  icon:  'bi-plus-circle',
+  badge: { text: 'NEW', class: 'badge bg-success rounded-pill ms-auto' }
 });
 app.sidebar.updateMenu('default', config);
+```
 
-// Switch menu based on user role
-app.events.on('portal:user-changed', ({ user }) => {
-  app.topnav.setUser(user);
+Or use the convenience method to append a single item:
 
-  if (user.hasPermission('admin')) {
-    app.sidebar.setActiveMenu('admin');
-  } else {
-    app.sidebar.setActiveMenu('default');
-  }
-});
+```js
+app.sidebar.addSimpleMenuItem('default', 'New Feature', '?page=new-feature', 'bi-plus-circle');
 ```
 
 ---
 
-## Responsive Behavior
+## Responsive Behaviour
 
-Both components handle responsive layout automatically.
+On screens ≤ 768 px the sidebar adds `sidebar-mobile` to the portal container. All collapse/state methods work at any viewport size:
 
 ```js
-// Force collapse the sidebar (e.g. on a data-heavy page)
-app.sidebar.collapse();
-
-// Restore to normal
-app.sidebar.expand();
-
-// Toggle (useful for a custom toggle button elsewhere in the UI)
+app.sidebar.collapse();           // icon-only strip
+app.sidebar.expand();             // full width
 app.sidebar.toggleSidebar();
 
-// React to collapse state
 const state = app.sidebar.getSidebarState(); // 'normal' | 'collapsed' | 'hidden'
 ```
 
-The sidebar collapses to icon-only on mobile (`autoCollapseMobile: true` by default). Collapsed-state tooltips are automatically initialized and destroyed as the sidebar transitions.
+In **collapsed** state, Bootstrap tooltips are automatically initialised on all nav links. They show the item's `text` on hover and are destroyed when the sidebar expands.
 
 ---
 
 ## Common Pitfalls
 
-### ⚠️ Don't put `data-action` on `<form>` elements in header/footer HTML
-
-The header/footer are raw HTML strings. If you include interactive elements, use Bootstrap components or route links rather than `data-action` attributes on forms.
-
-### ⚠️ Avoid more than 2 levels of submenu nesting
-
-The template partial for `nav-item` supports one level of `children`. Deeper nesting is not rendered.
-
-### ⚠️ `groupKind` menus won't auto-switch unless `app.activeGroup` is set
-
-If no group is active, group menus are skipped during `autoSwitchToMenuForRoute`. Always call `app.setActiveGroup(group)` before expecting a group menu to appear.
-
-### ⚠️ `setActiveMenu` is async — await it when order matters
-
-```js
-// ✅ CORRECT
-await app.sidebar.setActiveMenu('admin');
-app.navigate('?page=admin-users');
-
-// ❌ WRONG — menu may not have finished rendering
-app.sidebar.setActiveMenu('admin');
-app.navigate('?page=admin-users');
-```
-
-### ⚠️ Homeless pages use the fallback chain — set `defaultMenu` or `sidebarMenu`
-
-If navigating to a page that isn't in any sidebar menu, the sidebar uses the fallback chain: `defaultMenu` → first non-group menu with visible items → first non-group menu. Set `defaultMenu` in your sidebar config or declare `sidebarMenu` on the page to control which menu appears.
+- ⚠️ **Don't put `data-action` on `<form>` elements** in `header`/`footer` HTML — the framework's event delegation will intercept the form submit.
+- ⚠️ **No more than 2 levels of nesting** — parent items have children; those children cannot themselves have children.
+- ⚠️ **`groupKind` menus won't auto-switch** unless `app.activeGroup` is set. Call `app.setActiveGroup(group)` before switching.
+- ⚠️ **`setActiveMenu` is async** — always `await` it when order matters (e.g. immediately navigating after switching).
+- ⚠️ **`setMenuData` / `getMenuData` apply to the active menu only** — use `updateMenu(name, { data: {...} })` to target a specific menu by name.
+- ⚠️ **Label items use `kind: 'label'`**, not `type: 'label'`. The displayed text comes from the `text` property, not `label`.
+- ⚠️ **Homeless pages use the fallback chain** — declare `sidebarMenu` on the page class or configure `defaultMenu` so they land on the right menu.
 
 ---
 
 ## Related Documentation
 
-- **[PortalApp](../core/PortalApp.md)** — how Sidebar and TopNav are instantiated and wired
-- **[Page](../pages/Page.md)** — `sidebarMenu`, `title`, `icon`, and routing lifecycle
-- **[Events](../core/Events.md)** — `portal:action`, `group:changed`, `page:show` events
-- **[Built-in Models](../models/BuiltinModels.md)** — User and Group models used by these components
-
-## Examples
-
-<!-- examples:cross-link begin -->
-
-Runnable, copy-paste reference in the examples portal:
-
-- [`examples/portal/examples/components/SidebarTopNav/SidebarTopNavExample.js`](../../../examples/portal/examples/components/SidebarTopNav/SidebarTopNavExample.js) — Portal navigation chrome — sidebar menus and topbar configured via PortalApp.
-
-<!-- examples:cross-link end -->
+- **[PortalApp](../core/PortalApp.md)**
+- **[Page](../pages/Page.md)**
+- **[Events](../core/Events.md)**
+- **[Built-in Models](../models/BuiltinModels.md)**
