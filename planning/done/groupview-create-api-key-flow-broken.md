@@ -313,3 +313,56 @@ No framework-level changes. No backend changes. No new public API surface.
 
 None. The backend contract is verified (`django-mojo/mojo/apps/account/models/api_key.py:50-62,237-245`); the framework's `onAdd` hook is verified (`src/core/views/list/ListView.js:1639-1643`); the Modal API surface used is documented and verified (`Modal.js:199-233,91-158,822-836`, `ModalView.js:119-120,499-503`); and the file's existing patterns (`onActionAddChildGroup`, `onActionInviteMember`) provide concrete templates to mirror.
 
+
+---
+
+## Resolution
+
+**Status:** Resolved — 2026-05-16
+**Commit:** `cabc4aa` — `fix(admin): rework GroupView API Keys section — token reveal + ops columns`
+
+### What was implemented
+
+All plan steps executed verbatim. The diff is confined to one source file plus a CHANGELOG entry — no framework changes, no public API surface change, no backend touch.
+
+- **Imports** (`GroupView.js:36-40`): added `ApiKey` to the existing `@core/models/ApiKey.js` import and a new `import ApiKeyView from '../api_keys/ApiKeyView.js'`.
+- **Collection params** (`GroupView.js`): added `sort: '-created'` to `apiKeysCollection` params so newest keys appear first.
+- **TableView config** (`GroupView.js` apiKeysSection): removed the dead `addFormConfig` block; added `itemView: ApiKeyView`, `actions: ['delete']`, a new `emptyMessage`, and a new sortable `last_used` column with formatter `relative|default:'Never'`.
+- **`onAfterBuild`**: wired `this.apiKeysSection.options.onAdd = (event) => this._createApiKey(event)` next to the existing cross-section nav handlers, bypassing the framework's generic add path so the Group ID prompt and the token-discard behavior are both eliminated.
+- **`_createApiKey()`**: opens `Modal.form` with `group` filtered out, builds `new ApiKey({ ...data, group: this.model.id })`, saves, surfaces save failures via toast, then calls `_showApiKeyTokenDialog(token, name, permissions)` and refreshes the collection.
+- **`_showApiKeyTokenDialog()`**: opens `Modal.dialog` with `backdrop: 'static'` + `keyboard: false` so the show-once secret cannot be lost to a stray click or Esc. Body: success line, warning banner, monospace `user-select-all` token block themed via Bootstrap surface tokens, permissions preview (with `try/catch` JSON parsing and a "no permissions granted" fallback), copy-as-password footnote. Buttons: **Copy token** (primary, with success-flash UX mirroring `Modal._showCopySuccess` — fixed during build to use `event.currentTarget` rather than `button: cfg` which is the config object, not the DOM element) and **Done** (secondary, `dismiss: true`).
+- **CHANGELOG.md**: one bullet under `## Unreleased`.
+
+### Files changed
+
+```
+CHANGELOG.md                                                        |   12 +
+planning/issues/groupview-create-api-key-flow-broken.md             |  316 ++++ (new)
+src/extensions/admin/account/groups/GroupView.js                    |  152 +++++++++++++--
+```
+
+### Validation
+
+- **Lint** (`npm run lint`): zero issues introduced. 16 errors / 55 warnings reported are all in pre-existing core framework files (Collection.js, Model.js, Page.js, PortalApp.js, Rest.js, Router.js, View.js, WebApp.js) untouched by this commit.
+- **Syntax check** (`node --check src/extensions/admin/account/groups/GroupView.js`): clean.
+- **Unit tests** (`npm run test:unit` via test-runner agent): **1113/1120 pass**. The 7 failures are all in `test/unit/IncidentView.test.js` from a pre-existing harness bug in commit `93ba499` (May 10) where a `TableView → ListView` refactor in `IncidentView.js` wasn't reflected in `test/utils/simple-module-loader.js` — `ListView` isn't registered as a loader dependency, so `new ListView(...)` throws inside the test. Unrelated to this change; flagged as a follow-up below.
+- **Integration tests** (`npm run test:integration`): suite is empty (0 collected).
+- **Modal-rendering / end-to-end manual flow**: not feasible in the current automated harness (the rule was called out explicitly in the plan's Testing section). Manual verification steps are documented in the plan; running them requires a live `django-mojo` backend plus the example portal.
+
+### Agent findings
+
+- **docs-updater** (no changes): every framework hook this fix uses (`TableView.onAdd / itemView / actions / emptyMessage`, `Modal.dialog backdrop+keyboard`, the `relative` / `default` pipe formatters) is pre-existing and already documented in `docs/web-mojo/`. The fix conforms to those contracts; it does not change them. `Admin.md` only mentions `GroupView` as an export name — no UX-flow documentation that this change makes outdated.
+- **security-review** (no HIGH/MEDIUM findings):
+  - Token handling: lives only in the dialog closure; not logged, not persisted, not sent off-origin; GC-eligible after the dialog resolves.
+  - XSS: all three operator-controlled interpolation points (`name`, `token`, `permKeys`) pass through `MOJOUtils.escapeHtml` before reaching the DOM.
+  - Prototype pollution (LOW informational): `JSON.parse` followed by `Object.keys(...).filter(k => parsed[k])` is not exploitable as written. Flagged only as forward awareness if future code starts doing property assignments with `permKeys` entries.
+  - Clipboard write: operator-initiated, local, behind a feature-detect.
+  - `console.error('Token copy failed:', err)`: the browser-generated DOMException does not contain the token.
+  - No new unauthenticated request paths; no expansion of attack surface on existing endpoints.
+- **test-runner**: covered above. No regression attributable to this commit.
+
+### Follow-ups (out of this commit)
+
+- **`test/utils/simple-module-loader.js`** — register `ListView` in the `IncidentView` loader entry (line ~377-380) to unblock the 7 pre-existing `IncidentView.test.js` failures. Pure test-harness fix; reaches no production code. Worth a separate small commit.
+- **`ApiKeyTablePage.onActionAdd`** — adopt the same dismissal-protected token reveal + copy-flash UX, and align the column set with the new in-`GroupView` section (Last used, row Delete). Unifies the two surfaces. Separate request.
+- **`expires_at` column + edit-form** for API keys — backend field already exists (`api_key.py:41`), but adding a column without a way to set/edit expiry would just always show "Never". Bundle column + form together in a separate request.
