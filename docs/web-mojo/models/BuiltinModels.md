@@ -390,8 +390,8 @@ GroupKindOptions; // Array of { value, label } for select fields
 import { GroupForms } from 'web-mojo/models';
 
 GroupForms.create   // name, kind, parent (collection field)
-GroupForms.edit     // name, kind, parent, metadata.domain, metadata.portal, is_active
-GroupForms.detailed // Full profile with avatar, details, account settings sections
+GroupForms.edit     // name, uuid, kind, parent, metadata.domain, metadata.portal, is_active
+GroupForms.detailed // Full profile with avatar, details, account settings sections (includes uuid)
 
 Group.ADD_FORM    === GroupForms.create
 Group.CREATE_FORM === GroupForms.create  // Alias
