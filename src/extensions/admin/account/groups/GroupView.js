@@ -737,56 +737,6 @@ class GroupIdentitySection extends View {
 }
 
 
-// ── Permissions section ────────────────────────────────────
-
-class GroupPermissionsSection extends View {
-    constructor(options = {}) {
-        super({
-            className: 'group-permissions-section',
-            template: `
-                <div class="detail-section-eyebrow">Group permissions</div>
-                {{#hasPermissions|bool}}
-                {{#permissionRows}}
-                <div class="detail-flat-row">
-                    <div class="detail-flat-row-label"><code>{{key}}</code></div>
-                    <div class="detail-flat-row-value">
-                        <div class="form-check form-switch m-0">
-                            <input class="form-check-input" type="checkbox" disabled {{#enabled|bool}}checked{{/enabled|bool}} aria-label="{{key}}">
-                        </div>
-                    </div>
-                </div>
-                {{/permissionRows}}
-                {{/hasPermissions|bool}}
-                {{^hasPermissions|bool}}
-                <div class="text-center text-body-secondary py-4">
-                    <i class="bi bi-shield-lock fs-1 d-block mb-2"></i>
-                    <p class="mb-0 small">No group-scoped permissions defined. Permissions on members and API keys
-                    are managed from their own records.</p>
-                </div>
-                {{/hasPermissions|bool}}
-            `,
-            ...options
-        });
-    }
-
-    // ── Computed properties bound by Mustache ─────────
-
-    get _perms() {
-        const meta = this.model?.get?.('metadata') || {};
-        return meta.permissions || this.model?.get?.('permissions') || null;
-    }
-    get hasPermissions() {
-        const p = this._perms;
-        return !!(p && typeof p === 'object' && Object.keys(p).length);
-    }
-    get permissionRows() {
-        const p = this._perms;
-        if (!p || typeof p !== 'object') return [];
-        return Object.keys(p).sort().map(key => ({ key, enabled: !!p[key] }));
-    }
-}
-
-
 // ── API Keys list item (card row) ──────────────────────────
 
 /**
@@ -1046,8 +996,6 @@ class GroupView extends DetailView {
             emptyMessage: 'No API keys yet. Click "Create Key" to add one.'
         });
 
-        const permissionsSection = new GroupPermissionsSection({ model });
-
         const eventsSection = new TableView({
             collection: eventsCollection,
             title: 'Events',
@@ -1079,7 +1027,6 @@ class GroupView extends DetailView {
             { key: 'SubGroups',   label: 'Sub-Groups',  icon: 'bi-diagram-3',      view: subGroupsSection },
             { type: 'divider', label: 'Access' },
             { key: 'ApiKeys',     label: 'API Keys',    icon: 'bi-key',            view: apiKeysSection },
-            { key: 'Permissions', label: 'Permissions', icon: 'bi-shield-lock',    view: permissionsSection },
             { type: 'divider', label: 'Activity' },
             { key: 'Events',      label: 'Events',      icon: 'bi-calendar-event', view: eventsSection },
             { key: 'Audit',       label: 'Audit',       icon: 'bi-clock-history',  view: auditSection, permissions: 'view_logs' },
@@ -1178,7 +1125,6 @@ class GroupView extends DetailView {
         this.membersSection     = membersSection;
         this.subGroupsSection   = subGroupsSection;
         this.apiKeysSection     = apiKeysSection;
-        this.permissionsSection = permissionsSection;
         this.eventsSection      = eventsSection;
         this.auditSection       = auditSection;
         this.metadataSection    = metadataSection;
@@ -1713,7 +1659,6 @@ class GroupView extends DetailView {
         if (this.headerView?.isMounted())         await this.headerView.render();
         if (this.overviewSection?.isMounted())    await this.overviewSection.render();
         if (this.identitySection?.isMounted())    await this.identitySection.render();
-        if (this.permissionsSection?.isMounted()) await this.permissionsSection.render();
     }
 }
 
@@ -1769,7 +1714,6 @@ export {
     GroupView,
     GroupOverviewSection,
     GroupIdentitySection,
-    GroupPermissionsSection,
     GroupHierarchyTree,
     GroupAuditTimelineSection
 };
