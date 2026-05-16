@@ -1263,8 +1263,12 @@ class GroupView extends DetailView {
         });
         if (!data) return;
 
-        const newKey = new ApiKey({ ...data, group: this.model.id });
-        const resp = await newKey.save();
+        // Model.save(data) sends `data` as the POST body verbatim — it does
+        // NOT serialize from constructor attributes. Pass the payload here
+        // (mirrors the proven pattern in ApiKeyTablePage.onActionAdd).
+        const newKey = new ApiKey();
+        const payload = { ...data, group: this.model.id };
+        const resp = await newKey.save(payload);
         if (!resp?.data?.status || (resp?.status && resp.status >= 400)) {
             this.getApp()?.toast?.error(
                 resp?.data?.error || resp?.message || 'Failed to create API key'
@@ -1273,7 +1277,7 @@ class GroupView extends DetailView {
         }
 
         const token = resp?.data?.data?.token;
-        await this._showApiKeyTokenDialog(token, newKey.get('name'), data.permissions);
+        await this._showApiKeyTokenDialog(token, payload.name, payload.permissions);
         await this.apiKeysCollection.fetch().catch(() => {});
     }
 
