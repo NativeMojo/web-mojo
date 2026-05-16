@@ -366,3 +366,12 @@ src/extensions/admin/account/groups/GroupView.js                    |  152 +++++
 - **`test/utils/simple-module-loader.js`** — register `ListView` in the `IncidentView` loader entry (line ~377-380) to unblock the 7 pre-existing `IncidentView.test.js` failures. Pure test-harness fix; reaches no production code. Worth a separate small commit.
 - **`ApiKeyTablePage.onActionAdd`** — adopt the same dismissal-protected token reveal + copy-flash UX, and align the column set with the new in-`GroupView` section (Last used, row Delete). Unifies the two surfaces. Separate request.
 - **`expires_at` column + edit-form** for API keys — backend field already exists (`api_key.py:41`), but adding a column without a way to set/edit expiry would just always show "Never". Bundle column + form together in a separate request.
+- **`onActionAddChildGroup` (`GroupView.js:1163-1186`) has the same latent bug** as the create-API-key flow originally did — `new Group(data)` then bare `newGroup.save()`. `Model.save(data)` sends `data` verbatim and does NOT serialize from constructor attributes, so sub-group creation will POST `{}` if exercised. Hasn't surfaced because nobody's exercised "Add Sub-Group" recently. Worth a separate small fix mirroring the `payload`-arg pattern below.
+
+### Follow-up commit — `650e090`
+
+User QA caught a server-side error during manual verification: `null value in column "group_id" of relation "account_apikey" violates not-null constraint` — payload `{}`. Root cause: I had written the create flow as `new ApiKey({...data, group: this.model.id})` followed by a bare `await newKey.save()`. Inspection of `Model.save()` at `src/core/Model.js:381-417` confirmed it sends its `data` argument verbatim as the POST body and does NOT read from `this.attributes`. The constructor attributes were silently dropped.
+
+Fixed by mirroring the proven pattern in `ApiKeyTablePage.onActionAdd:74-75`: build the model empty, build the `payload` object, pass it to `save()`. Also read `name` / `permissions` for the token-dialog from the payload instead of the model (clearer; no dependency on `save`'s side-effect of `set()`-ing the response back onto the instance).
+
+This is the bug I should have caught in the build phase — the plan even cited `ApiKeyTablePage.onActionAdd` as the proven pattern, but my code didn't mirror it faithfully. The lesson is that "use this proven pattern" is only meaningful if the diff actually replicates the pattern's argument-passing shape, not just the conceptual outline. Lesson recorded.
