@@ -371,7 +371,15 @@ class GroupIdentitySection extends View {
                 </div>
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">ID</div>
-                    <div class="detail-flat-row-value"><code>{{model.id}}</code></div>
+                    <div class="detail-flat-row-value">{{{idClipboard}}}</div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">UUID</div>
+                    <div class="detail-flat-row-value">{{{uuidClipboard}}}</div>
+                    <div class="detail-flat-row-action">
+                        {{^hasUuid|bool}}<button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="generate-uuid" title="Generate UUID"><i class="bi bi-shuffle"></i></button>{{/hasUuid|bool}}
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-uuid" title="Edit"><i class="bi bi-pencil"></i></button>
+                    </div>
                 </div>
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Parent</div>
@@ -513,6 +521,19 @@ class GroupIdentitySection extends View {
     get hasCreated()  { return this.model?.get?.('created')  != null; }
     get hasModified() { return this.model?.get?.('modified') != null; }
 
+    get hasUuid()  { return !!this.model?.get?.('uuid'); }
+    get uuid()     { return this.model?.get?.('uuid') || ''; }
+    get idClipboard() {
+        const id = this.model?.get?.('id');
+        if (id == null || id === '') return '<span class="text-secondary fst-italic">—</span>';
+        return `<code>${escapeHtml(String(id))}</code> ${dataFormatter.clipboard(String(id), 'icon-only')}`;
+    }
+    get uuidClipboard() {
+        if (!this.hasUuid) return '<span class="text-secondary fst-italic">Not set</span>';
+        const uuid = this.uuid;
+        return `<code>${escapeHtml(uuid)}</code> ${dataFormatter.clipboard(uuid, 'icon-only')}`;
+    }
+
     /** Bubble parent-link click up to GroupView. */
     async onActionViewParent(event) {
         event?.preventDefault?.();
@@ -530,6 +551,47 @@ class GroupIdentitySection extends View {
         if (typeof name !== 'string' || !name.trim()) return true;
         await this._saveField({ name: name.trim() }, 'Name');
         return true;
+    }
+
+    async onActionEditUuid() {
+        const uuid = await Modal.prompt(
+            'UUID:',
+            'Edit UUID',
+            { defaultValue: this.model.get('uuid') || '', placeholder: '32-character hex string' }
+        );
+        if (typeof uuid !== 'string') return true;
+        await this._saveField({ uuid: uuid.trim() || null }, 'UUID');
+        return true;
+    }
+
+    async onActionGenerateUuid() {
+        const generated = this._generateUuidHex();
+        if (!generated) {
+            this.getApp()?.toast?.error('UUID generation not supported in this browser');
+            return true;
+        }
+        const confirmed = await Modal.confirm(
+            `Generate a new UUID for this group?<br><code>${escapeHtml(generated)}</code>`,
+            'Generate UUID'
+        );
+        if (!confirmed) return true;
+        await this._saveField({ uuid: generated }, 'UUID');
+        return true;
+    }
+
+    // Match backend `uuid.uuid4().hex` shape: 32 lowercase hex chars, no hyphens.
+    _generateUuidHex() {
+        try {
+            if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+                return crypto.randomUUID().replace(/-/g, '');
+            }
+            if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+                const bytes = new Uint8Array(16);
+                crypto.getRandomValues(bytes);
+                return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+            }
+        } catch { /* fall through */ }
+        return null;
     }
 
     async onActionEditKind() {

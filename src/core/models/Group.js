@@ -108,6 +108,12 @@ const GroupForms = {
                 placeholder: 'Enter group name',
             },
             {
+                name: 'uuid',
+                type: 'text',
+                label: 'UUID',
+                placeholder: '32-character hex string'
+            },
+            {
                 name: 'kind',
                 type: 'select',
                 label: 'Group Kind',
@@ -193,6 +199,13 @@ const GroupForms = {
                         label: 'Group Name',
                         required: true,
                         placeholder: 'Enter group name',
+                        columns: 12
+                    },
+                    {
+                        name: 'uuid',
+                        type: 'text',
+                        label: 'UUID',
+                        placeholder: '32-character hex string',
                         columns: 12
                     },
                     {

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Admin · GroupView Identity section exposes UUID (view + copy + edit + generate)
+
+- **UUID is now a first-class identifier in `GroupView`.** The Identity section gains a dedicated **UUID** flat-row directly under the existing **ID** row. Both rows now carry a copy-to-clipboard button (built from the framework's `clipboard` pipe formatter — same `data-clipboard` carrier + `View.onActionCopyToClipboard` handler that powers every other clipboard control). Per `planning/done/groupview-uuid-not-exposed.md`.
+- **Per-row edit + Generate flow.** A pencil button opens `Modal.prompt` to free-text edit the UUID (mirrors `onActionEditName` / `onActionEditDomain`). When the UUID is empty, a Generate button (`bi-shuffle`) appears that produces a fresh `crypto.randomUUID().replace(/-/g, '')` value — matching the backend's `uuid.uuid4().hex` shape (32 lowercase hex chars, no hyphens) — confirms via `Modal.confirm`, then saves. Falls back to `crypto.getRandomValues(new Uint8Array(16))` + hex-stringify when `crypto.randomUUID` is unavailable; toasts an error if neither primitive exists.
+- **Edit Group modal also gains UUID.** `GroupForms.edit` and `GroupForms.detailed` both now include a `uuid` text field (between `name` and `kind`), so the context-menu **Edit Group** dialog can change UUID alongside the rest of the profile. `GroupForms.create` is intentionally unchanged — the backend lazy-inits via `get_uuid()` on first read.
+- **No new copy/clipboard code.** Uses the built-in `dataFormatter.clipboard()` pipe (icon-only mode) and the inherited `View.onActionCopyToClipboard` handler. Theme-safe by construction (Bootstrap tokens only).
+
 ### Admin · GroupView API Keys section — Create flow fix + operational columns
 
 - **Create API Key form no longer prompts for Group ID** when opened from inside `GroupView`. The current group is used automatically — typo / wrong-group risk eliminated. The form is now Name + Permissions (JSON) only.
