@@ -167,7 +167,7 @@ class ApiKeyView extends View {
         if (!confirmed) return;
 
         app.showLoading();
-        const resp = await this.model.delete();
+        const resp = await this.model.destroy();
         app.hideLoading();
         if (resp && resp.success !== false) {
             app.toast.success('API key deleted');

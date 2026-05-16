@@ -809,7 +809,7 @@ const API_KEY_ROW_TEMPLATE = `
                 {{^model.is_active|bool}}<span class="badge text-bg-secondary">Inactive</span>{{/model.is_active|bool}}
             </div>
             <div class="small mb-1">
-                {{#hasPerms|bool}}{{#permsList}}<code class="badge text-bg-light border me-1">{{.}}</code>{{/permsList}}{{/hasPerms|bool}}
+                {{#hasPerms|bool}}{{#permsList}}<code class="badge text-bg-light border me-1">{{key}}</code>{{/permsList}}{{/hasPerms|bool}}
                 {{^hasPerms|bool}}<span class="text-secondary fst-italic">No permissions granted</span>{{/hasPerms|bool}}
             </div>
             <div class="small text-secondary">
@@ -846,7 +846,10 @@ class ApiKeyListItem extends ListViewItem {
     get permsList() {
         const p = this._perms;
         if (!p) return [];
-        return Object.keys(p).filter(k => p[k]);
+        // Return objects (not raw strings) so the Mustache iteration can use
+        // `{{key}}` — using `{{.}}` on a raw-string array tickles a pipe-formatter
+        // lookup on the value (e.g. "Formatter 'geoip_sync' not found").
+        return Object.keys(p).filter(k => p[k]).map(key => ({ key }));
     }
     get lastUsedLabel() {
         const lu = this.model?.get?.('last_used');
@@ -1009,6 +1012,7 @@ class GroupView extends DetailView {
             clickAction: 'view',
             itemView: ApiKeyView,
             viewDialogOptions: { header: false, noBodyPadding: true, buttons: [] },
+            hideActivePillNames: ['group'],
             showAdd: true,
             addButtonLabel: 'Create Key',
             showRefresh: true,
