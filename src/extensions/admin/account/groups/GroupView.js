@@ -26,6 +26,8 @@
 import View from '@core/View.js';
 import DetailView from '@core/views/data/DetailView.js';
 import TableView from '@core/views/table/TableView.js';
+import ListView from '@core/views/list/ListView.js';
+import ListViewItem from '@core/views/list/ListViewItem.js';
 import MetricCard from '@core/views/data/MetricCard.js';
 import Timeline from '@core/views/data/Timeline.js';
 import Modal from '@core/views/feedback/Modal.js';
@@ -782,6 +784,79 @@ class GroupPermissionsSection extends View {
 }
 
 
+// ── API Keys list item (card row) ──────────────────────────
+
+/**
+ * One row in the API Keys ListView — a card-style layout instead of
+ * a table row, so the section reads as a small modern list rather
+ * than a heavy data table. Exposes `permsList`, `hasPerms`, and
+ * `lastUsedLabel` as getters so the Mustache template can render
+ * inline permission badges and a relative-time "Last used" line.
+ *
+ * The trash button uses `data-action="delete"` — `onActionDelete`
+ * on the base `ListViewItem` already calls `event.stopPropagation()`
+ * (so the row click doesn't also fire) and emits `row:delete` to the
+ * parent ListView. The parent's `options.onItemDelete` (wired in
+ * `GroupView.onAfterBuild`) runs the confirm + destroy + refetch.
+ */
+const API_KEY_ROW_TEMPLATE = `
+    <div class="d-flex align-items-center gap-3 py-3 px-2">
+        <i class="bi bi-key-fill fs-4 text-primary flex-shrink-0"></i>
+        <div class="flex-grow-1 min-width-0">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <strong class="text-truncate">{{model.name|default:'Unnamed key'}}</strong>
+                {{#model.is_active|bool}}<span class="badge text-bg-success">Active</span>{{/model.is_active|bool}}
+                {{^model.is_active|bool}}<span class="badge text-bg-secondary">Inactive</span>{{/model.is_active|bool}}
+            </div>
+            <div class="small mb-1">
+                {{#hasPerms|bool}}{{#permsList}}<code class="badge text-bg-light border me-1">{{.}}</code>{{/permsList}}{{/hasPerms|bool}}
+                {{^hasPerms|bool}}<span class="text-secondary fst-italic">No permissions granted</span>{{/hasPerms|bool}}
+            </div>
+            <div class="small text-secondary">
+                Last used <strong>{{lastUsedLabel}}</strong> · Created {{model.created|datetime}}
+            </div>
+        </div>
+        <button type="button"
+                class="btn btn-sm btn-outline-danger flex-shrink-0"
+                data-action="delete"
+                title="Delete this key"
+                aria-label="Delete this key">
+            <i class="bi bi-trash"></i>
+        </button>
+    </div>
+`;
+
+class ApiKeyListItem extends ListViewItem {
+    constructor(options = {}) {
+        super({
+            ...options,
+            template: API_KEY_ROW_TEMPLATE,
+            className: 'api-key-row border-bottom'
+        });
+    }
+
+    get _perms() {
+        const p = this.model?.get?.('permissions');
+        return (p && typeof p === 'object') ? p : null;
+    }
+    get hasPerms() {
+        const p = this._perms;
+        return !!(p && Object.keys(p).some(k => p[k]));
+    }
+    get permsList() {
+        const p = this._perms;
+        if (!p) return [];
+        return Object.keys(p).filter(k => p[k]);
+    }
+    get lastUsedLabel() {
+        const lu = this.model?.get?.('last_used');
+        if (!lu) return 'never';
+        const rel = dataFormatter.apply(lu, ['relative']);
+        return rel || 'never';
+    }
+}
+
+
 // ── Audit Timeline section ─────────────────────────────────
 
 /**
@@ -920,31 +995,24 @@ class GroupView extends DetailView {
             ]
         });
 
-        const apiKeysSection = new TableView({
+        // API Keys uses a ListView (not a TableView): for a typical group's
+        // 1–10 keys, the table chrome (column headers, sort dropdowns,
+        // pagination footer) is heavier than the data warrants. Each row is
+        // a card-style ApiKeyListItem with an inline trash button — see the
+        // class above for the template and computed fields. Delete is wired
+        // via `onItemDelete` in onAfterBuild (more reliable than the framework
+        // _onRowDelete chain — we own the confirm + destroy + refetch).
+        const apiKeysSection = new ListView({
             collection: apiKeysCollection,
             title: 'API Keys',
-            showFullscreen: false,
-            searchable: false,
-            hideActivePillNames: ['group'],
-            showAdd: true,
-            addButtonLabel: 'Create Key',
+            itemClass: ApiKeyListItem,
             clickAction: 'view',
             itemView: ApiKeyView,
             viewDialogOptions: { header: false, noBodyPadding: true, buttons: [] },
-            actions: ['delete'],
-            emptyMessage: 'No API keys yet. Click "Create Key" to add one.',
-            columns: [
-                { key: 'name', label: 'Name', sortable: true },
-                {
-                    key: 'is_active', label: 'Status', width: '80px',
-                    template: `
-                        {{#model.is_active|bool}}<span class="badge text-bg-success">Active</span>{{/model.is_active|bool}}
-                        {{^model.is_active|bool}}<span class="badge text-bg-secondary">Inactive</span>{{/model.is_active|bool}}`
-                },
-                { key: 'permissions|keys|badge', label: 'Permissions' },
-                { key: 'last_used', label: 'Last used', formatter: "relative|default:'Never'", sortable: true, width: '140px' },
-                { key: 'created', label: 'Created', formatter: 'datetime', sortable: true }
-            ]
+            showAdd: true,
+            addButtonLabel: 'Create Key',
+            showRefresh: true,
+            emptyMessage: 'No API keys yet. Click "Create Key" to add one.'
         });
 
         const permissionsSection = new GroupPermissionsSection({ model });
@@ -1096,6 +1164,11 @@ class GroupView extends DetailView {
         // API Keys add flow: bypass the generic ListView.onActionAdd so we can
         // drop the redundant Group ID field and surface the one-time token.
         this.apiKeysSection.options.onAdd = (event) => this._createApiKey(event);
+
+        // API Keys delete: explicit override (rather than relying on the
+        // framework's _onRowDelete chain) so we control the confirm copy,
+        // toast feedback, and refetch — and we own the failure modes.
+        this.apiKeysSection.options.onItemDelete = (model) => this._deleteApiKey(model);
 
         // Sidebar badges populated from shared collections
         const updateMembersBadge = () => {
@@ -1279,6 +1352,33 @@ class GroupView extends DetailView {
         const token = resp?.data?.data?.token;
         await this._showApiKeyTokenDialog(token, payload.name, payload.permissions);
         await this.apiKeysCollection.fetch().catch(() => {});
+    }
+
+    /**
+     * Inline row delete for the API Keys ListView. Wired via
+     * `apiKeysSection.options.onItemDelete` so the framework's generic
+     * `_onRowDelete` chain is bypassed — we own the confirm copy, toast
+     * feedback, and refetch, and any failure surfaces explicitly.
+     */
+    async _deleteApiKey(model) {
+        const name = model?.get?.('name') || 'this key';
+        const confirmed = await Modal.confirm(
+            `Delete API key <strong>${escapeHtml(name)}</strong>? This cannot be undone — any service using it will lose access immediately.`,
+            'Delete API Key',
+            { confirmText: 'Delete', confirmClass: 'btn-danger' }
+        );
+        if (!confirmed) return;
+
+        try {
+            const resp = await model.destroy();
+            if (resp && resp.success === false) {
+                throw new Error(resp.error || resp.message || 'Delete failed');
+            }
+            this.getApp()?.toast?.success('API key deleted');
+            await this.apiKeysCollection.fetch().catch(() => {});
+        } catch (err) {
+            this.getApp()?.toast?.error(err?.message || 'Failed to delete API key');
+        }
     }
 
     /**
