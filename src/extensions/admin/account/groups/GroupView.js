@@ -33,10 +33,11 @@ import MOJOUtils from '@core/utils/MOJOUtils.js';
 import dataFormatter from '@core/utils/DataFormatter.js';
 import { Group, GroupList, GroupForms } from '@core/models/Group.js';
 import { MemberList } from '@core/models/Member.js';
-import { ApiKeyList, ApiKeyForms } from '@core/models/ApiKey.js';
+import { ApiKey, ApiKeyList, ApiKeyForms } from '@core/models/ApiKey.js';
 import { LogList } from '@core/models/Log.js';
 import { IncidentEventList } from '@ext/admin/models/Incident.js';
 import AdminMetadataSection from '../../shared/AdminMetadataSection.js';
+import ApiKeyView from '../api_keys/ApiKeyView.js';
 
 const escapeHtml = MOJOUtils.escapeHtml;
 
@@ -794,7 +795,7 @@ class GroupView extends DetailView {
             params: { parent: groupId, size: 10 }
         });
         const apiKeysCollection = new ApiKeyList({
-            params: { group: groupId, size: 10 }
+            params: { group: groupId, size: 10, sort: '-created' }
         });
         const eventsCollection = new IncidentEventList({
             params: { size: 10, model_name: 'account.Group', model_id: groupId, sort: '-created' }
@@ -866,11 +867,10 @@ class GroupView extends DetailView {
             showAdd: true,
             addButtonLabel: 'Create Key',
             clickAction: 'view',
+            itemView: ApiKeyView,
             viewDialogOptions: { header: false, noBodyPadding: true, buttons: [] },
-            addFormConfig: {
-                ...ApiKeyForms.create,
-                defaults: { group: groupId }
-            },
+            actions: ['delete'],
+            emptyMessage: 'No API keys yet. Click "Create Key" to add one.',
             columns: [
                 { key: 'name', label: 'Name', sortable: true },
                 {
@@ -880,6 +880,7 @@ class GroupView extends DetailView {
                         {{^model.is_active|bool}}<span class="badge text-bg-secondary">Inactive</span>{{/model.is_active|bool}}`
                 },
                 { key: 'permissions|keys|badge', label: 'Permissions' },
+                { key: 'last_used', label: 'Last used', formatter: "relative|default:'Never'", sortable: true, width: '140px' },
                 { key: 'created', label: 'Created', formatter: 'datetime', sortable: true }
             ]
         });
@@ -1030,6 +1031,10 @@ class GroupView extends DetailView {
         this.overviewSection.on('navigate:subgroup', (id) => this._openGroupById(id));
         this.identitySection.on('navigate:parent',   ()   => this._openGroupById(this.model.get('parent')?.id));
 
+        // API Keys add flow: bypass the generic ListView.onActionAdd so we can
+        // drop the redundant Group ID field and surface the one-time token.
+        this.apiKeysSection.options.onAdd = (event) => this._createApiKey(event);
+
         // Sidebar badges populated from shared collections
         const updateMembersBadge = () => {
             const n = this.membersCollection.models?.length ?? 0;
@@ -1178,6 +1183,143 @@ class GroupView extends DetailView {
             this.getApp()?.toast?.error(resp.message || 'Failed to create sub-group');
         }
         return true;
+    }
+
+    /**
+     * Create-API-Key flow for the in-GroupView API Keys section. Wired via
+     * `apiKeysSection.options.onAdd` (see `onAfterBuild`) so the framework's
+     * generic add path is bypassed entirely.
+     */
+    async _createApiKey(event) {
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+
+        const data = await Modal.form({
+            title: 'Create API Key',
+            size: 'md',
+            fields: ApiKeyForms.create.fields.filter(f => f.name !== 'group')
+        });
+        if (!data) return;
+
+        const newKey = new ApiKey({ ...data, group: this.model.id });
+        const resp = await newKey.save();
+        if (!resp?.data?.status || (resp?.status && resp.status >= 400)) {
+            this.getApp()?.toast?.error(
+                resp?.data?.error || resp?.message || 'Failed to create API key'
+            );
+            return;
+        }
+
+        const token = resp?.data?.data?.token;
+        await this._showApiKeyTokenDialog(token, newKey.get('name'), data.permissions);
+        await this.apiKeysCollection.fetch().catch(() => {});
+    }
+
+    /**
+     * One-time token reveal. The raw token is only returned at creation time
+     * (see `django-mojo/mojo/apps/account/models/api_key.py:241-245`), so this
+     * dialog is the operator's only chance to capture it. Static backdrop +
+     * disabled keyboard dismissal protect against accidental drift.
+     */
+    async _showApiKeyTokenDialog(token, name, permissionsInput) {
+        const app = this.getApp();
+
+        if (!token) {
+            app?.toast?.success('API key created');
+            return;
+        }
+
+        // Permissions preview — `permissionsInput` may be a dict, a JSON
+        // string (the textarea passes through verbatim), null, or invalid.
+        // Fall back to "no permissions" on parse failure (matches the
+        // backend's silent coercion to {} in api_key.py:85-86).
+        let permKeys = [];
+        if (permissionsInput) {
+            let parsed = permissionsInput;
+            if (typeof parsed === 'string') {
+                try { parsed = JSON.parse(parsed); }
+                catch { parsed = null; }
+            }
+            if (parsed && typeof parsed === 'object') {
+                permKeys = Object.keys(parsed).filter(k => parsed[k]);
+            }
+        }
+
+        const permsHtml = permKeys.length
+            ? `<div class="small mt-3">
+                   <span class="text-secondary me-2">Permissions:</span>
+                   ${permKeys.map(k => `<code class="badge text-bg-light border me-1">${escapeHtml(k)}</code>`).join('')}
+               </div>`
+            : `<div class="small text-secondary mt-3">
+                   <i class="bi bi-info-circle me-1"></i>No permissions granted — this key has read access only to public endpoints.
+               </div>`;
+
+        const body = `
+            <div class="mb-3 fs-6">
+                <i class="bi bi-check-circle-fill text-success me-2"></i>API key <strong>${escapeHtml(name || '')}</strong> created.
+            </div>
+            <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <div>Save this token now — it will not be shown again.</div>
+            </div>
+            <div class="p-3 rounded font-monospace text-break user-select-all"
+                 style="background: var(--bs-tertiary-bg);
+                        border: 1px solid var(--bs-border-color);
+                        font-size: 0.95rem; line-height: 1.4;
+                        overflow-x: auto;"
+                 aria-label="API token">${escapeHtml(token)}</div>
+            ${permsHtml}
+            <div class="small text-secondary mt-3">
+                Treat this token like a password. Anyone with it can call this group's API on your behalf.
+            </div>
+        `;
+
+        await Modal.dialog({
+            title: 'API Key Created — Save Your Token',
+            size: 'lg',
+            backdrop: 'static',
+            keyboard: false,
+            body,
+            buttons: [
+                {
+                    text: 'Copy token',
+                    icon: 'bi-clipboard',
+                    class: 'btn-primary',
+                    handler: async ({ event }) => {
+                        if (!navigator.clipboard) {
+                            app?.toast?.warning('Clipboard unavailable — select and copy the token manually');
+                            return false;
+                        }
+                        try {
+                            await navigator.clipboard.writeText(token);
+                        } catch (err) {
+                            console.error('Token copy failed:', err);
+                            app?.toast?.error('Copy failed — select the token and copy manually');
+                            return false;
+                        }
+                        // Flash success on the actual <button> DOM element
+                        // (mirrors Modal._showCopySuccess at Modal.js:822-836).
+                        const btnEl = event?.currentTarget;
+                        if (btnEl) {
+                            const originalHtml = btnEl.innerHTML;
+                            btnEl.innerHTML = '<i class="bi bi-check me-1"></i>Copied!';
+                            btnEl.classList.remove('btn-primary');
+                            btnEl.classList.add('btn-success');
+                            btnEl.disabled = true;
+                            setTimeout(() => {
+                                if (!btnEl.isConnected) return;
+                                btnEl.innerHTML = originalHtml;
+                                btnEl.classList.remove('btn-success');
+                                btnEl.classList.add('btn-primary');
+                                btnEl.disabled = false;
+                            }, 2000);
+                        }
+                        return false;  // keep open after copy
+                    }
+                },
+                { text: 'Done', class: 'btn-secondary', dismiss: true }
+            ]
+        });
     }
 
     /** Sidebar context-menu "View Parent" entry */

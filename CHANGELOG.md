@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Admin · GroupView API Keys section — Create flow fix + operational columns
+
+- **Create API Key form no longer prompts for Group ID** when opened from inside `GroupView`. The current group is used automatically — typo / wrong-group risk eliminated. The form is now Name + Permissions (JSON) only.
+- **One-time token is now revealed** in a dismissal-protected dialog (`backdrop: 'static'`, `keyboard: false`) so the operator cannot lose the secret by stray-clicking the backdrop or pressing Esc. The dialog includes: a success line, a warning banner ("Save this token now — it will not be shown again"), a monospace `user-select-all` token block themed via Bootstrap surface tokens (light + dark from day one), a permissions preview (badges of granted keys, with a "no permissions granted" fallback for empty / invalid JSON), a copy-as-password footnote, and a **Copy token** primary button with the same success-flash UX as `Modal.code`. Previously the framework's generic add path discarded `resp.data.data.token`, leaving the newly-created key unusable.
+- **New `Last used` column** (relative time, `'Never'` fallback, sortable) — the signal admins actually need when auditing dormant keys.
+- **Inline row Delete** via `actions: ['delete']` — the framework's standard confirm-dialog → destroy → refresh flow handles the rest; one click to revoke.
+- **Newest-first default sort** (`sort: '-created'`) so the just-created key appears at the top.
+- **Informative empty state** ("No API keys yet. Click 'Create Key' to add one.").
+- **Explicit `itemView: ApiKeyView`** wiring on the section, removing the prior reliance on a side-effect `VIEW_CLASS` import from `ApiKeyTablePage`. Per `planning/done/groupview-create-api-key-flow-broken.md`.
+- The standalone `ApiKeyTablePage` flow is unchanged — its `Group ID` field still appears (no context to infer from there) and its existing token alert still works.
+
 ### Framework · ListView / TableView `rowStripe:` (severity-coded left-edge color)
 
 - **New `rowStripe:` constructor option on ListView**, inherited by TableView and forwarded by TablePage. Per-row callback `(model) => 'danger' | 'warning' | 'success' | 'info' | 'primary' | 'secondary' | <custom-class> | null` paints a 4px theme-aware left-edge stripe on each row. Bootstrap variant tokens resolve via `--bs-<token>` CSS variables, so light + dark themes track automatically; any other non-empty string is treated as a consumer-defined class name and passes through verbatim. Per `planning/done/framework-listview-severity-stripe.md`.
