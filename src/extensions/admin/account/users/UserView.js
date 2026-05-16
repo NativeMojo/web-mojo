@@ -1264,11 +1264,11 @@ class UserView extends DetailView {
                         {{#model.group.kind}}<span class="badge text-bg-secondary">{{model.group.kind}}</span>{{/model.group.kind}}
                         <span class="ms-auto text-secondary small">Joined {{model.created|date|default:'—'}}</span>
                     </div>
-                    {{#model.permissions|keys}}
+                    {{#model.permissions|keys|bool}}
                         <div class="user-feed-body small text-secondary">
                             {{#model.permissions|keys}}<span class="badge text-bg-light border me-1">{{.}}</span>{{/model.permissions|keys}}
                         </div>
-                    {{/model.permissions|keys}}
+                    {{/model.permissions|keys|bool}}
                 </div>
             `
         });
