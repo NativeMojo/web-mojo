@@ -1284,14 +1284,22 @@ class GroupView extends DetailView {
     /**
      * One-time token reveal. The raw token is only returned at creation time
      * (see `django-mojo/mojo/apps/account/models/api_key.py:241-245`), so this
-     * dialog is the operator's only chance to capture it. Static backdrop +
-     * disabled keyboard dismissal protect against accidental drift.
+     * dialog is the operator's only chance to capture it.
+     *
+     * The copy affordance is an inline clipboard icon next to the token —
+     * matching the framework's `clipboard` DataFormatter pattern. The button
+     * uses `data-action="copy-to-clipboard"` + `data-clipboard="<token>"`;
+     * `View.onActionCopyToClipboard` (inherited via ModalView extends View)
+     * handles the click, including the icon→check success flash and the
+     * `execCommand` fallback for insecure contexts. No custom handler needed.
+     *
+     * `backdrop: 'static'` + `keyboard: false` protects the show-once secret
+     * from accidental dismissal even though the obvious copy affordance is
+     * right at the token.
      */
     async _showApiKeyTokenDialog(token, name, permissionsInput) {
-        const app = this.getApp();
-
         if (!token) {
-            app?.toast?.success('API key created');
+            this.getApp()?.toast?.success('API key created');
             return;
         }
 
@@ -1320,6 +1328,8 @@ class GroupView extends DetailView {
                    <i class="bi bi-info-circle me-1"></i>No permissions granted — this key has read access only to public endpoints.
                </div>`;
 
+        const escapedToken = escapeHtml(token);
+
         const body = `
             <div class="mb-3 fs-6">
                 <i class="bi bi-check-circle-fill text-success me-2"></i>API key <strong>${escapeHtml(name || '')}</strong> created.
@@ -1328,12 +1338,23 @@ class GroupView extends DetailView {
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>
                 <div>Save this token now — it will not be shown again.</div>
             </div>
-            <div class="p-3 rounded font-monospace text-break user-select-all"
+            <div class="d-flex align-items-center gap-2 p-3 rounded"
                  style="background: var(--bs-tertiary-bg);
                         border: 1px solid var(--bs-border-color);
-                        font-size: 0.95rem; line-height: 1.4;
-                        overflow-x: auto;"
-                 aria-label="API token">${escapeHtml(token)}</div>
+                        overflow-x: auto;">
+                <code class="user-select-all font-monospace text-break flex-grow-1"
+                      style="background: transparent; color: inherit;
+                             font-size: 0.95rem; line-height: 1.4;"
+                      aria-label="API token">${escapedToken}</code>
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary flex-shrink-0"
+                        data-action="copy-to-clipboard"
+                        data-clipboard="${escapedToken}"
+                        title="Copy token"
+                        aria-label="Copy token">
+                    <i class="bi bi-clipboard"></i>
+                </button>
+            </div>
             ${permsHtml}
             <div class="small text-secondary mt-3">
                 Treat this token like a password. Anyone with it can call this group's API on your behalf.
@@ -1347,43 +1368,7 @@ class GroupView extends DetailView {
             keyboard: false,
             body,
             buttons: [
-                {
-                    text: 'Copy token',
-                    icon: 'bi-clipboard',
-                    class: 'btn-primary',
-                    handler: async ({ event }) => {
-                        if (!navigator.clipboard) {
-                            app?.toast?.warning('Clipboard unavailable — select and copy the token manually');
-                            return false;
-                        }
-                        try {
-                            await navigator.clipboard.writeText(token);
-                        } catch (err) {
-                            console.error('Token copy failed:', err);
-                            app?.toast?.error('Copy failed — select the token and copy manually');
-                            return false;
-                        }
-                        // Flash success on the actual <button> DOM element
-                        // (mirrors Modal._showCopySuccess at Modal.js:822-836).
-                        const btnEl = event?.currentTarget;
-                        if (btnEl) {
-                            const originalHtml = btnEl.innerHTML;
-                            btnEl.innerHTML = '<i class="bi bi-check me-1"></i>Copied!';
-                            btnEl.classList.remove('btn-primary');
-                            btnEl.classList.add('btn-success');
-                            btnEl.disabled = true;
-                            setTimeout(() => {
-                                if (!btnEl.isConnected) return;
-                                btnEl.innerHTML = originalHtml;
-                                btnEl.classList.remove('btn-success');
-                                btnEl.classList.add('btn-primary');
-                                btnEl.disabled = false;
-                            }, 2000);
-                        }
-                        return false;  // keep open after copy
-                    }
-                },
-                { text: 'Done', class: 'btn-secondary', dismiss: true }
+                { text: 'Close', class: 'btn-secondary', dismiss: true }
             ]
         });
     }
