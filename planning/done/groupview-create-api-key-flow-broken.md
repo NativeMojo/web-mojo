@@ -375,3 +375,20 @@ User QA caught a server-side error during manual verification: `null value in co
 Fixed by mirroring the proven pattern in `ApiKeyTablePage.onActionAdd:74-75`: build the model empty, build the `payload` object, pass it to `save()`. Also read `name` / `permissions` for the token-dialog from the payload instead of the model (clearer; no dependency on `save`'s side-effect of `set()`-ing the response back onto the instance).
 
 This is the bug I should have caught in the build phase — the plan even cited `ApiKeyTablePage.onActionAdd` as the proven pattern, but my code didn't mirror it faithfully. The lesson is that "use this proven pattern" is only meaningful if the diff actually replicates the pattern's argument-passing shape, not just the conceptual outline. Lesson recorded.
+
+### Follow-up commit — `374ad6f`
+
+User UX feedback: putting the **Copy token** button in the modal footer is inconsistent with the rest of WEB-MOJO, which surfaces a copy affordance **inline** next to the value via the `clipboard` DataFormatter (`src/core/utils/DataFormatter.js:175-197`). That pattern emits a button with `data-action="copy-to-clipboard"` + `data-clipboard="<value>"`, and the framework's baseline `View.onActionCopyToClipboard` (`src/core/View.js:822`) handles the click — including the icon→check success flash and the `execCommand` fallback for insecure contexts.
+
+Since `ModalView extends View`, the prototype handler is already inherited; event delegation reaches inline buttons in the modal body via the modal's root listener. No custom handler needed.
+
+Refactor (`_showApiKeyTokenDialog` in `GroupView.js`):
+- Token block reshaped into a `d-flex` row: `<code>` on the left (still `user-select-all` for one-click select), inline copy button on the right.
+- Footer reduced to a single **Close** button.
+- Deleted: ~45 lines of custom handler logic (`navigator.clipboard` feature-detect, success-flash DOM swap with timeout/restore, error toasts). All of it is now handled by the framework's baseline handler.
+
+End-to-end verified in the headless preview: data-action / data-clipboard attrs are wired, clicks fire `View.onActionCopyToClipboard` (confirmed via console showing the framework's own `Copy to clipboard failed: NotAllowedError…` warning — the headless sandbox denies clipboard permission, but the handler IS being invoked, which is what we wanted to prove). In a real browser with clipboard permission, the icon flash will fire normally.
+
+`backdrop: 'static'` + `keyboard: false` retained — proximity of the copy affordance reduces accidental-dismissal likelihood but doesn't change the consequence (total token loss for a show-once secret).
+
+This commit also adds another lesson worth noting: when designing a new bit of UX inside the framework, **search for an existing formatter or pattern that already solves the affordance** before hand-rolling one. The `clipboard` formatter has been in the codebase the entire time; my custom handler was reinventing it with worse fallback behavior.
