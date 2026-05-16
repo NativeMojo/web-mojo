@@ -31,10 +31,13 @@ import ListViewItem from '@core/views/list/ListViewItem.js';
 import MetricCard from '@core/views/data/MetricCard.js';
 import Timeline from '@core/views/data/Timeline.js';
 import Modal from '@core/views/feedback/Modal.js';
+import ModalView from '@core/views/feedback/ModalView.js';
+import SimpleSearchView from '@core/views/navigation/SimpleSearchView.js';
 import MOJOUtils from '@core/utils/MOJOUtils.js';
 import dataFormatter from '@core/utils/DataFormatter.js';
 import { Group, GroupList, GroupForms } from '@core/models/Group.js';
-import { MemberList } from '@core/models/Member.js';
+import { Member, MemberList } from '@core/models/Member.js';
+import { UserList } from '@core/models/User.js';
 import { ApiKey, ApiKeyList, ApiKeyForms } from '@core/models/ApiKey.js';
 import { LogList } from '@core/models/Log.js';
 import { IncidentEventList } from '@ext/admin/models/Incident.js';
@@ -954,17 +957,41 @@ class GroupView extends DetailView {
         });
         const identitySection = new GroupIdentitySection({ model });
 
-        // Members table — click opens MemberView via the registered VIEW_CLASS
+        // Members table — click opens MemberView via the registered VIEW_CLASS.
+        // `showAdd: false` because the generic add path would render a
+        // create-Member-from-scratch form — wrong intent here. The toolbar
+        // gets two custom buttons via `toolbarButtons`: "Invite by Email"
+        // and "Add Existing User" (the two flows that actually make sense
+        // for membership). Each fires a `data-action` whose handler lives
+        // on GroupView — the framework's event delegation bubbles
+        // un-handled actions from the section up to its parent View, so
+        // `onActionInviteByEmail` / `onActionAddExistingUser` on GroupView
+        // catch the clicks.
         const membersSection = new TableView({
             collection: membersCollection,
             title: 'Members',
             showFullscreen: false,
             searchable: false,
             hideActivePillNames: ['group'],
-            showAdd: true,
-            addButtonLabel: 'Invite',
+            showAdd: false,
             clickAction: 'view',
             viewDialogOptions: { header: false, noBodyPadding: true, buttons: [] },
+            toolbarButtons: [
+                {
+                    label: 'Invite by Email',
+                    icon: 'bi bi-envelope',
+                    variant: 'primary',
+                    action: 'invite-by-email',
+                    title: 'Send an invite email — no account required yet'
+                },
+                {
+                    label: 'Add Existing User',
+                    icon: 'bi bi-person-plus',
+                    variant: 'outline-primary',
+                    action: 'add-existing-user',
+                    title: 'Search for an existing user and add them to this group'
+                }
+            ],
             columns: [
                 { key: 'user.display_name', label: 'User', sortable: true },
                 { key: 'user.email', label: 'Email', sortable: true },
@@ -1174,6 +1201,15 @@ class GroupView extends DetailView {
         // toast feedback, and refetch — and we own the failure modes.
         this.apiKeysSection.options.onItemDelete = (model) => this._deleteApiKey(model);
 
+        // Sub-Groups add flow: bypass the generic ListView.onActionAdd so we
+        // can drop the redundant Parent Group field (the parent IS the
+        // current group), and pass the data correctly to Model.save (which
+        // sends its arg verbatim; constructor data is dropped).
+        // `options.onAdd` is read at click time so the post-construction
+        // assignment is fine — unlike `toolbarButtons` which is captured
+        // into the section's HTML template at construction time.
+        this.subGroupsSection.options.onAdd = (event) => this._addSubGroup(event);
+
         // Sidebar badges populated from shared collections
         const updateMembersBadge = () => {
             const n = this.membersCollection.models?.length ?? 0;
@@ -1275,53 +1311,149 @@ class GroupView extends DetailView {
         return true;
     }
 
+    /** Kebab "Invite Member" — delegates to the same flow as the toolbar button. */
     async onActionInviteMember(event) {
-        if (event?.preventDefault) {
-            event.preventDefault();
-            event.stopPropagation();
-        }
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+        await this._inviteMemberByEmail();
+        return true;
+    }
+
+    /** Kebab "Add Sub-Group" — delegates to the same flow as the toolbar add. */
+    async onActionAddChildGroup() {
+        await this._addSubGroup();
+        return true;
+    }
+
+    /**
+     * Members section toolbar — "Invite by Email" button. The click fires
+     * `data-action="invite-by-email"` on the membersSection's toolbar; the
+     * framework's event delegate bubbles the un-handled action up to this
+     * parent View, which catches it here.
+     */
+    async onActionInviteByEmail(event) {
+        event?.preventDefault?.();
+        await this._inviteMemberByEmail();
+        return true;
+    }
+
+    /** Members section toolbar — "Add Existing User" button (data-action bubbles up). */
+    async onActionAddExistingUser(event) {
+        event?.preventDefault?.();
+        await this._addExistingMember();
+        return true;
+    }
+
+    /**
+     * Email-invite flow. POSTs to `/api/group/member/invite` — the backend
+     * sends the invite mail and creates a pending Member row on accept.
+     * Used by both the Members toolbar "Invite by Email" button and the
+     * sidebar kebab "Invite Member" entry.
+     */
+    async _inviteMemberByEmail() {
         const data = await Modal.form({
             title: `Invite User to ${this.model.get('name')}`,
             size: 'sm',
             fields: [
-                { type: 'email', name: 'email', label: 'Email', required: true, cols: 12 }
+                { type: 'email', name: 'email', label: 'Email', required: true, cols: 12, help: 'They will receive an email invitation to join this group.' }
             ]
         });
-        if (!data?.email) return true;
+        if (!data?.email) return;
 
         const app = this.getApp();
         const resp = await app.rest.POST('/api/group/member/invite', {
             group: this.model.id,
             email: data.email
         });
-        if (resp.success) {
-            app.toast.success('User invited successfully');
-            // Refresh the members table if visible
-            await this.membersCollection.fetch();
+        if (resp?.success) {
+            app?.toast?.success(`Invite sent to ${data.email}`);
+            await this.membersCollection.fetch().catch(() => {});
         } else {
-            app.toast.error(resp.message || 'Failed to invite user');
+            app?.toast?.error(resp?.message || 'Failed to send invite');
         }
-        return true;
     }
 
-    async onActionAddChildGroup() {
+    /**
+     * Add-Existing-User flow. Opens a SimpleSearchView bound to UserList so
+     * the operator can type-ahead a name / email; on selection, POSTs a new
+     * Member with `{ group: this.model.id, user: <picked.id> }`. Uses
+     * ModalView directly so we keep a handle to `.hide()` from inside the
+     * `item:selected` listener (same pattern as `GroupSelectorButton`).
+     */
+    async _addExistingMember() {
+        const searchView = new SimpleSearchView({
+            Collection: UserList,
+            searchFields: ['display_name', 'email', 'username'],
+            collectionParams: { size: 25, sort: 'display_name' },
+            headerText: `Add a user to ${this.model.get('name')}`,
+            headerIcon: 'bi bi-person-plus',
+            searchPlaceholder: 'Search by name, email, or username…',
+            noResultsText: 'No users match — try a different search term, or use "Invite by Email".'
+        });
+
+        const dialog = new ModalView({
+            title: `Add Existing User to ${this.model.get('name')}`,
+            body: searchView,
+            size: 'md',
+            scrollable: true,
+            noBodyPadding: true,
+            buttons: [],
+            closeButton: true
+        });
+
+        const handleSelect = async ({ model: user }) => {
+            // Optimistic close so the next dialog feels responsive.
+            dialog.hide();
+            const app = this.getApp();
+            const member = new Member();
+            const resp = await member.save({
+                group: this.model.id,
+                user: user.get('id')
+            });
+            const ok = resp?.data?.status || (resp?.status && resp.status < 400);
+            if (ok) {
+                app?.toast?.success(`${user.get('display_name') || user.get('email') || 'User'} added to ${this.model.get('name')}`);
+                await this.membersCollection.fetch().catch(() => {});
+            } else {
+                app?.toast?.error(resp?.data?.error || resp?.message || 'Failed to add user');
+            }
+        };
+        searchView.on('item:selected', handleSelect);
+
+        dialog.on('hidden', () => {
+            try { dialog.destroy(); } catch { /* best-effort */ }
+        });
+
+        await dialog.render(true, document.body);
+        dialog.show();
+    }
+
+    /**
+     * Add-Sub-Group flow. Filters the redundant `parent` field out of
+     * `GroupForms.create` (parent is implicit — it's the current group) and
+     * passes the payload to `Model.save(data)` directly (constructor data
+     * is dropped by Model.save). Used by both the toolbar Add and the
+     * kebab "Add Sub-Group" entry.
+     */
+    async _addSubGroup() {
+        const noun = this._kindNoun();
         const data = await Modal.form({
-            title: `Add Sub-${this._kindNoun()} to ${this.model.get('name')}`,
+            title: `Add Sub-${noun} to ${this.model.get('name')}`,
             size: 'sm',
             fields: GroupForms.create.fields.filter(f => f.name !== 'parent')
         });
-        if (!data) return true;
+        if (!data) return;
 
-        data.parent = this.model.id;
-        const newGroup = new Group(data);
-        const resp = await newGroup.save();
-        if (resp.status === 200 || resp.status === 201) {
-            this.getApp()?.toast?.success('Sub-group created');
-            await this.subGroupsCollection.fetch();
+        const newGroup = new Group();
+        const payload = { ...data, parent: this.model.id };
+        const resp = await newGroup.save(payload);
+        const ok = resp?.data?.status || (resp?.status && resp.status < 400);
+        if (ok) {
+            this.getApp()?.toast?.success(`Sub-${noun.toLowerCase()} created`);
+            await this.subGroupsCollection.fetch().catch(() => {});
         } else {
-            this.getApp()?.toast?.error(resp.message || 'Failed to create sub-group');
+            this.getApp()?.toast?.error(resp?.data?.error || resp?.message || `Failed to create sub-${noun.toLowerCase()}`);
         }
-        return true;
     }
 
     /**
