@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Admin · Phone Config page (Twilio / AWS / Mojo) + downstream API-key provisioning
+
+- **New `system/phonehub/config` page** registered under System → Phone Hub → **Config** (icon `bi-sliders`), gated on `manage_phone_config` / `manage_groups`. Per-row Provider / Active / Test Mode badges and column filters; default sort `-modified`; default filter `is_active=true`. Per `planning/done/admin-phone-config-mojo-provider.md`.
+- **Single combined create/edit form driven by `showWhen`.** One PhoneConfig record carries a `provider` select that reveals only the matching credential block: **Twilio** (`twilio_from_number`, `twilio_account_sid`, `twilio_auth_token`), **AWS SNS** (`aws_region`, `aws_sender_id`, `aws_access_key_id`, `aws_secret_access_key`), or **Mojo Remote** (`mojo_remote_url`, `mojo_api_key`). Hidden showWhen fields are auto-stripped from `getFormData()`, so switching providers and saving never bleeds the prior provider's typed-but-unsaved secret to the server.
+- **Secrets are write-only.** Password inputs render with a `••••••••` placeholder; blank-on-save is stripped client-side via `PhoneConfig.SECRET_FIELDS` so an empty input never overwrites a stored credential. Backend response graphs already exclude the encrypted blob, so GET → form-prefill never round-trips a value.
+- **Test Connection button** on saved rows posts `{test_connection: 1}` through `Model.save` (same endpoint), surfaces `data.message` inline in a green banner on success or `data.error` in red — disabled while in-flight, replaced by a spinner.
+- **Provision downstream API key flow** (Mojo provider rows only, gated on `manage_groups` / `manage_group`). Tailored one-purpose dialog with fixed permissions `{send_sms: true, comms: true}`; raw token revealed once in a dismissal-protected alert with copy-to-clipboard, then never shown again. Reuses the existing `ApiKey` model and its `resp.data.data.token` one-time pattern.
+- **Cross-link from SMS table.** Provider chip on `system/phonehub/sms` is now value-mapped (twilio=info, aws=warning, mojo=primary) and Mojo rows render as a clickable anchor that navigates to `system/phonehub/config?provider=mojo&group=<sms.group.id>`. New `error_code` column with friendly labels for `timeout` / `http_<status>` / `remote_error` / `remote_failed` / `config_error` / credential codes.
+- **No new framework primitives.** Pure admin-extension wiring around the existing `Model`, `Collection`, `FormView` (showWhen), `TablePage`, and `Modal.show/alert/form` surfaces. New files: `src/extensions/admin/messaging/sms/PhoneConfigTablePage.js`, `src/extensions/admin/messaging/sms/PhoneConfigView.js`. `PhoneConfig` model + `PhoneConfigForms` live alongside the existing PhoneNumber / SMS wrappers in `src/extensions/admin/models/Phonehub.js`.
+
 ### Admin · GroupView Identity section exposes UUID (view + copy + edit + generate)
 
 - **UUID is now a first-class identifier in `GroupView`.** The Identity section gains a dedicated **UUID** flat-row directly under the existing **ID** row. Both rows now carry a copy-to-clipboard button (built from the framework's `clipboard` pipe formatter — same `data-clipboard` carrier + `View.onActionCopyToClipboard` handler that powers every other clipboard control). Per `planning/done/groupview-uuid-not-exposed.md`.

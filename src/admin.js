@@ -31,6 +31,7 @@ export { default as SentMessageTablePage } from '@ext/admin/messaging/email/Sent
 export { default as PublicMessageTablePage } from '@ext/admin/messaging/PublicMessageTablePage.js';
 export { default as PhoneNumberTablePage } from '@ext/admin/messaging/sms/PhoneNumberTablePage.js';
 export { default as SMSTablePage } from '@ext/admin/messaging/sms/SMSTablePage.js';
+export { default as PhoneConfigTablePage } from '@ext/admin/messaging/sms/PhoneConfigTablePage.js';
 export { default as PushDashboardPage } from '@ext/admin/messaging/push/PushDashboardPage.js';
 export { default as PushConfigTablePage } from '@ext/admin/messaging/push/PushConfigTablePage.js';
 export { default as PushTemplateTablePage } from '@ext/admin/messaging/push/PushTemplateTablePage.js';
@@ -88,6 +89,7 @@ export { default as EmailTemplateView } from '@ext/admin/messaging/email/EmailTe
 export { default as EmailView } from '@ext/admin/messaging/email/EmailView.js';
 export { default as PublicMessageView } from '@ext/admin/messaging/PublicMessageView.js';
 export { default as PhoneNumberView } from '@ext/admin/messaging/sms/PhoneNumberView.js';
+export { default as PhoneConfigView } from '@ext/admin/messaging/sms/PhoneConfigView.js';
 export { default as PushDeliveryView } from '@ext/admin/messaging/push/PushDeliveryView.js';
 export { default as PushDeviceView } from '@ext/admin/messaging/push/PushDeviceView.js';
 
@@ -162,6 +164,7 @@ import SentMessageTablePageClass from '@ext/admin/messaging/email/SentMessageTab
 import PublicMessageTablePageClass from '@ext/admin/messaging/PublicMessageTablePage.js';
 import PhoneNumberTablePageClass from '@ext/admin/messaging/sms/PhoneNumberTablePage.js';
 import SMSTablePageClass from '@ext/admin/messaging/sms/SMSTablePage.js';
+import PhoneConfigTablePageClass from '@ext/admin/messaging/sms/PhoneConfigTablePage.js';
 import PushDashboardPageClass from '@ext/admin/messaging/push/PushDashboardPage.js';
 import PushConfigTablePageClass from '@ext/admin/messaging/push/PushConfigTablePage.js';
 import PushTemplateTablePageClass from '@ext/admin/messaging/push/PushTemplateTablePage.js';
@@ -244,6 +247,7 @@ export function registerSystemPages(app, addToMenu = true) {
     app.registerPage('system/push/devices', PushDeviceTablePageClass, { permissions: ["view_devices", "manage_devices"] });
     app.registerPage('system/phonehub/numbers', PhoneNumberTablePageClass, { permissions: ["view_phone_numbers", "manage_phone_numbers"] });
     app.registerPage('system/phonehub/sms', SMSTablePageClass, { permissions: ["view_sms", "manage_sms"] });
+    app.registerPage('system/phonehub/config', PhoneConfigTablePageClass, { permissions: ["manage_phone_config", "manage_groups"] });
     app.registerPage('system/api-keys', ApiKeyTablePageClass, { permissions: ["manage_groups", "manage_group"] });
     app.registerPage('system/settings', SettingTablePageClass, { permissions: ["manage_settings"] });
     app.registerPage('system/cloudwatch', CloudWatchDashboardPageClass, { permissions: ["manage_aws"] });
@@ -396,6 +400,7 @@ export function registerSystemPages(app, addToMenu = true) {
                     children: [
                         { text: 'Numbers', route: '?page=system/phonehub/numbers', icon: 'bi-collection', permissions: ["view_phone_numbers", "manage_phone_numbers"] },
                         { text: 'SMS', route: '?page=system/phonehub/sms', icon: 'bi-chat-dots', permissions: ["view_sms", "manage_sms"] },
+                        { text: 'Config', route: '?page=system/phonehub/config', icon: 'bi-sliders', permissions: ["manage_phone_config", "manage_groups"] },
                     ]
                 },
 

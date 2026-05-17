@@ -25,6 +25,7 @@
 import Model from '@core/Model.js';
 import Collection from '@core/Collection.js';
 import rest from '@core/Rest.js';
+import { GroupList } from '@core/models/Group.js';
 
 // ======================================================
 // PhoneNumber Model & Collection
@@ -162,17 +163,169 @@ class SMSList extends Collection {
 
 }
 
+// ======================================================
+// PhoneConfig Model & Collection
+// ======================================================
+
+/**
+ * PhoneConfig - Per-group (or system-default) SMS provider configuration.
+ *
+ * One row holds the provider choice plus its credentials. Per-credential
+ * auto-setters on the backend route credential body keys through encrypted
+ * storage on the same POST that updates scalar fields, so create / edit /
+ * test_connection all share `/api/phonehub/config[/<pk>]`.
+ *
+ * Endpoints:
+ *   GET    /api/phonehub/config           - List
+ *   GET    /api/phonehub/config/<id>      - Get
+ *   POST   /api/phonehub/config           - Create
+ *   POST   /api/phonehub/config/<id>      - Update / test_connection
+ *   DELETE /api/phonehub/config/<id>      - Delete
+ */
+class PhoneConfig extends Model {
+  constructor(data = {}, options = {}) {
+    super(data, {
+      endpoint: '/api/phonehub/config',
+      ...options
+    });
+  }
+}
+
+class PhoneConfigList extends Collection {
+  constructor(options = {}) {
+    super({
+      ModelClass: PhoneConfig,
+      endpoint: '/api/phonehub/config',
+      size: 25,
+      ...options
+    });
+  }
+}
+
+// Credential fields that must never be round-tripped from a GET response —
+// the backend graph excludes them, but the frontend also strips blanks before
+// save so we never overwrite a stored secret with an empty string.
+const PHONE_CONFIG_SECRET_FIELDS = [
+  'twilio_account_sid',
+  'twilio_auth_token',
+  'aws_access_key_id',
+  'aws_secret_access_key',
+  'mojo_api_key'
+];
+
+const PHONE_CONFIG_PROVIDER_OPTIONS = [
+  { value: 'twilio', label: 'Twilio' },
+  { value: 'aws',    label: 'AWS SNS' },
+  { value: 'mojo',   label: 'Mojo Remote Instance' }
+];
+
+const SECRET_PLACEHOLDER = '••••••••  (leave blank to keep existing)';
+
+const PHONE_CONFIG_COMMON_FIELDS = [
+  { name: 'name', type: 'text', label: 'Name', required: true, columns: 8,
+    placeholder: 'e.g. Primary Twilio, Backup AWS, Mojo Bridge' },
+  { type: 'collection', name: 'group', label: 'Group (leave blank for System Default)',
+    Collection: GroupList, labelField: 'name', valueField: 'id',
+    placeholder: 'Search groups…', emptyFetch: false, debounceMs: 300, columns: 4 },
+  { name: 'provider', type: 'select', label: 'Provider', required: true,
+    options: PHONE_CONFIG_PROVIDER_OPTIONS, columns: 4 },
+  { name: 'is_active', type: 'switch', label: 'Active', columns: 2 },
+  { name: 'test_mode', type: 'switch', label: 'Test Mode', columns: 2,
+    help: 'When on, the provider sandbox/test endpoint is used.' },
+  { name: 'lookup_enabled', type: 'switch', label: 'Lookup Enabled', columns: 2 },
+  { name: 'lookup_cache_days', type: 'number', label: 'Lookup Cache (days)', columns: 2 }
+];
+
+const PHONE_CONFIG_TWILIO_FIELDS = [
+  { type: 'header', label: 'Twilio credentials', columns: 12,
+    showWhen: { field: 'provider', value: 'twilio' } },
+  { name: 'twilio_from_number', type: 'text', label: 'Twilio From Number',
+    placeholder: '+15551234567', columns: 6,
+    showWhen: { field: 'provider', value: 'twilio' } },
+  { name: 'twilio_account_sid', type: 'password', label: 'Twilio Account SID',
+    placeholder: SECRET_PLACEHOLDER, columns: 6, autocomplete: 'off',
+    showWhen: { field: 'provider', value: 'twilio' } },
+  { name: 'twilio_auth_token', type: 'password', label: 'Twilio Auth Token',
+    placeholder: SECRET_PLACEHOLDER, columns: 12, autocomplete: 'new-password',
+    showWhen: { field: 'provider', value: 'twilio' } }
+];
+
+const PHONE_CONFIG_AWS_FIELDS = [
+  { type: 'header', label: 'AWS SNS credentials', columns: 12,
+    showWhen: { field: 'provider', value: 'aws' } },
+  { name: 'aws_region', type: 'text', label: 'AWS Region', value: 'us-east-1',
+    placeholder: 'us-east-1', columns: 6,
+    showWhen: { field: 'provider', value: 'aws' } },
+  { name: 'aws_sender_id', type: 'text', label: 'Sender ID',
+    placeholder: 'Optional alphanumeric sender (region-dependent)', columns: 6,
+    showWhen: { field: 'provider', value: 'aws' } },
+  { name: 'aws_access_key_id', type: 'password', label: 'Access Key ID',
+    placeholder: SECRET_PLACEHOLDER, columns: 6, autocomplete: 'off',
+    showWhen: { field: 'provider', value: 'aws' } },
+  { name: 'aws_secret_access_key', type: 'password', label: 'Secret Access Key',
+    placeholder: SECRET_PLACEHOLDER, columns: 6, autocomplete: 'new-password',
+    showWhen: { field: 'provider', value: 'aws' } }
+];
+
+const PHONE_CONFIG_MOJO_FIELDS = [
+  { type: 'header', label: 'Mojo Remote credentials', columns: 12,
+    showWhen: { field: 'provider', value: 'mojo' } },
+  { name: 'mojo_remote_url', type: 'url', label: 'Remote Mojo URL',
+    placeholder: 'https://sms.example.com', columns: 12,
+    showWhen: { field: 'provider', value: 'mojo' } },
+  { name: 'mojo_api_key', type: 'password', label: 'Mojo API Key',
+    placeholder: SECRET_PLACEHOLDER, columns: 12, autocomplete: 'new-password',
+    help: 'Paste the token shown once when the API key was provisioned on the remote mojo. We never display it after save.',
+    showWhen: { field: 'provider', value: 'mojo' } }
+];
+
+const PHONE_CONFIG_FIELDS = [
+  ...PHONE_CONFIG_COMMON_FIELDS,
+  ...PHONE_CONFIG_TWILIO_FIELDS,
+  ...PHONE_CONFIG_AWS_FIELDS,
+  ...PHONE_CONFIG_MOJO_FIELDS
+];
+
+const PhoneConfigForms = {
+  create: {
+    title: 'New Phone Config',
+    fields: PHONE_CONFIG_FIELDS,
+    defaults: {
+      provider: 'twilio',
+      is_active: true,
+      test_mode: false,
+      lookup_enabled: true,
+      lookup_cache_days: 90
+    }
+  },
+  edit: {
+    title: 'Edit Phone Config',
+    fields: PHONE_CONFIG_FIELDS
+  }
+};
+
+PhoneConfig.ADD_FORM = PhoneConfigForms.create;
+PhoneConfig.EDIT_FORM = PhoneConfigForms.edit;
+PhoneConfig.SECRET_FIELDS = PHONE_CONFIG_SECRET_FIELDS;
+PhoneConfig.PROVIDER_OPTIONS = PHONE_CONFIG_PROVIDER_OPTIONS;
+
 // Exported API
 export {
   PhoneNumber,
   PhoneNumberList,
   SMS,
-  SMSList
+  SMSList,
+  PhoneConfig,
+  PhoneConfigList,
+  PhoneConfigForms
 };
 
 export default {
   PhoneNumber,
   PhoneNumberList,
   SMS,
-  SMSList
+  SMSList,
+  PhoneConfig,
+  PhoneConfigList,
+  PhoneConfigForms
 };
