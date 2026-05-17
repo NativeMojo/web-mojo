@@ -104,6 +104,20 @@ class EventOverviewSection extends View {
         super({
             className: 'event-overview-section',
             template: `
+                <style>
+                    /* The framework's .detail-kpi-grid only drops to 2-up below
+                       480px container width — but an lg modal is wider than that,
+                       so long values like 'Rest_value_error' overflow the 4-up
+                       layout. Force 2x2 in this section, and let any oversized
+                       value wrap on any character. */
+                    .event-overview-section .detail-kpi-grid {
+                        grid-template-columns: repeat(2, minmax(0, 1fr));
+                    }
+                    .event-overview-section .metric-card-value {
+                        overflow-wrap: anywhere;
+                        word-break: break-word;
+                    }
+                </style>
                 <div class="detail-kpi-grid">
                     <div data-container="event-kpi-level"></div>
                     <div data-container="event-kpi-scope"></div>
