@@ -73,8 +73,7 @@ User.CATEGORY_PERMISSIONS = [
     { name: "jobs", label: "Jobs", tooltip: "Jobs, job events, job logs, runners, queue control, system stats" },
     { name: "metrics", label: "Metrics", tooltip: "Metrics recording, fetching, categories, values, permissions" },
     { name: "files", label: "Files", tooltip: "File managers, files, renditions, vault files, vault data, S3 buckets" },
-    { name: "assistant", label: "Mojo", tooltip: "Access to Mojo" },
-    { name: "comms", label: "Communication", tooltip: "Ability to notify users" },
+    { name: "assistant", label: "Mojo", tooltip: "Access to Mojo" }
 ];
 
 // ── Granular Permissions (fine-grained view/manage pairs) ─────────
