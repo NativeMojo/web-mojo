@@ -13,6 +13,7 @@
 - [The `system` Sidebar Menu](#the-system-sidebar-menu)
 - [Topbar Wiring](#topbar-wiring)
 - [Permissions](#permissions)
+- [Phone Hub — Config Page (`system/phonehub/config`)](#phone-hub--config-page-systemphonehubconfig)
 - [Importing Individual Pages & Views](#importing-individual-pages--views)
 - [Convenience Helpers (`Class.show(...)`)](#convenience-helpers-classshow)
 - [Admin Assistant](#admin-assistant)
@@ -35,7 +36,7 @@ The admin extension ships ~50 pre-built admin pages plus an LLM-backed Assistant
 - **Network Security** — IPs, IP sets, blocked, firewall log.
 - **Bouncer** — signals, devices, bots.
 - **Job engine** — dashboard, runners, jobs, scheduled tasks.
-- **Messaging** — email domains/mailboxes/templates/sent, public (contact-form) messages, SMS phone numbers, SMS log.
+- **Messaging** — email domains/mailboxes/templates/sent, public (contact-form) messages, SMS phone numbers, SMS log, SMS provider configs (Twilio / AWS SNS / Mojo Remote).
 - **Push notifications** — dashboard, configurations, templates, deliveries, devices.
 - **Storage** — file managers, files, S3 buckets.
 - **Shortlinks** — links table, click history.
@@ -285,11 +286,26 @@ Every admin page is registered with a `permissions:` requirement. The framework'
 - `view_fileman` / `manage_files` — file managers and file table
 - `manage_shortlinks` — shortlinks and click history
 - `manage_notifications` / `manage_push_config` / `view_notifications` / `view_devices` / `manage_devices` — push notifications and devices
-- `view_phone_numbers` / `manage_phone_numbers` / `view_sms` / `manage_sms` — phone hub
+- `view_phone_numbers` / `manage_phone_numbers` / `view_sms` / `manage_sms` — phone hub numbers and SMS log
+- `manage_phone_config` / `manage_groups` — phone hub provider config (`system/phonehub/config`)
 - `view_logs` / `manage_settings` / `manage_metrics` — system pages
 - `view_support` / `support` — contact-form messages
 
 > ℹ️ The complete `(route, permissions)` mapping lives in [`src/admin.js`](../../src/admin.js) as the single source of truth. Don't duplicate it here — read the source.
+
+---
+
+## Phone Hub — Config Page (`system/phonehub/config`)
+
+`PhoneConfigTablePage` (route `system/phonehub/config`) lists per-group SMS provider configurations and appears under **Phonehub → Config** in the admin sidebar. Each row is one `PhoneConfig` with a provider (Twilio, AWS SNS, or Mojo Remote) and its encrypted credentials. Clicking a row opens `PhoneConfigView` — an inline detail panel with an embedded `FormView` whose credential fields (`showWhen`) appear or hide based on the selected provider. Blank credential inputs are stripped before save so existing stored secrets are never accidentally cleared.
+
+From the view, operators can also:
+
+- **Test Connection** — sends `POST /api/phonehub/config/<id>` with `{ test_connection: 1 }` and shows the result inline without re-rendering the form.
+- **Provision downstream API key** (Mojo provider only, visible to superusers and users with `manage_groups`) — opens a focused form to create an `ApiKey` with fixed `send_sms` + `comms` permissions, then displays the raw token in a one-time `Modal.alert` with a copy button.
+- **Delete** — issues `DELETE /api/phonehub/config/<id>` after a `Modal.confirm` prompt.
+
+The `SMSTablePage` provider chip now links directly to `system/phonehub/config` for quick navigation.
 
 ---
 
@@ -304,7 +320,7 @@ import {
     IncidentDashboardPage, IncidentTablePage, EventTablePage, TicketTablePage, RuleSetTablePage,
     JobDashboardPage, JobRunnersPage, JobsTablePage, ScheduledTaskTablePage,
     EmailDomainTablePage, EmailTemplateTablePage, SentMessageTablePage, PublicMessageTablePage,
-    PhoneNumberTablePage, SMSTablePage,
+    PhoneNumberTablePage, SMSTablePage, PhoneConfigTablePage,
     PushDashboardPage, PushConfigTablePage, PushTemplateTablePage, PushDeliveryTablePage, PushDeviceTablePage,
     FileManagerTablePage, FileTablePage, S3BucketTablePage,
     ShortLinkTablePage, ShortLinkClickTablePage,
@@ -316,7 +332,7 @@ import {
     DeviceView, GeoIPView, GroupView, MemberView, UserView, ApiKeyView,
     IncidentView, EventView, TicketView, TicketPanelView, ActionCardView, ResolvedActionsSummaryView, RuleSetView,
     JobDetailsView, JobHealthView, JobStatsView, RunnerDetailsView, ScheduledTaskView,
-    EmailTemplateView, EmailView, PublicMessageView, PhoneNumberView, PushDeliveryView, PushDeviceView,
+    EmailTemplateView, EmailView, PublicMessageView, PhoneNumberView, PhoneConfigView, PushDeliveryView, PushDeviceView,
     ShortLinkView, BouncerSignalView, BouncerDeviceView, IPSetView,
     LogView, MetricsPermissionsView, SettingView, FileView, CloudWatchResourceView, CloudWatchChart,
     AssistantView, AssistantSkillView, AssistantConversationView,
@@ -492,7 +508,7 @@ import { Push, PushDevice, PushTemplate } from 'web-mojo/admin-models';
 | `LoginEvent` | Geolocated login history | `/api/account/logins` |
 | `PublicMessage` | Contact form / public-facing messages | `/api/messaging/public` |
 | `Push` | Push device / template / config / delivery | `/api/account/devices/push/...` |
-| `Phonehub` | Phone numbers + SMS | `/api/phonehub/...` |
+| `Phonehub` | Phone numbers + SMS + provider configs (`PhoneConfig` / `PhoneConfigList`) | `/api/phonehub/...` |
 | `ScheduledTask` | Cron-style task definitions | `/api/jobs/scheduled_task` |
 | `Tickets` | Ticket + ticket notes (cross-references Incident, User) | `/api/incident/ticket` |
 
