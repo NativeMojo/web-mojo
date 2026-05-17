@@ -544,7 +544,7 @@ class EventBouncerSection extends View {
     get decisionBadge() {
         const d = this.model.get('metadata.decision') || '';
         const variant = _decisionVariant(d);
-        return `<span class="badge bg-${variant}">${this.escapeHtml(String(d))}</span>`;
+        return `<span class="badge bg-${this.escapeHtml(variant)}">${this.escapeHtml(String(d))}</span>`;
     }
 
     get signals() {
@@ -555,7 +555,7 @@ class EventBouncerSection extends View {
     get signalsHtml() {
         return this.signals.map(sig => {
             const variant = _signalChipVariant(sig);
-            return `<span class="badge bg-${variant}">${this.escapeHtml(String(sig))}</span>`;
+            return `<span class="badge bg-${this.escapeHtml(variant)}">${this.escapeHtml(String(sig))}</span>`;
         }).join('');
     }
 }
