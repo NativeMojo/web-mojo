@@ -4,6 +4,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
+import MOJOUtils from '@core/utils/MOJOUtils.js';
 import { SMS, SMSList } from '@ext/admin/models/Phonehub.js';
 import SMSView from './SMSView.js';
 
@@ -28,7 +29,7 @@ function formatErrorCode(value) {
     if (ERROR_CODE_LABELS[v]) return ERROR_CODE_LABELS[v];
     const m = v.match(/^http_(\d+)$/);
     if (m) return `HTTP ${m[1]}`;
-    return v;
+    return MOJOUtils.escapeHtml(v);
 }
 
 const PROVIDER_BADGE_COLORS = { twilio: 'info', aws: 'warning', mojo: 'primary' };
@@ -42,16 +43,18 @@ function renderProviderCell(value, ctx) {
     if (value === null || value === undefined || value === '') return '—';
     const v = String(value);
     const color = PROVIDER_BADGE_COLORS[v] || 'secondary';
+    const label = MOJOUtils.escapeHtml(v);
     if (v === 'mojo') {
         const g = ctx?.model?.get?.('group');
-        const gid = g && typeof g === 'object' ? g.id : (g || '');
+        const rawGid = g && typeof g === 'object' ? g.id : (g || '');
+        const gid = MOJOUtils.escapeHtml(rawGid);
         return `<a class="badge bg-${color} text-decoration-none"
                    href="#"
                    data-action="open-phone-config"
                    data-group="${gid}"
-                   title="Open Phone Config">${v}</a>`;
+                   title="Open Phone Config">${label}</a>`;
     }
-    return `<span class="badge bg-${color}">${v}</span>`;
+    return `<span class="badge bg-${color}">${label}</span>`;
 }
 
 class SMSTablePage extends TablePage {

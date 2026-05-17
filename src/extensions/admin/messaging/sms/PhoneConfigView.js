@@ -16,6 +16,7 @@
 import View from '@core/View.js';
 import FormView from '@core/forms/FormView.js';
 import Modal from '@core/views/feedback/Modal.js';
+import MOJOUtils from '@core/utils/MOJOUtils.js';
 import { GroupList } from '@core/models/Group.js';
 import { ApiKey } from '@core/models/ApiKey.js';
 import { PhoneConfig, PhoneConfigForms } from '@ext/admin/models/Phonehub.js';
@@ -384,6 +385,7 @@ class PhoneConfigView extends View {
         }
 
         const token = resp?.data?.data?.token;
+        const tokenEscaped = token ? MOJOUtils.escapeHtml(token) : '';
         await Modal.alert({
             title: 'API Key Created — Save Your Token',
             type: token ? 'warning' : 'success',
@@ -393,11 +395,11 @@ class PhoneConfigView extends View {
             html: token
                 ? `<p class="mb-2">Paste this into the downstream PhoneConfig's <strong>Mojo API Key</strong> field. It will not be shown again.</p>
                    <div class="bg-body-tertiary border rounded p-3 d-flex align-items-center gap-2">
-                     <code class="font-monospace flex-grow-1 user-select-all" style="word-break:break-all;">${token}</code>
+                     <code class="font-monospace flex-grow-1 user-select-all" style="word-break:break-all;">${tokenEscaped}</code>
                      <button type="button"
                              class="btn btn-sm btn-outline-secondary"
                              data-action="copy-to-clipboard"
-                             data-clipboard="${token}"
+                             data-clipboard="${tokenEscaped}"
                              title="Copy to clipboard">
                        <i class="bi bi-clipboard"></i>
                      </button>
