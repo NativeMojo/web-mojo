@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Forms · `columns: { xs, sm, md, lg, xl, xxl }` now actually renders responsive Bootstrap classes
+
+- **Field-level responsive `columns` is wired up end-to-end.** `FormBuilder.buildFieldHTML` now recognises the object form documented in `forms/FieldTypes.md`, `forms/README.md`, and `pages/FormPage.md` — `columns: { xs: 12, md: 4 }` emits `class="col-12 col-md-4"` (and similarly for `sm`/`lg`/`xl`/`xxl`). Previously the object stringified to `col-[object Object]`, which Bootstrap silently ignored, so every responsive field collapsed to full-width and stacked. The integer form (`columns: 6` → `col-6`) is unchanged; an empty object falls back to `col-12`; `field.class` extras are still appended.
+- **No new public API.** The object syntax was already documented and partially implemented (groups via `buildGroupHTML` already accepted it). This change brings field-level rendering in line with the docs.
+- **New unit test:** `test/unit/FormBuilder.columns.test.js` pins both the legacy integer behaviour and the responsive object output (including the empty-object fallback and `field.class` interaction).
+
 ### Admin · Phone Config page (Twilio / AWS / Mojo) + downstream API-key provisioning
 
 - **New `system/phonehub/config` page** registered under System → Phone Hub → **Config** (icon `bi-sliders`), gated on `manage_phone_config` / `manage_groups`. Per-row Provider / Active / Test Mode badges and column filters; default sort `-modified`; default filter `is_active=true`. Per `planning/done/admin-phone-config-mojo-provider.md`.

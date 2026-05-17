@@ -364,6 +364,14 @@ class SimpleModuleLoader {
                 path: path.join(this.sourceRoot, 'extensions/admin/jobs/RunnerDetailsView.js'),
                 dependencies: ['View', 'DetailView', 'Modal', 'StatusPanel', 'KnownFieldsCard', 'MOJOUtils']
             },
+            'FormBuilder': {
+                // FormBuilder is a pure HTML generator (no lifecycle). Tests stub
+                // `global.FormPlugins = {}` and `global.TabView = class {}` before
+                // loadModule — the two imported symbols are only invoked inside
+                // null-safe optional chains so empty stubs are enough.
+                path: path.join(this.sourceRoot, 'core/forms/FormBuilder.js'),
+                dependencies: ['MOJOUtils']
+            },
             'IncidentView': {
                 // Same TableView caveat as JobDetailsView. Tests must stub
                 // `global.TableView`, the model-import stubs
@@ -519,7 +527,8 @@ class SimpleModuleLoader {
                 TimezoneSelect: 'TimezoneSelect',
                 TimePicker: 'TimePicker',
                 DateTimePicker: 'DateTimePicker',
-                TableView: 'TableView'
+                TableView: 'TableView',
+                FormBuilder: 'FormBuilder'
             };
             if (fallbackReturns[moduleName]) {
                 code += `\nreturn ${fallbackReturns[moduleName]};`;
@@ -565,6 +574,8 @@ class SimpleModuleLoader {
             { test: /\/TimePicker(\.js)?$/, name: 'TimePicker' },
             { test: /\/DateTimePicker(\.js)?$/, name: 'DateTimePicker' },
             { test: /\/TableView(\.js)?$/, name: 'TableView' },
+            { test: /FormPlugins(\.js)?$/, name: 'FormPlugins' },
+            { test: /\/TabView(\.js)?$/, name: 'TabView' },
             { test: /\/SideNavView(\.js)?$/, name: 'SideNavView' },
             { test: /\/ContextMenu(\.js)?$/, name: 'ContextMenu' },
             { test: /\/SegmentControl(\.js)?$/, name: 'SegmentControl' },

@@ -839,10 +839,23 @@ class FormBuilder {
     }
     }
 
-    // Wrap field in column - handle auto-sizing columns
+    // Wrap field in column - handle auto-sizing columns and responsive object syntax
     let colClass;
     if (this.isAutoSizingField(field)) {
       colClass = `col ${fieldClass}`.trim();
+    } else if (typeof columns === 'object' && columns !== null) {
+      // Responsive syntax: columns: { xs: 12, sm: 6, md: 4, lg: 3, xl: 2, xxl: 2 }
+      // Emit one Bootstrap class per declared breakpoint; xs maps to bare col-N.
+      const parts = [];
+      if (columns.xs)  parts.push(`col-${columns.xs}`);
+      if (columns.sm)  parts.push(`col-sm-${columns.sm}`);
+      if (columns.md)  parts.push(`col-md-${columns.md}`);
+      if (columns.lg)  parts.push(`col-lg-${columns.lg}`);
+      if (columns.xl)  parts.push(`col-xl-${columns.xl}`);
+      if (columns.xxl) parts.push(`col-xxl-${columns.xxl}`);
+      if (parts.length === 0) parts.push('col-12');
+      if (fieldClass) parts.push(fieldClass);
+      colClass = parts.join(' ');
     } else {
       colClass = `col-${columns} ${fieldClass}`.trim();
     }
