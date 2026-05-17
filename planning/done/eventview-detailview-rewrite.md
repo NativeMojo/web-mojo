@@ -205,3 +205,33 @@ Migrate `src/extensions/admin/incidents/EventView.js` from `View`+`TabView`+sing
 ### Docs Impact
 - No `docs/web-mojo/` updates (admin extension internal reskin, no framework-primitive change).
 - No `CHANGELOG.md` entry (no published-API change).
+
+---
+
+## Resolution
+**Status**: Resolved — 2026-05-16
+
+**Files changed**:
+- `src/extensions/admin/incidents/EventView.js` — wholesale rewrite. New section classes added in-file (mirroring `IncidentView.js` organisation): `EventOverviewSection`, `EventSourceSection`, `EventRequestSection`, `EventStackTraceSection`, `EventOssecSection`, `EventBouncerSection`, `EventPermissionsSection`, `EventRawSection`. `EventView` now extends `DetailView`, header config supplies the icon tone, chips (level / scope / category / country / per-signal / related-model), and `contextMenu` (View Incident / View Related Model / Delete Event). Section list is built conditionally — only the sections whose data is present appear in the rail, gated under an `Investigation` divider, with `Raw` (always present, open by default) under its own divider. The old level-tone bug was also fixed: `_iconForLevel` used Python-logging thresholds (40/30/20) but actual `IncidentEvent.level` values are 1–5, so the icon was always rendering as the default secondary bell. New thresholds: ≥5 danger, ≥4 warning, ≥3 info, else secondary.
+- `src/extensions/admin/incidents/EventTablePage.js` — `viewDialogOptions` updated from `{ header: false, size: 'lg' }` to `{ header: false, noBodyPadding: true, buttons: [] }` so the new `DetailView` sits flush with no footer (matching `IncidentTablePage.js:22`).
+- No CSS files touched, no framework primitives modified, no doc files modified, no new endpoints.
+
+**Commits**:
+- `8bc182b` feat(admin): rewrite EventView on DetailView + sidebar sections
+- `6cb95bb` security(admin): defence-in-depth escape on EventView badge variant
+
+**Tests run**:
+- `npx eslint src/extensions/admin/incidents/EventView.js src/extensions/admin/incidents/EventTablePage.js` — zero findings on both files.
+- `npm run test:unit` (via test-runner agent) — 1120/1127 unit specs pass. The 7 failing specs are in `test/unit/IncidentView.test.js` (`ListView is not a constructor`) and pre-date this work; they are tracked to a missing entry in `test/utils/simple-module-loader.js` for `ListView`, unrelated to `EventView`.
+- Browser smoke test: the Vite dev server (PID 38055, port 3002) is running against this working tree, so HMR will pick up the change on any fresh page load, but the in-tool preview tab was stuck on a `chrome-error://` page from earlier navigation and JS-driven `location.replace` from a chrome-error origin is blocked. **Visual verification across the five sample event payloads (bouncer monitor, permission denied, mojo rest error, ossec nginx error, ossec nginx 502) was not completed from this session and should be done with a regular browser before declaring the UX win.**
+
+**Agent findings**:
+- **docs-updater**: No documentation update needed. Diff only touches admin-extension files; framework primitives (`DetailView`, `KnownFieldsCard`, `SideNavView`, `MetricCard`, `StackTraceView`, `Modal.detail`) are consumed unchanged.
+- **security-review**: Confirmed all four `{{{triple-brace}}}` slots (`signalsHtml`, `decisionBadge`, `permissionKeysHtml`, `permsHtml`) escape user-controlled text correctly. Flagged one defence-in-depth opportunity: the `variant` segment of `bg-${variant}` was not `escapeHtml`'d. Even though `_signalChipVariant` / `_decisionVariant` return values from a fixed allow-list today, a future refactor breaking that contract would silently open an attribute-break. Fix applied in `6cb95bb`.
+- **test-runner**: Lint-clean on the touched files; full unit suite delta is zero (all pre-existing failures unaffected by this change).
+
+**Validation**:
+- Lint passes for both touched files.
+- Test suite delta is zero (pre-existing IncidentView.test.js failures unrelated).
+- Security review's defence-in-depth note was incorporated.
+- Pending: browser walk-through across the five payload categories from the original request, in both light + dark theme, to confirm the section visibility logic lights up the right rail entries per category.
