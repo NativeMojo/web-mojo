@@ -31,7 +31,8 @@ class EventTablePage extends TablePage {
 
             viewDialogOptions: {
                 header: false,
-                size: 'lg'
+                noBodyPadding: true,
+                buttons: []
             },
 
             defaultQuery: {
