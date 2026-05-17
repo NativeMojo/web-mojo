@@ -224,16 +224,19 @@ const SECRET_PLACEHOLDER = '••••••••  (leave blank to keep exist
 const PHONE_CONFIG_COMMON_FIELDS = [
   { name: 'name', type: 'text', label: 'Name', required: true, columns: 8,
     placeholder: 'e.g. Primary Twilio, Backup AWS, Mojo Bridge' },
-  { type: 'collection', name: 'group', label: 'Group (leave blank for System Default)',
+  { type: 'collection', name: 'group', label: 'Group',
     Collection: GroupList, labelField: 'name', valueField: 'id',
-    placeholder: 'Search groups…', emptyFetch: false, debounceMs: 300, columns: 4 },
+    placeholder: 'Search groups…', emptyFetch: false, debounceMs: 300,
+    columns: 4, help: 'Leave blank for the System Default config.' },
   { name: 'provider', type: 'select', label: 'Provider', required: true,
-    options: PHONE_CONFIG_PROVIDER_OPTIONS, columns: 4 },
-  { name: 'is_active', type: 'switch', label: 'Active', columns: 2 },
-  { name: 'test_mode', type: 'switch', label: 'Test Mode', columns: 2,
-    help: 'When on, the provider sandbox/test endpoint is used.' },
-  { name: 'lookup_enabled', type: 'switch', label: 'Lookup Enabled', columns: 2 },
-  { name: 'lookup_cache_days', type: 'number', label: 'Lookup Cache (days)', columns: 2 }
+    options: PHONE_CONFIG_PROVIDER_OPTIONS, columns: 6 },
+  { name: 'lookup_cache_days', type: 'number', label: 'Lookup cache (days)',
+    columns: 6, help: 'Carrier-lookup cache lifetime per number.' },
+  { name: 'is_active', type: 'switch', label: 'Active', columns: 4 },
+  { name: 'test_mode', type: 'switch', label: 'Test mode', columns: 4,
+    help: 'Use the provider sandbox / test endpoint.' },
+  { name: 'lookup_enabled', type: 'switch', label: 'Lookup', columns: 4,
+    help: 'Auto-run carrier lookups on new numbers.' }
 ];
 
 const PHONE_CONFIG_TWILIO_FIELDS = [
@@ -308,6 +311,8 @@ PhoneConfig.ADD_FORM = PhoneConfigForms.create;
 PhoneConfig.EDIT_FORM = PhoneConfigForms.edit;
 PhoneConfig.SECRET_FIELDS = PHONE_CONFIG_SECRET_FIELDS;
 PhoneConfig.PROVIDER_OPTIONS = PHONE_CONFIG_PROVIDER_OPTIONS;
+// Open the Add dialog wide enough for the provider-conditional credential rows.
+PhoneConfig.FORM_DIALOG_CONFIG = { size: 'lg', submitText: 'Create' };
 
 // Exported API
 export {
