@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | Type | request |
-| Status | planned |
+| Status | resolved |
 | Date | 2026-05-16 |
 | Priority | medium |
 
@@ -255,19 +255,62 @@ and any changed secret keys; "Test connection" uses the same endpoint with
 
 ---
 
-<!-- Fill in when the request is resolved, then move the file to planning/done/ -->
 ## Resolution
-**Status**: Resolved — YYYY-MM-DD
+**Status**: Resolved — 2026-05-16
 
-**Files changed**:
-- `src/...`
+### What shipped
 
-**Tests run**:
-- `npm run ...`
+- **New admin route `system/phonehub/config`** registered under **System → Phone Hub → Config** (icon `bi-sliders`), gated on `manage_phone_config` / `manage_groups`. Table columns: name, group (`'System Default'` fallback), provider (value-mapped chip: twilio=info, aws=warning, mojo=primary), is_active badge, test_mode badge, modified relative. Default query: `is_active=true`, `sort=-modified`. Provider / Active / Test Mode column filter chips.
+- **One combined create/edit form** with provider-conditional `showWhen` blocks for Twilio (`twilio_from_number` + `twilio_account_sid` + `twilio_auth_token`), AWS SNS (`aws_region` + `aws_sender_id` + `aws_access_key_id` + `aws_secret_access_key`), and Mojo Remote (`mojo_remote_url` + `mojo_api_key`). Secrets are write-only `<input type="password">` with `••••••••` placeholder. Blank secret inputs are stripped client-side via `PhoneConfig.SECRET_FIELDS` before save so existing stored credentials are never overwritten by an empty value; hidden showWhen fields are already auto-stripped by `FormView.getFormData()`.
+- **PhoneConfigView** (modal body) embeds a single `FormView` plus an action row: **Test connection** (POST `{test_connection: 1}` via `Model.save`; inline green/red banner with the result), **Save** (validates + strips blank secrets + saves; toast on success, inline error on failure), **Provision downstream API key** (mojo-only, gated on `manage_groups`/`manage_group`; opens a tailored single-purpose form with fixed perms `{send_sms: true, comms: true}` and reveals the raw token exactly once in a dismissal-protected `Modal.alert` with copy-to-clipboard), and **Delete** (`Modal.confirm` + `model.destroy()`).
+- **Cross-link from the existing `system/phonehub/sms` page**: provider chip now value-mapped, Mojo rows render as a clickable anchor that navigates to the new Config page filtered by the SMS's group. New `error_code` column with friendly labels for `timeout` / `http_<status>` / `remote_error` / `remote_failed` / `config_error` / credential codes; unknown codes fall through HTML-escaped.
 
-**Docs updated**:
-- `docs/...`
-- `CHANGELOG.md` (if applicable)
+### Files changed
 
-**Validation**:
-[How the final behavior was verified]
+- `src/extensions/admin/models/Phonehub.js` — new `PhoneConfig` model + `PhoneConfigList` collection + `PhoneConfigForms.{create,edit}` with `showWhen` fields, plus `PhoneConfig.{ADD_FORM, EDIT_FORM, SECRET_FIELDS, PROVIDER_OPTIONS}` statics.
+- `src/extensions/admin/messaging/sms/PhoneConfigTablePage.js` (new) — `TablePage` for `/api/phonehub/config`.
+- `src/extensions/admin/messaging/sms/PhoneConfigView.js` (new) — detail/edit/test/provision/delete view with embedded `FormView`.
+- `src/extensions/admin/messaging/sms/SMSTablePage.js` — provider chip color + mojo-only cross-link + `error_code` friendly labels.
+- `src/admin.js` — export, import, page register, sidebar menu entry.
+- `CHANGELOG.md` — Unreleased entry.
+- `docs/web-mojo/extensions/Admin.md` — six surgical edits adding the new page to the inventory, permissions table, Phonehub model list, and a "Phone Hub — Config Page" section (added by the docs-updater agent in a follow-up commit).
+
+### Tests run
+
+- `npm run lint` — no new errors on the changed files (16 pre-existing errors + 55 warnings in `WebApp.js`, all unrelated).
+- `npm run build:lib` — clean build, 3.15s → 3.25s.
+- `npm run test:unit` — 1120 tests, 7 failures all in `test/unit/IncidentView.test.js` (`ListView is not a constructor` — pre-existing module-loader dependency gap that predates this commit; the loader entry for `'IncidentView'` omits `'ListView'` even though `IncidentView.js` imports it). Confirmed unrelated by the test-runner agent.
+- `npm run test:integration` — 0 tests.
+
+### Validation
+
+- **Browser preview (`http://localhost:3000/examples/portal/`)** with `is_superuser` user:
+  - Phone Hub submenu now shows Numbers / SMS / Config.
+  - Navigating to the route lands at `?page=system%2Fphonehub%2Fconfig&size=25&sort=-modified&is_active=true` (default query applied) with no console errors.
+  - Empty state copy renders ("No phone configurations yet. Click 'New Config' to add one.") plus the Active=true filter pill.
+  - Clicking **Add** opens **New Phone Config** dialog. Inspecting the DOM: twilio fields are visible by default; aws and mojo wrappers are `style="display:none"` (`data-show-when-field="provider"` honored).
+  - Setting `provider=mojo` flips visibility: twilio + aws collapse, mojo fields (`mojo_remote_url`, `mojo_api_key`) appear.
+  - `MOJOUtils.escapeHtml` verified directly: `<script>alert(1)</script>` → `&lt;script&gt;alert(1)&lt;&#x2F;script&gt;`, `42" onerror="alert(1)` → `42&quot; onerror&#x3D;&quot;alert(1)` (closes the security findings below).
+
+### Agent findings (and what was done)
+
+- **test-runner** — 7 failures, all `IncidentView` and pre-existing. Not addressed; flagged for separate cleanup of the module-loader dependency list.
+- **docs-updater** — added `PhoneConfigTablePage` + `PhoneConfigView` to `docs/web-mojo/extensions/Admin.md` (TOC, overview, permissions table, model list, plus a new "Phone Hub — Config Page" section). Committed separately.
+- **security-review** — 2 MEDIUM + 1 LOW findings, all defense-in-depth XSS escapes for raw HTML interpolations the function-formatter contract renders unescaped:
+  1. `SMSTablePage.renderProviderCell` interpolated the raw `provider` value into the badge label and the `data-group` attribute → fixed: both routed through `MOJOUtils.escapeHtml`.
+  2. `PhoneConfigView.onActionProvisionApiKey` interpolated the raw token into the alert HTML and the `data-clipboard` attribute → fixed: token now `MOJOUtils.escapeHtml`-ed before interpolation.
+  3. `SMSTablePage.formatErrorCode` returned unknown `error_code` values verbatim → fixed: fallthrough now `MOJOUtils.escapeHtml`-ed (known codes / `HTTP nnn` paths stay literal text).
+- Fixes shipped as a follow-up commit `security(admin): HTML-escape Phone Config formatters and one-time API token`.
+
+### Commits
+
+- `1f9b456` — `feat(admin): Phone Config page (Twilio/AWS/Mojo) + downstream API-key provisioning`
+- `37e3563` — `security(admin): HTML-escape Phone Config formatters and one-time API token`
+- Docs-updater commit (added separately by the docs-updater agent — see `docs(admin): document Phone Config page + provision flow`).
+
+### Follow-ups (out of scope here)
+
+- Module-loader dependency gap on `IncidentView` (separate cleanup — pre-existing).
+- Status-callback wiring (mojo provider → caller webhooks).
+- SMS quota dashboards / per-provider rate stats.
+- A backend type-narrowing assertion that `apikey.token` always matches `[A-Za-z0-9_-]+` (would let us drop the escape in the token alert — but defense-in-depth stays regardless).
