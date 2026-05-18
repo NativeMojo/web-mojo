@@ -14,6 +14,7 @@ export { default as UserDeviceTablePage } from '@ext/admin/account/devices/UserD
 export { default as UserDeviceLocationTablePage } from '@ext/admin/account/devices/UserDeviceLocationTablePage.js';
 export { default as GeoLocatedIPTablePage } from '@ext/admin/account/devices/GeoLocatedIPTablePage.js';
 export { default as ApiKeyTablePage } from '@ext/admin/account/api_keys/ApiKeyTablePage.js';
+export { default as WebhookSubscriptionTablePage } from '@ext/admin/account/webhook_subscriptions/WebhookSubscriptionTablePage.js';
 
 export { default as CloudWatchDashboardPage } from '@ext/admin/aws/CloudWatchDashboardPage.js';
 export { default as CloudWatchChart } from '@ext/admin/aws/CloudWatchChart.js';
@@ -76,6 +77,7 @@ export { default as GeoIPView } from '@ext/admin/account/devices/GeoIPView.js';
 export { default as UserDeviceLocationView } from '@ext/admin/account/devices/UserDeviceLocationView.js';
 export { default as GroupView } from '@ext/admin/account/groups/GroupView.js';
 export { default as ApiKeyView } from '@ext/admin/account/api_keys/ApiKeyView.js';
+export { default as WebhookSubscriptionView } from '@ext/admin/account/webhook_subscriptions/WebhookSubscriptionView.js';
 export { default as CloudWatchResourceView } from '@ext/admin/aws/CloudWatchResourceView.js';
 export { default as MemberView } from '@ext/admin/account/users/MemberView.js';
 export { default as UserView } from '@ext/admin/account/users/UserView.js';
@@ -137,6 +139,7 @@ import UserDeviceTablePageClass from '@ext/admin/account/devices/UserDeviceTable
 import UserDeviceLocationTablePageClass from '@ext/admin/account/devices/UserDeviceLocationTablePage.js';
 import GeoLocatedIPTablePageClass from '@ext/admin/account/devices/GeoLocatedIPTablePage.js';
 import ApiKeyTablePageClass from '@ext/admin/account/api_keys/ApiKeyTablePage.js';
+import WebhookSubscriptionTablePageClass from '@ext/admin/account/webhook_subscriptions/WebhookSubscriptionTablePage.js';
 import CloudWatchDashboardPageClass from '@ext/admin/aws/CloudWatchDashboardPage.js';
 
 import { Incident, IncidentEvent, RuleSet } from '@ext/admin/models/Incident.js';
@@ -249,6 +252,7 @@ export function registerSystemPages(app, addToMenu = true) {
     app.registerPage('system/phonehub/sms', SMSTablePageClass, { permissions: ["view_sms", "manage_sms"] });
     app.registerPage('system/phonehub/config', PhoneConfigTablePageClass, { permissions: ["manage_phone_config", "manage_groups"] });
     app.registerPage('system/api-keys', ApiKeyTablePageClass, { permissions: ["manage_groups", "manage_group"] });
+    app.registerPage('system/webhook-subscriptions', WebhookSubscriptionTablePageClass, { permissions: ["manage_groups", "manage_group"] });
     app.registerPage('system/settings', SettingTablePageClass, { permissions: ["manage_settings"] });
     app.registerPage('system/cloudwatch', CloudWatchDashboardPageClass, { permissions: ["manage_aws"] });
 
@@ -439,6 +443,7 @@ export function registerSystemPages(app, addToMenu = true) {
                     children: [
                         { text: 'Logs', route: '?page=system/logs', icon: 'bi-journal-text', permissions: ["view_logs"] },
                         { text: 'API Keys', route: '?page=system/api-keys', icon: 'bi-key', permissions: ["manage_groups", "manage_group"] },
+                        { text: 'Webhook Subscriptions', route: '?page=system/webhook-subscriptions', icon: 'bi-broadcast', permissions: ["manage_groups", "manage_group"] },
                         { text: 'User Devices', route: '?page=system/user/devices', icon: 'bi-phone', permissions: ["manage_users"] },
                         { text: 'Device Locations', route: '?page=system/user/device-locations', icon: 'bi-geo-alt', permissions: ["manage_users"] },
                         { text: 'Metrics Permissions', route: '?page=system/metrics/permissions', icon: 'bi-bar-chart-line', permissions: ["manage_metrics"] },

@@ -13,6 +13,8 @@ export { default as UserDeviceLocationTablePage } from './account/devices/UserDe
 export { default as GeoLocatedIPTablePage } from './account/devices/GeoLocatedIPTablePage.js';
 export { default as ApiKeyTablePage } from './account/api_keys/ApiKeyTablePage.js';
 export { default as ApiKeyView } from './account/api_keys/ApiKeyView.js';
+export { default as WebhookSubscriptionTablePage } from './account/webhook_subscriptions/WebhookSubscriptionTablePage.js';
+export { default as WebhookSubscriptionView } from './account/webhook_subscriptions/WebhookSubscriptionView.js';
 export { default as LoginEventView } from './account/login_events/LoginEventView.js';
 
 // Incidents

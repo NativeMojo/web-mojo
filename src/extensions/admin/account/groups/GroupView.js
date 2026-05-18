@@ -39,10 +39,16 @@ import { Group, GroupList, GroupForms } from '@core/models/Group.js';
 import { Member, MemberList } from '@core/models/Member.js';
 import { UserList } from '@core/models/User.js';
 import { ApiKey, ApiKeyList, ApiKeyForms } from '@core/models/ApiKey.js';
+import {
+    WebhookSubscription,
+    WebhookSubscriptionList,
+    WebhookSubscriptionForms
+} from '@core/models/WebhookSubscription.js';
 import { LogList } from '@core/models/Log.js';
 import { IncidentEventList } from '@ext/admin/models/Incident.js';
 import AdminMetadataSection from '../../shared/AdminMetadataSection.js';
 import ApiKeyView from '../api_keys/ApiKeyView.js';
+import WebhookSubscriptionView from '../webhook_subscriptions/WebhookSubscriptionView.js';
 
 const escapeHtml = MOJOUtils.escapeHtml;
 
@@ -813,6 +819,192 @@ class ApiKeyListItem extends ListViewItem {
 }
 
 
+// ── Webhook Subscription list item (card row) ──────────────
+
+/**
+ * One row in the Webhook Subscriptions ListView — card-style, mirrors
+ * ApiKeyListItem's shape. The trash button uses `data-action="delete"`
+ * (inherited from ListViewItem.onActionDelete), the active toggle uses
+ * `data-action="toggle-subscription-active"` which bubbles to the
+ * parent GroupView.
+ *
+ * Event chips are rendered from the `eventsList` getter — returning
+ * `[{ key }]` objects so Mustache's `{{key}}` lookup doesn't tickle a
+ * pipe-formatter resolver on the raw string values (same gotcha called
+ * out in `ApiKeyListItem.permsList`).
+ */
+const WEBHOOK_SUBSCRIPTION_ROW_TEMPLATE = `
+    <div class="d-flex align-items-center gap-3 py-3 px-2">
+        <i class="bi bi-broadcast-pin fs-4 text-primary flex-shrink-0"></i>
+        <div class="flex-grow-1 min-width-0">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <code class="text-break flex-grow-1" style="background: transparent;">{{model.url|default:'—'}}</code>
+                {{#model.is_active|bool}}<span class="badge text-bg-success">Active</span>{{/model.is_active|bool}}
+                {{^model.is_active|bool}}<span class="badge text-bg-secondary">Inactive</span>{{/model.is_active|bool}}
+            </div>
+            <div class="small mb-1">
+                {{#hasEvents|bool}}{{#eventsList}}<code class="badge text-bg-light border me-1">{{key}}</code>{{/eventsList}}{{/hasEvents|bool}}
+                {{^hasEvents|bool}}<span class="text-secondary fst-italic">No events configured</span>{{/hasEvents|bool}}
+            </div>
+            <div class="small text-secondary">
+                Created {{model.created|datetime}}
+            </div>
+        </div>
+        <label class="form-check form-switch m-0 flex-shrink-0" title="Toggle delivery">
+            <input type="checkbox"
+                   class="form-check-input"
+                   data-change-action="toggle-subscription-active"
+                   data-id="{{model.id}}"
+                   {{#model.is_active|bool}}checked{{/model.is_active|bool}}>
+        </label>
+        <button type="button"
+                class="btn btn-sm btn-outline-danger flex-shrink-0"
+                data-action="delete"
+                title="Delete this subscription"
+                aria-label="Delete this subscription">
+            <i class="bi bi-trash"></i>
+        </button>
+    </div>
+`;
+
+class WebhookSubscriptionListItem extends ListViewItem {
+    constructor(options = {}) {
+        super({
+            ...options,
+            template: WEBHOOK_SUBSCRIPTION_ROW_TEMPLATE,
+            className: 'webhook-subscription-row border-bottom'
+        });
+    }
+
+    get _eventsRaw() { return this.model?.get?.('events'); }
+    get hasEvents()  { return this.eventsList.length > 0; }
+    get eventsList() {
+        const raw = this._eventsRaw;
+        if (Array.isArray(raw)) return raw.filter(Boolean).map(key => ({ key }));
+        if (typeof raw === 'string') {
+            return raw.split(',')
+                .map(s => s.trim())
+                .filter(Boolean)
+                .map(key => ({ key }));
+        }
+        return [];
+    }
+}
+
+
+// ── Webhook Secret panel ──────────────────────────────────
+
+/**
+ * Small card-style panel that lives above the Webhook Subscriptions
+ * list. Two actions:
+ *   - Reveal Secret  → POST /api/group/webhook_secret  (empty body)
+ *   - Rotate Secret  → POST /api/group/webhook_secret  ({"rotate":true})
+ *
+ * The panel does NOT auto-fetch the secret on mount — the backend
+ * auto-mints on first POST, so a render-time fetch would silently
+ * create a secret the operator never asked for. State starts empty
+ * and only populates after Reveal or Rotate; `setMeta` updates the
+ * created_at / last_rotated_at footer line.
+ *
+ * Button clicks bubble to GroupView's action handlers — un-handled
+ * `data-action` events propagate up the parent chain via the
+ * framework's EventDelegate.
+ */
+class WebhookSecretPanel extends View {
+    constructor(options = {}) {
+        super({
+            className: 'webhook-secret-panel card mb-3',
+            ...options
+        });
+        this._secretMeta = options.secretMeta || null;
+    }
+
+    async getTemplate() {
+        return `
+            <style>
+                .webhook-secret-panel .webhook-secret-meta { color: var(--bs-secondary-color); font-size: 0.85rem; }
+            </style>
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+                    <div class="min-width-0">
+                        <h6 class="mb-1"><i class="bi bi-key me-2"></i>Signing Secret</h6>
+                        <div class="webhook-secret-meta">
+                            {{#hasMeta|bool}}
+                                Created <strong>{{createdLabel}}</strong>
+                                · Last rotated <strong>{{rotatedLabel}}</strong>
+                            {{/hasMeta|bool}}
+                            {{^hasMeta|bool}}
+                                No secret minted yet — click Reveal to generate one.
+                            {{/hasMeta|bool}}
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 flex-shrink-0">
+                        <button type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                data-action="reveal-webhook-secret">
+                            <i class="bi bi-eye me-1"></i>Reveal Secret
+                        </button>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-danger"
+                                data-action="rotate-webhook-secret">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Rotate
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    get hasMeta() { return !!this._secretMeta; }
+    get createdLabel() {
+        const v = this._secretMeta?.created_at;
+        if (!v) return '—';
+        return dataFormatter.apply(v, ['epoch', 'relative']) || String(v);
+    }
+    get rotatedLabel() {
+        const v = this._secretMeta?.last_rotated_at;
+        if (!v) return '—';
+        return dataFormatter.apply(v, ['epoch', 'relative']) || String(v);
+    }
+
+    /** Populate metadata + re-render. Called by GroupView after reveal/rotate. */
+    async setMeta(meta) {
+        this._secretMeta = meta || null;
+        if (this.isMounted()) await this.render();
+    }
+}
+
+
+// ── Webhook section (panel + list) ─────────────────────────
+
+/**
+ * Composite section that hosts both the secret panel and the
+ * subscriptions list. Each child is built in GroupView's constructor
+ * and passed in via options — the section just sets the layout.
+ */
+class WebhookSection extends View {
+    constructor(options = {}) {
+        const { secretPanel, subscriptionsList, ...rest } = options;
+        super({
+            className: 'webhook-section',
+            template: `
+                <div data-container="webhook-secret-panel" class="mb-3"></div>
+                <div data-container="webhook-subscriptions-list"></div>
+            `,
+            ...rest
+        });
+        if (secretPanel) {
+            secretPanel.containerId = 'webhook-secret-panel';
+            this.addChild(secretPanel);
+        }
+        if (subscriptionsList) {
+            subscriptionsList.containerId = 'webhook-subscriptions-list';
+            this.addChild(subscriptionsList);
+        }
+    }
+}
+
+
 // ── Audit Timeline section ─────────────────────────────────
 
 /**
@@ -889,6 +1081,9 @@ class GroupView extends DetailView {
         });
         const apiKeysCollection = new ApiKeyList({
             params: { group: groupId, size: 10, sort: '-created' }
+        });
+        const webhookSubscriptionsCollection = new WebhookSubscriptionList({
+            params: { group: groupId, size: 25, sort: '-created' }
         });
         const eventsCollection = new IncidentEventList({
             params: { size: 10, model_name: 'account.Group', model_id: groupId, sort: '-created' }
@@ -996,6 +1191,29 @@ class GroupView extends DetailView {
             emptyMessage: 'No API keys yet. Click "Create Key" to add one.'
         });
 
+        // Webhook Subscriptions — same ListView+card pattern as API Keys.
+        // Sits below a small secret-reveal/rotate panel inside a composite
+        // `WebhookSection` so both surfaces are visible at once.
+        const webhookSubscriptionsListView = new ListView({
+            collection: webhookSubscriptionsCollection,
+            title: 'Webhook Subscriptions',
+            itemClass: WebhookSubscriptionListItem,
+            clickAction: 'view',
+            itemView: WebhookSubscriptionView,
+            viewDialogOptions: { header: false, noBodyPadding: true, buttons: [] },
+            hideActivePillNames: ['group'],
+            showAdd: true,
+            addButtonLabel: 'Create Subscription',
+            showRefresh: true,
+            emptyMessage: 'No webhook subscriptions yet. Click "Create Subscription" to add one.'
+        });
+        const webhookSecretPanel = new WebhookSecretPanel({ model });
+        const webhookSection = new WebhookSection({
+            model,
+            secretPanel: webhookSecretPanel,
+            subscriptionsList: webhookSubscriptionsListView
+        });
+
         const eventsSection = new TableView({
             collection: eventsCollection,
             title: 'Events',
@@ -1027,6 +1245,7 @@ class GroupView extends DetailView {
             { key: 'SubGroups',   label: 'Sub-Groups',  icon: 'bi-diagram-3',      view: subGroupsSection },
             { type: 'divider', label: 'Access' },
             { key: 'ApiKeys',     label: 'API Keys',    icon: 'bi-key',            view: apiKeysSection },
+            { key: 'Webhooks',    label: 'Webhooks',    icon: 'bi-broadcast',      view: webhookSection, permissions: 'manage_group' },
             { type: 'divider', label: 'Activity' },
             { key: 'Events',      label: 'Events',      icon: 'bi-calendar-event', view: eventsSection },
             { key: 'Audit',       label: 'Audit',       icon: 'bi-clock-history',  view: auditSection, permissions: 'view_logs' },
@@ -1114,20 +1333,24 @@ class GroupView extends DetailView {
         });
 
         // Stash references
-        this.membersCollection   = membersCollection;
-        this.subGroupsCollection = subGroupsCollection;
-        this.apiKeysCollection   = apiKeysCollection;
-        this.eventsCollection    = eventsCollection;
-        this.auditCollection     = auditCollection;
+        this.membersCollection              = membersCollection;
+        this.subGroupsCollection            = subGroupsCollection;
+        this.apiKeysCollection              = apiKeysCollection;
+        this.webhookSubscriptionsCollection = webhookSubscriptionsCollection;
+        this.eventsCollection               = eventsCollection;
+        this.auditCollection                = auditCollection;
 
-        this.overviewSection    = overviewSection;
-        this.identitySection    = identitySection;
-        this.membersSection     = membersSection;
-        this.subGroupsSection   = subGroupsSection;
-        this.apiKeysSection     = apiKeysSection;
-        this.eventsSection      = eventsSection;
-        this.auditSection       = auditSection;
-        this.metadataSection    = metadataSection;
+        this.overviewSection                = overviewSection;
+        this.identitySection                = identitySection;
+        this.membersSection                 = membersSection;
+        this.subGroupsSection               = subGroupsSection;
+        this.apiKeysSection                 = apiKeysSection;
+        this.webhookSection                 = webhookSection;
+        this.webhookSecretPanel             = webhookSecretPanel;
+        this.webhookSubscriptionsListView   = webhookSubscriptionsListView;
+        this.eventsSection                  = eventsSection;
+        this.auditSection                   = auditSection;
+        this.metadataSection                = metadataSection;
 
         this._refreshComputedFields();
     }
@@ -1146,6 +1369,13 @@ class GroupView extends DetailView {
         // framework's _onRowDelete chain) so we control the confirm copy,
         // toast feedback, and refetch — and we own the failure modes.
         this.apiKeysSection.options.onItemDelete = (model) => this._deleteApiKey(model);
+
+        // Webhook Subscriptions: same overrides as API Keys — bypass the
+        // generic ListView add path so we can normalize the `events` form
+        // payload from a comma-separated string into an array, and own the
+        // delete confirm copy + refetch.
+        this.webhookSubscriptionsListView.options.onAdd = (event) => this._createWebhookSubscription(event);
+        this.webhookSubscriptionsListView.options.onItemDelete = (model) => this._deleteWebhookSubscription(model);
 
         // Sub-Groups add flow: bypass the generic ListView.onActionAdd so we
         // can drop the redundant Parent Group field (the parent IS the
@@ -1169,6 +1399,10 @@ class GroupView extends DetailView {
             const n = this.apiKeysCollection.models?.length ?? 0;
             this.setBadge('ApiKeys', n > 0 ? { text: String(n), variant: 'muted' } : null);
         };
+        const updateWebhooksBadge = () => {
+            const n = this.webhookSubscriptionsCollection.models?.length ?? 0;
+            this.setBadge('Webhooks', n > 0 ? { text: String(n), variant: 'muted' } : null);
+        };
         const updateAuditBadge = () => {
             const n = this.auditCollection.models?.length ?? 0;
             this.setBadge('Audit', n > 0 ? { text: String(n), variant: 'muted' } : null);
@@ -1177,6 +1411,7 @@ class GroupView extends DetailView {
         this.membersCollection.on('fetch:success',   updateMembersBadge,   this);
         this.subGroupsCollection.on('fetch:success', updateSubGroupsBadge, this);
         this.apiKeysCollection.on('fetch:success',   updateApiKeysBadge,   this);
+        this.webhookSubscriptionsCollection.on('fetch:success', updateWebhooksBadge, this);
         this.auditCollection.on('fetch:success',     updateAuditBadge,     this);
 
         // Re-render the header so chips + auxFn reflect populated collections
@@ -1188,10 +1423,14 @@ class GroupView extends DetailView {
         this.subGroupsCollection.on('fetch:success', refreshHeader, this);
 
         // Fire-and-forget initial fetches so badges/KPIs/chips populate
-        // without waiting for the user to navigate.
+        // without waiting for the user to navigate. The webhook *secret*
+        // is intentionally NOT auto-fetched — the backend auto-mints on
+        // first POST, so a render-time call would silently create a
+        // secret the operator never asked for.
         this.membersCollection.fetch().catch(()   => {});
         this.subGroupsCollection.fetch().catch(() => {});
         this.apiKeysCollection.fetch().catch(()   => {});
+        this.webhookSubscriptionsCollection.fetch().catch(() => {});
         this.eventsCollection.fetch().catch(()    => {});
         this.auditCollection.fetch().catch(()     => {});
     }
@@ -1555,6 +1794,233 @@ class GroupView extends DetailView {
         });
     }
 
+    // ── Webhook Subscriptions flow ─────────────────────────────
+
+    /**
+     * Create-Webhook-Subscription flow inside GroupView. Wired via
+     * `webhookSubscriptionsListView.options.onAdd` (see `onAfterBuild`)
+     * so the generic ListView add path is bypassed entirely — we drop
+     * the redundant Group ID field and normalize the events payload
+     * before save.
+     */
+    async _createWebhookSubscription(event) {
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+
+        const data = await Modal.form({
+            title: 'Create Webhook Subscription',
+            size: 'md',
+            fields: WebhookSubscriptionForms.create.fields.filter(f => f.name !== 'group')
+        });
+        if (!data) return;
+
+        // TagInput hands us `events` as a comma-separated string; the
+        // server expects an array. `normalizePayload` does the conversion
+        // (and is the single source of truth shared with the standalone
+        // TablePage's add flow).
+        const payload = WebhookSubscriptionForms.normalizePayload({
+            ...data,
+            group: this.model.id
+        });
+
+        const newSub = new WebhookSubscription();
+        const resp = await newSub.save(payload);
+        if (!resp?.data?.status || (resp?.status && resp.status >= 400)) {
+            this.getApp()?.toast?.error(
+                resp?.data?.error || resp?.message || 'Failed to create webhook subscription'
+            );
+            return;
+        }
+
+        this.getApp()?.toast?.success('Webhook subscription created');
+        await this.webhookSubscriptionsCollection.fetch().catch(() => {});
+    }
+
+    /**
+     * Inline row delete for the Webhook Subscriptions list. Wired via
+     * `webhookSubscriptionsListView.options.onItemDelete` so the framework's
+     * generic `_onRowDelete` chain is bypassed — we own the confirm copy,
+     * toast feedback, and refetch.
+     */
+    async _deleteWebhookSubscription(model) {
+        const url = model?.get?.('url') || 'this subscription';
+        const confirmed = await Modal.confirm(
+            `Delete webhook subscription to <code>${escapeHtml(url)}</code>? Future events will no longer be delivered to this URL.`,
+            'Delete Webhook Subscription',
+            { confirmText: 'Delete', confirmClass: 'btn-danger' }
+        );
+        if (!confirmed) return;
+
+        try {
+            const resp = await model.destroy();
+            if (resp && resp.success === false) {
+                throw new Error(resp.error || resp.message || 'Delete failed');
+            }
+            this.getApp()?.toast?.success('Webhook subscription deleted');
+            await this.webhookSubscriptionsCollection.fetch().catch(() => {});
+        } catch (err) {
+            this.getApp()?.toast?.error(err?.message || 'Failed to delete subscription');
+        }
+    }
+
+    /**
+     * Inline active-state toggle wired through the row's
+     * `data-change-action="toggle-subscription-active"`. Optimistic save
+     * with silent revert on failure — the bounce IS the feedback.
+     */
+    async onActionToggleSubscriptionActive(event, element) {
+        const id = element?.dataset?.id;
+        if (!id) return true;
+        const model = this.webhookSubscriptionsCollection.get(id)
+            || this.webhookSubscriptionsCollection.models.find(m => String(m.get('id')) === String(id));
+        if (!model) return true;
+
+        const checked = !!element.checked;
+        element.disabled = true;
+        try {
+            const prev = model.get('is_active');
+            model.set('is_active', checked);
+            const resp = await model.save({ is_active: checked });
+            if (resp && resp.status && resp.status >= 400) {
+                model.set('is_active', prev);
+                element.checked = !checked;
+            }
+        } catch {
+            // Revert silently — the bounce IS the feedback.
+            model.set('is_active', !checked);
+            element.checked = !checked;
+        } finally {
+            if (element && element.isConnected) element.disabled = false;
+        }
+        return true;
+    }
+
+    /**
+     * Reveal the current per-group webhook signing secret. The backend
+     * auto-mints if none exists yet, so this is also the "first-time
+     * generate" path. Static-backdrop dialog with an inline clipboard
+     * button mirrors the API Key token reveal recipe.
+     */
+    async onActionRevealWebhookSecret() {
+        const app = this.getApp();
+        app?.showLoading?.();
+        let resp;
+        try {
+            resp = await app.rest.POST('/api/group/webhook_secret', { group: this.model.id });
+        } catch (err) {
+            app?.hideLoading?.();
+            app?.toast?.error(err?.message || 'Failed to reveal webhook secret');
+            return true;
+        }
+        app?.hideLoading?.();
+
+        const data = resp?.data?.data;
+        const status = resp?.data?.status;
+        if (!status || !data?.secret) {
+            app?.toast?.error(resp?.data?.error || 'Failed to reveal webhook secret');
+            return true;
+        }
+
+        await this.webhookSecretPanel?.setMeta?.({
+            created_at: data.created_at,
+            last_rotated_at: data.last_rotated_at
+        });
+        await this._showWebhookSecretDialog(data.secret, 'Webhook Signing Secret');
+        return true;
+    }
+
+    /**
+     * Rotate the per-group secret. Destructive confirm first — the old
+     * secret is invalidated immediately and any consumer still using it
+     * will start failing signature verification until it refetches.
+     */
+    async onActionRotateWebhookSecret() {
+        const confirmed = await Modal.confirm(
+            'Rotating immediately invalidates the old secret. Consumers using the old secret will fail to verify until they refetch and update their cache. Continue?',
+            'Rotate Webhook Secret',
+            { confirmText: 'Rotate', confirmClass: 'btn-danger' }
+        );
+        if (!confirmed) return true;
+
+        const app = this.getApp();
+        app?.showLoading?.();
+        let resp;
+        try {
+            resp = await app.rest.POST('/api/group/webhook_secret', {
+                group: this.model.id,
+                rotate: true
+            });
+        } catch (err) {
+            app?.hideLoading?.();
+            app?.toast?.error(err?.message || 'Failed to rotate webhook secret');
+            return true;
+        }
+        app?.hideLoading?.();
+
+        const data = resp?.data?.data;
+        const status = resp?.data?.status;
+        if (!status || !data?.secret) {
+            app?.toast?.error(resp?.data?.error || 'Failed to rotate webhook secret');
+            return true;
+        }
+
+        await this.webhookSecretPanel?.setMeta?.({
+            created_at: data.created_at,
+            last_rotated_at: data.last_rotated_at
+        });
+        await this._showWebhookSecretDialog(data.secret, 'Secret Rotated — Save Your New Secret');
+        return true;
+    }
+
+    /**
+     * Show-once reveal dialog for the webhook signing secret. Mirrors
+     * `_showApiKeyTokenDialog` — static backdrop + Esc disabled prevent
+     * accidental dismissal; the inline clipboard button is the canonical
+     * `clipboard` DataFormatter affordance handled by the inherited
+     * `View.onActionCopyToClipboard` method (no custom JS needed).
+     */
+    async _showWebhookSecretDialog(secret, title) {
+        if (!secret) return;
+        const escaped = escapeHtml(secret);
+        const body = `
+            <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <div>Save this secret now — it will not be shown again unless you reveal or rotate.</div>
+            </div>
+            <div class="d-flex align-items-center gap-2 p-3 rounded"
+                 style="background: var(--bs-tertiary-bg);
+                        border: 1px solid var(--bs-border-color);
+                        overflow-x: auto;">
+                <code class="user-select-all font-monospace text-break flex-grow-1"
+                      style="background: transparent; color: inherit;
+                             font-size: 0.95rem; line-height: 1.4;"
+                      aria-label="Webhook signing secret">${escaped}</code>
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary flex-shrink-0"
+                        data-action="copy-to-clipboard"
+                        data-clipboard="${escaped}"
+                        title="Copy secret"
+                        aria-label="Copy secret">
+                    <i class="bi bi-clipboard"></i>
+                </button>
+            </div>
+            <div class="small text-secondary mt-3">
+                Treat this like a password. Consumers use it to verify webhook signatures.
+            </div>
+        `;
+
+        await Modal.dialog({
+            title,
+            size: 'lg',
+            backdrop: 'static',
+            keyboard: false,
+            body,
+            buttons: [
+                { text: 'Close', class: 'btn-secondary', dismiss: true }
+            ]
+        });
+    }
+
     /** Sidebar context-menu "View Parent" entry */
     async onActionViewParentMenu() {
         const parent = this.model.get('parent');
@@ -1715,5 +2181,8 @@ export {
     GroupOverviewSection,
     GroupIdentitySection,
     GroupHierarchyTree,
-    GroupAuditTimelineSection
+    GroupAuditTimelineSection,
+    WebhookSubscriptionListItem,
+    WebhookSecretPanel,
+    WebhookSection
 };

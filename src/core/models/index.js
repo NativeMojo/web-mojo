@@ -7,7 +7,7 @@
  * Usage examples:
  *   import { ApiKey } from 'web-mojo/models';
  *
- * Generated on: 2026-05-17T04:25:51.523Z
+ * Generated on: 2026-05-18T13:52:01.773Z
  */
 
 // ApiKey model exports
@@ -42,6 +42,9 @@ export * from './System.js';
 
 // User model exports
 export * from './User.js';
+
+// WebhookSubscription model exports
+export * from './WebhookSubscription.js';
 
 // Re-export core classes for convenience
 export { default as Model } from '../Model.js';

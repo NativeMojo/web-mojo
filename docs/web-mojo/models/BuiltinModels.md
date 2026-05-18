@@ -27,6 +27,7 @@ import { Job, Incident, Email, Push } from 'web-mojo/admin-models';
 - [Group & GroupList](#group--grouplist)
 - [Member & MemberList](#member--memberlist)
 - [ApiKey & ApiKeyList](#apikey--apikeylist)
+- [WebhookSubscription & WebhookSubscriptionList](#webhooksubscription--webhooksubscriptionlist)
 - [Files & FilesList](#files--fileslist)
 - [Settings](#settings)
 - [Metrics](#metrics)
@@ -610,6 +611,66 @@ key.get('group');
 const keys = new ApiKeyList();
 await keys.fetch({ group_id: groupId });
 ```
+
+---
+
+## WebhookSubscription & WebhookSubscriptionList
+
+Represents a group-scoped webhook receiver — the URL plus the list of event
+names that should trigger a delivery. The per-group HMAC signing secret used
+to verify deliveries is **not** part of the subscription record; it lives
+behind `POST /api/group/webhook_secret` (see the admin `Webhooks` panel inside
+`GroupView`).
+
+**Endpoint:** `/api/group/webhook_subscriptions`
+
+```js
+import {
+    WebhookSubscription,
+    WebhookSubscriptionList,
+    WebhookSubscriptionForms
+} from 'web-mojo/models';
+
+const sub = new WebhookSubscription({ id: 7 });
+await sub.fetch();
+
+sub.get('url');         // 'https://example.com/webhooks/mojo'
+sub.get('events');      // ['invoice.paid', 'verification.completed']
+sub.get('is_active');
+sub.get('metadata');    // optional free-form JSON
+sub.get('group');       // { id, name } | id
+
+// Convenience: PUT { is_active: !current }
+await sub.toggleActive();
+
+// List subscriptions scoped to a group
+const subs = new WebhookSubscriptionList({ params: { group: groupId } });
+await subs.fetch();
+```
+
+### Form helpers
+
+`WebhookSubscriptionForms` ships create/edit field configs plus a
+`normalizePayload(formData)` helper. The `events` field uses the framework's
+`TagInput` (`type: 'tags'`) which produces a comma-separated string at submit
+time; `normalizePayload` splits it into the JSON array shape the server
+expects (and leaves arrays untouched, so the helper is safe to call with
+either shape):
+
+```js
+import { WebhookSubscriptionForms } from 'web-mojo/models';
+
+const payload = WebhookSubscriptionForms.normalizePayload({
+    url: 'https://example.com/hook',
+    events: 'invoice.paid, refund.created',
+    is_active: true,
+    group: 42
+});
+// → { url, events: ['invoice.paid', 'refund.created'], is_active: true, group: 42 }
+```
+
+Permission threshold for CRUD is `manage_group` / `manage_groups` / `groups`
+(same as ApiKey).
 
 ---
 

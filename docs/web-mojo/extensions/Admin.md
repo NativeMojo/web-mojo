@@ -309,6 +309,19 @@ The `SMSTablePage` provider chip now links directly to `system/phonehub/config` 
 
 ---
 
+## Webhook Subscriptions — per-group + standalone (`system/webhook-subscriptions`)
+
+`WebhookSubscriptionTablePage` (route `system/webhook-subscriptions`) is the cross-group view for system admins (filterable by `?group=`); the per-group surface lives inside `GroupView` as a **Webhooks** side-nav entry under the **Access** divider, right after **API Keys**. Both surfaces are gated by `manage_groups` / `manage_group`.
+
+The per-group section is a composite of two parts, stacked vertically inside one rail:
+
+1. **Signing secret panel** — `Reveal Secret` and `Rotate` buttons that call `POST /api/group/webhook_secret`. The panel does **not** auto-fetch on mount: the backend auto-mints on first POST, so a render-time call would silently generate a secret the operator never asked for. Reveal opens a static-backdrop `Modal.dialog` with the monospaced `user-select-all` value plus an inline copy button (uses the framework's `clipboard` `data-action` — no custom JS). Rotate fires the same dialog after a destructive confirm (the old secret is invalidated immediately).
+2. **Subscriptions list** — a `ListView` of `WebhookSubscriptionListItem` cards. Each row shows the URL (mono, truncated), event chips, status badge, inline active toggle, and a trash button. Create / Delete / Edit are wired through `onAdd` / `onItemDelete` / `clickAction: 'view'` so the GroupView owns the confirm copy and refetch — the standalone TablePage uses the generic add path.
+
+Events are entered via the framework's `TagInput` (`type: 'tags'`). `WebhookSubscriptionForms.normalizePayload(formData)` is the single source of truth that converts the TagInput's comma-string output into the array shape the server expects; both surfaces call it before `model.save(payload)`.
+
+---
+
 ## Importing Individual Pages & Views
 
 If you only want a couple of pages and prefer to wire them yourself instead of using `registerAdminPages`, every class is also exported from `web-mojo/admin`.
@@ -316,7 +329,7 @@ If you only want a couple of pages and prefer to wire them yourself instead of u
 ```js
 import {
     // Pages — Table/Dashboard pages, one per admin area
-    AdminDashboardPage, UserTablePage, GroupTablePage, MemberTablePage, ApiKeyTablePage,
+    AdminDashboardPage, UserTablePage, GroupTablePage, MemberTablePage, ApiKeyTablePage, WebhookSubscriptionTablePage,
     IncidentDashboardPage, IncidentTablePage, EventTablePage, TicketTablePage, RuleSetTablePage,
     JobDashboardPage, JobRunnersPage, JobsTablePage, ScheduledTaskTablePage,
     EmailDomainTablePage, EmailTemplateTablePage, SentMessageTablePage, PublicMessageTablePage,
@@ -329,7 +342,7 @@ import {
     AssistantSkillTablePage, AssistantConversationTablePage, AssistantMemoryPage,
 
     // Views — Detail/dialog views (composable, often opened via row clicks)
-    DeviceView, GeoIPView, GroupView, MemberView, UserView, ApiKeyView,
+    DeviceView, GeoIPView, GroupView, MemberView, UserView, ApiKeyView, WebhookSubscriptionView,
     IncidentView, EventView, TicketView, TicketPanelView, ActionCardView, ResolvedActionsSummaryView, RuleSetView,
     JobDetailsView, JobHealthView, JobStatsView, RunnerDetailsView, ScheduledTaskView,
     EmailTemplateView, EmailView, PublicMessageView, PhoneNumberView, PhoneConfigView, PushDeliveryView, PushDeviceView,
