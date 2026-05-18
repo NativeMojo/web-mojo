@@ -105,7 +105,7 @@ Build forms declaratively with field definitions, validation, and model binding:
 
 Pre-built Model and Collection classes for common portal entities:
 
-- **[Built-in Models](./models/BuiltinModels.md)** - User, Group, Member, Job, Email, Files, Incident, Tickets, Log, Metrics, ApiKey, and more
+- **[Built-in Models](./models/BuiltinModels.md)** - User, Group, Member, Job, Email, Files, Incident, Tickets, Log, Metrics, ApiKey, WebhookSubscription, and more
 
 ---
 

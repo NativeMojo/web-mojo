@@ -98,6 +98,27 @@ module.exports = async function (testContext) {
             expect(/action:\s*'deactivate-subscription'/.test(VIEW)).toBe(true);
             expect(/action:\s*'delete-subscription'/.test(VIEW)).toBe(true);
         });
+
+        it('escapes user-controlled url before interpolating into dialog title/message', () => {
+            // Regression: `Modal.confirm` interpolates `message` directly into
+            // `<p>${message}</p>` without escaping, and `ModalView` does the
+            // same with `title`. If we ever drop the `escapeHtml(...)` wrap
+            // around `model.get('url')` in the edit / delete handlers, a
+            // crafted url ("<img src=x onerror=...>") would execute when an
+            // operator opens the dialog.
+            expect(/import MOJOUtils/.test(VIEW)).toBe(true);
+            const editBlock = VIEW.substring(
+                VIEW.indexOf('async onActionEditSubscription'),
+                VIEW.indexOf('async onActionDeactivateSubscription')
+            );
+            expect(/escapeHtml\(\s*this\.model\.get\(['"]url['"]\)/.test(editBlock)).toBe(true);
+
+            const deleteBlock = VIEW.substring(
+                VIEW.indexOf('async onActionDeleteSubscription'),
+                VIEW.indexOf('async onActionDeleteSubscription') + 1500
+            );
+            expect(/escapeHtml\(\s*this\.model\.get\(['"]url['"]\)/.test(deleteBlock)).toBe(true);
+        });
     });
 
     describe('Admin nav registration', () => {

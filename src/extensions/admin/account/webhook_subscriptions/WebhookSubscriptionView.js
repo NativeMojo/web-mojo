@@ -9,10 +9,13 @@
 
 import View from '@core/View.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
+import MOJOUtils from '@core/utils/MOJOUtils.js';
 import {
     WebhookSubscription,
     WebhookSubscriptionForms
 } from '@core/models/WebhookSubscription.js';
+
+const escapeHtml = MOJOUtils.escapeHtml;
 
 class WebhookSubscriptionView extends View {
     constructor(options = {}) {
@@ -143,8 +146,13 @@ class WebhookSubscriptionView extends View {
 
     async onActionEditSubscription() {
         const app = this.getApp();
+        // Both the modal title and confirm-dialog message below are
+        // rendered as trusted HTML by ModalView / Modal.confirm — the
+        // user-controlled `url` field MUST be escaped before
+        // interpolation to avoid stored XSS.
+        const urlSafe = escapeHtml(this.model.get('url') || `#${this.model.get('id')}`);
         const resp = await app.showModelForm({
-            title: `Edit Webhook Subscription — ${this.model.get('url') || '#' + this.model.get('id')}`,
+            title: `Edit Webhook Subscription — ${urlSafe}`,
             model: this.model,
             formConfig: WebhookSubscriptionForms.edit,
             onSubmit: async (data) => {
@@ -185,9 +193,14 @@ class WebhookSubscriptionView extends View {
 
     async onActionDeleteSubscription() {
         const app = this.getApp();
+        // `Modal.confirm` interpolates `message` directly into a `<p>` tag
+        // without escaping (`<p>${message}</p>`). Escape the user-controlled
+        // url before interpolation — matches the GroupView delete-confirm
+        // pattern for API keys / webhook subscriptions.
+        const urlSafe = escapeHtml(this.model.get('url') || '');
         const confirmed = await app.confirm({
             title: 'Delete Subscription',
-            message: `Permanently delete the subscription to "${this.model.get('url')}"? Future events will no longer be delivered to this URL.`,
+            message: `Permanently delete the subscription to "<code>${urlSafe}</code>"? Future events will no longer be delivered to this URL.`,
             confirmLabel: 'Delete',
             confirmClass: 'btn-danger'
         });
