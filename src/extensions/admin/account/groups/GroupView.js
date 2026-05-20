@@ -1252,7 +1252,7 @@ class GroupView extends DetailView {
             { key: 'Events',      label: 'Events',      icon: 'bi-calendar-event', view: eventsSection },
             { key: 'Audit',       label: 'Audit',       icon: 'bi-clock-history',  view: auditSection, permissions: 'view_logs' },
             { type: 'divider', label: 'Detail' },
-            { key: 'AuthConfig',  label: 'Auth Config', icon: 'bi-box-arrow-in-right', view: authConfigSection, permissions: 'manage_group' },
+            { key: 'AuthConfig',  label: 'Auth Config', icon: 'bi-box-arrow-in-right', view: authConfigSection, permissions: ['sys.groups', 'sys.manage_groups'] },
             { key: 'Metadata',    label: 'Metadata',    icon: 'bi-braces',         view: metadataSection }
         ];
 

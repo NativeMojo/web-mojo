@@ -324,7 +324,7 @@ Events are entered via the framework's `TagInput` (`type: 'tags'`). `WebhookSubs
 
 ## Auth Config — per-group editor (`GroupView` → Auth Config)
 
-`GroupView` includes an **Auth Config** side-nav entry under the **Detail** divider (before **Metadata**, gated by `manage_group`). It edits `group.metadata.auth_config` — the structured config that drives the django-mojo–hosted login, registration, and passkey pages — through a form instead of raw JSON.
+`GroupView` includes an **Auth Config** side-nav entry under the **Detail** divider (before **Metadata**, gated by the `sys.groups` / `sys.manage_groups` permission). It edits `group.metadata.auth_config` — the structured config that drives the django-mojo–hosted login, registration, and passkey pages — through a form instead of raw JSON.
 
 `GroupAuthConfigSection` embeds one `FormView` with a 3-tab `tabset`:
 

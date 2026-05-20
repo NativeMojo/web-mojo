@@ -397,8 +397,8 @@ A new **Auth Config** section in the admin `GroupView` for editing a group's
   client-side; server validation errors surface as a toast.
 - **Registration field schema** is a fixed 6-row grid (include / required /
   verify per canonical field; the `password` row is locked on).
-- Wired into `GroupView` as a `manage_group`-gated section under the **Detail**
-  divider, before **Metadata**.
+- Wired into `GroupView` as a section gated by `sys.groups` /
+  `sys.manage_groups`, under the **Detail** divider, before **Metadata**.
 
 ### Files changed
 

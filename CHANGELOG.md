@@ -4,7 +4,7 @@
 
 ### Admin · Group Auth Config editor (`GroupView` → Auth Config)
 
-`GroupView` gains an **Auth Config** side-nav section (under the **Detail** divider, before **Metadata**, gated by `manage_group`) for editing a group's `metadata.auth_config` — the structured config that drives the django-mojo–hosted login, registration, and passkey pages. Previously this was only editable as raw JSON through the generic Metadata section.
+`GroupView` gains an **Auth Config** side-nav section (under the **Detail** divider, before **Metadata**, gated by the `sys.groups` / `sys.manage_groups` permission) for editing a group's `metadata.auth_config` — the structured config that drives the django-mojo–hosted login, registration, and passkey pages. Previously this was only editable as raw JSON through the generic Metadata section.
 
 - **`GroupAuthConfigSection`** (`src/extensions/admin/account/groups/GroupAuthConfigSection.js`) is a `View` that embeds one `FormView` with a 3-tab `tabset`:
   - **Theme** — text inputs for `app_title`, `logo_url`, `favicon_url`, `hero_image_url`, `hero_headline`, `hero_subheadline`, `back_to_website_url`, `terms_url`, `api_base`, `success_redirect`, `custom_css_url`; a `layout` select; a `custom_css` textarea.
