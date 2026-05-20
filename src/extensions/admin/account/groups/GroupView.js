@@ -2175,6 +2175,12 @@ GroupView.VIEW_CLASS = GroupView;
 Group.VIEW_CLASS = GroupView;
 Group.MODEL_REF = 'account.Group';
 
+// Modal presentation for the row-view dialog. ListView / TablePage spread
+// this onto Modal.dialog() whenever they open a VIEW_CLASS, so the size
+// lives with the View instead of being repeated in every page's
+// viewDialogOptions.
+GroupView.DIALOG_OPTIONS = { size: 'xl' };
+
 export default GroupView;
 export {
     GroupView,

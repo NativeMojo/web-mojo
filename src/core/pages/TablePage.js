@@ -492,6 +492,8 @@ class TablePage extends Page {
         size: 'lg',
         centered: false,
         ...this.tableView.getFormDialogConfig(this.tableView.getModelClass(model)),
+        // View class declares its own modal presentation via static DIALOG_OPTIONS.
+        ...ViewClass.DIALOG_OPTIONS,
         ...this.tableView.viewDialogOptions
       });
     } else {

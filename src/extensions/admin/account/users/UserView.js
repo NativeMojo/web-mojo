@@ -2312,6 +2312,13 @@ UserView.VIEW_CLASS = UserView;
 User.VIEW_CLASS = UserView;
 User.MODEL_REF = 'account.User';
 
+// Modal presentation for the row-view dialog. ListView / TablePage spread
+// this onto Modal.dialog() whenever they open a VIEW_CLASS, so the size
+// lives with the View instead of being repeated in every page's
+// viewDialogOptions. UserView is the heaviest detail surface (side-nav +
+// ~10 sections of embedded tables) — give it the full viewport.
+UserView.DIALOG_OPTIONS = { size: 'fullscreen' };
+
 export default UserView;
 export {
     UserView,

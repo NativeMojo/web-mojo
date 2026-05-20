@@ -155,6 +155,21 @@ takes care of it.
 | `Model.VIEW_CLASS`                  | Top of the **TablePage** file. The view class is a sibling import that the model file shouldn't reach for (avoids core→ext deps). |
 | `Model.FORM_DIALOG_CONFIG`          | Bottom of the **model** file when present.        |
 | `Model.DELETE_TEMPLATE`             | Bottom of the **model** file when present.        |
+| `ViewClass.DIALOG_OPTIONS`          | Bottom of the **View** file (next to `VIEW_CLASS`). Sizes the view dialog from the View itself. |
+
+**Sizing the view dialog.** The row-view dialog defaults to `size: 'lg'`.
+When a detail View needs a wider modal, declare a static `DIALOG_OPTIONS`
+on the **View class** — it is spread onto `Modal.dialog()` every time the
+View is opened, so the size lives with the View instead of being repeated
+in `viewDialogOptions` on every page:
+
+```javascript
+// Bottom of UserView.js, beside `UserView.VIEW_CLASS = UserView`:
+UserView.DIALOG_OPTIONS = { size: 'fullscreen' };   // 'sm'|'lg'|'xl'|'xxl'|'fullscreen'
+```
+
+Precedence (later wins): defaults → `Model.FORM_DIALOG_CONFIG` →
+`ViewClass.DIALOG_OPTIONS` → page-level `viewDialogOptions`.
 
 Reference implementations (use these as the visual baseline when
 auditing or editing other pages):

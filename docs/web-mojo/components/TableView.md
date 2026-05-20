@@ -1158,6 +1158,31 @@ const table = new TableView({
 
 If no `itemView` is set, TableView checks `ModelClass.VIEW_CLASS`, and falls back to a generic DataView dialog.
 
+### Sizing the dialog from the View class
+
+A detail View usually knows how big its own modal should be — a dense
+multi-section inspector wants `'xl'` or `'fullscreen'`, a compact card is
+fine at the default `'lg'`. Declare that **once** on the View class with a
+static `DIALOG_OPTIONS`, instead of repeating `viewDialogOptions` in every
+page that opens it:
+
+```javascript
+class UserView extends DetailView { /* … */ }
+
+// Spread onto Modal.dialog() every time this View is opened as a
+// row-view dialog (by TableView, ListView, or TablePage deep-links).
+UserView.DIALOG_OPTIONS = { size: 'fullscreen' };
+```
+
+`DIALOG_OPTIONS` accepts any `Modal.dialog()` option (`size`, `centered`,
+`scrollable`, `noBodyPadding`, …). Supported sizes: `'sm'`, `'lg'`,
+`'xl'`, `'xxl'`, `'fullscreen'` (and the `fullscreen-*-down` variants).
+
+**Precedence** (later wins): built-in defaults (`size: 'lg'`) →
+`ModelClass.FORM_DIALOG_CONFIG` → `ViewClass.DIALOG_OPTIONS` →
+page/instance `viewDialogOptions`. So a page can still override the
+View's preferred size when it genuinely needs to.
+
 By default, `fetchOnView: true` causes TableView to call `model.fetch()` before opening the dialog, so the detail view always has the latest server data. Set `fetchOnView: false` to skip the fetch and use the model data already in the table row:
 
 ```javascript

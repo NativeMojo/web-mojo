@@ -658,7 +658,7 @@ ListView ships the same model lifecycle that TableView does — view dialogs, ed
 | `editForm` | `Array` or `object` | `null` | Form-field config used by the Edit dialog (and by row-click when `clickAction: 'edit'`). Falls back to `Model.EDIT_FORM`, then to `addForm`. |
 | `deleteTemplate` | `string` | `null` | Mustache template for the delete confirmation message. Falls back to `Model.DELETE_TEMPLATE`. |
 | `formDialogConfig` | `object` | `{}` | Extra options merged into every form dialog (e.g. `{ size: 'lg', centered: true }`). Merged after `Model.FORM_DIALOG_CONFIG`. |
-| `viewDialogOptions` | `object` | `{}` | Extra options merged into the view dialog. |
+| `viewDialogOptions` | `object` | `{}` | Extra options merged into the view dialog. Final override — beats the View class's own `DIALOG_OPTIONS` (see below). |
 | `fetchOnView` | `boolean` | `true` | Re-fetch the model from the server before opening the view dialog. Set `false` to skip and use the model already in the row. |
 | `onItemView`, `onItemEdit`, `onItemDelete`, `onAdd` | `function` | `null` | Per-action callback overrides — `(model, event)` for the row actions, `(event)` for Add. When set, the default Modal flow is bypassed. |
 | `onRowClick` | `function` | `null` | Full row-click override — beats `clickAction` and `onItemClick`. |
@@ -712,6 +712,22 @@ const list = new ListView({
 ```
 
 The same payload is also emitted as a `row:click` event for parity with TableView, so external listeners can react via `list.on('row:click', ...)` instead of (or in addition to) the callback.
+
+#### Sizing the view dialog from the View class
+
+The view dialog defaults to `size: 'lg'`. To make a detail View open
+wider (or fullscreen) **everywhere it's used**, declare a static
+`DIALOG_OPTIONS` on the View class rather than passing `viewDialogOptions`
+on every list/page:
+
+```js
+UserView.DIALOG_OPTIONS = { size: 'fullscreen' };
+GroupView.DIALOG_OPTIONS = { size: 'xl' };
+```
+
+`DIALOG_OPTIONS` accepts any `Modal.dialog()` option. Precedence (later
+wins): defaults → `Model.FORM_DIALOG_CONFIG` → `ViewClass.DIALOG_OPTIONS`
+→ `viewDialogOptions`.
 
 **Inner `data-action` clicks always win.** Clicking a button or link inside the card with its own `data-action="<name>"` does NOT also fire `onItemClick` — the inner action handler runs and the row-click is suppressed. So you can safely put a `<button data-action="favorite">` inside a clickable card without double-firing.
 

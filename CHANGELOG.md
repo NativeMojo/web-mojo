@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Core · Detail Views can size their own row-view modal via `ViewClass.DIALOG_OPTIONS`
+
+Dense detail Views (`UserView`, `GroupView`, …) opened as a row-view dialog were stuck at `Modal.dialog()`'s default `size: 'lg'`. The only way to widen them was to repeat `viewDialogOptions: { size: 'xl' }` in every TablePage / TableView / ListView that opened the View — easy to forget, and the View itself (which actually knows how much room it needs) had no say.
+
+- **New static `DIALOG_OPTIONS` on the View class.** `ListView._onRowView()` and `TablePage.showItemDialog()` now spread `ViewClass.DIALOG_OPTIONS` onto `Modal.dialog()` whenever they open a `VIEW_CLASS` / `itemView`. A detail View declares its preferred modal presentation once — `UserView.DIALOG_OPTIONS = { size: 'fullscreen' }` — and every surface that opens it picks it up automatically. `DIALOG_OPTIONS` accepts any `Modal.dialog()` option (`size`, `centered`, `scrollable`, `noBodyPadding`, …); supported sizes are `'sm'`, `'lg'`, `'xl'`, `'xxl'`, `'fullscreen'`.
+- **Precedence (later wins):** built-in defaults (`size: 'lg'`) → `Model.FORM_DIALOG_CONFIG` → `ViewClass.DIALOG_OPTIONS` → page/instance `viewDialogOptions`. The page-level escape hatch still wins, so a page can override the View's preferred size when it genuinely needs to. Existing pages are unaffected — a View with no `DIALOG_OPTIONS` keeps the previous behavior.
+- **Adopted on the two heaviest admin inspectors.** `UserView.DIALOG_OPTIONS = { size: 'fullscreen' }` (side-nav + ~10 sections of embedded tables) and `GroupView.DIALOG_OPTIONS = { size: 'xl' }`, registered next to their `VIEW_CLASS` assignments. The `viewDialogOptions` in `UserTablePage` / `GroupTablePage` / `MemberTablePage` set no `size`, so the new sizes apply cleanly without touching those pages.
+- **Docs.** New "Sizing the dialog from the View class" subsections in `docs/web-mojo/components/TableView.md` and `docs/web-mojo/components/ListView.md`, plus a `ViewClass.DIALOG_OPTIONS` row in the TablePage "Where to register the static" table.
+
+### Admin · GroupTablePage exposes a UUID column + filter
+
+- **New `uuid` column** in `GroupTablePage` (monospace, muted, `xl`-only visibility so it doesn't crowd the table on smaller screens — matches the `created` / `last_activity` cluster). Falls back to `—` for groups without a UUID.
+- **New "Filter by UUID" text filter** wired inline on the column, so it appears in the toolbar's *Add Filter* dropdown and sends `uuid=<value>` to `/api/group`.
+
 ### Admin · Webhook Subscriptions management UI (per-group section + standalone TablePage)
 
 Operators previously had no UI for the `account.WebhookSubscription` rows that landed on django-mojo last cycle — provisioning a webhook receiver meant hand-curling `POST /api/group/webhook_subscriptions`, and there was nowhere to fetch the per-group signing secret a consumer needs to verify deliveries. This adds the missing surfaces, mirroring the existing ApiKey two-surface shape. Per `planning/done/admin-webhook-subscriptions.md`.

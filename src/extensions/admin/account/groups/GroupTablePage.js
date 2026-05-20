@@ -77,6 +77,17 @@ class GroupTablePage extends TablePage {
                     class: 'text-muted fs-8'
                 },
                 {
+                    key: 'uuid',
+                    label: 'UUID',
+                    formatter: "default('—')",
+                    visibility: 'xl',
+                    class: 'text-muted fs-8 font-monospace',
+                    filter: {
+                        type: 'text',
+                        label: 'Filter by UUID'
+                    }
+                },
+                {
                     key: 'created',
                     label: 'Created',
                     className: 'text-muted fs-8',

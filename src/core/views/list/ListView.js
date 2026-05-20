@@ -1496,6 +1496,10 @@ class ListView extends View {
   // VIEW_CLASS / ADD_FORM / EDIT_FORM / DELETE_TEMPLATE / FORM_DIALOG_CONFIG
   // (with per-instance overrides via this.itemView / this.addForm /
   // this.editForm / this.deleteTemplate / this.formDialogConfig).
+  //
+  // The view dialog also honors a static DIALOG_OPTIONS on the
+  // VIEW_CLASS itself, so a detail View can declare its own modal
+  // size/presentation once instead of every page repeating it.
   // ============================================================
 
   /**
@@ -1535,6 +1539,10 @@ class ListView extends View {
         size: 'lg',
         centered: false,
         ...this.getFormDialogConfig(this.getModelClass(event.model)),
+        // View class declares its own modal presentation (size, centered,
+        // scrollable, …) via a static DIALOG_OPTIONS. Page-level
+        // viewDialogOptions still wins as the final override.
+        ...ViewClass.DIALOG_OPTIONS,
         ...this.viewDialogOptions
       });
     } else {
