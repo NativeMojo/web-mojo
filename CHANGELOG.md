@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Admin · Group Auth Config editor (`GroupView` → Auth Config)
+
+`GroupView` gains an **Auth Config** side-nav section (under the **Detail** divider, before **Metadata**, gated by `manage_group`) for editing a group's `metadata.auth_config` — the structured config that drives the django-mojo–hosted login, registration, and passkey pages. Previously this was only editable as raw JSON through the generic Metadata section.
+
+- **`GroupAuthConfigSection`** (`src/extensions/admin/account/groups/GroupAuthConfigSection.js`) is a `View` that embeds one `FormView` with a 3-tab `tabset`:
+  - **Theme** — text inputs for `app_title`, `logo_url`, `favicon_url`, `hero_image_url`, `hero_headline`, `hero_subheadline`, `back_to_website_url`, `terms_url`, `api_base`, `success_redirect`, `custom_css_url`; a `layout` select; a `custom_css` textarea.
+  - **Login** — a multiselect for `login.methods` (password / sms / passkey / magic / google / apple).
+  - **Registration** — an `enabled` toggle, `passkey_prompt` / `identity_field` selects, a `min_age` number, a `methods` multiselect, and a fixed 6-row grid for `registration.fields` (include / required / verify per canonical field; the `password` row is locked on).
+- **Inherit-aware.** Each field shows the group's own override if set, otherwise the resolved/inherited value fetched once from `GET /api/auth/config?group_uuid=<uuid>`; text fields show the resolved value as placeholder. Only fields changed from that baseline are saved, so untouched fields keep inheriting.
+- **Standard CRUD.** Saves a nested `{ metadata: { auth_config: {…} } }` via `model.save()` — django deep-merges the `metadata` JSONField, so sibling keys (timezone, domain, portal, …) survive. Server validation errors surface as a toast.
+
 ### Core · Detail Views can size their own row-view modal via `ViewClass.DIALOG_OPTIONS`
 
 Dense detail Views (`UserView`, `GroupView`, …) opened as a row-view dialog were stuck at `Modal.dialog()`'s default `size: 'lg'`. The only way to widen them was to repeat `viewDialogOptions: { size: 'xl' }` in every TablePage / TableView / ListView that opened the View — easy to forget, and the View itself (which actually knows how much room it needs) had no say.

@@ -322,6 +322,20 @@ Events are entered via the framework's `TagInput` (`type: 'tags'`). `WebhookSubs
 
 ---
 
+## Auth Config — per-group editor (`GroupView` → Auth Config)
+
+`GroupView` includes an **Auth Config** side-nav entry under the **Detail** divider (before **Metadata**, gated by `manage_group`). It edits `group.metadata.auth_config` — the structured config that drives the django-mojo–hosted login, registration, and passkey pages — through a form instead of raw JSON.
+
+`GroupAuthConfigSection` embeds one `FormView` with a 3-tab `tabset`:
+
+1. **Theme** — branding text inputs (`app_title`, `logo_url`, `favicon_url`, hero fields, `back_to_website_url`, `terms_url`, `api_base`, `success_redirect`, `custom_css_url`), a `layout` select, and a `custom_css` textarea.
+2. **Login** — a multiselect for `login.methods` (`password`, `sms`, `passkey`, `magic`, `google`, `apple`).
+3. **Registration** — an `enabled` toggle, `passkey_prompt` and `identity_field` selects, a `min_age` number, a `methods` multiselect, and a fixed 6-row grid for `registration.fields` (an include / required / verify control per canonical field — `first_name`, `last_name`, `email`, `phone`, `dob`, `password`; the `password` row is locked on).
+
+The section fetches the resolved (inherited) config once from `GET /api/auth/config?group_uuid=<uuid>` to populate placeholders, and each field is seeded with the group's own override if present, else the inherited value. On Save it diffs against that baseline and writes only the changed keys as a nested `{ metadata: { auth_config: {…} } }` via `model.save()` — django deep-merges the `metadata` JSONField, so sibling keys survive and untouched fields keep inheriting. Server validation errors surface as a toast.
+
+---
+
 ## Importing Individual Pages & Views
 
 If you only want a couple of pages and prefer to wire them yourself instead of using `registerAdminPages`, every class is also exported from `web-mojo/admin`.

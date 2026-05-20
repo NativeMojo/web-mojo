@@ -47,6 +47,7 @@ import {
 import { LogList } from '@core/models/Log.js';
 import { IncidentEventList } from '@ext/admin/models/Incident.js';
 import AdminMetadataSection from '../../shared/AdminMetadataSection.js';
+import GroupAuthConfigSection from './GroupAuthConfigSection.js';
 import ApiKeyView from '../api_keys/ApiKeyView.js';
 import WebhookSubscriptionView from '../webhook_subscriptions/WebhookSubscriptionView.js';
 
@@ -1235,6 +1236,7 @@ class GroupView extends DetailView {
         });
 
         const metadataSection = new AdminMetadataSection({ model });
+        const authConfigSection = new GroupAuthConfigSection({ model });
 
         // ── Sidebar layout ─────────────────────────────────
         const sections = [
@@ -1250,6 +1252,7 @@ class GroupView extends DetailView {
             { key: 'Events',      label: 'Events',      icon: 'bi-calendar-event', view: eventsSection },
             { key: 'Audit',       label: 'Audit',       icon: 'bi-clock-history',  view: auditSection, permissions: 'view_logs' },
             { type: 'divider', label: 'Detail' },
+            { key: 'AuthConfig',  label: 'Auth Config', icon: 'bi-box-arrow-in-right', view: authConfigSection, permissions: 'manage_group' },
             { key: 'Metadata',    label: 'Metadata',    icon: 'bi-braces',         view: metadataSection }
         ];
 
@@ -1350,6 +1353,7 @@ class GroupView extends DetailView {
         this.webhookSubscriptionsListView   = webhookSubscriptionsListView;
         this.eventsSection                  = eventsSection;
         this.auditSection                   = auditSection;
+        this.authConfigSection              = authConfigSection;
         this.metadataSection                = metadataSection;
 
         this._refreshComputedFields();
