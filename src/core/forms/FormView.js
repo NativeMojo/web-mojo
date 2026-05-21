@@ -1671,10 +1671,19 @@ class FormView extends View {
         if (field.name === name) {
           return field;
         }
-        // Search in nested fields recursively
+        // Search in nested group fields recursively
         if (field.fields && Array.isArray(field.fields)) {
           const found = searchInFields(field.fields);
           if (found) return found;
+        }
+        // Search in tabset tabs ({ type: 'tabset', tabs: [{ fields: [...] }] })
+        if (field.tabs && Array.isArray(field.tabs)) {
+          for (const tab of field.tabs) {
+            if (tab.fields && Array.isArray(tab.fields)) {
+              const found = searchInFields(tab.fields);
+              if (found) return found;
+            }
+          }
         }
       }
       return null;

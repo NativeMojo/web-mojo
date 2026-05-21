@@ -17,8 +17,12 @@
   - **Theme** — text inputs for `app_title`, `logo_url`, `favicon_url`, `hero_image_url`, `hero_headline`, `hero_subheadline`, `back_to_website_url`, `terms_url`, `api_base`, `success_redirect`, `custom_css_url`; a `layout` select; a `custom_css` textarea.
   - **Login** — a multiselect for `login.methods` (password / sms / passkey / magic / google / apple).
   - **Registration** — an `enabled` toggle, `passkey_prompt` / `identity_field` selects, a `min_age` number, a `methods` multiselect, and a fixed 6-row grid for `registration.fields` (include / required / verify per canonical field; the `password` row is locked on).
-- **Inherit-aware.** Each field shows the group's own override if set, otherwise the resolved/inherited value fetched once from `GET /api/auth/config?group_uuid=<uuid>`; text fields show the resolved value as placeholder. Only fields changed from that baseline are saved, so untouched fields keep inheriting.
-- **Standard CRUD.** Saves a nested `{ metadata: { auth_config: {…} } }` via `model.save()` — django deep-merges the `metadata` JSONField, so sibling keys (timezone, domain, portal, …) survive. Server validation errors surface as a toast.
+- **Inherit-aware.** Each field shows the group's own override if set, otherwise the resolved/inherited value fetched once from `GET /api/auth/config?group_uuid=<uuid>`; text fields show the resolved value as placeholder.
+- **Autosave.** Edits save automatically (debounced) — only fields changed from the loaded baseline are sent as a nested `{ metadata: { auth_config: {…} } }` via `model.save()`, so django deep-merges the `metadata` JSONField (sibling keys like timezone, domain, portal survive) and untouched fields keep inheriting. An inline status line reports save progress; server validation errors also surface as a toast.
+
+### Forms · Component fields now initialize inside a `tabset`
+
+`FormView.getFormFieldConfig()` — used by the component initializers for `multiselect`, `combobox`, `collection`, `collectionmultiselect`, and the date/time pickers — recursed into `group` fields but not into `tabset` tabs. A component field placed inside a tab was never upgraded from FormBuilder's plain-HTML fallback (e.g. a `multiselect` stayed a native `<select multiple>`). `getFormFieldConfig()` now also searches `tabset` tabs, matching `findFieldConfig()` and `FormBuilder`'s own field lookup.
 
 ### Core · Detail Views can size their own row-view modal via `ViewClass.DIALOG_OPTIONS`
 
