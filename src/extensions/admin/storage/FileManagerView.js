@@ -20,7 +20,9 @@
 import View from '@core/View.js';
 import Modal from '@core/views/feedback/Modal.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
-import { FileManager, FileManagerForms } from '@core/models/Files.js';
+import TableView from '@core/views/table/TableView.js';
+import FileView from '@core/views/data/FileView.js';
+import { FileManager, FileManagerForms, FileList } from '@core/models/Files.js';
 
 class FileManagerView extends View {
     constructor(options = {}) {
@@ -119,6 +121,12 @@ class FileManagerView extends View {
                     </div>
                 </div>
 
+                <!-- Files stored in this backend -->
+                <div class="mt-4">
+                    <h6 class="text-muted text-uppercase small mb-2">Files in this backend</h6>
+                    <div data-container="file-manager-files"></div>
+                </div>
+
             </div>
         `;
     }
@@ -177,6 +185,44 @@ class FileManagerView extends View {
             }
         });
         this.addChild(ctxMenu);
+
+        // Files stored in this backend — a context-scoped TableView. The
+        // collection is filtered by `file_manager` (the File → FileManager FK);
+        // hideActivePillNames suppresses that scoping pill so it can't be
+        // removed. The list auto-fetches on mount (ListView.onAfterMount).
+        const id = this.model.get('id');
+        if (id) {
+            const filesCollection = new FileList({
+                params: { file_manager: id, size: 10, sort: '-created' }
+            });
+            this.filesTable = new TableView({
+                containerId: 'file-manager-files',
+                collection: filesCollection,
+                hideActivePillNames: ['file_manager'],
+                searchable: true,
+                searchPlaceholder: 'Search filename or type',
+                sortable: true,
+                filterable: false,
+                paginated: true,
+                selectable: false,
+                showRefresh: true,
+                showAdd: false,
+                showExport: false,
+                clickAction: 'view',
+                itemView: FileView,
+                viewDialogOptions: { header: false, noBodyPadding: true, buttons: [] },
+                emptyMessage: 'No files are stored in this backend yet.',
+                columns: [
+                    { key: 'filename', label: 'Filename' },
+                    { key: 'content_type', label: 'Type', formatter: "default('—')", visibility: 'lg' },
+                    { key: 'file_size', label: 'Size', formatter: 'filesize', align: 'right' },
+                    { key: 'upload_status', label: 'Status', formatter: 'badge', visibility: 'xl' },
+                    { key: 'created', label: 'Uploaded', formatter: 'epoch|datetime' }
+                ],
+                tableOptions: { striped: true, bordered: false, hover: true, responsive: false }
+            });
+            this.addChild(this.filesTable);
+        }
     }
 
     // ── Helpers ──────────────────────────────────────────────
