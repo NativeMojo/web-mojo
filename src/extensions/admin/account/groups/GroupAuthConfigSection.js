@@ -7,16 +7,21 @@
  * `group.metadata.auth_config`, deep-merged down the parent chain.
  *
  * This section edits the group's own override only. It embeds a single
- * `FormView` with a 3-tab `tabset` (Theme / Login / Registration). Changes
- * autosave — the section debounces `FormView`'s `field:change` events and
+ * `FormView` with a 3-tab `tabset` (Theme / Login / Registration) plus a Save
+ * button. On Save it checks the cross-field rules the server enforces, then
  * writes the changed keys via `model.save({ metadata: { auth_config: {...} } })`.
  * django deep-merges the `metadata` JSONField, so sibling keys survive and
  * untouched fields keep inheriting.
  *
+ * Save is explicit (not autosave) because the server applies cross-field
+ * validation — `registration.fields` must include email or phone, and
+ * `login.methods` must be non-empty — so a mid-edit state is routinely
+ * invalid and would fail a per-keystroke save.
+ *
  * Load:  each field shows the group's own override value if present, else the
  *        resolved/inherited value (fetched from `GET /api/auth/config`). Text
  *        fields additionally show the resolved value as placeholder text.
- * Save:  autosaves only fields changed from the loaded baseline, so untouched
+ * Save:  sends only fields changed from the loaded baseline, so untouched
  *        fields keep inheriting.
  */
 import View from '@core/View.js';
@@ -169,10 +174,15 @@ export default class GroupAuthConfigSection extends View {
                 <p class="text-secondary small mb-3">
                     Branding and sign-in behavior for this group's hosted login, registration,
                     and passkey pages. Empty fields inherit the deployment defaults
-                    (shown as placeholders). Changes save automatically.
-                    <span class="gac-status ms-1"></span>
+                    (shown as placeholders).
                 </p>
                 <div data-container="auth-config-form"></div>
+                <div class="d-flex align-items-center justify-content-end gap-3 mt-3 pt-3 border-top">
+                    <span class="gac-status small text-secondary"></span>
+                    <button type="button" class="btn btn-primary btn-sm" data-action="save-auth-config">
+                        <i class="bi bi-check-lg me-1"></i>Save Auth Config
+                    </button>
+                </div>
             `,
             ...options
         });
@@ -180,9 +190,6 @@ export default class GroupAuthConfigSection extends View {
         this._resolved = STATIC_DEFAULTS;
         this._baseline = {};
         this._placeholders = {};
-        this._saveTimer = null;
-        this._saving = false;
-        this._destroyed = false;
     }
 
     async onInit() {
@@ -197,9 +204,6 @@ export default class GroupAuthConfigSection extends View {
             data: { ...this._baseline }
         });
         this.addChild(this.formView);
-
-        // Autosave — debounce FormView field changes and persist the diff.
-        this.formView.on('field:change', () => this._scheduleAutosave(), this);
     }
 
     // ── Data load ──────────────────────────────────────────
@@ -424,69 +428,77 @@ export default class GroupAuthConfigSection extends View {
         return fields;
     }
 
-    // ── Autosave ───────────────────────────────────────────
+    // ── Save ───────────────────────────────────────────────
 
-    /** Debounce FormView changes into a single save. */
-    _scheduleAutosave() {
-        if (this._destroyed) return;
-        if (this._saveTimer) clearTimeout(this._saveTimer);
-        this._saveTimer = setTimeout(() => this._flushAutosave(), 700);
-    }
+    async onActionSaveAuthConfig() {
+        const fv = this.formView;
+        const app = this.getApp();
+        if (!fv) return true;
 
-    /** Persist the fields changed since the last saved baseline. */
-    async _flushAutosave() {
-        this._saveTimer = null;
-        if (!this.formView || this._destroyed) return;
-        // A save is still in flight — retry once it settles.
-        if (this._saving) {
-            this._scheduleAutosave();
-            return;
+        // HTML5 field validation — also switches to the tab with the first error.
+        if (typeof fv.validate === 'function' && !fv.validate()) {
+            fv.focusFirstError?.();
+            return true;
         }
 
-        const fd = await this.formView.getFormData();
-        const payload = this._diffPayload(fd);
-        if (!payload) return;
+        const fd = await fv.getFormData();
 
-        this._saving = true;
+        // Cross-field rules the server enforces — checked up front so the admin
+        // gets a clear inline message instead of a raw 400.
+        const loginMethods = Array.isArray(fd.login_methods) ? fd.login_methods : [];
+        if (loginMethods.length === 0) {
+            this._fail('Select at least one login method.');
+            return true;
+        }
+        const regFields = this._assembleRegFields(fd);
+        if (!regFields.some(f => f.name === 'email' || f.name === 'phone')) {
+            this._fail("Registration fields must include 'Email' or 'Phone'.");
+            return true;
+        }
+
+        const payload = this._diffPayload(fd);
+        if (!payload) {
+            this._setStatus('No changes to save.');
+            return true;
+        }
+
         this._setStatus('Saving…');
+        app?.showLoading?.();
         let resp;
         try {
             resp = await this.model.save({ metadata: { auth_config: payload } });
         } catch (e) {
             resp = null;
         } finally {
-            this._saving = false;
+            app?.hideLoading?.();
         }
 
         if (resp && resp.status === 200) {
             // The saved state is the new baseline for the next diff.
             this._baseline = { ...fd };
-            this._setStatus('All changes saved', 'success');
+            this._setStatus('All changes saved.', 'success');
+            app?.toast?.success('Auth config saved');
         } else {
-            const msg = resp?.message || resp?.data?.error || 'Save failed';
-            this._setStatus(msg, 'danger');
-            this.getApp()?.toast?.error(msg);
+            this._fail(resp?.message || resp?.data?.error || 'Failed to save auth config');
         }
+        return true;
     }
 
-    /** Update the inline autosave status text. */
+    /** Show a failure message inline and as a toast. */
+    _fail(msg) {
+        this._setStatus(msg, 'danger');
+        this.getApp()?.toast?.error(msg);
+    }
+
+    /** Update the inline save-status text in the footer. */
     _setStatus(text, tone) {
         const el = this.element?.querySelector('.gac-status');
         if (!el) return;
-        el.textContent = text ? `· ${text}` : '';
-        el.className = 'gac-status ms-1 '
+        el.textContent = text || '';
+        el.className = 'gac-status small '
             + (tone === 'danger' ? 'text-danger'
                 : tone === 'success' ? 'text-success'
                 : 'text-secondary');
-    }
-
-    async onBeforeDestroy() {
-        this._destroyed = true;
-        if (this._saveTimer) {
-            clearTimeout(this._saveTimer);
-            this._saveTimer = null;
-        }
-        await super.onBeforeDestroy?.();
     }
 
     // ── Diff / serialisation ───────────────────────────────
@@ -502,11 +514,6 @@ export default class GroupAuthConfigSection extends View {
         for (const d of FIELD_DESCRIPTORS) {
             const cur = fd[d.form];
             const base = this._baseline[d.form];
-            // Never autosave an empty login.methods — the server rejects it.
-            // The field is left unsaved until the admin picks a method.
-            if (d.form === 'login_methods' && (!Array.isArray(cur) || cur.length === 0)) {
-                continue;
-            }
             if (this._isDifferent(cur, base, d.kind)) {
                 setPath(payload, d.path, this._normalizeForSave(cur, d.kind));
                 changed = true;

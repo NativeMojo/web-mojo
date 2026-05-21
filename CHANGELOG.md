@@ -18,7 +18,7 @@
   - **Login** — a multiselect for `login.methods` (password / sms / passkey / magic / google / apple).
   - **Registration** — an `enabled` toggle, `passkey_prompt` / `identity_field` selects, a `min_age` number, a `methods` multiselect, and a fixed 6-row grid for `registration.fields` (include / required / verify per canonical field; the `password` row is locked on).
 - **Inherit-aware.** Each field shows the group's own override if set, otherwise the resolved/inherited value fetched once from `GET /api/auth/config?group_uuid=<uuid>`; text fields show the resolved value as placeholder.
-- **Autosave.** Edits save automatically (debounced) — only fields changed from the loaded baseline are sent as a nested `{ metadata: { auth_config: {…} } }` via `model.save()`, so django deep-merges the `metadata` JSONField (sibling keys like timezone, domain, portal survive) and untouched fields keep inheriting. An inline status line reports save progress; server validation errors also surface as a toast.
+- **Save.** A Save button writes only the fields changed from the loaded baseline as a nested `{ metadata: { auth_config: {…} } }` via `model.save()`, so django deep-merges the `metadata` JSONField (sibling keys like timezone, domain, portal survive) and untouched fields keep inheriting. Save is explicit — not autosave — because the server applies cross-field validation (`registration.fields` must include email or phone; `login.methods` must be non-empty); those rules are also checked client-side so the admin gets an inline message instead of a raw 400. An inline status line reports save progress.
 
 ### Forms · Component fields now initialize inside a `tabset`
 
