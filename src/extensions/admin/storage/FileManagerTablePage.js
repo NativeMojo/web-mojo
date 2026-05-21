@@ -71,12 +71,14 @@ class FileManagerTablePage extends TablePage {
 
             searchPlaceholder: 'Search backend name or URL',
 
-            // Row click → detail view (owns the per-record context menu)
+            // Row click → DetailView (owns the header + per-record context menu)
             clickAction: 'view',
             itemViewClass: FileManagerView,
             viewDialogOptions: {
                 header: false,
-                size: 'lg'
+                size: 'xl',
+                noBodyPadding: true,
+                buttons: []
             },
 
             // Table features

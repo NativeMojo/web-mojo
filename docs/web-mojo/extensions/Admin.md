@@ -364,7 +364,7 @@ import {
     JobDetailsView, JobHealthView, JobStatsView, RunnerDetailsView, ScheduledTaskView,
     EmailTemplateView, EmailView, PublicMessageView, PhoneNumberView, PhoneConfigView, PushDeliveryView, PushDeviceView,
     ShortLinkView, BouncerSignalView, BouncerDeviceView, IPSetView,
-    LogView, MetricsPermissionsView, SettingView, FileView, CloudWatchResourceView, CloudWatchChart,
+    LogView, MetricsPermissionsView, SettingView, FileView, FileManagerView, CloudWatchResourceView, CloudWatchChart,
     AssistantView, AssistantSkillView, AssistantConversationView,
 } from 'web-mojo/admin';
 ```
