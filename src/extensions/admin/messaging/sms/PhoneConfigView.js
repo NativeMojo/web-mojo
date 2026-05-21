@@ -1,28 +1,42 @@
 /**
- * PhoneConfigView - Detail / edit / test / delete view for a PhoneConfig row.
+ * PhoneConfigView - Detail view for a PhoneConfig row.
  *
- * Embeds a single FormView whose provider-conditional fields (Twilio, AWS,
- * Mojo) are driven by `showWhen` against the provider select. Secrets are
- * write-only — blank fields are stripped from the save body so existing
- * stored credentials are never accidentally cleared.
+ * Read-only record display (mirrors ApiKeyView): header with identity +
+ * badges, a list-group of detail sections, and a three-dots context menu
+ * for all mutations. Editing opens a separate modal form (PhoneConfigForms
+ * .edit) whose provider-conditional `showWhen` fields switch the visible
+ * credential block. Secrets are write-only — blank password inputs are
+ * stripped from the save body so a stored credential is never cleared.
  *
- * Actions:
- *   - Save              → POST /api/phonehub/config/<id> with scalars + filled secrets
- *   - Test connection   → POST /api/phonehub/config/<id>  {test_connection: 1}
- *   - Provision API key → opens a tailored ApiKey create flow (mojo provider only)
- *   - Delete            → DELETE /api/phonehub/config/<id>
+ * Context-menu actions:
+ *   - Edit                → Modal form, then save
+ *   - Test connection     → POST {test_connection: 1}, result shown inline
+ *   - Provision API key   → mojo-only one-time downstream API-key flow
+ *   - Delete              → DELETE /api/phonehub/config/<id>
  */
 
 import View from '@core/View.js';
-import FormView from '@core/forms/FormView.js';
 import Modal from '@core/views/feedback/Modal.js';
+import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import MOJOUtils from '@core/utils/MOJOUtils.js';
 import { GroupList } from '@core/models/Group.js';
 import { ApiKey } from '@core/models/ApiKey.js';
 import { PhoneConfig, PhoneConfigForms } from '@ext/admin/models/Phonehub.js';
 
 const PROVIDER_LABELS = { twilio: 'Twilio', aws: 'AWS SNS', mojo: 'Mojo Remote' };
-const PROVIDER_BADGES = { twilio: 'bg-info',  aws: 'bg-warning',  mojo: 'bg-primary' };
+const PROVIDER_BADGES = { twilio: 'bg-info', aws: 'bg-warning', mojo: 'bg-primary' };
+
+// Friendly prose for test_connection error codes — never surface the raw
+// machine code to the operator.
+const TEST_ERROR_LABELS = {
+    missing_credentials: 'Missing credentials — fill in the provider credentials and save first.',
+    invalid_credentials: 'Invalid credentials — the provider rejected the configured keys.',
+    timeout: 'Connection timed out.',
+    connection_failed: 'Could not reach the provider.',
+    config_error: 'Configuration error.',
+    remote_error: 'The remote mojo returned an error.',
+    remote_failed: 'The remote mojo request failed.'
+};
 
 class PhoneConfigView extends View {
     constructor(options = {}) {
@@ -34,22 +48,21 @@ class PhoneConfigView extends View {
         this.model = options.model || new PhoneConfig(options.data || {});
         this.collection = options.collection || null;
 
-        // Inline result banners; rendered via getters so we can toggle without
-        // a full render of the embedded FormView (which would reset typing).
-        this._resultTone = null;   // 'success' | 'danger' | null
+        // Inline test-connection result banner state.
+        this._resultTone = null;     // 'success' | 'danger' | null
         this._resultMessage = '';
 
         this.template = `
             <div class="phone-config-view-container">
 
                 <!-- Header -->
-                <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="d-flex justify-content-between align-items-start mb-4">
                     <div class="d-flex align-items-center gap-3">
                         <div class="fs-1 text-primary">
                             <i class="bi bi-sliders"></i>
                         </div>
                         <div>
-                            <h3 class="mb-1">{{model.name|default('New Phone Config')}}</h3>
+                            <h3 class="mb-1">{{model.name|default('Unnamed Config')}}</h3>
                             <div class="text-muted small">
                                 <span class="badge {{providerBadge}}">{{providerLabel}}</span>
                                 <span class="mx-2">·</span>
@@ -59,7 +72,7 @@ class PhoneConfigView extends View {
                                 ID: {{model.id}}
                                 {{/model.id}}
                             </div>
-                            <div class="mt-1 small">
+                            <div class="mt-1">
                                 <span class="badge {{activeBadge}}">{{activeLabel}}</span>
                                 {{#model.test_mode|bool}}
                                 <span class="badge bg-warning ms-1">Test Mode</span>
@@ -67,41 +80,61 @@ class PhoneConfigView extends View {
                             </div>
                         </div>
                     </div>
+                    <div class="d-flex align-items-start gap-4">
+                        <div data-container="phone-config-context-menu"></div>
+                    </div>
                 </div>
 
-                <!-- Result banner (Test connection / Save errors) -->
+                <!-- Test-connection result -->
                 {{#hasResult|bool}}
-                <div class="alert alert-{{resultTone}} py-2 mb-3" role="status">
-                    {{resultMessage}}
+                <div class="alert alert-{{resultTone}} d-flex align-items-center py-2 mb-3" role="status">
+                    <i class="bi {{resultIcon}} me-2"></i>
+                    <span>{{resultMessage}}</span>
                 </div>
                 {{/hasResult|bool}}
 
-                <!-- Editable form -->
-                <div data-container="config-form"></div>
-
-                <!-- Action row -->
-                <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
-                    <div>
-                        {{#canDelete|bool}}
-                        <button type="button" class="btn btn-outline-danger" data-action="delete-config">
-                            <i class="bi bi-trash me-1"></i> Delete
-                        </button>
-                        {{/canDelete|bool}}
+                <!-- Detail sections -->
+                <div class="list-group mb-1">
+                    <div class="list-group-item">
+                        <h6 class="text-muted text-uppercase small mb-2">Configuration</h6>
+                        <dl class="row mb-0 small">
+                            <dt class="col-5 col-sm-4 fw-normal text-muted">Provider</dt>
+                            <dd class="col-7 col-sm-8 mb-2">{{providerLabel}}</dd>
+                            <dt class="col-5 col-sm-4 fw-normal text-muted">Group</dt>
+                            <dd class="col-7 col-sm-8 mb-2">{{groupName}}</dd>
+                            <dt class="col-5 col-sm-4 fw-normal text-muted">Active</dt>
+                            <dd class="col-7 col-sm-8 mb-2">{{model.is_active|yesno}}</dd>
+                            <dt class="col-5 col-sm-4 fw-normal text-muted">Test mode</dt>
+                            <dd class="col-7 col-sm-8 mb-2">{{model.test_mode|yesno}}</dd>
+                            <dt class="col-5 col-sm-4 fw-normal text-muted">Lookup</dt>
+                            <dd class="col-7 col-sm-8 mb-2">{{model.lookup_enabled|yesno}}</dd>
+                            <dt class="col-5 col-sm-4 fw-normal text-muted">Lookup cache</dt>
+                            <dd class="col-7 col-sm-8 mb-0">{{lookupCacheText}}</dd>
+                        </dl>
                     </div>
-                    <div class="d-flex gap-2">
-                        {{#showProvision|bool}}
-                        <button type="button" class="btn btn-outline-primary" data-action="provision-api-key">
-                            <i class="bi bi-key me-1"></i> Provision downstream API key
-                        </button>
-                        {{/showProvision|bool}}
-                        {{#canTest|bool}}
-                        <button type="button" class="btn btn-outline-secondary" data-action="test-connection">
-                            <i class="bi bi-plug me-1"></i> Test connection
-                        </button>
-                        {{/canTest|bool}}
-                        <button type="button" class="btn btn-primary" data-action="save-config">
-                            <i class="bi bi-check2 me-1"></i> Save
-                        </button>
+
+                    <div class="list-group-item">
+                        <h6 class="text-muted text-uppercase small mb-2">{{providerLabel}} settings</h6>
+                        <dl class="row mb-0 small">
+                            {{#providerRows}}
+                            <dt class="col-5 col-sm-4 fw-normal text-muted">{{label}}</dt>
+                            <dd class="col-7 col-sm-8 mb-2">{{value}}</dd>
+                            {{/providerRows}}
+                        </dl>
+                        <p class="text-muted small mb-0 mt-1">
+                            <i class="bi bi-shield-lock me-1"></i>
+                            Credentials are write-only — edit the config to update them.
+                        </p>
+                    </div>
+
+                    <div class="list-group-item">
+                        <h6 class="text-muted text-uppercase small mb-2">Metadata</h6>
+                        <dl class="row mb-0 small">
+                            <dt class="col-5 col-sm-4 fw-normal text-muted">Created</dt>
+                            <dd class="col-7 col-sm-8 mb-2">{{model.created|datetime}}</dd>
+                            <dt class="col-5 col-sm-4 fw-normal text-muted">Modified</dt>
+                            <dd class="col-7 col-sm-8 mb-0">{{model.modified|datetime}}</dd>
+                        </dl>
                     </div>
                 </div>
 
@@ -136,6 +169,33 @@ class PhoneConfigView extends View {
         return this.model?.get?.('is_active') ? 'bg-success' : 'bg-secondary';
     }
 
+    get lookupCacheText() {
+        const d = this.model?.get?.('lookup_cache_days');
+        return (d || d === 0) ? `${d} days` : '—';
+    }
+
+    /** Provider-specific non-secret fields, as label/value rows. */
+    get providerRows() {
+        const m = this.model;
+        const val = (k) => {
+            const v = m?.get?.(k);
+            return (v === null || v === undefined || v === '') ? '—' : String(v);
+        };
+        switch (m?.get?.('provider')) {
+            case 'twilio':
+                return [{ label: 'From number', value: val('twilio_from_number') }];
+            case 'aws':
+                return [
+                    { label: 'Region', value: val('aws_region') },
+                    { label: 'Sender ID', value: val('aws_sender_id') }
+                ];
+            case 'mojo':
+                return [{ label: 'Remote URL', value: val('mojo_remote_url') }];
+            default:
+                return [];
+        }
+    }
+
     get hasResult() {
         return !!this._resultMessage;
     }
@@ -144,16 +204,12 @@ class PhoneConfigView extends View {
         return this._resultTone || 'secondary';
     }
 
+    get resultIcon() {
+        return this._resultTone === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle';
+    }
+
     get resultMessage() {
         return this._resultMessage || '';
-    }
-
-    get canTest() {
-        return !!this.model?.get?.('id');
-    }
-
-    get canDelete() {
-        return !!this.model?.get?.('id');
     }
 
     get showProvision() {
@@ -167,16 +223,26 @@ class PhoneConfigView extends View {
     // ── Lifecycle ────────────────────────────────────────────
 
     async onInit() {
-        this.formView = new FormView({
-            containerId: 'config-form',
-            model: this.model,
-            formConfig: {
-                fields: PhoneConfigForms.edit.fields,
-                submitButton: false,
-                resetButton: false
+        const items = [
+            { label: 'Edit', action: 'edit-config', icon: 'bi-pencil' },
+            { label: 'Test connection', action: 'test-connection', icon: 'bi-plug' }
+        ];
+        if (this.showProvision) {
+            items.push({ label: 'Provision downstream API key', action: 'provision-api-key', icon: 'bi-key' });
+        }
+        items.push({ type: 'divider' });
+        items.push({ label: 'Delete', action: 'delete-config', icon: 'bi-trash', danger: true });
+
+        const ctxMenu = new ContextMenu({
+            containerId: 'phone-config-context-menu',
+            className: 'context-menu-view header-menu-absolute',
+            context: this.model,
+            config: {
+                icon: 'bi-three-dots-vertical',
+                items
             }
         });
-        this.addChild(this.formView);
+        this.addChild(ctxMenu);
     }
 
     // ── Helpers ──────────────────────────────────────────────
@@ -184,20 +250,20 @@ class PhoneConfigView extends View {
     _setResult(tone, message) {
         this._resultTone = tone || null;
         this._resultMessage = message || '';
-        // Toggle banner without re-rendering the form (preserves user typing).
         this.render();
     }
 
     _clearResult() {
-        if (this._resultMessage) this._setResult(null, '');
+        if (this._resultMessage) {
+            this._resultTone = null;
+            this._resultMessage = '';
+        }
     }
 
     /**
-     * Strip empty secret fields so blank password inputs never overwrite a
-     * stored credential on the server. The provider switcher already hides
-     * non-matching credentials (FormView omits hidden showWhen fields from
-     * getFormData) — this is the second line of defence for the active
-     * provider's blanks.
+     * Strip empty secret fields so a blank password input never overwrites a
+     * stored credential. Hidden showWhen fields for the non-active provider
+     * are already omitted by FormView.getFormData().
      */
     _stripBlankSecrets(data) {
         const out = { ...data };
@@ -208,11 +274,6 @@ class PhoneConfigView extends View {
         return out;
     }
 
-    /**
-     * Pull formatted error text from a save response. Backend errors arrive
-     * as `{ status: false, error: '...' }` inside `resp.data` for save, or as
-     * `{ success: bool, message, error }` inline for `test_connection`.
-     */
     _readError(resp, fallback = 'Operation failed') {
         if (!resp) return fallback;
         if (resp.success === false) return resp.error || fallback;
@@ -222,27 +283,20 @@ class PhoneConfigView extends View {
 
     // ── Actions ──────────────────────────────────────────────
 
-    async onActionSaveConfig(event) {
-        event?.preventDefault?.();
-        this._clearResult();
-
-        if (!this.formView?.validate?.()) {
-            this.formView?.focusFirstError?.();
-            return;
-        }
-
-        let data;
-        try {
-            data = await this.formView.getFormData();
-        } catch (e) {
-            this._setResult('danger', e.message || 'Could not collect form values');
-            return;
-        }
+    async onActionEditConfig() {
+        const app = this.getApp();
+        // Modal.form returns the collected data (showWhen-hidden fields already
+        // stripped) without saving — so we can strip blank secrets before save.
+        const data = await app.showForm({
+            title: `Edit — ${this.model.get('name') || 'Phone Config'}`,
+            model: this.model,
+            fields: PhoneConfigForms.edit.fields,
+            size: 'lg',
+            submitText: 'Save'
+        });
+        if (!data) return;
 
         const payload = this._stripBlankSecrets(data);
-        const isNew = !this.model.get('id');
-        const app = this.getApp();
-
         app?.showLoading?.();
         let resp;
         try {
@@ -251,54 +305,44 @@ class PhoneConfigView extends View {
             app?.hideLoading?.();
         }
 
-        const ok = resp?.success && resp?.data?.status;
-        if (!ok) {
-            this._setResult('danger', this._readError(resp, 'Save failed'));
-            return;
+        if (resp?.success && resp?.data?.status) {
+            app?.toast?.success?.('Phone Config saved');
+            this._clearResult();
+            this.emit('phone-config:saved', { model: this.model });
+            await this.render();
+        } else {
+            app?.showError?.(this._readError(resp, 'Save failed'));
         }
-
-        app?.toast?.success?.('Phone Config saved');
-        if (isNew && this.collection && !this.collection.get?.(this.model.id)) {
-            this.collection.add(this.model);
-        }
-        this.emit('phone-config:saved', { model: this.model });
-        await this.render();
     }
 
-    async onActionTestConnection(event, element) {
-        event?.preventDefault?.();
+    async onActionTestConnection() {
+        const app = this.getApp();
         this._clearResult();
-
-        // Prevent re-entry while in-flight; the button is recreated on every
-        // render so we lean on the element's disabled flag for the spinner.
-        if (element) {
-            element.disabled = true;
-            element.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Testing…';
-        }
+        app?.showLoading?.('Testing connection…');
 
         let resp;
         try {
             resp = await this.model.save({ test_connection: 1 });
         } catch (e) {
+            app?.hideLoading?.();
             this._setResult('danger', e?.message || 'Test connection failed');
             return;
         }
+        app?.hideLoading?.();
 
         const body = resp?.data ?? resp;
-        const inner = body?.data ?? body;
-        const success = inner?.success === true || body?.status === true && inner?.success !== false;
+        const result = (body && typeof body.data === 'object' && body.data) ? body.data : body;
 
-        if (success) {
-            this._setResult('success', inner?.message || 'Connection OK');
+        if (result?.success === true) {
+            this._setResult('success', result.message || 'Connection OK');
         } else {
-            const msg = inner?.error || inner?.message || body?.error || 'Connection test failed';
-            this._setResult('danger', msg);
+            const code = result?.error;
+            const friendly = code && TEST_ERROR_LABELS[code];
+            this._setResult('danger', result?.message || friendly || code || 'Connection test failed');
         }
     }
 
-    async onActionDeleteConfig(event) {
-        event?.preventDefault?.();
-
+    async onActionDeleteConfig() {
         const name = this.model.get('name') || 'this configuration';
         const confirmed = await Modal.confirm(
             `Permanently delete "${name}"? Any SMS routes that depend on it will stop working.`,
@@ -320,12 +364,11 @@ class PhoneConfigView extends View {
             app?.toast?.success?.('Phone Config deleted');
             this.emit('phone-config:deleted', { model: this.model });
         } else {
-            this._setResult('danger', this._readError(resp, 'Delete failed'));
+            app?.showError?.(this._readError(resp, 'Delete failed'));
         }
     }
 
-    async onActionProvisionApiKey(event) {
-        event?.preventDefault?.();
+    async onActionProvisionApiKey() {
         if (!this.showProvision) return;
 
         const app = this.getApp();

@@ -297,11 +297,14 @@ Every admin page is registered with a `permissions:` requirement. The framework'
 
 ## Phone Hub — Config Page (`system/phonehub/config`)
 
-`PhoneConfigTablePage` (route `system/phonehub/config`) lists per-group SMS provider configurations and appears under **Phonehub → Config** in the admin sidebar. Each row is one `PhoneConfig` with a provider (Twilio, AWS SNS, or Mojo Remote) and its encrypted credentials. Clicking a row opens `PhoneConfigView` — an inline detail panel with an embedded `FormView` whose credential fields (`showWhen`) appear or hide based on the selected provider. Blank credential inputs are stripped before save so existing stored secrets are never accidentally cleared.
+`PhoneConfigTablePage` (route `system/phonehub/config`) lists per-group SMS provider configurations and appears under **Phonehub → Config** in the admin sidebar. Each row is one `PhoneConfig` with a provider (Twilio, AWS SNS, or Mojo Remote) and its encrypted credentials. Clicking a row opens `PhoneConfigView` — a read-only detail panel (header badges + Configuration / provider-settings / Metadata sections) with a three-dots context menu, matching the `ApiKeyView` pattern. All mutations live on the context menu.
 
-From the view, operators can also:
+Both the table **Add** button and the context-menu **Edit** action open one combined form whose credential fields (`showWhen`) appear or hide based on the selected provider. Blank credential inputs are stripped before save so existing stored secrets are never accidentally cleared. `PhoneConfig.FORM_DIALOG_CONFIG` opens the dialog at `lg` width.
 
-- **Test Connection** — sends `POST /api/phonehub/config/<id>` with `{ test_connection: 1 }` and shows the result inline without re-rendering the form.
+From the context menu, operators can:
+
+- **Edit** — opens the combined provider form; on submit, blank secrets are stripped and the row is saved.
+- **Test connection** — sends `POST /api/phonehub/config/<id>` with `{ test_connection: 1 }` and shows the result inline in the detail view (green banner on success, red banner with a friendly-mapped error on failure).
 - **Provision downstream API key** (Mojo provider only, visible to superusers and users with `manage_groups`) — opens a focused form to create an `ApiKey` with fixed `send_sms` + `comms` permissions, then displays the raw token in a one-time `Modal.alert` with a copy button.
 - **Delete** — issues `DELETE /api/phonehub/config/<id>` after a `Modal.confirm` prompt.
 
