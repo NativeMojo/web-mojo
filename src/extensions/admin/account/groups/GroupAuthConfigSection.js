@@ -197,13 +197,27 @@ export default class GroupAuthConfigSection extends View {
         this._resolved = await this._fetchResolved();
         this._baseline = this._buildBaseline(own, this._resolved);
         this._placeholders = this._buildPlaceholders(this._resolved);
+        this.addChild(this._buildFormView());
+    }
 
+    /** Construct the embedded FormView from the current baseline. */
+    _buildFormView() {
         this.formView = new FormView({
             containerId: 'auth-config-form',
             fields: this._buildFields(),
             data: { ...this._baseline }
         });
-        this.addChild(this.formView);
+        return this.formView;
+    }
+
+    /**
+     * The embedded FormView owns its state. A model `change` — fired by this
+     * section's own save, or by an edit in another GroupView section — must not
+     * re-render this section: that would rebuild the form from stale seed data
+     * and wipe the user's input. Mirrors DetailView's own _onModelChange guard.
+     */
+    _onModelChange() {
+        // intentionally a no-op
     }
 
     // ── Data load ──────────────────────────────────────────
@@ -476,8 +490,13 @@ export default class GroupAuthConfigSection extends View {
         }
 
         if (resp && resp.status === 200) {
-            // The saved state is the new baseline for the next diff.
+            // Re-baseline from the saved state and rebuild the form. FormView
+            // freezes its seed data at construction, so without rebuilding it a
+            // later section switch would re-render with the pre-save values.
             this._baseline = { ...fd };
+            this.removeChild(this.formView);
+            this.addChild(this._buildFormView());
+            await this.formView.render();
             this._setStatus('All changes saved.', 'success');
             app?.toast?.success('Auth config saved');
         } else {
