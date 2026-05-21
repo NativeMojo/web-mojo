@@ -277,7 +277,8 @@ export default class GroupAuthConfigSection extends View {
         for (const cf of CANONICAL_REG_FIELDS) {
             const entry = byName[cf.name];
             const isPassword = cf.name === 'password';
-            out[`regf_${cf.name}_inc`] = isPassword ? true : !!entry;
+            out[`regf_${cf.name}_inc`] = !!entry;
+            // Password is always required when present; its toggle is locked on.
             out[`regf_${cf.name}_req`] = isPassword ? true : !!(entry && entry.required);
             out[`regf_${cf.name}_vfy`] = (entry && entry.verify) ? String(entry.verify) : '';
         }
@@ -390,7 +391,7 @@ export default class GroupAuthConfigSection extends View {
             },
             {
                 type: 'html',
-                html: `<p class="text-secondary small mb-2">Choose which fields the signup form collects. Password is always included. The schema must include email or phone.</p>`
+                html: `<p class="text-secondary small mb-2">Choose which fields the signup form collects. The schema must include email or phone. Password, when included, is always required — omit it only for passwordless (SMS) registration.</p>`
             }
         ];
         for (const cf of CANONICAL_REG_FIELDS) {
@@ -404,13 +405,14 @@ export default class GroupAuthConfigSection extends View {
                         name: `regf_${cf.name}_inc`,
                         type: 'toggle',
                         label: 'Include',
-                        disabled: isPassword,
                         columns: 4
                     },
                     {
                         name: `regf_${cf.name}_req`,
                         type: 'toggle',
                         label: 'Required',
+                        // Password, when included, is always required — there is
+                        // no optional-password state, so the toggle is locked on.
                         disabled: isPassword,
                         columns: 4
                     },
@@ -555,11 +557,12 @@ export default class GroupAuthConfigSection extends View {
     _assembleRegFields(fd) {
         const arr = [];
         for (const cf of CANONICAL_REG_FIELDS) {
+            if (!fd[`regf_${cf.name}_inc`]) continue;
             if (cf.name === 'password') {
+                // Password, when included, is always required and has no verify.
                 arr.push({ name: 'password', required: true, verify: null });
                 continue;
             }
-            if (!fd[`regf_${cf.name}_inc`]) continue;
             arr.push({
                 name: cf.name,
                 required: !!fd[`regf_${cf.name}_req`],
