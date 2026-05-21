@@ -2317,7 +2317,7 @@ User.MODEL_REF = 'account.User';
 // lives with the View instead of being repeated in every page's
 // viewDialogOptions. UserView is the heaviest detail surface (side-nav +
 // ~10 sections of embedded tables) — give it the full viewport.
-UserView.DIALOG_OPTIONS = { size: 'fullscreen' };
+UserView.DIALOG_OPTIONS = { size: 'lg' };
 
 export default UserView;
 export {
