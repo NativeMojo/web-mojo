@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Admin · Storage Backend detail view + Fix CORS fix
+
+- **Fixed: "Fix CORS" did nothing.** The Storage Backends context menu has always carried a `fix-cors` item, but `onActionFixCors` was never implemented — clicking it was a no-op. It now issues `model.save({ fix_cors: 1 })` (mirroring `check_cors` / `test_connection`) and shows the result report.
+- **New `FileManagerView`** — `system/filemanagers` rows now open a proper read-only detail view (header badges + Connection / Ownership & Access / Status / Metadata sections) with a three-dots context menu, matching `ApiKeyView` / `PhoneConfigView`. The page previously had a row-level context menu and no detail view — inconsistent with every other admin TablePage.
+- **All per-record actions moved onto the view's context menu**: Edit, Edit Credentials, Edit Owners, Clone Backend, Test Connection, Check CORS, Fix CORS, and a new Delete. Credentials remain write-only (never displayed). New file `src/extensions/admin/storage/FileManagerView.js`; `FileManagerTablePage` is now a thin list (`clickAction: 'view'`).
+
 ### Admin · Group Auth Config editor (`GroupView` → Auth Config)
 
 `GroupView` gains an **Auth Config** side-nav section (under the **Detail** divider, before **Metadata**, gated by the `sys.groups` / `sys.manage_groups` permission) for editing a group's `metadata.auth_config` — the structured config that drives the django-mojo–hosted login, registration, and passkey pages. Previously this was only editable as raw JSON through the generic Metadata section.

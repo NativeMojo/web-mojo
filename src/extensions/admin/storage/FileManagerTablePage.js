@@ -1,13 +1,17 @@
 /**
- * FileManagerTablePage - File Manager backend management using TablePage component
- * Clean implementation using TablePage with minimal overrides
+ * FileManagerTablePage - File Manager (storage backend) management.
+ *
+ * Lists storage backends; clicking a row opens FileManagerView, which owns
+ * the detail display and all per-record actions (edit, credentials, owners,
+ * clone, test connection, check / fix CORS, delete) via its context menu.
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { FileManagerList, FileManagerForms } from '@core/models/Files.js';
-import Modal from '@core/views/feedback/Modal.js';
+import { FileManagerList } from '@core/models/Files.js';
+import FileManagerView from './FileManagerView.js';
 
 // FileManager.ADD_FORM / EDIT_FORM are registered on the model (Files.js).
+// FileManager.VIEW_CLASS is registered on the model (FileManagerView.js).
 class FileManagerTablePage extends TablePage {
     constructor(options = {}) {
         super({
@@ -67,17 +71,13 @@ class FileManagerTablePage extends TablePage {
 
             searchPlaceholder: 'Search backend name or URL',
 
-            contextMenu: [
-                { icon: 'bi-pencil', action: 'edit', label: 'Edit Name' },
-                { icon: 'bi-shield', action: 'edit-credentials', label: 'Edit Credentials' },
-                { icon: 'bi-person', action: 'edit-owners', label: 'Edit Owners' },
-                { divider: true },
-                { icon: 'bi-copy', action: 'clone', label: 'Clone Manager' },
-                { divider: true },
-                { icon: 'bi-check', action: 'test-connection', label: 'Test Connection' },
-                { icon: 'bi-question-circle', action: 'check-cors', label: 'Check CORS' },
-                { icon: 'bi-wrench', action: 'fix-cors', label: 'Fix CORS' },
-            ],
+            // Row click → detail view (owns the per-record context menu)
+            clickAction: 'view',
+            itemViewClass: FileManagerView,
+            viewDialogOptions: {
+                header: false,
+                size: 'lg'
+            },
 
             // Table features
             selectable: true,
@@ -111,88 +111,6 @@ class FileManagerTablePage extends TablePage {
                 responsive: false
             }
         });
-    }
-
-    async onActionEditOwners(event, element) {
-        const item = this.collection.get(element.dataset.id);
-        const result = await Modal.modelForm({
-            title: 'Edit Owners',
-            model: item,
-            fields: FileManagerForms.owners.fields
-        });
-        if (!result) return true;
-        if (result.success) {
-            this.getApp().toast.success("Owners Updated successfully");
-        } else {
-            this.getApp().toast.error("Owners update failed");
-        }
-    }
-
-    async onActionCheckCors(event, element) {
-        const item = this.collection.get(element.dataset.id);
-        const result = await item.save({check_cors: true});
-        if (result.success && result.data.status) {
-            // this.getApp().toast.success(result.data.result);
-            await Modal.data({
-                title: `Audit Report - ${item._.name}`,
-                data: result.data,
-                size: 'lg'
-            });
-        } else {
-            this.getApp().toast.error("Connection test failed");
-        }
-        return true;
-    }
-
-    async onActionTestConnection(event, element) {
-        const item = this.collection.get(element.dataset.id);
-        const result = await item.save({test_connection: true});
-        if (result.success && result.data.status) {
-            this.getApp().toast.success("Connection test successful");
-        } else {
-            this.getApp().toast.error("Connection test failed");
-        }
-        return true;
-    }
-
-    async onActionEditCredentials(event, element) {
-        const item = this.collection.get(element.dataset.id);
-        const result = await Modal.modelForm({
-            title: 'Edit Credentials',
-            model: item,
-            fields: FileManagerForms.credentials.fields
-        });
-
-        if (!result) return true;
-
-        if (result.success && result.data.status) {
-            this.getApp().toast.success("Credentials updated successfully");
-        } else {
-            this.getApp().toast.error("Failed to update credentials");
-        }
-        return true;
-    }
-
-    async onActionClone(event, element) {
-
-        const confirmed = await Modal.confirm({
-            title: 'Clone File Manager',
-            message: 'This will create a clone with the same credentials.',
-        });
-
-        if (!confirmed) {
-            return true;
-        }
-
-        const item = this.collection.get(element.dataset.id);
-        const result = await item.save({clone: true});
-        if (result.success && result.data.status) {
-            this.getApp().toast.success("Connection cloned successfully");
-            this.collection.fetch();
-        } else {
-            this.getApp().toast.error("Failed to clone connection");
-        }
-        return true;
     }
 }
 
