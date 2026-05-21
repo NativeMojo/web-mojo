@@ -151,13 +151,17 @@ class FileManagerView extends DetailView {
 
     // ── Context-menu actions ─────────────────────────────────
 
+    // Edit handlers don't re-render the view: showModelForm saves the model,
+    // and model:change re-renders the DetailView header (via _onModelChange)
+    // and the Overview DataView automatically. Calling this.render() on a
+    // DetailView would tear the header out.
+
     async onActionEdit() {
-        const resp = await this.getApp().showModelForm({
+        await this.getApp().showModelForm({
             title: `Edit — ${this.model.get('name') || 'Storage Backend'}`,
             model: this.model,
             formConfig: FileManagerForms.edit
         });
-        if (resp) await this.render();
     }
 
     async onActionEditCredentials() {
@@ -170,12 +174,11 @@ class FileManagerView extends DetailView {
     }
 
     async onActionEditOwners() {
-        const resp = await this.getApp().showModelForm({
+        await this.getApp().showModelForm({
             title: 'Edit Owners',
             model: this.model,
             formConfig: { fields: FileManagerForms.owners.fields }
         });
-        if (resp) await this.render();
     }
 
     async onActionClone() {
