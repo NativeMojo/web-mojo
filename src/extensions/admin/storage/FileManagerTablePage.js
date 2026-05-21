@@ -4,7 +4,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { FileManagerList } from '@core/models/Files.js';
+import { FileManagerList, FileManagerForms } from '@core/models/Files.js';
 import Modal from '@core/views/feedback/Modal.js';
 
 // FileManager.ADD_FORM / EDIT_FORM are registered on the model (Files.js).

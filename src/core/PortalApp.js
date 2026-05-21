@@ -883,7 +883,10 @@ export default class PortalApp extends WebApp {
                 this.toast?.success?.('Theme follows system preference.');
                 break;
             default:
-                console.warn(`Unknown portal action: ${action}`);
+                // App-defined actions (e.g. menu items wired by the consuming
+                // app) also travel on `portal:action`; the app handles them in
+                // its own listener, so the framework must not warn here.
+                break;
         }
     }
 
