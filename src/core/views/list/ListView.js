@@ -78,6 +78,13 @@ class ListView extends View {
    */
   static ROW_STRIPE_TOKENS = ['danger', 'warning', 'success', 'info', 'primary', 'secondary'];
 
+  /**
+   * Track Model classes already warned about a minified `.name` so the
+   * console doesn't spam — one warning per offending class per session.
+   * @private
+   */
+  static _warnedMinifiedClasses = new WeakSet();
+
   constructor(options = {}) {
     super({
       className: options.className || 'list-view',
@@ -1753,9 +1760,24 @@ class ListView extends View {
   getModelName(model) {
     const ModelClass = this.getModelClass(model);
     if (!ModelClass) return 'Item';
-    return ModelClass.MODEL_NAME ||
-           ModelClass.name.replace(/Model$/, '') ||
-           'Item';
+    if (ModelClass.MODEL_NAME) return ModelClass.MODEL_NAME;
+    // Production minifiers (Vite/esbuild) mangle class identifiers into short
+    // strings like 'ys' or 'a'. `ModelClass.name` is therefore unsafe as a
+    // user-facing label without an explicit MODEL_NAME. Only accept names
+    // that look like a hand-written PascalCase identifier; otherwise fall
+    // back to 'Item' and warn once per class so the dev knows to set
+    // MODEL_NAME.
+    const rawName = (ModelClass.name || '').replace(/Model$/, '');
+    if (/^[A-Z][A-Za-z0-9]{2,}$/.test(rawName)) return rawName;
+    if (!ListView._warnedMinifiedClasses.has(ModelClass)) {
+      ListView._warnedMinifiedClasses.add(ModelClass);
+      console.warn(
+        `ListView.getModelName: class name '${rawName}' looks minified — ` +
+        `set a static MODEL_NAME on the model class for user-facing dialog ` +
+        `titles. Falling back to 'Item'.`
+      );
+    }
+    return 'Item';
   }
 
   getItemViewClass(model) {
