@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Forms · Fixed double-escaped form field text (labels, values, placeholders, …)
+
+- **`FormBuilder` HTML-escaped field text twice.** Every render method pre-escaped `label` / `placeholder` / `help` / `tooltip` / `error` (and the field `value` / `fieldValue`) with `escapeHtml()` and *then* rendered them through Mustache `{{…}}` (which escapes again), so e.g. a label `Verification & Compliance` rendered as the literal `Verification &amp; Compliance`, and a value `Tom & Jerry` would submit as `Tom &amp; Jerry`. Most visible on app-registered permission toggles (labels often contain `&`), but it affected text/email/number inputs, select, textarea, json, color, range, file, image, radio, checkbox, and switch fields.
+- **Fix:** the raw text is now handed to Mustache, which escapes it exactly once (and is attribute-safe — it escapes quotes). Pre-escaping is kept only where it's still needed: manually-built HTML strings (`attrs`, `optionsHTML`, the `header`/legend) injected via `{{{…}}}`. Regression tests in `test/unit/FormBuilder.escaping.test.js` cover switch, checkbox, input (label/placeholder/value), select, and tooltip text.
+
 ### Build · Clean up admin build warnings
 
 - **Fixed a malformed comment in `admin.css`** (`.runner-detailsPrint Styles */` — a stray `*/` with no opening `/*`) that produced an esbuild `Unexpected "/"` CSS-minify warning and could drop the following runner/task-details rules.
