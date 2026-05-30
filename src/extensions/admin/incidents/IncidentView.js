@@ -40,6 +40,7 @@ import {
     RelatedIncidentsList
 } from '@ext/admin/models/Incident.js';
 import { GeoLocatedIP } from '@core/models/System.js';
+import { User } from '@core/models/User.js';
 import { Ticket, TicketList, TicketForms } from '@ext/admin/models/Tickets.js';
 import GeoIPView from '../account/devices/GeoIPView.js';
 import RuleSetView from './RuleSetView.js';
@@ -1996,10 +1997,12 @@ class IncidentView extends DetailView {
             return;
         }
         try {
-            const { default: UserView } = await import('../account/users/UserView.js');
-            const { User } = await import('@core/models/User.js');
             const userModel = new User({ email: user });
-            try { await userModel.fetch({ params: { email: user } }); } catch (_) {}
+            try { await userModel.fetch({ params: { email: user } }); } catch (_) { /* best-effort prefetch */ }
+            // Open via the registered VIEW_CLASS rather than importing UserView
+            // here — keeps UserView out of IncidentView's import graph (it's
+            // already eagerly bundled, so a dynamic import just warned).
+            const UserView = User.VIEW_CLASS;
             await Modal.detail(new UserView({ model: userModel }));
         } catch (_e) {
             this.getApp()?.toast?.info(`User: ${user}`);
@@ -2011,7 +2014,11 @@ class IncidentView extends DetailView {
         try {
             const ticket = new Ticket({ id: ticketId });
             await ticket.fetch();
-            const { default: TicketView } = await import('./TicketView.js');
+            // Use the registered VIEW_CLASS rather than importing TicketView
+            // directly: TicketView statically imports IncidentView, so a direct
+            // import here forms a module cycle (and the dynamic import tripped a
+            // Vite "also statically imported" warning).
+            const TicketView = Ticket.VIEW_CLASS;
             await Modal.show(new TicketView({ model: ticket }), { size: 'lg' });
         } catch (_e) {
             this.getApp()?.toast?.error('Could not load ticket');

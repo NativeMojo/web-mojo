@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Build · Clean up admin build warnings
+
+- **Fixed a malformed comment in `admin.css`** (`.runner-detailsPrint Styles */` — a stray `*/` with no opening `/*`) that produced an esbuild `Unexpected "/"` CSS-minify warning and could drop the following runner/task-details rules.
+- **Removed IncidentView's dynamic imports of TicketView / UserView / User.** They're all eagerly bundled, so the dynamic imports gained no code-splitting and tripped Vite "dynamically imported … but also statically imported" warnings; the `TicketView` one was also a module cycle (`TicketView` statically imports `IncidentView`). IncidentView now opens those views through the registered `Ticket.VIEW_CLASS` / `User.VIEW_CLASS` (the same pattern UserView/MemberView use), removing the cross-imports and the cycle. No behavior change.
+
 ### Admin · GroupView / MemberView polish
 
 - **GroupView: no more "Delete Group".** Groups are deactivated, never deleted — the destructive context-menu item and its handler were removed.
