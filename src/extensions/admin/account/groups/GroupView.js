@@ -32,7 +32,6 @@ import MetricCard from '@core/views/data/MetricCard.js';
 import Timeline from '@core/views/data/Timeline.js';
 import Modal from '@core/views/feedback/Modal.js';
 import ModalView from '@core/views/feedback/ModalView.js';
-import SimpleSearchView from '@core/views/navigation/SimpleSearchView.js';
 import MOJOUtils from '@core/utils/MOJOUtils.js';
 import dataFormatter from '@core/utils/DataFormatter.js';
 import { Group, GroupList, GroupForms, TimezoneOptions } from '@core/models/Group.js';
@@ -879,6 +878,67 @@ class WebhookSubscriptionListItem extends ListViewItem {
 }
 
 
+// ── Member list item (compact card row) ────────────────────
+
+/**
+ * One row in the Members ListView — compact, mirrors ApiKeyListItem's
+ * card shape. Shows the user (display_name → email → username fallback),
+ * an Active/Disabled status badge, the email + permission count, and the
+ * joined date. The whole row is clickable (the ListView's `clickAction:
+ * 'view'` opens MemberView); no inline action buttons.
+ */
+const MEMBER_ROW_TEMPLATE = `
+    <div class="d-flex align-items-center gap-3 py-2 px-2" role="button">
+        <i class="bi bi-person-circle fs-4 text-secondary flex-shrink-0"></i>
+        <div class="flex-grow-1 min-width-0">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <strong class="text-truncate">{{userLabel}}</strong>
+                {{#model.is_active|bool}}<span class="badge text-bg-success">Active</span>{{/model.is_active|bool}}
+                {{^model.is_active|bool}}<span class="badge text-bg-secondary">Disabled</span>{{/model.is_active|bool}}
+            </div>
+            <div class="small text-secondary text-truncate">
+                {{model.user.email}}{{#hasPerms|bool}} · {{permLabel}}{{/hasPerms|bool}}
+            </div>
+        </div>
+        <div class="small text-secondary flex-shrink-0">{{joinedLabel}}</div>
+    </div>
+`;
+
+class MemberListItem extends ListViewItem {
+    constructor(options = {}) {
+        super({
+            ...options,
+            template: MEMBER_ROW_TEMPLATE,
+            className: 'member-row border-bottom'
+        });
+    }
+
+    get userLabel() {
+        const u = this.model?.get?.('user') || {};
+        return u.display_name || u.email || u.username || `User #${u.id ?? ''}`;
+    }
+    get _perms() {
+        const p = this.model?.get?.('permissions');
+        return (p && typeof p === 'object') ? p : null;
+    }
+    get hasPerms() {
+        const p = this._perms;
+        return !!(p && Object.keys(p).some(k => p[k]));
+    }
+    get permLabel() {
+        const p = this._perms;
+        const n = p ? Object.keys(p).filter(k => p[k]).length : 0;
+        return `${n} permission${n === 1 ? '' : 's'}`;
+    }
+    get joinedLabel() {
+        const c = this.model?.get?.('created');
+        if (!c) return '';
+        const d = dataFormatter.apply(c, ['date']);
+        return d ? `Joined ${d}` : '';
+    }
+}
+
+
 // ── Webhook Secret panel ──────────────────────────────────
 
 /**
@@ -1061,7 +1121,9 @@ class GroupView extends DetailView {
         // all read from the same instances so a single fetch populates
         // every consumer.
         const membersCollection = new MemberList({
-            params: { group: groupId, size: 10 }
+            // Hide deactivated memberships by default; the Status filter below
+            // lets an admin flip to Inactive to see disabled members.
+            params: { group: groupId, size: 10, is_active: true }
         });
         const subGroupsCollection = new GroupList({
             params: { parent: groupId, size: 10 }
@@ -1099,15 +1161,24 @@ class GroupView extends DetailView {
         // un-handled actions from the section up to its parent View, so
         // `onActionInviteByEmail` / `onActionAddExistingUser` on GroupView
         // catch the clicks.
-        const membersSection = new TableView({
+        // Compact ListView (card rows) rather than a wide data table — same
+        // pattern as the API Keys / Webhooks sections. Searchable, with a
+        // Status filter; each row carries its own Active/Disabled badge.
+        const membersSection = new ListView({
             collection: membersCollection,
             title: 'Members',
-            showFullscreen: false,
-            searchable: false,
+            itemClass: MemberListItem,
             hideActivePillNames: ['group'],
+            searchable: true,
+            searchPlaceholder: 'Search members…',
+            filters: [
+                { key: 'is_active', label: 'Status', type: 'boolean', trueLabel: 'Active', falseLabel: 'Inactive' }
+            ],
             showAdd: false,
+            showRefresh: true,
             clickAction: 'view',
             viewDialogOptions: { header: false, noBodyPadding: true, buttons: [] },
+            emptyMessage: 'No members yet. Use "Invite by Email" or "Add Existing User".',
             toolbarButtons: [
                 {
                     label: 'Invite by Email',
@@ -1123,12 +1194,6 @@ class GroupView extends DetailView {
                     action: 'add-existing-user',
                     title: 'Search for an existing user and add them to this group'
                 }
-            ],
-            columns: [
-                { key: 'user.display_name', label: 'User', sortable: true },
-                { key: 'user.email', label: 'Email', sortable: true },
-                { key: 'permissions|keys|badge', label: 'Permissions' },
-                { key: 'created', label: 'Joined', formatter: 'date', sortable: true }
             ]
         });
 
@@ -1222,7 +1287,6 @@ class GroupView extends DetailView {
         });
 
         const metadataSection = new AdminMetadataSection({ model });
-        const authConfigSection = new GroupAuthConfigSection({ model });
 
         // ── Sidebar layout ─────────────────────────────────
         const sections = [
@@ -1238,7 +1302,6 @@ class GroupView extends DetailView {
             { key: 'Events',      label: 'Events',      icon: 'bi-calendar-event', view: eventsSection },
             { key: 'Audit',       label: 'Audit',       icon: 'bi-clock-history',  view: auditSection, permissions: 'view_logs' },
             { type: 'divider', label: 'Detail' },
-            { key: 'AuthConfig',  label: 'Auth Config', icon: 'bi-box-arrow-in-right', view: authConfigSection, permissions: ['sys.groups', 'sys.manage_groups'] },
             { key: 'Metadata',    label: 'Metadata',    icon: 'bi-braces',         view: metadataSection }
         ];
 
@@ -1280,15 +1343,18 @@ class GroupView extends DetailView {
 
         // Phase 4 pattern: admin-tier-tagged kebab items get filtered by
         // ModalView.filterContextMenuItems via app.activeUser.hasPermission.
-        // Two perm tiers for Groups (line 214 of the spec — disable/delete
-        // tightened to manage_groups-only).
+        // Two perm tiers for Groups (line 214 of the spec — deactivate
+        // tightened to manage_groups-only). Deletion is intentionally not
+        // offered — groups are deactivated, never deleted.
         const GROUP_ADMIN_PERMS = ['groups', 'manage_groups'];
         const GROUP_DESTRUCTIVE_PERMS = ['manage_groups'];
+        const GROUP_AUTH_PERMS = ['sys.groups', 'sys.manage_groups'];
 
         const contextItems = [
             { label: `Edit ${kindNoun}`,    action: 'edit-group',       icon: 'bi-pencil',        permissions: GROUP_ADMIN_PERMS },
             { label: 'Invite Member',       action: 'invite-member',    icon: 'bi-person-plus',   permissions: GROUP_ADMIN_PERMS },
-            { label: `Add Sub-${kindNoun}`, action: 'add-child-group',  icon: 'bi-diagram-3',     permissions: GROUP_ADMIN_PERMS }
+            { label: `Add Sub-${kindNoun}`, action: 'add-child-group',  icon: 'bi-diagram-3',     permissions: GROUP_ADMIN_PERMS },
+            { label: 'Configure Auth',      action: 'configure-auth',   icon: 'bi-box-arrow-in-right', permissions: GROUP_AUTH_PERMS }
         ];
         if (model.get('parent')?.id) {
             contextItems.push({ label: 'View Parent', action: 'view-parent-menu', icon: 'bi-arrow-up-right-square' });
@@ -1297,8 +1363,6 @@ class GroupView extends DetailView {
         contextItems.push(model.get('is_active')
             ? { label: `Deactivate ${kindNoun}`, action: 'state-toggle', icon: 'bi-toggle-off', permissions: GROUP_DESTRUCTIVE_PERMS }
             : { label: `Activate ${kindNoun}`,   action: 'state-toggle', icon: 'bi-toggle-on',  permissions: GROUP_DESTRUCTIVE_PERMS });
-        contextItems.push({ type: 'divider' });
-        contextItems.push({ label: `Delete ${kindNoun}`, action: 'delete-group', icon: 'bi-trash', danger: true, permissions: GROUP_DESTRUCTIVE_PERMS });
 
         super({
             className: 'group-view',
@@ -1339,7 +1403,6 @@ class GroupView extends DetailView {
         this.webhookSubscriptionsListView   = webhookSubscriptionsListView;
         this.eventsSection                  = eventsSection;
         this.auditSection                   = auditSection;
-        this.authConfigSection              = authConfigSection;
         this.metadataSection                = metadataSection;
 
         this._refreshComputedFields();
@@ -1549,58 +1612,44 @@ class GroupView extends DetailView {
     }
 
     /**
-     * Add-Existing-User flow. Opens a SimpleSearchView bound to UserList so
-     * the operator can type-ahead a name / email; on selection, POSTs a new
-     * Member with `{ group: this.model.id, user: <picked.id> }`. Uses
-     * ModalView directly so we keep a handle to `.hide()` from inside the
-     * `item:selected` listener (same pattern as `GroupSelectorButton`).
+     * Add-Existing-User flow. A plain `Modal.form` with a single `collection`
+     * field bound to `UserList` (same control as the Group "Parent" picker) —
+     * type-ahead search, one selection. `labelField: 'email'` because a User's
+     * `display_name` is frequently blank; email is always present and is what
+     * admins search by. On submit, POSTs a new Member `{ group, user }`.
      */
     async _addExistingMember() {
-        const searchView = new SimpleSearchView({
-            Collection: UserList,
-            searchFields: ['display_name', 'email', 'username'],
-            collectionParams: { size: 25, sort: 'display_name' },
-            headerText: `Add a user to ${this.model.get('name')}`,
-            headerIcon: 'bi bi-person-plus',
-            searchPlaceholder: 'Search by name, email, or username…',
-            noResultsText: 'No users match — try a different search term, or use "Invite by Email".'
-        });
-
-        const dialog = new ModalView({
+        const data = await Modal.form({
             title: `Add Existing User to ${this.model.get('name')}`,
-            body: searchView,
             size: 'md',
-            scrollable: true,
-            noBodyPadding: true,
-            buttons: [],
-            closeButton: true
+            submitText: 'Add to Group',
+            fields: [{
+                type: 'collection',
+                name: 'user',
+                label: 'User',
+                Collection: UserList,
+                labelField: 'email',
+                valueField: 'id',
+                maxItems: 10,
+                placeholder: 'Search users by email…',
+                emptyFetch: false,
+                debounceMs: 300,
+                columns: 12,
+                help: 'Search for an existing user to add to this group.'
+            }]
         });
+        if (!data?.user) return;
 
-        const handleSelect = async ({ model: user }) => {
-            // Optimistic close so the next dialog feels responsive.
-            dialog.hide();
-            const app = this.getApp();
-            const member = new Member();
-            const resp = await member.save({
-                group: this.model.id,
-                user: user.get('id')
-            });
-            const ok = resp?.data?.status || (resp?.status && resp.status < 400);
-            if (ok) {
-                app?.toast?.success(`${user.get('display_name') || user.get('email') || 'User'} added to ${this.model.get('name')}`);
-                await this.membersCollection.fetch().catch(() => {});
-            } else {
-                app?.toast?.error(resp?.data?.error || resp?.message || 'Failed to add user');
-            }
-        };
-        searchView.on('item:selected', handleSelect);
-
-        dialog.on('hidden', () => {
-            try { dialog.destroy(); } catch { /* best-effort */ }
-        });
-
-        await dialog.render(true, document.body);
-        dialog.show();
+        const app = this.getApp();
+        const member = new Member();
+        const resp = await member.save({ group: this.model.id, user: data.user });
+        const ok = resp?.data?.status || (resp?.status && resp.status < 400);
+        if (ok) {
+            app?.toast?.success(`User added to ${this.model.get('name')}`);
+            await this.membersCollection.fetch().catch(() => {});
+        } else {
+            app?.toast?.error(resp?.data?.error || resp?.message || 'Failed to add user');
+        }
     }
 
     /**
@@ -2081,28 +2130,27 @@ class GroupView extends DetailView {
         return true;
     }
 
-    async onActionDeleteGroup() {
-        const noun = this._kindNoun();
-        const confirmed = await Modal.confirm({
-            title: `Delete ${noun}`,
-            message: `Are you sure you want to delete <strong>${escapeHtml(this.model.get('name') || '')}</strong>? This cannot be undone.`,
-            confirmText: 'Delete',
-            confirmClass: 'btn-danger'
+    /**
+     * Context-menu "Configure Auth" — opens the group's auth-config editor in
+     * a modal rather than as an inline detail section (the 3-tab form is too
+     * heavy for the side-nav). The section is self-contained (own Save +
+     * inline status), so the modal carries no footer buttons.
+     */
+    async onActionConfigureAuth() {
+        const section = new GroupAuthConfigSection({ model: this.model });
+        const dialog = new ModalView({
+            title: `Configure Auth — ${this.model.get('name')}`,
+            body: section,
+            size: 'lg',
+            scrollable: true,
+            buttons: [],
+            closeButton: true
         });
-        if (!confirmed) return true;
-
-        try {
-            await this.model.destroy();
-            this.getApp()?.toast?.success('Group deleted');
-            const dialog = this.element?.closest('.modal');
-            if (dialog) {
-                const bsModal = window.bootstrap?.Modal?.getInstance(dialog);
-                if (bsModal) bsModal.hide();
-            }
-            this.emit('group:deleted', { model: this.model });
-        } catch (err) {
-            this.getApp()?.toast?.error(`Failed to delete: ${err.message}`);
-        }
+        dialog.on('hidden', () => {
+            try { dialog.destroy(); } catch { /* best-effort */ }
+        });
+        await dialog.render(true, document.body);
+        dialog.show();
         return true;
     }
 

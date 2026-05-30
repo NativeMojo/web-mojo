@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Admin · GroupView / MemberView polish
+
+- **GroupView: no more "Delete Group".** Groups are deactivated, never deleted — the destructive context-menu item and its handler were removed.
+- **GroupView: Auth Config moved to a "Configure Auth" modal.** The 3-tab auth-config editor was too heavy for the side-nav; it now opens from a `Configure Auth` context-menu action in a `ModalView` (the section keeps its own Save). The "Auth Config" side-nav section is gone.
+- **GroupView: Members section reworked.** Now a compact `ListView` (card rows, same pattern as API Keys / Webhooks) instead of a wide table: a **search** box, a **Status** filter (defaults to Active, hides disabled members), and a per-row **Active/Disabled** badge. The row label falls back display_name → email → username (users often have no display name).
+- **GroupView: "Add Existing User" is now a simple form.** Replaced the raw-ID `SimpleSearchView` list with a `Modal.form` containing a `collection` field bound to `UserList` (`labelField: 'email'`) — the same type-ahead picker as the Group "Parent" field.
+- **MemberView: trimmed the header.** Removed the odd "Edit role" and "Remove" header buttons; deactivation goes through the existing active toggle. "Remove from group" remains in the kebab as the deliberate, low-prominence path.
+- **Auth Config: split the crowded Theme tab.** Tabs are now `Base / Login / Registration / Advanced`. **Base** leads with **Layout** then branding/links through Terms URL; **Advanced** holds the rarely-touched plumbing (API base, Success redirect, Custom CSS URL, Custom CSS). Presentation-only — field names/paths and save logic are unchanged.
+
 ### Admin · UserView splits permissions into "Sys Perms" / "App Perms" and surfaces app-registered ones
 
 - **Fixed: `UserView` → Permissions dropped app-level permissions.** The section re-derived its own tabset from the framework *source* arrays, so permissions registered via `User.registerPermissions({ categories, granularPermissions })` (the `APP_*` arrays) never appeared in the user detail view — even though they rendered in the user table's "Edit Permissions" modal. The two editors disagreed about which permissions existed.

@@ -303,29 +303,59 @@ export default class GroupAuthConfigSection extends View {
 
     _buildFields() {
         return [{ type: 'tabset', tabs: [
-            { label: 'Theme',        fields: this._themeFields() },
+            { label: 'Base',         fields: this._baseFields() },
             { label: 'Login',        fields: this._loginFields() },
-            { label: 'Registration', fields: this._registrationFields() }
+            { label: 'Registration', fields: this._registrationFields() },
+            { label: 'Advanced',     fields: this._advancedFields() }
         ] }];
     }
 
-    _themeFields() {
-        const fields = THEME_TEXT_FIELDS.map(f => ({
+    // Fields under `theme.*` split by tab. BASE = the common branding/links a
+    // group actually configures; ADVANCED = rarely-touched plumbing (API host,
+    // post-login redirect, custom CSS).
+    static BASE_THEME_FIELDS = [
+        'app_title', 'logo_url', 'favicon_url', 'hero_image_url',
+        'hero_headline', 'hero_subheadline', 'back_to_website_url', 'terms_url'
+    ];
+    static ADVANCED_THEME_FIELDS = ['api_base', 'success_redirect', 'custom_css_url'];
+
+    _themeTextField(f) {
+        return {
             name: f.name,
             type: 'text',
             label: f.label,
             help: f.help,
             placeholder: this._placeholders[f.name] || '',
             columns: 6
-        }));
-        fields.push({
+        };
+    }
+
+    _baseFields() {
+        // Layout leads — it's the most consequential presentation choice — then
+        // the branding/link fields up to and including Terms URL.
+        const fields = [{
             name: 'layout',
             type: 'select',
             label: 'Layout',
             help: 'Card = centered card; Full screen = edge-to-edge split layout.',
             options: LAYOUT_OPTS,
-            columns: 6
-        });
+            columns: 12
+        }];
+        for (const f of THEME_TEXT_FIELDS) {
+            if (GroupAuthConfigSection.BASE_THEME_FIELDS.includes(f.name)) {
+                fields.push(this._themeTextField(f));
+            }
+        }
+        return fields;
+    }
+
+    _advancedFields() {
+        const fields = [];
+        for (const f of THEME_TEXT_FIELDS) {
+            if (GroupAuthConfigSection.ADVANCED_THEME_FIELDS.includes(f.name)) {
+                fields.push(this._themeTextField(f));
+            }
+        }
         fields.push({
             name: 'custom_css',
             type: 'textarea',

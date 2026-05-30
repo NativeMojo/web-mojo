@@ -19,7 +19,7 @@ import MetricCard from '@core/views/data/MetricCard.js';
 import Timeline from '@core/views/data/Timeline.js';
 import Modal from '@core/views/feedback/Modal.js';
 import dataFormatter from '@core/utils/DataFormatter.js';
-import { Member, MemberForms } from '@core/models/Member.js';
+import { Member } from '@core/models/Member.js';
 import { User } from '@core/models/User.js';
 import { Group } from '@core/models/Group.js';
 import { LogList } from '@core/models/Log.js';
@@ -338,13 +338,11 @@ class MemberView extends DetailView {
                 },
                 subtitlePath: '_subtitle',
                 chips,
+                // Deactivate via the active toggle rather than removing; the
+                // header carries no action buttons. "Remove from group" stays
+                // in the kebab below as the deliberate, less-prominent path.
                 activeField: 'is_active',
-                actions: [
-                    { label: 'Edit role', icon: 'bi-pencil', action: 'edit-role',
-                      title: 'Edit role and membership details' },
-                    { label: 'Remove', icon: 'bi-person-dash', action: 'remove-from-group',
-                      title: 'Remove from group' }
-                ],
+                actions: [],
                 contextMenu: {
                     items: [
                         { label: 'View user',  action: 'view-user',  icon: 'bi-person' },
@@ -406,21 +404,6 @@ class MemberView extends DetailView {
     }
 
     // ── Actions ────────────────────────────────────────────
-
-    /** Header pencil — focused mini-form for the editable membership fields. */
-    async onActionEditRole() {
-        const resp = await Modal.modelForm({
-            title: 'Edit membership',
-            model: this.model,
-            size: 'md',
-            formConfig: MemberForms.edit
-        });
-        if (resp) {
-            this._refreshComputedFields();
-            if (this.headerView?.isMounted()) await this.headerView.render();
-            if (this.overviewSection?.isMounted()) await this.overviewSection.render();
-        }
-    }
 
     async onActionViewUser() {
         const userId = this.model.get('user')?.id;
