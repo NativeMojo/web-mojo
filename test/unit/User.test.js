@@ -208,6 +208,37 @@ module.exports = async function (testContext) {
             expect(heldRef.length).toBe(initialLength + 1);
             expect(heldRef.some(f => f.name === 'permissions.app_cat')).toBe(true);
         });
+
+        it('builds SYSTEM_PERMISSION_FIELDS as one tabset (System + granular domains), free of app perms', () => {
+            User.APP_CATEGORY_PERMISSIONS.push({ name: 'app_cat', label: 'App Category' });
+            User.rebuildPermissions();
+
+            const tabset = User.SYSTEM_PERMISSION_FIELDS[0];
+            expect(tabset.type).toBe('tabset');
+            const labels = tabset.tabs.map(t => t.label);
+            expect(labels[0]).toBe('System');
+            expect(labels.length).toBe(1 + User.GRANULAR_PERMISSION_TABS.length);
+
+            // App categories belong in APP_PERMISSION_FIELDS, never in the system section.
+            const sysNames = tabset.tabs.flatMap(t => t.fields.map(f => f.name));
+            expect(sysNames).not.toContain('permissions.app_cat');
+        });
+
+        it('APP_PERMISSION_FIELDS is empty until app perms register, then holds Categories/Permissions tabs', () => {
+            expect(User.APP_PERMISSION_FIELDS.length).toBe(0);
+
+            User.APP_CATEGORY_PERMISSIONS.push({ name: 'app_cat', label: 'App Category' });
+            User.APP_GRANULAR_PERMISSIONS.push({ name: 'app_perm', label: 'App Perm' });
+            User.rebuildPermissions();
+
+            const tabset = User.APP_PERMISSION_FIELDS[0];
+            expect(tabset.type).toBe('tabset');
+            expect(tabset.tabs.map(t => t.label)).toEqual(['Categories', 'Permissions']);
+
+            const appNames = tabset.tabs.flatMap(t => t.fields.map(f => f.name));
+            expect(appNames).toContain('permissions.app_cat');
+            expect(appNames).toContain('permissions.app_perm');
+        });
     });
 
     describe('User.registerPermissions', () => {

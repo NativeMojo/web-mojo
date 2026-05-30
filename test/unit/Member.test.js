@@ -17,14 +17,18 @@ module.exports = async function (testContext) {
     const Member = loadModule('Member');
 
     let savedAppPerms;
+    let savedAppTabs;
 
     beforeEach(() => {
         savedAppPerms = Member.APP_PERMISSIONS.slice();
+        savedAppTabs = Member.APP_PERMISSION_TABS.slice();
     });
 
     afterEach(() => {
         Member.APP_PERMISSIONS.length = 0;
         Member.APP_PERMISSIONS.push(...savedAppPerms);
+        Member.APP_PERMISSION_TABS.length = 0;
+        Member.APP_PERMISSION_TABS.push(...savedAppTabs);
         Member.rebuildPermissions();
     });
 
@@ -52,6 +56,53 @@ module.exports = async function (testContext) {
 
             const fieldNames = Member.PERMISSION_FIELDS.map(f => f.name);
             expect(fieldNames).toContain('permissions.app_perm');
+        });
+
+        it('registerPermissions appends to APP_PERMISSIONS and rebuilds in one call', () => {
+            Member.registerPermissions({
+                permissions: [{ name: 'manage_x', label: 'Manage X' }]
+            });
+
+            expect(Member.APP_PERMISSIONS.some(p => p.name === 'manage_x')).toBe(true);
+            expect(Member.PERMISSION_FIELDS.map(f => f.name)).toContain('permissions.manage_x');
+        });
+
+        it('registerPermissions is a no-op for null / missing permissions', () => {
+            const before = Member.PERMISSION_FIELDS.map(f => f.name);
+            Member.registerPermissions();
+            Member.registerPermissions({});
+            expect(Member.PERMISSION_FIELDS.map(f => f.name)).toEqual(before);
+        });
+
+        it('PERMISSION_TABSET is one tabset whose first tab ("Standard") holds the BASE perms', () => {
+            const tabset = Member.PERMISSION_TABSET[0];
+            expect(tabset.type).toBe('tabset');
+            expect(tabset.tabs[0].label).toBe('Standard');
+            const stdNames = tabset.tabs[0].fields.map(f => f.name);
+            expect(stdNames).toContain('permissions.manage_group');
+            expect(stdNames.length).toBe(Member.BASE_PERMISSIONS.length);
+        });
+
+        it('registerPermissions({ tabs }) adds one named tab each — multiple app tabs', () => {
+            Member.registerPermissions({
+                tabs: [
+                    { label: 'Verify', permissions: [{ name: 'view_verify', label: 'View Verify' }] },
+                    { label: 'Wallet', permissions: [{ name: 'view_wallet', label: 'View Wallet' }] }
+                ]
+            });
+
+            const labels = Member.PERMISSION_TABSET[0].tabs.map(t => t.label);
+            expect(labels).toEqual(['Standard', 'Verify', 'Wallet']);
+
+            // Tab perms also land in the flat caches / gate list.
+            expect(Member.PERMISSION_FIELDS.map(f => f.name)).toContain('permissions.view_verify');
+            expect(Member.PERMISSIONS.some(p => p.name === 'view_wallet')).toBe(true);
+        });
+
+        it('flat app perms produce a single "App" tab before any named tabs', () => {
+            Member.registerPermissions({ permissions: [{ name: 'app_flat', label: 'App Flat' }] });
+            const labels = Member.PERMISSION_TABSET[0].tabs.map(t => t.label);
+            expect(labels).toEqual(['Standard', 'App']);
         });
 
         it('mutates PERMISSIONS / PERMISSION_FIELDS in place so existing references stay live', () => {

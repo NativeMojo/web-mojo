@@ -7,7 +7,7 @@
  *   Profile       — Personal / Account / Linked accounts flat-row sections
  *   ──── Access ────
  *   Groups        — TableView of MemberList scoped to user (badge: count)
- *   Permissions   — TabView (Common / Advanced / Effective)
+ *   Permissions   — FormView tabsets (Categories / Advanced), autosave
  *   API Keys      — TableView with Generate Key toolbar button (badge: count)
  *   ──── Activity ────
  *   Devices       — Unified TableView (browser + push) with `kind` column filter
@@ -639,47 +639,44 @@ class UserProfileSection extends View {
 }
 
 
-// ── Permissions section ────────────────────────────────────
+// ── Permissions section (reused for "Sys Perms" and "App Perms") ──
 //
-// Backed by a single FormView with `autosaveModelField: true`. Toggle a
+// One autosaving FormView wrapping a single tabset (one row of tabs). Toggle a
 // switch and FormView batches the change into `model.save({ "permissions.<name>": true })`
-// — the backend merges the dotted key into the `permissions` JSONField.
-// Same pattern as MemberPermissionsSection in MemberView.
+// — the backend merges the dotted key into the `permissions` JSONField. Same
+// pattern as MemberPermissionsSection in MemberView.
 //
-// The fields are pre-built on the User model:
-//   User.CATEGORY_PERMISSIONS         — broad domain-level grants (Common)
-//   User.GRANULAR_PERMISSION_TABS[].permissions — fine-grained per-domain (Advanced)
-//   User._permSwitch(p)               — produces { name: 'permissions.<p>', type: 'switch', columns: 6, ... }
+// `fields` is one of the section-aligned live caches the User model rebuilds
+// via User.rebuildPermissions() — consumed directly, never re-derived here, so
+// app permissions registered through User.registerPermissions(...) appear
+// automatically and the section never drifts from the table's "Edit
+// Permissions" modal:
+//   User.SYSTEM_PERMISSION_FIELDS — framework perms (System + granular domains)
+//   User.APP_PERMISSION_FIELDS    — app perms (Categories + Permissions), or []
 //
-// We compose them into a single tabset so the user gets the `Categories` tab
-// plus one tab per granular domain, all in one FormView.
+// UserView registers two instances: "Sys Perms" (always) and "App Perms" (only
+// when the app registered any). `eyebrow` sets the section heading.
 
 class UserPermissionsSection extends View {
     constructor(options = {}) {
+        const { eyebrow = 'Permissions', fields = [], ...rest } = options;
         super({
             className: 'user-permissions-section',
             template: `
-                <div class="detail-section-eyebrow">Permissions</div>
+                <div class="detail-section-eyebrow">{{eyebrow}}</div>
                 <p class="text-secondary small mb-3">Toggles autosave as soon as you flip them.</p>
                 <div data-container="user-permissions-form"></div>
             `,
-            ...options
+            ...rest
         });
+        this.eyebrow = eyebrow;
+        this._permFields = fields;
     }
 
     async onInit() {
-        const _ps = User._permSwitch;
-        const tabs = [
-            { label: 'Categories', fields: (User.CATEGORY_PERMISSIONS || []).map(_ps) },
-            ...(User.GRANULAR_PERMISSION_TABS || []).map(tab => ({
-                label: tab.label,
-                fields: (tab.permissions || []).map(_ps)
-            }))
-        ];
-
         this.formView = new FormView({
             containerId: 'user-permissions-form',
-            fields: [{ type: 'tabset', tabs }],
+            fields: this._permFields,
             model: this.model,
             autosaveModelField: true
         });
@@ -1239,7 +1236,17 @@ class UserView extends DetailView {
         });
 
         const profileSection     = new UserProfileSection({ model });
-        const permissionsSection = new UserPermissionsSection({ model });
+        // Two permission sections: framework ("Sys Perms", always) and
+        // app-registered ("App Perms", only when an app called
+        // User.registerPermissions(...)). Each is one tabset / one row of tabs.
+        const sysPermsSection = new UserPermissionsSection({
+            model, eyebrow: 'System permissions', fields: User.SYSTEM_PERMISSION_FIELDS
+        });
+        const appPermsSection = User.APP_PERMISSION_FIELDS.length > 0
+            ? new UserPermissionsSection({
+                model, eyebrow: 'App permissions', fields: User.APP_PERMISSION_FIELDS
+            })
+            : null;
         const apiKeysSection     = new UserApiKeysSection({ model });
 
         // Groups — ListView of MemberList scoped to this user. Each row
@@ -1345,8 +1352,12 @@ class UserView extends DetailView {
             { key: 'OAuth',         label: 'OAuth',         icon: 'bi-link-45deg',       view: connectedSection },
             { type: 'divider', label: 'Access' },
             { key: 'Groups',        label: 'Groups',        icon: 'bi-people',           view: groupsSection },
-            { key: 'Permissions',   label: 'Permissions',   icon: 'bi-shield-check',     view: permissionsSection,
+            { key: 'SysPerms',      label: 'Sys Perms',     icon: 'bi-shield-check',     view: sysPermsSection,
               permissions: ['users', 'manage_users'] },
+            ...(appPermsSection ? [{
+                key: 'AppPerms', label: 'App Perms', icon: 'bi-puzzle', view: appPermsSection,
+                permissions: ['users', 'manage_users']
+            }] : []),
             { key: 'ApiKeys',       label: 'API Keys',      icon: 'bi-key',              view: apiKeysSection },
             { type: 'divider', label: 'Activity' },
             { key: 'Devices',       label: 'Devices',       icon: 'bi-laptop',           view: devicesSection },
@@ -1460,7 +1471,8 @@ class UserView extends DetailView {
         this.personalSection      = personalSection;
         this.securitySection      = securitySection;
         this.connectedSection     = connectedSection;
-        this.permissionsSection   = permissionsSection;
+        this.sysPermsSection      = sysPermsSection;
+        this.appPermsSection      = appPermsSection;
         this.apiKeysSection       = apiKeysSection;
         this.groupsSection        = groupsSection;
         this.devicesSection       = devicesSection;

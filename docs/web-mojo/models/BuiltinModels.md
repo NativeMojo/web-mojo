@@ -98,8 +98,10 @@ Most built-in models expose static properties for use with dialogs and forms:
 | `Model.DATA_VIEW` | `object` | DataView config for displaying a record |
 | `Model.PERMISSIONS` | `array` | Permission definitions (User, Member) — live cache, see [Extending the User permission registry](#extending-the-user-permission-registry) |
 | `Model.PERMISSION_FIELDS` | `array` | Form fields for editing permissions (User, Member) — live cache |
-| `Model.CATEGORY_PERMISSION_FIELDS` | `array` | Tabset of category permissions (User only) |
-| `Model.GRANULAR_PERMISSION_FIELDS` | `array` | Tabset of granular permissions (User only) |
+| `Model.SYSTEM_PERMISSION_FIELDS` | `array` | One tabset of framework permissions — System category + granular domains (User only); backs the UserView "Sys Perms" section |
+| `Model.APP_PERMISSION_FIELDS` | `array` | One tabset of app-registered permissions, or `[]` when none (User only); backs the UserView "App Perms" section |
+| `Model.CATEGORY_PERMISSION_FIELDS` | `array` | Tabset of category permissions incl. an "App" tab (User only) |
+| `Model.GRANULAR_PERMISSION_FIELDS` | `array` | Tabset of granular permissions incl. an "App" tab (User only) |
 | `Model.GRANULAR_TO_CATEGORY` | `object` | Reverse map: granular permission name → parent category (User only) |
 
 ---
@@ -271,12 +273,16 @@ After registration, a user holding `permissions.app_cat === true` automatically 
 | `User.APP_CATEGORY_PERMISSIONS` | Source — app-level categories | Yes |
 | `User.APP_GRANULAR_PERMISSIONS` | Source — app-level granulars | Yes |
 | `User.PERMISSIONS` | **Live cache** — flat list of all registered permissions | No |
-| `User.PERMISSION_FIELDS` | **Live cache** — flat switch-field list (used by `UserForms.permissions`) | No |
-| `User.CATEGORY_PERMISSION_FIELDS` | **Live cache** — categories tabset | No |
-| `User.GRANULAR_PERMISSION_FIELDS` | **Live cache** — granular tabset | No |
+| `User.PERMISSION_FIELDS` | **Live cache** — flat switch-field list (used by `UserForms.permissions` / the table modal) | No |
+| `User.SYSTEM_PERMISSION_FIELDS` | **Live cache** — framework tabset (System + granular domains); UserView "Sys Perms" | No |
+| `User.APP_PERMISSION_FIELDS` | **Live cache** — app tabset (Categories + Permissions), `[]` when none; UserView "App Perms" | No |
+| `User.CATEGORY_PERMISSION_FIELDS` | **Live cache** — categories tabset (System + App) | No |
+| `User.GRANULAR_PERMISSION_FIELDS` | **Live cache** — granular tabset (domains + App) | No |
 | `User.GRANULAR_TO_CATEGORY` | **Live cache** — reverse map for the gate-checker | No |
 
 Live caches are mutated *in place* by `rebuildPermissions()`, so any reference captured at module-load time (e.g. `UserForms.permissions.fields = User.PERMISSION_FIELDS`) stays current after re-registration without re-import.
+
+The UserView detail screen splits permissions into two side-nav sections: **Sys Perms** (`SYSTEM_PERMISSION_FIELDS`) and **App Perms** (`APP_PERMISSION_FIELDS`, shown only when an app registered some). `registerPermissions({ categories, granularPermissions })` flow into **App Perms**; `granularTabs` add a domain tab to the framework granular set (**Sys Perms**).
 
 #### `User._permSwitch(p)` — switch-field builder
 
@@ -472,29 +478,36 @@ user.member.hasPermission('manage_billing');
 
 ### Extending the Member permission registry
 
-Mirrors the User pattern but flatter — Member has no categories or tabs, just a single list.
+Mirrors the User pattern but flatter — Member has no category/granular split. App perms can be a flat list (one "App" tab) and/or named tabs (one tab each).
 
 ```js
 import { Member } from 'web-mojo';
 
-Member.APP_PERMISSIONS.push(
-    { name: 'app_perm_a', label: 'App Perm A' },
-    { name: 'app_perm_b', label: 'App Perm B' }
-);
-
-Member.rebuildPermissions();
+Member.registerPermissions({
+    // flat perms → a single "App" tab
+    permissions: [{ name: 'manage_app_thing', label: 'Manage App Thing' }],
+    // and/or named tabs → one tab each (multiple app domains)
+    tabs: [
+        { label: 'Verify', permissions: [{ name: 'view_verify', label: 'View Verify' }] },
+        { label: 'Wallet', permissions: [{ name: 'view_wallet', label: 'View Wallet' }] }
+    ]
+});
 ```
 
-After the rebuild, `Member.PERMISSIONS` and `Member.PERMISSION_FIELDS` reflect both the framework defaults and the app additions.
+After the rebuild, `Member.PERMISSIONS` / `Member.PERMISSION_FIELDS` (flat) and `Member.PERMISSION_TABSET` (the tabbed cache `MemberView` renders) reflect both the framework defaults and the app additions. The `MemberView` "Permissions" section is a single tabset — **Standard** (framework group perms) + an **App** tab (flat app perms) + one tab per registered named tab. (Direct mutation of `Member.APP_PERMISSIONS` / `Member.APP_PERMISSION_TABS` followed by `Member.rebuildPermissions()` also works.)
+
+> `MemberView` shows **group-level permissions only** — system (User-record) permissions are edited from the user's detail view, not here.
 
 | Identifier | Role | Mutate directly? |
 |---|---|---|
 | `Member.BASE_PERMISSIONS` | Source — framework-defined member permissions | No (framework-owned) |
-| `Member.APP_PERMISSIONS` | Source — app-level member permissions | Yes |
-| `Member.PERMISSIONS` | **Live cache** — `BASE` + `APP`, flat | No |
-| `Member.PERMISSION_FIELDS` | **Live cache** — switch-field list | No |
+| `Member.APP_PERMISSIONS` | Source — app-level flat perms (→ "App" tab) | Yes |
+| `Member.APP_PERMISSION_TABS` | Source — app-level named tabs `[{ label, permissions }]` | Yes |
+| `Member.PERMISSIONS` | **Live cache** — `BASE` + `APP` + tab perms, flat | No |
+| `Member.PERMISSION_FIELDS` | **Live cache** — flat switch-field list | No |
+| `Member.PERMISSION_TABSET` | **Live cache** — one tabset (Standard + App + named tabs); backs the MemberView section | No |
 
-Live caches are mutated in place by `Member.rebuildPermissions()`, so cached references (e.g. forms holding `Member.PERMISSION_FIELDS`) stay current.
+Live caches are mutated in place by `Member.rebuildPermissions()`, so cached references stay current.
 
 ### MemberList
 

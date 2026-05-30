@@ -13,7 +13,7 @@
  * repo. Per-component example files MUST import from `web-mojo` only.
  */
 
-import { PortalWebApp, User } from 'web-mojo';
+import { PortalWebApp, User, Member } from 'web-mojo';
 import { registerAdminPages, registerAssistant, registerTicketPanel } from 'web-mojo/admin';
 import HomePage from './shell/HomePage.js';
 import DocsModal from './shell/DocsModal.js';
@@ -273,6 +273,53 @@ for (const ex of examples) {
         console.error(`[examples] failed to load ${ex.route} from ${ex.modulePath}`, err);
     }
 }
+
+// ── Demo: app-level permission registration ───────────────────────
+// Downstream apps register their own permission vocabulary ONCE, up front,
+// and it appears everywhere user/member permissions are edited — the User
+// detail view (UserView → Permissions), the user table's "Edit Permissions"
+// modal, and the Member (per-group) permission editor. This block exists so
+// the examples portal exercises that extension API end-to-end; a real app
+// would list its own domain permissions here. Register before the admin
+// pages mount so the caches are warm when an admin screen first opens.
+User.registerPermissions({
+    // Broad category grants → the "Categories" tab of the App Perms section.
+    categories: [
+        { name: 'verify', label: 'Verify' },
+        { name: 'wallet', label: 'Wallet' },
+    ],
+    // Fine-grained grants → the "Permissions" tab of the App Perms section.
+    granularPermissions: [
+        { name: 'manage_verify',  label: 'Manage Verify' },
+        { name: 'view_wallet',    label: 'View Wallet' },
+        { name: 'manage_wallet',  label: 'Manage Wallet' },
+        { name: 'view_docsign',   label: 'View DocSign' },
+        { name: 'manage_docsign', label: 'Manage DocSign' },
+    ],
+    // Category → granular fallback: holding `verify` satisfies a
+    // `manage_verify` gate (see User.hasPermission).
+    categoryGranularMap: {
+        verify: ['manage_verify'],
+        wallet: ['view_wallet', 'manage_wallet'],
+    },
+});
+
+// Group-level (Member) permissions — same one-call registration for the
+// per-group permission editor in MemberView. `tabs` adds one named tab per
+// app domain (the MemberView "Permissions" section is a single tabset:
+// Standard + these), demonstrating multi-tab app permissions.
+Member.registerPermissions({
+    tabs: [
+        { label: 'Verify', permissions: [
+            { name: 'manage_verify_group', label: 'Manage Verify' },
+            { name: 'view_verify_group',   label: 'View Verify' },
+        ] },
+        { label: 'Wallet', permissions: [
+            { name: 'manage_wallet_group', label: 'Manage Wallet' },
+            { name: 'view_wallet_group',   label: 'View Wallet' },
+        ] },
+    ],
+});
 
 // Admin extension — register before app.start() so the system/* routes
 // exist when the router resolves the initial URL. Otherwise a deep link

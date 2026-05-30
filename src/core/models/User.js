@@ -177,6 +177,13 @@ User.PERMISSIONS = [];
 User.PERMISSION_FIELDS = [];
 User.CATEGORY_PERMISSION_FIELDS = [];
 User.GRANULAR_PERMISSION_FIELDS = [];
+// Section-aligned caches for the UserView "Sys Perms" / "App Perms" detail
+// sections — each a single tabset (one row of tabs). SYSTEM holds the
+// framework permissions (System category + granular domains); APP holds the
+// app-registered permissions (categories + granular) and is empty when the
+// app registered none.
+User.SYSTEM_PERMISSION_FIELDS = [];
+User.APP_PERMISSION_FIELDS = [];
 User.GRANULAR_TO_CATEGORY = {};
 
 // Recompute every cached permission structure from the live source
@@ -221,6 +228,34 @@ User.rebuildPermissions = function() {
     }
     User.GRANULAR_PERMISSION_FIELDS.length = 0;
     User.GRANULAR_PERMISSION_FIELDS.push({ type: 'tabset', tabs: granularTabs });
+
+    // "Sys Perms" detail section — framework permissions in ONE tabset (one
+    // row): the System category tab + each granular domain tab.
+    User.SYSTEM_PERMISSION_FIELDS.length = 0;
+    User.SYSTEM_PERMISSION_FIELDS.push({
+        type: 'tabset',
+        tabs: [
+            { label: 'System', fields: User.CATEGORY_PERMISSIONS.map(_ps) },
+            ...User.GRANULAR_PERMISSION_TABS.map(tab => ({
+                label: tab.label,
+                fields: tab.permissions.map(_ps)
+            }))
+        ]
+    });
+
+    // "App Perms" detail section — app-registered permissions in ONE tabset
+    // (Categories + Permissions tabs), or empty when the app registered none.
+    User.APP_PERMISSION_FIELDS.length = 0;
+    const appPermTabs = [];
+    if (User.APP_CATEGORY_PERMISSIONS.length > 0) {
+        appPermTabs.push({ label: 'Categories', fields: User.APP_CATEGORY_PERMISSIONS.map(_ps) });
+    }
+    if (User.APP_GRANULAR_PERMISSIONS.length > 0) {
+        appPermTabs.push({ label: 'Permissions', fields: User.APP_GRANULAR_PERMISSIONS.map(_ps) });
+    }
+    if (appPermTabs.length > 0) {
+        User.APP_PERMISSION_FIELDS.push({ type: 'tabset', tabs: appPermTabs });
+    }
 
     // Reverse lookup: granular perm name → category name.
     for (const k of Object.keys(User.GRANULAR_TO_CATEGORY)) {
