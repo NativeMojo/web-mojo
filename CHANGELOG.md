@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Admin · Group `kind` is now editable + the three Group forms share one field source
+
+- **Fixed: editing a Group's kind was limited to a static select.** `kind` rendered as a plain `<select>` in every Group form (create / edit / detailed) and in the inline "Edit Kind" pencil, so an admin could only pick from the hardcoded option list and never type a value the backend supports. `kind` is now a `combo` (editable autocomplete) everywhere — it still suggests the canonical `Group.GroupKinds`, but accepts any typed value. The save path is unchanged (writes the same string).
+- **One source of truth for Group form fields.** `GroupForms.create` / `edit` / `detailed` (`src/core/models/Group.js`) previously redeclared their fields independently and had drifted — the same `kind` bug had to be patched in three places, the `detailed` timezone select offered 5 zones while the inline pencil offered 14, and `short_name` / `auth_domain` existed *only* as inline editors, in no form at all. All three forms now compose from a single `groupFields()` factory (fresh field objects per form, shared option arrays), so a field's type/label/options are defined once and can't drift.
+- **One universal editor, used everywhere.** The editor is a 5-tab `tabset` (Profile / Identity / Localization / Branding / Avatar) covering every editable field, including the previously orphaned `short_name` and `auth_domain`; the avatar uploader sits in its own trailing tab since it's secondary. Both the detail-page **Edit Group** button *and* the groups-table row **Edit** now open this same form — `Group.EDIT_FORM` is an alias of the detailed config (retitled "Edit Group"), so the table edit no longer shows the old flat 7-field form. `Group.FORM_DIALOG_CONFIG = { size: 'lg' }` gives the row-edit modal room for the tabs.
+- **Inline "Edit Timezone" pencil** now uses the shared `TimezoneOptions` list (exported from `Group.js`) instead of its own divergent copy. New named exports: `GroupKindOptions`, `TimezoneOptions`, `EodHourOptions`.
+
 ### Admin · Storage Backend detail view + Fix CORS fix
 
 - **Fixed: "Fix CORS" did nothing.** The Storage Backends context menu has always carried a `fix-cors` item, but `onActionFixCors` was never implemented — clicking it was a no-op. It now issues `model.save({ fix_cors: 1 })` (mirroring `check_cors` / `test_connection`) and shows the result report.

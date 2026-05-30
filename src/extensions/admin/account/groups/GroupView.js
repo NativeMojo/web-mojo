@@ -35,7 +35,7 @@ import ModalView from '@core/views/feedback/ModalView.js';
 import SimpleSearchView from '@core/views/navigation/SimpleSearchView.js';
 import MOJOUtils from '@core/utils/MOJOUtils.js';
 import dataFormatter from '@core/utils/DataFormatter.js';
-import { Group, GroupList, GroupForms } from '@core/models/Group.js';
+import { Group, GroupList, GroupForms, TimezoneOptions } from '@core/models/Group.js';
 import { Member, MemberList } from '@core/models/Member.js';
 import { UserList } from '@core/models/User.js';
 import { ApiKey, ApiKeyList, ApiKeyForms } from '@core/models/ApiKey.js';
@@ -607,13 +607,14 @@ class GroupIdentitySection extends View {
     }
 
     async onActionEditKind() {
-        const kindOptions = Object.entries(Group.GroupKinds || {}).map(([value, text]) => ({ value, text }));
+        const kindOptions = Object.entries(Group.GroupKinds || {}).map(([value, text]) => ({ value, label: text }));
         const data = await Modal.form({
             title: 'Edit Kind',
             size: 'sm',
             fields: [{
-                name: 'kind', type: 'select', label: 'Kind', cols: 12,
-                options: [{ value: '', text: '(none)' }, ...kindOptions]
+                name: 'kind', type: 'combo', label: 'Kind', cols: 12,
+                placeholder: 'Type or select kind...',
+                options: kindOptions
             }],
             data: { kind: this.model.get('kind') || '' }
         });
@@ -629,22 +630,7 @@ class GroupIdentitySection extends View {
             size: 'sm',
             fields: [{
                 name: 'timezone', type: 'select', label: 'Timezone', cols: 12,
-                options: [
-                    { value: '', text: '(none)' },
-                    { value: 'America/New_York',    text: 'Eastern Time (ET)' },
-                    { value: 'America/Chicago',     text: 'Central Time (CT)' },
-                    { value: 'America/Denver',      text: 'Mountain Time (MT)' },
-                    { value: 'America/Los_Angeles', text: 'Pacific Time (PT)' },
-                    { value: 'America/Anchorage',   text: 'Alaska Time (AKT)' },
-                    { value: 'Pacific/Honolulu',    text: 'Hawaii Time (HT)' },
-                    { value: 'UTC',                 text: 'UTC' },
-                    { value: 'Europe/London',       text: 'London (GMT/BST)' },
-                    { value: 'Europe/Paris',        text: 'Paris (CET/CEST)' },
-                    { value: 'Europe/Berlin',       text: 'Berlin (CET/CEST)' },
-                    { value: 'Asia/Tokyo',          text: 'Tokyo (JST)' },
-                    { value: 'Asia/Shanghai',       text: 'Shanghai (CST)' },
-                    { value: 'Australia/Sydney',    text: 'Sydney (AEST)' }
-                ]
+                options: [{ value: '', label: '(none)' }, ...TimezoneOptions]
             }],
             data: { timezone: meta.timezone || '' }
         });
