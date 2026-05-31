@@ -137,5 +137,17 @@ module.exports = async function (testContext) {
             expect(m.hasPermission('manage_group')).toBe(true);
             expect(m.hasPermission('view_metrics')).toBe(false);
         });
+
+        it('group `admin` grants any (non-sys) group gate', () => {
+            const m = new Member({ permissions: { admin: true } });
+            expect(m.hasPermission('manage_group')).toBe(true);
+            expect(m.hasPermission('view_metrics')).toBe(true);
+            expect(m.hasPermission('manage_player')).toBe(true);
+        });
+
+        it('group `admin` does NOT grant sys.* gates', () => {
+            const m = new Member({ permissions: { admin: true } });
+            expect(m.hasPermission('sys.manage_groups')).toBe(false);
+        });
     });
 };

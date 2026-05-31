@@ -20,7 +20,12 @@ class Member extends Model {
         if (!permissions) {
             return false;
         }
-        return permissions[permission] == true;
+        if (permissions[permission] == true) {
+            return true;
+        }
+        // Group `admin` is a full-access grant within this group (never the
+        // system-scoped `sys.*` permissions — those aren't group-resolved).
+        return !permission.startsWith('sys.') && permissions["admin"] == true;
     }
 
      async fetchForGroup(groupId) {

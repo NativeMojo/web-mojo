@@ -74,6 +74,40 @@ module.exports = async function (testContext) {
         });
     });
 
+    describe('User.hasPermission admin wildcard', () => {
+        it('system `admin` grants any granular gate', () => {
+            const u = new User({ permissions: { admin: true } });
+            expect(u.hasPermission('manage_player')).toBe(true);
+            expect(u.hasPermission('view_security')).toBe(true);
+            expect(u.hasPermission('anything_at_all')).toBe(true);
+        });
+
+        it('system `admin` also satisfies sys.* gates', () => {
+            const u = new User({ permissions: { admin: true } });
+            expect(u.hasPermission('sys.manage_groups')).toBe(true);
+        });
+
+        it('member `admin` grants a group gate even without system perms', () => {
+            const u = new User({ permissions: {} });
+            // Stand in for a group-admin Member: grants any non-sys gate (the
+            // real Member.hasPermission applies the `admin` wildcard the same
+            // way). Asserts User defers to member for non-sys gates.
+            u.member = { hasPermission: (p) => !String(p).startsWith('sys.') };
+            expect(u.hasPermission('manage_player')).toBe(true);
+        });
+
+        it('member `admin` does NOT satisfy a sys.* gate (no cross-scope leak)', () => {
+            const u = new User({ permissions: {} });
+            u.member = { hasPermission: () => true };
+            expect(u.hasPermission('sys.manage_groups')).toBe(false);
+        });
+
+        it('no admin + no matching perm still denies', () => {
+            const u = new User({ permissions: { view_player: true } });
+            expect(u.hasPermission('manage_wallet')).toBe(false);
+        });
+    });
+
     describe('User.registerCategoryMap', () => {
         it('extends GRANULAR_TO_CATEGORY so app categories satisfy app granular gates', () => {
             // Before registration: app granular has no parent category.

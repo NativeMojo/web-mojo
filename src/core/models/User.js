@@ -24,7 +24,16 @@ class User extends Model {
             return true;
         }
 
-        // Only check member permissions if it's not a system permission
+        // System-level `admin` is a full-access grant — permission-driven
+        // equivalent of `is_superuser`. Applies to sys.* and granular checks
+        // alike, so a system admin passes every permission gate.
+        if (this._hasPermission('admin')) {
+            return true;
+        }
+
+        // Only check member permissions if it's not a system permission. A
+        // member/group `admin` grants everything within that group — handled
+        // by Member.hasPermission's own `admin` wildcard.
         if (!isSysPermission && this.member && this.member.hasPermission(permission)) {
             return true;
         }
