@@ -107,7 +107,7 @@ modal.show();
 modal.on('action:save', () => { ... });
 ```
 
-See the [legacy migration request](../../../planning/requests/migrate-legacy-dialog-callers.md) for the in-progress sweep of `src/`.
+See the [completed migration](../../../planning/done/migrate-legacy-dialog-callers.md) that swept the remaining `new Dialog(...)` callers in `src/` over to `Modal.*`.
 
 ---
 

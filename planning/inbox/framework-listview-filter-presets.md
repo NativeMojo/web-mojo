@@ -1,11 +1,16 @@
+---
+id:
+type: feature
+title: "Framework: ListView `filterPresets:` — bundle a filter set behind a toolbar chip"
+priority: P2
+effort: TBD
+owner: TBD
+opened: 2026-05-10
+depends_on: []
+related: []
+links: []
+---
 # Framework: ListView `filterPresets:` — bundle a filter set behind a toolbar chip
-
-| Field | Value |
-|-------|-------|
-| Type | request |
-| Status | open |
-| Date | 2026-05-10 |
-| Priority | medium |
 
 ## Description
 

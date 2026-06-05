@@ -1,11 +1,16 @@
+---
+id:
+type: feature
+title: "UserProfileView — Sessions / Devices / Security Events ListView migration"
+priority: P2
+effort: TBD
+owner: TBD
+opened: 2026-05-10
+depends_on: []
+related: []
+links: []
+---
 # UserProfileView — Sessions / Devices / Security Events ListView migration
-
-| Field | Value |
-|-------|-------|
-| Type | request |
-| Status | open |
-| Date | 2026-05-10 |
-| Priority | medium |
 
 ## Description
 

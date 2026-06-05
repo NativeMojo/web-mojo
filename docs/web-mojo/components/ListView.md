@@ -360,7 +360,7 @@ Options (all optional):
 
 #### Additional helpers (deferred)
 
-`groupByMonth`, `groupByYear`, `groupByLetter`, `groupByRange`, `groupByWeek`, `groupByQuarter`, `groupByExists`, `groupByPath` are tracked in [`planning/requests/listview-grouping-helpers.md`](../../../planning/requests/listview-grouping-helpers.md) and ship when a real consumer asks. Until then, write the resolver inline.
+`groupByMonth`, `groupByYear`, `groupByLetter`, `groupByRange`, `groupByWeek`, `groupByQuarter`, `groupByExists`, `groupByPath` are tracked in [`planning/done/listview-grouping-helpers.md`](../../../planning/done/listview-grouping-helpers.md) and ship when a real consumer asks. Until then, write the resolver inline.
 
 ### Visual styles
 

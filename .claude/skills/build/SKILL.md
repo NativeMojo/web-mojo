@@ -1,61 +1,86 @@
 ---
 name: build
-description: Implement a planned issue or request — code, tests, commit, then spawn test/docs/security agents
+description: >-
+  Implement a scoped work item from planning/confirmed/ one task at a time, with
+  tests. For bugs (type: bug), write a failing regression test before the fix.
+  After implementing, spawn the post-build review agents. Use when executing an
+  item that has already been scoped.
 user-invocable: true
-argument-hint: <path to planned file>
+argument-hint: <path to a planning/confirmed/ item>
+allowed-tools: Read, Grep, Glob, Edit, Write, Task, Bash
 ---
 
-You are a senior engineer implementing a planned request in the WEB-MOJO framework source repo.
+# Build Mode
+
+## Role
+You are a senior engineer executing a scoped item one task at a time. You write
+minimal, correct, tested code that matches existing patterns.
+Read `CLAUDE.md` for conventions. Read the item file in `planning/confirmed/`.
 
 ## Before Starting
+1. Read `CLAUDE.md` and the item's `## Notes` (the agreed plan from `/scope`).
+2. Read every file the plan touches, plus the matching docs in `docs/web-mojo/`.
 
-1. Read `.claude/rules/core.md` for non-negotiable rules.
-2. Read `docs/web-mojo/README.md` for the docs index.
-3. Read `docs/agent/architecture.md` for the repo layout.
+## Pre-Flight
+- The item must be in `planning/confirmed/` (scoped). If it's still in `inbox/`,
+  stop and run `/scope` first.
+- Run `scripts/ready.sh planning/confirmed/<file>.md`. If it reports `BLOCKED`,
+  stop and say so; only proceed on `READY`.
 
 ## Workflow
+1. State what you're about to build (one sentence; include the ITEM id)
+2. Show your implementation plan — get confirmation before writing code
+3. **If `type: bug`:** write a regression test that reproduces the bug and
+   confirm it fails BEFORE touching the fix.
+4. Implement — one logical unit at a time, matching existing patterns
+   (`this.model`, `addChild()`+`containerId`, `data-action` kebab → handler,
+   fetch in `onInit()`/`onEnter()`, Bootstrap 5.3, `|bool`, `{{{triple}}}`).
+5. Test with the narrowest relevant command, then widen if the change spans areas:
+   - `npm run test:unit` — focused framework behavior (fastest)
+   - `npm run test:integration` — multi-component behavior
+   - `npm run test:build` / `npm run build:lib` — packaging/build validation
+   - `npm run lint` — lint-only
+   - `npm test` — full custom runner (`node test/test-runner.js`)
+   - Chrome UI smoke test for any visual change (see `.claude/rules/testing.md`)
+   - Fix failures in the production code, not the tests. For a bug, confirm the
+     regression test now passes and others still do.
+6. Update relevant docs in `docs/web-mojo/` and `CHANGELOG.md` if public behavior
+   changed.
+7. **Post-build review** — spawn these agents in parallel and report their findings:
+   - `test-runner` (`.claude/agents/test-runner.md`) — full suite for regressions
+   - `docs-updater` (`.claude/agents/docs-updater.md`) — sync docs from the diff
+   - `security-review` (`.claude/agents/security-review.md`) — review the diff
+8. Fill `tests added:` in the item's `## Resolution` block, then close it:
 
-1. **Read** — Read the planned file at $ARGUMENTS. It must have a `## Plan` section. If no plan exists, stop and tell the user to run `/plan` first.
-2. **Read All Files** — Read every file listed in the plan's Steps section before making any changes.
-3. **Confirm** — Present a brief summary and confirm with the user before building.
-4. **Implement** — Follow the plan step by step. Match existing patterns, keep diffs minimal and surgical.
-5. **Test** — Run the narrowest relevant validation:
-   - `npm run test:unit` for focused framework behavior
-   - `npm run test:integration` for multi-component behavior
-   - `npm run build:lib` for package build validation
-   - `npm run lint` for lint-only validation
-   - `npm test` when the change spans multiple areas
-   - Chrome UI smoke test for any visual changes (see `.claude/rules/testing.md`)
-   - Fix failures in the production code, not the tests.
-6. **Commit** — Stage specific files (never `git add -A`), commit with a descriptive message. Never push.
-7. **Spawn Agents** — After committing, spawn these agents in parallel:
-   - **test-runner** (`.claude/agents/test-runner.md`) — full test suite for regressions
-   - **docs-updater** (`.claude/agents/docs-updater.md`) — update docs based on git diff
-   - **security-review** (`.claude/agents/security-review.md`) — review diff for security concerns
-8. **Resolve** — Append `## Resolution` section to the file with:
-   - What was implemented
-   - Files changed
-   - Tests run and results
-   - Agent findings (from step 7)
-9. **Move** — Move the file to `planning/done/`.
-10. **Report** — Summarize what changed, how it was validated, and any follow-ups.
+       scripts/close.sh planning/confirmed/<file>.md
 
-## Non-Negotiable Rules
+   (stamps `closed`/`branch`/`files changed` and `git mv`s it to `planning/done/`)
+9. Update `memory.md` if any decision was made.
+10. State what's next.
 
-- Confirm before implementing.
-- Read before editing — match the target file's local style and structure.
-- Use the framework's Model + View + Container pattern:
-  - Primary record data lives on `this.model`
-  - JS logic reads data with `this.model.get('field')`
-  - Templates read model data as `{{model.field}}`
-  - Child views use `containerId` + `addChild()`
-- Bootstrap 5.3 for styling; Bootstrap Icons for icons.
-- `data-action="kebab-case"` → `onActionKebabCase(event, element)`
-- `data-container="name"` → child view with `containerId: 'name'`
-- REST API uses standard CRUD endpoints — admins filter with query params, no separate admin endpoints.
-- Fetch data in `onInit()` or action handlers — never in `onAfterRender()` or `onAfterMount()`
-- Never manually call `child.render()` or `child.mount()` after `addChild()`
-- Boolean template checks require `|bool`; unescaped HTML requires `{{{triple braces}}}`
-- String formatter args require quotes: `{{date|date:'YYYY-MM-DD'}}`
-- Per-visit page logic belongs in `onEnter()`, not constructor or `onInit()`
-- Commit but never push. Stage specific files only.
+> **Git:** stage changes only; do **not** create branches, commit, or push
+> unless the user explicitly asks (repo rule). `scripts/close.sh` only `git mv`s
+> the item file — it does not commit.
+
+## Output Format Per Task
+- **Item**: id + what you're doing
+- **Plan**: confirmed approach
+- **Implementation**: the code
+- **Tests**: covering the new behavior (regression test first, for bugs)
+- **Docs**: what changed
+- **Review**: agent findings from step 7
+- **Done**: checklist from `CLAUDE.md`
+- **Next**: next task or "complete"
+
+## Forbidden in This Mode
+- Building an item not in `confirmed/`, or with unmet `depends_on`
+- Expanding scope beyond the current item
+- Writing code before confirming the plan
+- Skipping tests ("I'll add them later")
+- For a bug: writing the fix before the failing regression test, or refactoring
+  while fixing (open a separate `chore` item instead)
+- Fetching data in `onAfterRender()`/`onAfterMount()`, or manually
+  `render()`/`mount()`ing children after `addChild()`
+- Proposing separate admin-scoped REST endpoints (admins filter with query params)
+- Touching files not in the plan without flagging it first
+- Committing or pushing without the user's go-ahead

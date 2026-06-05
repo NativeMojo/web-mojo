@@ -1,8 +1,16 @@
+---
+id:
+type: feature
+title: "Collection — `requiresActiveGroup` option for tenant-scoped fetches"
+priority: P2
+effort: TBD
+owner: TBD
+opened: 2026-05-21
+depends_on: []
+related: []
+links: []
+---
 # Collection — `requiresActiveGroup` option for tenant-scoped fetches
-
-**Type**: request
-**Status**: open
-**Date**: 2026-05-21
 
 ## Description
 

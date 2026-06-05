@@ -1,8 +1,13 @@
 # Done Archive
 
-This folder stores resolved planning items from `planning/requests/` and `planning/issues/`.
+This folder stores resolved planning items closed out of `planning/confirmed/`
+(via `scripts/close.sh`).
 
 Use it as a lightweight completion archive so active queues stay clean while the project keeps a searchable history of what was requested, what changed, and how it was validated.
+
+> Older items here predate the unified `inbox/ → confirmed/ → done/` model and may
+> use a legacy header instead of `ITEM-###` frontmatter — that's fine. Resolved
+> history is never reformatted or renumbered.
 
 ## What Belongs Here
 

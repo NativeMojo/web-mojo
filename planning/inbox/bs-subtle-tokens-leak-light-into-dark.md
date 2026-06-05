@@ -1,11 +1,16 @@
+---
+id:
+type: bug
+title: "Bootstrap subtle / border-subtle / text-emphasis tokens leak light values into dark theme"
+priority: P2
+effort: TBD
+owner: TBD
+opened: 2026-04-27
+depends_on: []
+related: []
+links: []
+---
 # Bootstrap subtle / border-subtle / text-emphasis tokens leak light values into dark theme
-
-| Field | Value |
-|-------|-------|
-| Type | bug |
-| Status | open |
-| Date | 2026-04-27 |
-| Severity | medium |
 
 ## Description
 

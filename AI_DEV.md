@@ -1,91 +1,97 @@
 # WEB-MOJO — AI Developer Workflow
 
-This guide explains how Claude Code is configured for this project.
+This guide explains how Claude Code is configured for this project. `CLAUDE.md`
+is the auto-loaded source of truth; this is the human-facing tour.
 
-## Quick Start
+## One work item, two skills
+
+There is **one kind of work item** (a Markdown file with YAML frontmatter).
+Bugs, features, and chores differ only by `type`. The **folder is the stage**:
+
+```
+planning/inbox/  →  planning/confirmed/  →  planning/done/
+   (unscoped)         (scoped, has id)         (closed)
+```
+
+Two skills drive it:
 
 | Command | Purpose |
 |---------|---------|
-| `/bug <description>` | Investigate a bug, write issue file |
-| `/request <description>` | Scope a feature, write request file |
-| `/design <path>` | Design implementation for an issue/request |
-| `/build <path>` | Implement, test, commit, review |
-| `/memory` | Show Claude Code project memory |
-
-## Workflow Chain
-
-```
-/bug or /request  →  planning/issues/ or planning/requests/
-        ↓
-/design <file>      →  adds ## Plan section, status → "planned"
-        ↓
-/build <file>     →  implements, tests, commits, spawns agents
-        ↓
-                      moves file to planning/done/
-```
+| `/scope <file-or-description>` | Triage + plan. Owns intake: allocates the `ITEM-###` id, stamps frontmatter, moves `inbox/ → confirmed/`. Gets your sign-off on a plan. |
+| `/build <confirmed-file>` | Implement a scoped item. Bugs get a failing regression test first. Runs tests, spawns review agents, closes `confirmed/ → done/`. |
+| `/memory` | Show Claude Code project memory (read-only). |
 
 Each phase runs in a separate session for clean context.
 
-## Planning Directory
+## Pipeline scripts (`scripts/`)
+
+The deterministic, must-be-exact steps are scripts, not model-followed prose —
+portable across macOS/BSD and GNU/Linux:
+
+| Script | Does |
+|--------|------|
+| `scripts/board.sh [stage]` | Pipeline at a glance (id, type, priority, title, ready/blocked). |
+| `scripts/intake.sh <inbox-file>` | Allocate next `ITEM-###`, stamp it, `git mv` to `confirmed/`, bump `.next_id`. (Called by `/scope`.) |
+| `scripts/ready.sh <confirmed-file>` | `READY` / `BLOCKED` — are all `depends_on` in `done/`? (Called by `/build` pre-flight.) |
+| `scripts/close.sh <confirmed-file>` | Stamp the Resolution block, `git mv` to `done/`. (Called by `/build`.) |
+
+IDs come **only** from `intake.sh` via `planning/.next_id` — never hand-assigned
+or reused. The folder is the stage; never hand-move files between stages.
+
+## Planning directory
 
 ```
 planning/
-├── issues/       — open bugs (from /bug)
-├── requests/     — open feature requests (from /request)
-├── done/         — resolved items (from /build)
-├── future/       — deferred ideas
-└── rejected/     — declined items
+├── .next_id        — single bare integer: next ITEM id to assign
+├── _template.md    — the one item template
+├── inbox/          — new, unscoped items (no id)
+├── confirmed/      — scoped, active items (have id + plan in ## Notes)
+├── done/           — closed items (resolved history; never reformatted)
+├── future/         — parked ideas
+├── rejected/       — declined items, kept for rationale
+├── mockups/        — HTML/UI reference sketches (not work items)
+└── notes/          — audits and longer-form planning notes
 ```
 
-### File Template (Progressive Sections)
+See `planning/README.md` for the item format and reference notation.
 
-Files grow as they move through the workflow:
+## Rules (`.claude/rules/`)
 
-1. **Investigation** — added by `/bug` or `/request` (status: open)
-2. **Plan** — added by `/design` (status: planned)
-3. **Resolution** — added by `/build` (status: done, moved to `planning/done/`)
+Layer conventions load automatically; `CLAUDE.md` holds the always-on rules.
 
-## Rules (.claude/rules/)
+| File | Covers |
+|------|--------|
+| `core.md` | Import style, forbidden actions, philosophy, delivery checklist |
+| `views.md` | View/Page lifecycle, data binding, actions, containers, templates, Bootstrap |
+| `api.md` | Models, collections, REST conventions, response handling |
+| `testing.md` | Custom test runner, commands, regression rules, Chrome UI testing |
+| `theming.md` | Light/dark theme conventions (Bootstrap tokens over hex) |
+| `docs.md` | Doc locations, when to update, quick lookup |
 
-| File | Scope | Covers |
-|------|-------|--------|
-| `core.md` | All files | Import style, forbidden actions, philosophy, trust order, delivery checklist |
-| `views.md` | `src/core/views/`, `src/core/forms/`, `src/core/pages/`, `src/extensions/` | View/Page lifecycle, data binding, actions, containers, template rules, Bootstrap |
-| `api.md` | `src/core/Rest.js`, `src/core/Model.js`, `src/core/Collection.js`, `src/core/models/` | Models, collections, REST conventions, response handling |
-| `testing.md` | `test/` | Custom test runner, test commands, regression test rules, Chrome UI testing |
-| `docs.md` | All files | Doc locations, when to update, quick lookup table |
+## Agents (`.claude/agents/`)
 
-Rules load automatically based on file globs — no need to invoke them.
+Spawned in parallel by `/build` after implementation:
 
-## Skills (.claude/skills/)
-
-| Skill | Purpose | Output |
-|-------|---------|--------|
-| `/bug` | Investigate and document bugs | `planning/issues/<slug>.md` |
-| `/request` | Explore and document feature requests | `planning/requests/<slug>.md` |
-| `/design` | Design implementation approach | Appends `## Plan` to file |
-| `/build` | Implement, test, commit, review | Appends `## Resolution`, moves to `planning/done/` |
-| `/memory` | Show Claude Code memory state | Read-only display |
-
-## Agents (.claude/agents/)
-
-Spawned automatically by `/build` after committing:
-
-| Agent | Purpose | Can Edit? |
+| Agent | Purpose | Can edit? |
 |-------|---------|-----------|
 | `test-runner` | Run full test suite, fix trivial errors | Yes (production code only) |
-| `docs-updater` | Update docs from git diff | Yes (docs only) |
-| `security-review` | Review diff for security concerns | No (read-only) |
+| `docs-updater` | Update docs from the diff | Yes (docs only) |
+| `security-review` | Review the diff for security concerns | No (read-only) |
 
-## Key Framework Conventions
+## Git
+
+Never create a branch, commit, or push without explicit permission. Work on the
+current branch. `scripts/close.sh` only `git mv`s the item file — it does not commit.
+
+## Key framework conventions
 
 - **Data**: `this.model` is the primary data object. JS: `this.model.get('field')`. Templates: `{{model.field}}`.
-- **Actions**: `data-action="kebab-case"` → `onActionKebabCase(event, element)`
-- **Containers**: `data-container="name"` → child view with `containerId: 'name'`
+- **Actions**: `data-action="kebab-case"` → `onActionKebabCase(event, element)`.
+- **Containers**: `data-container="name"` → child view with `containerId: 'name'`.
 - **Lifecycle**: Fetch in `onInit()` or action handlers. Per-visit logic in `onEnter()`. Never fetch in `onAfterRender()`.
 - **Children**: Use `addChild()` with `containerId`. Never manually `render()`/`mount()`.
 - **Templates**: `|bool` for booleans, `{{{triple}}}` for HTML, quoted formatter args.
 - **Imports**: `@core` and `@ext` inside framework source. Never import `web-mojo` internally.
 - **REST API**: Standard CRUD for all access. Admins filter with query params. No separate admin endpoints.
-- **Styling**: Bootstrap 5.3 + Bootstrap Icons.
-- **Tests**: Custom runner (`npm test`). Regression tests must fail before the fix.
+- **Styling**: Bootstrap 5.3 + Bootstrap Icons; light and dark themes from day one.
+- **Tests**: Custom runner (`npm test` / `node test/test-runner.js`). Regression tests must fail before the fix.
