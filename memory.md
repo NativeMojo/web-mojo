@@ -17,6 +17,7 @@
 - **Consumer agent file** — `docs/web-mojo/AGENT.md` is a drop-in for downstream projects and is intentionally separate from the internal `AGENT.md`.
 - **Contributor guide** — `DEV_GUIDE.md` is contributor-facing and not part of the default agent boot path.
 - **Chrome UI testing** — use `find` + `computer left_click` (real mouse clicks) for UI interaction testing. Never use `.click()` via `javascript_tool` — it bypasses the event pipeline and causes 404s on `<a>` tags. Use `javascript_tool` only for DOM assertions. Full protocol in `prompts/testing.md`.
+- **View modules: trailing `export default X;`, not inline** — the test harness's `SimpleModuleLoader` only transforms a trailing `export default Name;` (like `DetailView`/`JobDetailsView`); an inline `export default class X extends View {…}` loads as `undefined`, so unit tests can't `Object.create(Cls.prototype)`. Use the trailing form for any view you want behavioral (non-source-text) tests on. (ITEM-015)
 
 ## In-Progress Work
 - (empty)

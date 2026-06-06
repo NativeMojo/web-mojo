@@ -76,6 +76,14 @@ const CANONICAL_REG_FIELDS = [
     { name: 'dob',        label: 'Date of birth' },
     { name: 'password',   label: 'Password' }
 ];
+const CANONICAL_REG_NAMES = new Set(CANONICAL_REG_FIELDS.map(f => f.name));
+
+// Extra (non-canonical) registration fields — promo / ref / tracking / etc.,
+// declared per-group in `registration.extra_fields` as `[{name}]`. Names only:
+// django-mojo humanizes the label and defaults `required: false`. Must match the
+// server's identifier rule (register_schema._EXTRA_NAME_RE) so the editor never
+// POSTs a config that `validate_extra_fields_config` would reject.
+const EXTRA_FIELD_NAME_RE = /^[A-Za-z][A-Za-z0-9_]*$/;
 
 // register_schema.DEFAULT_FIELDS — used to seed the grid when neither the
 // group's own override nor the resolved config specify `registration.fields`.
@@ -96,7 +104,7 @@ const STATIC_DEFAULTS = {
         success_redirect: '/', custom_css: '', custom_css_url: ''
     },
     registration: {
-        enabled: true, fields: null, identity_field: '', min_age: null,
+        enabled: true, fields: null, extra_fields: [], identity_field: '', min_age: null,
         methods: ['password', 'google', 'apple'], passkey_prompt: 'off'
     },
     login: { methods: ['password', 'sms', 'passkey', 'magic', 'google', 'apple'] }
@@ -165,7 +173,7 @@ function sameSet(a, b) {
 
 // ── Section ────────────────────────────────────────────────────────────────
 
-export default class GroupAuthConfigSection extends View {
+class GroupAuthConfigSection extends View {
     constructor(options = {}) {
         super({
             className: 'group-auth-config-section',
@@ -269,7 +277,24 @@ export default class GroupAuthConfigSection extends View {
         const fieldsArr = Array.isArray(ownFields) ? ownFields
             : (Array.isArray(resFields) ? resFields : DEFAULT_REG_FIELDS);
         Object.assign(base, this._gridValuesFromArray(fieldsArr));
+
+        // Extra fields — own override, else resolved, else none. The tag input
+        // round-trips as a comma-separated string of names.
+        const ownExtra = getPath(own, 'registration.extra_fields');
+        const resExtra = getPath(resolved, 'registration.extra_fields');
+        const extraArr = Array.isArray(ownExtra) ? ownExtra
+            : (Array.isArray(resExtra) ? resExtra : []);
+        base.reg_extra_fields = this._extraNamesFromArray(extraArr);
         return base;
+    }
+
+    /** Comma-joined field names from a `registration.extra_fields` array. */
+    _extraNamesFromArray(arr) {
+        return (arr || [])
+            .map(e => (e && typeof e === 'object') ? e.name : e)
+            .filter(n => typeof n === 'string' && n.trim())
+            .map(n => n.trim())
+            .join(',');
     }
 
     /** Placeholder text (resolved values) for the placeholder-capable fields. */
@@ -471,6 +496,25 @@ export default class GroupAuthConfigSection extends View {
                 ]
             });
         }
+        fields.push(
+            {
+                type: 'header',
+                text: 'Extra fields',
+                level: 6,
+                class: 'mt-3'
+            },
+            {
+                type: 'html',
+                html: `<p class="text-secondary small mb-2">Extra signup fields to capture for this group (e.g. <code>promo</code>, <code>ref</code>, <code>tracking</code>). On the hosted register page each is captured silently from a matching URL query param or asked for as a text input; values reach the registration handler and are stored on <code>user.metadata.registration</code>. Names only — letters, digits, and underscores.</p>`
+            },
+            {
+                name: 'reg_extra_fields',
+                type: 'tags',
+                label: 'Extra field names',
+                value: this._baseline.reg_extra_fields || '',
+                columns: 12
+            }
+        );
         return fields;
     }
 
@@ -578,6 +622,13 @@ export default class GroupAuthConfigSection extends View {
             changed = true;
         }
 
+        const curExtra = this._assembleExtraFields(fd);
+        const baseExtra = this._assembleExtraFields(this._baseline);
+        if (JSON.stringify(curExtra) !== JSON.stringify(baseExtra)) {
+            setPath(payload, 'registration.extra_fields', curExtra);
+            changed = true;
+        }
+
         return changed ? payload : null;
     }
 
@@ -620,4 +671,29 @@ export default class GroupAuthConfigSection extends View {
         }
         return arr;
     }
+
+    /**
+     * Collapse the tag-input value into a canonical `registration.extra_fields`
+     * array of `[{name}]`. Accepts the comma-separated string the TagInput
+     * returns (or an already-split array). Trims, drops blanks, dedupes, and
+     * drops names that collide with a canonical field or fail the server's
+     * identifier rule — so the saved config always passes server validation.
+     */
+    _assembleExtraFields(fd) {
+        const raw = fd ? fd.reg_extra_fields : '';
+        const parts = Array.isArray(raw) ? raw : String(raw || '').split(',');
+        const seen = new Set();
+        const arr = [];
+        for (const part of parts) {
+            const name = String(part || '').trim();
+            if (!name || seen.has(name)) continue;
+            if (CANONICAL_REG_NAMES.has(name)) continue;
+            if (!EXTRA_FIELD_NAME_RE.test(name)) continue;
+            seen.add(name);
+            arr.push({ name });
+        }
+        return arr;
+    }
 }
+
+export default GroupAuthConfigSection;

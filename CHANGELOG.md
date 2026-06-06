@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Admin · GroupAuthConfigSection — edit `registration.extra_fields`
+
+- The Group **Auth Config → Registration** tab now has an **Extra fields** tag input that edits `registration.extra_fields` — per-group non-canonical signup fields (e.g. `promo`, `ref`, `tracking`). It serializes to `[{name}]` (django-mojo humanizes the label and defaults `required: false`), loads the group's own override else the inherited value, and is included in the Save diff only when changed (clearing an inherited list sends `[]`). Names are sanitized client-side to the server's identifier rule and canonical-field collisions are dropped, so the saved config always passes server validation. Tests in `test/unit/GroupAuthConfigSection.test.js`.
+- `GroupAuthConfigSection` now uses a trailing `export default` (matching `DetailView`/`JobDetailsView`) so the test harness's module loader can load the class for behavioral tests.
+
 ### Forms · Fixed double-escaped form field text (labels, values, placeholders, …)
 
 - **`FormBuilder` HTML-escaped field text twice.** Every render method pre-escaped `label` / `placeholder` / `help` / `tooltip` / `error` (and the field `value` / `fieldValue`) with `escapeHtml()` and *then* rendered them through Mustache `{{…}}` (which escapes again), so e.g. a label `Verification & Compliance` rendered as the literal `Verification &amp; Compliance`, and a value `Tom & Jerry` would submit as `Tom &amp; Jerry`. Most visible on app-registered permission toggles (labels often contain `&`), but it affected text/email/number inputs, select, textarea, json, color, range, file, image, radio, checkbox, and switch fields.
