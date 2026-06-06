@@ -7,6 +7,7 @@ This file is loaded automatically by Claude Code. Keep it under 150 lines.
 2. Read `memory.md`.
 3. Run `scripts/board.sh` — the current pipeline at a glance (inbox/confirmed/done).
 4. Pick your mode and invoke its skill — its instructions load automatically:
+   - Filing new work (bug/feature/chore) → `/request`  (writes an un-ID'd item to `planning/inbox/`)
    - Triaging / planning an item → `/scope`
    - Implementing a scoped item  → `/build`
    - (`/memory` shows project memory state.)

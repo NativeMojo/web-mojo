@@ -9,14 +9,15 @@ There is **one kind of work item** (a Markdown file with YAML frontmatter).
 Bugs, features, and chores differ only by `type`. The **folder is the stage**:
 
 ```
-planning/inbox/  →  planning/confirmed/  →  planning/done/
-   (unscoped)         (scoped, has id)         (closed)
+/request  →  planning/inbox/  →  planning/confirmed/  →  planning/done/
+ (capture)     (unscoped)         (scoped, has id)         (closed)
 ```
 
-Two skills drive it:
+The skills that drive it:
 
 | Command | Purpose |
 |---------|---------|
+| `/request <description>` | Chat front door. Files a feature/bug/chore: determines `type` itself, explores read-only (bug: best-effort confirms root cause), and writes an **un-ID'd** item to `planning/inbox/`. Does not allocate an id. |
 | `/scope <file-or-description>` | Triage + plan. Owns intake: allocates the `ITEM-###` id, stamps frontmatter, moves `inbox/ → confirmed/`. Gets your sign-off on a plan. |
 | `/build <confirmed-file>` | Implement a scoped item. Bugs get a failing regression test first. Runs tests, spawns review agents, closes `confirmed/ → done/`. |
 | `/memory` | Show Claude Code project memory (read-only). |
