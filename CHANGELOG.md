@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Tests/Admin · Unit suite back to green — 9 pre-existing failures fixed (ITEM-017)
+
+- **IncidentView suite (7 tests):** the test harness stubbed `TableView` but not `ListView`; IncidentView's tickets/related/events tables were migrated to `ListView`, so every test died with "ListView is not a constructor". Added a `ListViewStub` to `test/unit/IncidentView.test.js` (test wiring only — production code was correct).
+- **FileManagerTablePage:** removed the inline `itemViewClass:` (the model-statics convention forbids re-declaring it); the page now relies on `FileManager.VIEW_CLASS`, which `FileManagerView.js` registers — kept as a side-effect import so registration still happens.
+- **MetricsPermissionsTablePage:** restored `showAdd: false` — `showAdd: true` had been re-introduced with no `formCreate`/`ADD_FORM` wired (a regression of shipped Bug #3; the adjacent comment still said "Add flow not wired"). Wiring a real Add flow remains a separate feature decision.
+
+### Docs · forms/AutoSave.md written (ITEM-018)
+
+- `docs/web-mojo/forms/FormView.md` linked to `AutoSave.md`, which never existed. The page now documents the real `autosaveModelField` flow: 300 ms batching into one `model.save()`, inline saving/saved/error field indicators, failure revert via `revertFields`, the non-disruptive `skipRender` contract (ITEM-016) with its design consequences, dot-notation fields, alternatives (`allowModelChange`, submit flow), and gotchas. Indexed in `forms/README.md` and the master docs README.
+
+### Core · Inline FormView autosave no longer rerenders parent views (ITEM-016)
+
+- **Bug:** with `autosaveModelField: true`, saving one field made every other view sharing the model auto-rerender (`View._onModelChange` → `render()` on the model's `change` event). In admin **UserView → Permissions** this rebuilt the section and snapped the permissions tabset back to its first tab on every toggle; any FormView-under-DetailView composition was affected (e.g. MemberView).
+- **Fix:** `Model.set()` now forwards its `options` object to `change` listeners (`emit('change', model, options)`), `Model.save()` forwards its options into the post-save `set()`, and `View._onModelChange` skips the automatic render when `options.skipRender` is true. FormView's autosave batch path saves with `{ skipRender: true }` — the form already updates its own DOM in place. `DataView`, which wires its own `change` listener instead of going through `View.setModel`, honors the flag too. Explicit submits (`handleSubmit()`/`saveModel()`) keep the normal rerender behavior, and `change:<field>` events still fire for views that track specific fields. Backward compatible: the extra listener argument is ignored by existing code, and no behavior changes unless a caller opts in.
+- Regression tests in `test/unit/FormView.autosaveSkipRender.test.js` (option forwarding, render suppression, and the autosave-doesn't-rerender-shared-model-views scenario).
+
 ### Admin · GroupAuthConfigSection — edit `registration.extra_fields`
 
 - The Group **Auth Config → Registration** tab now has an **Extra fields** tag input that edits `registration.extra_fields` — per-group non-canonical signup fields (e.g. `promo`, `ref`, `tracking`). It serializes to `[{name}]` (django-mojo humanizes the label and defaults `required: false`), loads the group's own override else the inherited value, and is included in the Save diff only when changed (clearing an inherited list sends `[]`). Names are sanitized client-side to the server's identifier rule and canonical-field collisions are dropped, so the saved config always passes server validation. Tests in `test/unit/GroupAuthConfigSection.test.js`.

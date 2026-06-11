@@ -8,7 +8,9 @@
 
 import TablePage from '@core/pages/TablePage.js';
 import { FileManagerList } from '@core/models/Files.js';
-import FileManagerView from './FileManagerView.js';
+// Side-effect import: FileManagerView.js registers FileManager.VIEW_CLASS,
+// which ListView resolves for clickAction: 'view' (no inline itemViewClass).
+import './FileManagerView.js';
 
 // FileManager.ADD_FORM / EDIT_FORM are registered on the model (Files.js).
 // FileManager.VIEW_CLASS is registered on the model (FileManagerView.js).
@@ -73,7 +75,6 @@ class FileManagerTablePage extends TablePage {
 
             // Row click → DetailView (owns the header + per-record context menu)
             clickAction: 'view',
-            itemViewClass: FileManagerView,
             viewDialogOptions: {
                 header: false,
                 size: 'xl',

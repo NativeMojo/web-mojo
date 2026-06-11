@@ -101,7 +101,10 @@ export class View {
       return this;
   }
 
-  _onModelChange() {
+  _onModelChange(model, options) {
+    // `skipRender` set()/save() option suppresses the automatic rerender —
+    // used by inline-autosave forms that already update their DOM in place.
+    if (options && options.skipRender) return;
     if (this.isMounted()) {
         this.render();
     }

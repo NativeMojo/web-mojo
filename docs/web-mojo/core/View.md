@@ -1446,8 +1446,15 @@ await product.save();
 
 **To prevent re-rendering:**
 ```javascript
-// Use silent option
+// Use silent option — no 'change' event fires at all
 product.set('name', 'Updated', { silent: true });
+
+// Use skipRender option — 'change' event fires (field listeners still run),
+// but the view skips its automatic rerender. Used by FormView autosave so
+// saving one field doesn't rebuild parent views sharing the model.
+product.set('name', 'Updated', { skipRender: true });
+// model.save() forwards the same option through to the post-save set():
+await product.save(changes, { skipRender: true });
 
 // Or temporarily unbind
 view.model.off('change', view._onModelChange, view);
@@ -1494,9 +1501,11 @@ async onInit() {
       this.handleStatusChange(newStatus);
     });
     
-    // Listen to any change
-    this.model.on('change', () => {
+    // Listen to any change — listeners receive (model, options)
+    this.model.on('change', (model, options) => {
       console.log('Model changed');
+      // options.skipRender is true when the change came from an autosave
+      // batch; inspect it if you need to conditionally react
     });
   }
 }

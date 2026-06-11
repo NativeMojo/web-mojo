@@ -298,7 +298,14 @@ For image fields, `Dialog.updateModelImage()` wraps this entire flow in one call
    - File validation and accepted types
    - Base64 inline fallback for tiny files
 
-8. **[FormBuilder.md](./FormBuilder.md)** - FormBuilder API
+8. **[AutoSave.md](./AutoSave.md)** - Per-Field Auto-Save
+   - `autosaveModelField: true` settings-style forms
+   - 300 ms batching into a single `model.save()`
+   - Inline saving/saved/error field indicators
+   - Failure revert (`revertFields`) and toasts
+   - Non-disruptive saves (`skipRender` — no parent rerenders)
+
+9. **[FormBuilder.md](./FormBuilder.md)** - FormBuilder API
    - HTML generation engine
    - Constructor options
    - Methods (buildFormHTML, buildFieldHTML, etc.)
@@ -321,6 +328,7 @@ For image fields, `Dialog.updateModelImage()` wraps this entire flow in one call
 | **Features** | | |
 | [Validation.md](./Validation.md) | Complete validation system guide | ~500 |
 | [FileHandling.md](./FileHandling.md) | File upload modes & patterns | ~450 |
+| [AutoSave.md](./AutoSave.md) | Per-field auto-save (batching, status, skipRender) | ~200 |
 | [MultiStepWizard.md](./MultiStepWizard.md) | Multi-step form wizard pattern | ~490 |
 | [SearchFilterForms.md](./SearchFilterForms.md) | Live search/filter form pattern (Collection / TableView / ListView) | ~500 |
 | **Field Types** | | |
@@ -335,7 +343,7 @@ For image fields, `Dialog.updateModelImage()` wraps this entire flow in one call
 | [inputs/CollectionSelect.md](./inputs/CollectionSelect.md) | Select from Collection/API | ~193 |
 | [inputs/CollectionMultiSelect.md](./inputs/CollectionMultiSelect.md) | Multi-select from API | ~212 |
 | [inputs/ImageField.md](./inputs/ImageField.md) | Image upload with preview | ~351 |
-| **Total** | **18 documents** | **~8,000+ lines** |
+| **Total** | **19 documents** | **~8,200+ lines** |
 
 ### 🎯 Find What You Need
 
@@ -347,6 +355,7 @@ For image fields, `Dialog.updateModelImage()` wraps this entire flow in one call
 | Find the right field type | [FieldTypes.md](./FieldTypes.md) |
 | Learn FormView API | [FormView.md](./FormView.md) |
 | Validate my form | [Validation.md](./Validation.md) |
+| Auto-save fields as they change | [AutoSave.md](./AutoSave.md) |
 | Build a multi-step wizard | [MultiStepWizard.md](./MultiStepWizard.md) |
 | Upload files | [FileHandling.md](./FileHandling.md) |
 | Use tags/chips | [inputs/TagInput.md](./inputs/TagInput.md) |

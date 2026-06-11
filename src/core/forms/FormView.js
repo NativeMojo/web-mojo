@@ -944,9 +944,11 @@ class FormView extends View {
       // Mark as form-driven change to prevent sync back
       this._isFormDrivenChange = true;
 
-      // Save all changes in a single request
+      // Save all changes in a single request. `skipRender` keeps other
+      // views sharing this model from auto-rerendering (the form updates
+      // its own DOM in place; a parent rerender would reset tab state).
       if (typeof this.model.save === 'function') {
-        const resp = await this.model.save(changes);
+        const resp = await this.model.save(changes, { skipRender: true });
         
         // Check if save was successful
         if (!resp || !resp.success || (resp.data && !resp.data.status)) {
@@ -969,7 +971,7 @@ class FormView extends View {
       } else {
         // Just update model attributes if no save method
         Object.entries(changes).forEach(([key, val]) => {
-          this.model.set(key, val);
+          this.model.set(key, val, { skipRender: true });
         });
       }
 

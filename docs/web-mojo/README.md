@@ -95,6 +95,7 @@ Build forms declaratively with field definitions, validation, and model binding:
 - **[FieldTypes](./forms/FieldTypes.md)** - Master quick reference for all field types
 - **[Validation](./forms/Validation.md)** - HTML5, FormView, and server-side validation
 - **[FileHandling](./forms/FileHandling.md)** - File upload modes and patterns
+- **[AutoSave](./forms/AutoSave.md)** - Per-field auto-save (batching, status indicators, non-disruptive saves)
 - **[MultiStepWizard](./forms/MultiStepWizard.md)** - Multi-step wizard pattern (Page + FormView per step)
 - **[SearchFilterForms](./forms/SearchFilterForms.md)** - Live search/filter form pattern driving a Collection, TableView, ListView, or array
 - **[BestPractices](./forms/BestPractices.md)** - Patterns, pitfalls, and production checklist

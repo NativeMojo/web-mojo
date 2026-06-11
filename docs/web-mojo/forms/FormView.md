@@ -210,6 +210,14 @@ const form = new FormView({
 // Each switch toggle automatically saves to server
 ```
 
+Autosave is non-disruptive by design: the batch save passes
+`{ skipRender: true }` to `model.save()`, so other views sharing the model
+do not auto-rerender (the form already updates its own DOM in place).
+This keeps surrounding UI state — active tabs, scroll position — intact
+when a single field saves. Views that need to react to a specific field
+can listen to `model.on('change:fieldName', ...)`. Explicit submits
+(`handleSubmit()` / `saveModel()`) keep the normal rerender behavior.
+
 **See [AutoSave.md](./AutoSave.md) for details.**
 
 #### `containerId` (String)

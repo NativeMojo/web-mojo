@@ -1131,7 +1131,10 @@ class DataView extends View {
     super.onInit();
 
     if (this.model && typeof this.model.on === 'function') {
-      this.model.on('change', () => {
+      this.model.on('change', (model, options) => {
+        // Honor the skipRender set()/save() option (inline-autosave forms) —
+        // same contract as View._onModelChange.
+        if (options && options.skipRender) return;
         if (this.isMounted()) this.render();
       });
     }

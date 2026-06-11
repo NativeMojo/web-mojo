@@ -143,6 +143,18 @@ module.exports = async function (testContext) {
     }
     global.TableView = TableViewStub;
 
+    // IncidentView builds its Tickets / Related / Events tables with
+    // ListView directly (post TableView→ListView migration) — same stub
+    // shape. Later test files that loadModule('ListView') restore the real
+    // class on the global.
+    class ListViewStub extends TableViewStub {
+        constructor(options = {}) {
+            super(options);
+            this.element.className = 'list-view-component';
+        }
+    }
+    global.ListView = ListViewStub;
+
     const IncidentView = loadModule('IncidentView');
 
     // ── Fixture model ────────────────────────────────────────

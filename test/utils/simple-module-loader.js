@@ -575,6 +575,10 @@ class SimpleModuleLoader {
             { test: /\/DateTimePicker(\.js)?$/, name: 'DateTimePicker' },
             { test: /\/TableView(\.js)?$/, name: 'TableView' },
             { test: /FormPlugins(\.js)?$/, name: 'FormPlugins' },
+            // FormView's module body calls applyFileDropMixin(FormView) at
+            // load time — tests must stub `global.FileDropMixin = (cls) => cls`
+            // before loading FormView via loadModuleFromFile.
+            { test: /FileDropMixin(\.js)?$/, name: 'FileDropMixin' },
             { test: /\/TabView(\.js)?$/, name: 'TabView' },
             { test: /\/SideNavView(\.js)?$/, name: 'SideNavView' },
             { test: /\/ContextMenu(\.js)?$/, name: 'ContextMenu' },

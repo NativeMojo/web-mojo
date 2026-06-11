@@ -116,9 +116,11 @@ class Model {
       }
     }
 
-    // Trigger change event if data changed and not silent
+    // Trigger change event if data changed and not silent.
+    // Options are forwarded so listeners can react to flags like
+    // `skipRender` (View._onModelChange skips its automatic render).
     if (hasChanged && !options.silent) {
-      this.emit('change', this);
+      this.emit('change', this, options);
 
       // Trigger specific attribute change events
       if (typeof key === 'string') {
@@ -391,9 +393,10 @@ class Model {
 
        if (response.success) {
          if (response.data.status) {
-           // Update model on success
+           // Update model on success — forward save options so flags like
+           // `skipRender` survive into the change event
            this.originalAttributes = { ...this.attributes };
-           this.set(response.data.data);
+           this.set(response.data.data, null, options);
            this.errors = {};
          } else {
            this.errors = response.data;

@@ -34,7 +34,7 @@ class MetricsPermissionsTablePage extends TablePage {
             showRefresh: true,
             // Add flow not wired (no MetricsForms.create exists today). Existing rows
             // are managed via edit/delete; new rows come from the metrics ingest path.
-            showAdd: true,
+            showAdd: false,
             showExport: false
         });
     }

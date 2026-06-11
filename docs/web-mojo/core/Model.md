@@ -392,15 +392,22 @@ user.set('metadata.profile.title', 'Senior Engineer');
 
 // Silent set (no events)
 user.set('name', 'Charlie', { silent: true });
+
+// Change events fire, but views skip their automatic rerender
+user.set('name', 'Dana', { skipRender: true });
 ```
 
 **Parameters:**
 - `key` (String | Object) - Attribute key or object of key-value pairs
 - `value` (Any) - Attribute value (if key is string)
-- `options` (Object) - Options: `{ silent: true }` to suppress events
+- `options` (Object) - Options: `{ silent: true }` to suppress events;
+  `{ skipRender: true }` to emit events but suppress the automatic
+  `View` rerender (listeners receive the options object and can react
+  to other flags the same way)
 
 **Emits:**
-- `'change'` event when data changes
+- `'change'` event when data changes — listeners receive `(model, options)`,
+  so flags like `skipRender` are visible to them
 - `'change:fieldName'` event for specific field
 
 ---
@@ -526,6 +533,10 @@ await user.save(null, {
 - `data` (Object) - Optional data to merge before saving
 - `options` (Object)
   - `params` (Object) - Query parameters
+  - `skipRender` (Boolean) - Forwarded into the post-save `set()`, so the
+    resulting `change` event does not trigger the automatic `View` rerender.
+    Used by FormView's inline autosave so saving one field doesn't rebuild
+    parent views (which would reset tab state, scroll position, etc.)
 
 **Returns:** Promise resolving to REST response object
 
@@ -535,6 +546,8 @@ await user.save(null, {
 - Updates `model.originalAttributes` on success
 - Sets `model.errors` on failure
 - Sets `model.loading = true` during save
+- On success, server data is applied via `set(data, null, options)` — the
+  save options ride along into the `change` event
 
 ---
 
