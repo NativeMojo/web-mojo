@@ -398,9 +398,10 @@ class ModalView extends View {
     }
 
     async buildBody() {
-        // `noBodyPadding` paints body content edge-to-edge. The .modal-body-flush
-        // class zeroes padding and rounds the bottom corners (when last child).
-        const bodyClass = `modal-body ${this.noBodyPadding ? 'modal-body-flush' : ''} ${this.bodyClass}`.replace(/\s+/g, ' ').trim();
+        // `noBodyPadding` paints body content edge-to-edge. Use Bootstrap's p-0
+        // utility (which has !important) to override .modal-body padding, and
+        // .modal-body-flush for rounded bottom corners when last child.
+        const bodyClass = this.noBodyPadding ? `modal-body p-0 modal-body-flush ${this.bodyClass}` : `modal-body ${this.bodyClass}`;
 
         if (this.bodyView) {
             this.bodyView.replaceById = true;
