@@ -108,6 +108,34 @@ module.exports = async function (testContext) {
         });
     });
 
+    describe('admin permission registration (ITEM-019)', () => {
+        it('`admin` is a top-level category permission, not a granular tab entry', () => {
+            const granularNames = User.GRANULAR_PERMISSION_TABS
+                .flatMap(t => t.permissions)
+                .map(p => p.name);
+            expect(granularNames).not.toContain('admin');
+
+            const adminPerm = User.CATEGORY_PERMISSIONS.find(p => p.name === 'admin');
+            expect(adminPerm).toBeDefined();
+            expect(adminPerm.label).toBe('System Admin');
+        });
+
+        it('the System category tab surfaces the admin switch; Platform tab no longer carries it', () => {
+            const tabset = User.SYSTEM_PERMISSION_FIELDS[0];
+            const systemTab = tabset.tabs.find(t => t.label === 'System');
+            expect(systemTab.fields.map(f => f.name)).toContain('permissions.admin');
+
+            const platformTab = tabset.tabs.find(t => t.label === 'Platform');
+            expect(platformTab.fields.map(f => f.name)).not.toContain('permissions.admin');
+        });
+
+        it('no permission name registers twice after rebuildPermissions()', () => {
+            User.rebuildPermissions();
+            const names = User.PERMISSIONS.map(p => p.name);
+            expect(new Set(names).size).toBe(names.length);
+        });
+    });
+
     describe('User.registerCategoryMap', () => {
         it('extends GRANULAR_TO_CATEGORY so app categories satisfy app granular gates', () => {
             // Before registration: app granular has no parent category.

@@ -149,5 +149,17 @@ module.exports = async function (testContext) {
             const m = new Member({ permissions: { admin: true } });
             expect(m.hasPermission('sys.manage_groups')).toBe(false);
         });
+
+        it('`admin` is grantable from the UI — registered in BASE_PERMISSIONS (ITEM-019)', () => {
+            const adminPerm = Member.BASE_PERMISSIONS.find(p => p.name === 'admin');
+            expect(adminPerm).toBeDefined();
+            expect(adminPerm.label).toBe('Group Admin');
+            expect(Member.PERMISSION_FIELDS.map(f => f.name)).toContain('permissions.admin');
+        });
+
+        it('manage_group is labeled "Manage Group", not "Group Admin" (ITEM-019)', () => {
+            const mg = Member.BASE_PERMISSIONS.find(p => p.name === 'manage_group');
+            expect(mg.label).toBe('Manage Group');
+        });
     });
 };

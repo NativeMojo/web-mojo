@@ -74,6 +74,7 @@ class UserList extends Collection {
 
 // ── Category Permissions (broad domain-level access) ──────────────
 User.CATEGORY_PERMISSIONS = [
+    { name: "admin", label: "System Admin", tooltip: "Full access to everything — permission equivalent of superuser" },
     { name: "view_admin", label: "Admin Panel", tooltip: "Access the admin panel, Mojo, and system tools" },
     { name: "security", label: "Security", tooltip: "Incidents, events, rules, tickets, firewall, bouncer, GeoIP, system logs" },
     { name: "users", label: "Users", tooltip: "User records, passkeys, TOTP, API keys, OAuth, devices, locations" },
@@ -123,7 +124,6 @@ User.GRANULAR_PERMISSION_TABS = [
         permissions: [
             { name: "view_security", label: "View Security" },
             { name: "manage_security", label: "Manage Security" },
-            { name: "admin", label: "Log Admin" },
             { name: "view_logs", label: "View Logs" },
             { name: "manage_logs", label: "Manage Logs" },
             { name: "view_jobs", label: "View Jobs" },

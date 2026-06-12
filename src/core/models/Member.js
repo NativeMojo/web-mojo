@@ -80,7 +80,8 @@ const MemberForms = {
 
 // ── Source: framework-defined member permissions ──────────────────
 Member.BASE_PERMISSIONS = [
-    { name: "manage_group", label: "Group Admin" },
+    { name: "admin", label: "Group Admin", tooltip: "Full access within this group" },
+    { name: "manage_group", label: "Manage Group" },
     { name: "view_metrics", label: "View Metrics" },
     { name: "view_logs", label: "View Logs" },
     { name: "view_tickets", label: "View Tickets" },

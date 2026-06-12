@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Core · `admin` wildcard surfaced correctly in the permission UIs (ITEM-019)
+
+- **User: "System Admin" is now a top-level category permission.** The `admin` permission — the system-wide full-access grant `User.hasPermission()` treats as the permission equivalent of `is_superuser` — was registered as a *granular* Platform-tab permission labeled **"Log Admin"**, so the most powerful permission in the system was buried among the log toggles. It now leads `User.CATEGORY_PERMISSIONS` as **System Admin** (System tab of "Sys Perms" / the permission edit modal) and is gone from the Platform tab. No enforcement change; it remains a name-checked wildcard with no `CATEGORY_GRANULAR_MAP` entry.
+- **Member: group `admin` is now grantable from the UI.** `Member.hasPermission()` has always enforced a group-scoped `admin` wildcard (full access within the group, never `sys.*`), but `Member.BASE_PERMISSIONS` had no switch for it — and `manage_group` was mislabeled **"Group Admin"**. `admin` ("Group Admin") now leads `BASE_PERMISSIONS`, and `manage_group` is relabeled **"Manage Group"**. Permission *names* stored on records are unchanged; only labels and UI placement moved.
+- Regression tests in `test/unit/User.test.js` (admin in categories, absent from granular tabs, no duplicate registrations) and `test/unit/Member.test.js` (admin in `BASE_PERMISSIONS`, `manage_group` label). Docs: `models/BuiltinModels.md` permission sections rewritten to match.
+
 ### Tests/Admin · Unit suite back to green — 9 pre-existing failures fixed (ITEM-017)
 
 - **IncidentView suite (7 tests):** the test harness stubbed `TableView` but not `ListView`; IncidentView's tickets/related/events tables were migrated to `ListView`, so every test died with "ListView is not a constructor". Added a `ListViewStub` to `test/unit/IncidentView.test.js` (test wiring only — production code was correct).

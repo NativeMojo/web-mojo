@@ -157,38 +157,36 @@ if (user.get('is_superuser')) {
   user.hasPermission('anything'); // always true
 }
 
+// The `admin` permission is a system-wide full-access grant — the
+// permission-driven equivalent of is_superuser. A user holding it
+// passes every gate, sys.* and granular alike.
+new User({ permissions: { admin: true } }).hasPermission('anything'); // true
+
 // Shorthand
 user.hasPerm('view_logs'); // same as hasPermission()
 ```
 
 ### Available Permissions
 
+The registry is two-tier: **category** permissions (broad domain access, the "System" tab) in `User.CATEGORY_PERMISSIONS`, and **granular** view/manage pairs grouped into domain tabs (Account / Communication / Platform) in `User.GRANULAR_PERMISSION_TABS`. The flat union of everything registered (framework + app) lives in the `User.PERMISSIONS` cache.
+
 ```js
-User.PERMISSIONS
+User.CATEGORY_PERMISSIONS
 // [
-//   { name: 'manage_users',   label: 'Manage Users' },
-//   { name: 'view_users',     label: 'View Users' },
-//   { name: 'view_groups',    label: 'View Groups' },
-//   { name: 'manage_groups',  label: 'Manage Groups' },
-//   { name: 'view_metrics',   label: 'View System Metrics' },
-//   { name: 'manage_metrics', label: 'Manage System Metrics' },
-//   { name: 'view_logs',      label: 'View Logs' },
-//   { name: 'view_incidents', label: 'View Incidents' },
-//   { name: 'manage_incidents','label': 'Manage Incidents' },
-//   { name: 'view_tickets',   label: 'View Tickets' },
-//   { name: 'manage_tickets', label: 'Manage Tickets' },
-//   { name: 'view_admin',     label: 'View Admin' },
-//   { name: 'view_jobs',      label: 'View Jobs' },
-//   { name: 'manage_jobs',    label: 'Manage Jobs' },
-//   { name: 'view_global',    label: 'View Global' },
-//   { name: 'manage_notifications', label: 'Manage Notifications' },
-//   { name: 'manage_files',   label: 'Manage Files' },
-//   { name: 'force_single_session', label: 'Force Single Session' },
-//   { name: 'file_vault',     label: 'Access File Vault' },
-//   { name: 'manage_aws',     label: 'Manage AWS' },
-//   { name: 'manage_docit',   label: 'Manage DocIt' }
+//   { name: 'admin',      label: 'System Admin' },   // full access — superuser equivalent
+//   { name: 'view_admin', label: 'Admin Panel' },
+//   { name: 'security',   label: 'Security' },
+//   { name: 'users',      label: 'Users' },
+//   { name: 'groups',     label: 'Groups' },
+//   { name: 'comms',      label: 'Communications' },
+//   { name: 'jobs',       label: 'Jobs' },
+//   { name: 'metrics',    label: 'Metrics' },
+//   { name: 'files',      label: 'Files' },
+//   { name: 'assistant',  label: 'Mojo' }
 // ]
 ```
+
+`admin` is a top-level switch but **not** a category with granular children — it has no `CATEGORY_GRANULAR_MAP` entry; `hasPermission()` checks it by name as the full-access wildcard.
 
 ### Category fallback
 
@@ -475,6 +473,13 @@ user.member.hasPermission('manage_billing');
 ```
 
 `Member.hasPermission` does *literal* name matching only — there is no category fallback. If you want category→granular fallback for member permissions, check it explicitly in your code or layer it on top.
+
+One exception: the group-scoped `admin` permission (the "Group Admin" switch in `Member.BASE_PERMISSIONS`) is a full-access grant **within that group** — it satisfies every gate except `sys.*` ones, which are never group-resolved. It is distinct from the system-level `admin` on the User record and from `manage_group` ("Manage Group"), which is just a literal group-management permission.
+
+```js
+new Member({ permissions: { admin: true } }).hasPermission('view_metrics');     // true
+new Member({ permissions: { admin: true } }).hasPermission('sys.manage_groups'); // false
+```
 
 ### Extending the Member permission registry
 
