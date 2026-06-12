@@ -977,6 +977,23 @@ const resp = await app.rest.GET('/api/stats');
 
 > **Best practice:** Prefer `this.getApp()` over `window.MOJO.app` directly — it handles all global reference variations and caches the result.
 
+### checkPermissions(permissions)
+
+Permission gate used by `permissions` keys on toolbar buttons and row
+context-menu items (any view code can call it). Returns `true` when no
+permissions are given; otherwise delegates to
+`this.getApp()?.activeUser?.hasPermission(permissions)` (any-of for arrays)
+and is **fail-closed** — it returns `false` when no active user can be
+resolved or the user lacks the permission.
+
+```javascript
+if (this.checkPermissions(['manage_users', 'admin'])) {
+  // render the gated affordance
+}
+```
+
+Subclasses can override it to integrate a custom ACL.
+
 ---
 
 ## Tooltip Methods

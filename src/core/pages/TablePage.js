@@ -51,7 +51,7 @@ class TablePage extends Page {
       // Core table properties
       columns: options.columns || [],
       actions: options.actions || null,
-      contextMenu: options.contextMenu || null,
+      contextMenu: options.contextMenu || options.rowContextMenu || null,
       batchActions: options.batchActions || null,
       batchBarLocation: options.batchBarLocation || 'top',
       clickAction: options.clickAction || 'view',

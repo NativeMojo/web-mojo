@@ -2432,13 +2432,9 @@ class ListView extends View {
 
   // -------- Hooks called from action handlers (subclassable) --------
 
-  /**
-   * Permission check used by `toolbarButtons[].permissions`. Default: allow.
-   * TableView and apps can override to integrate with their own ACL.
-   */
-  checkPermissions(_permissions) {
-    return true;
-  }
+  // `toolbarButtons[].permissions` gating uses View#checkPermissions
+  // (fail-closed against app.activeUser). Subclasses/apps can still
+  // override to integrate their own ACL.
 
   /** Light HTML-escape for inline template strings. */
   escapeHtml(value) {

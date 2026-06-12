@@ -259,7 +259,7 @@ await table.mount('#users-table');
 | `collection` | `Collection` / `Class` / `Array` | `null` | Data source (inherited from ListView) |
 | `columns` | `Array<object>` | `[]` | Column definitions (see [Column Configuration](#column-configuration)) |
 | `actions` | `Array<string>` | `null` | Row actions: `'view'`, `'edit'`, `'delete'`, or custom strings |
-| `contextMenu` | `Array<object>` | `null` | Context menu items for right-click on rows |
+| `contextMenu` | `Array<object>` | `null` | Per-row dropdown menu items (see [Context Menus](#context-menus)); `rowContextMenu` is an accepted alias |
 | `clickAction` | `string` | `'view'` | What happens when a row is clicked: `'view'` or `'edit'` |
 
 ### Feature Toggles
@@ -599,7 +599,9 @@ You can also use custom action strings. They will be emitted as events.
 
 ## Context Menus
 
-Add a right-click context menu to rows:
+Add a per-row dropdown (kebab) menu. `rowContextMenu` is an accepted alias
+for `contextMenu` (explicit `contextMenu` wins if both are passed); TablePage
+forwards both.
 
 ```javascript
 const table = new TableView({
@@ -609,10 +611,41 @@ const table = new TableView({
     { action: 'view', label: 'View Details', icon: 'bi bi-eye' },
     { action: 'edit', label: 'Edit', icon: 'bi bi-pencil' },
     { divider: true },
-    { action: 'delete', label: 'Delete', icon: 'bi bi-trash', variant: 'danger' }
+    { action: 'delete', label: 'Delete', icon: 'bi bi-trash', danger: true }
   ]
 });
 ```
+
+### Context Menu Item Options
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `label` | `string` | — | Item label text |
+| `icon` | `string` | `''` | Bootstrap icon class |
+| `action` | `string \| function` | — | Framework action string (`data-action` dispatch, e.g. `'edit'` → row events), **or** a callback invoked with `(model, app)` |
+| `permissions` | `string \| string[]` | `null` | Permission gate via `checkPermissions()` — any-of for arrays, **fail-closed** (hidden when no active user or the user lacks them) |
+| `visible` | `function` | `null` | Per-row predicate `visible(model)` — return falsy to hide the item for that row. A throwing predicate hides the item (with a console warning) rather than breaking the row |
+| `divider` / `separator` | `boolean` | `false` | Renders a divider line |
+| `danger` | `boolean` | `false` | Renders the item in the danger (red) style; `action: 'delete'` is styled danger automatically |
+| `disabled` | `boolean` | `false` | Renders the item disabled |
+
+```javascript
+rowContextMenu: [
+  {
+    label: 'Approve Closure',
+    icon: 'bi bi-person-check',
+    permissions: ['manage_privacy', 'admin', 'sys.manage_groups'],
+    visible: (model) => model.get('status') === 'pending',
+    action: async (model, app) => {
+      await model.save({ status: 'approved' });
+      app.toast.success('Closure approved');
+    }
+  }
+]
+```
+
+If every actionable item is filtered out for a row (by `permissions` /
+`visible`), the kebab toggle is not rendered for that row at all.
 
 ---
 
@@ -823,7 +856,7 @@ const table = new TableView({
 | `handler` | `function` | `null` | Click handler (called with `this` as TableView) |
 | `action` | `string` | `''` | If no handler, sets `data-action` for event delegation |
 | `className` | `string` | `''` | Additional CSS classes |
-| `permissions` | `any` | `null` | Permission check (if provided, `checkPermissions()` is called) |
+| `permissions` | `string \| string[]` | `null` | Permission gate via `checkPermissions()` — delegates to `app.activeUser.hasPermission()` (any-of for arrays) and is **fail-closed**: the button is hidden when there is no active user or the user lacks the permission |
 
 ---
 

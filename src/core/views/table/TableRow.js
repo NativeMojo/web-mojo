@@ -255,6 +255,9 @@ class TableRow extends ListViewItem {
   buildContextMenuTemplate() {
     if (!this.contextMenu || this.contextMenu.length === 0) return '';
 
+    const items = this.buildContextMenuItems();
+    if (!items) return ''; // every actionable item filtered out — no toggle
+
     return `
       <td class="text-end" style="width: 1px;">
         <div class="dropdown">
@@ -266,7 +269,7 @@ class TableRow extends ListViewItem {
             <i class="bi bi-three-dots-vertical"></i>
           </button>
           <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-            ${this.buildContextMenuItems()}
+            ${items}
           </ul>
         </div>
       </td>
@@ -274,10 +277,44 @@ class TableRow extends ListViewItem {
   }
 
   /**
-   * Build context menu items
+   * Should a context-menu item render for this row? Items can carry
+   * `permissions` (any-of, fail-closed via View#checkPermissions) and/or a
+   * per-row `visible(model)` predicate. A throwing predicate hides the item
+   * rather than breaking the row.
+   */
+  isMenuItemVisible(menuItem) {
+    if (menuItem.permissions && !this.checkPermissions(menuItem.permissions)) {
+      return false;
+    }
+    if (typeof menuItem.visible === 'function') {
+      try {
+        if (!menuItem.visible(this.model)) return false;
+      } catch (error) {
+        console.warn(`TableRow contextMenu visible() threw for "${menuItem.label || menuItem.action}"; hiding item:`, error);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Build context menu items. `action` may be a framework action string
+   * (dispatched as `data-action` exactly as before) or a callback invoked
+   * with `(model, app)` — callbacks dispatch through `row-context-menu-item`
+   * with the item's original index, mirroring ListView's custom toolbar
+   * buttons (`data-button-index`).
    */
   buildContextMenuItems() {
-    return this.contextMenu.map(menuItem => {
+    const visibleItems = this.contextMenu
+      .map((menuItem, index) => ({ menuItem, index }))
+      .filter(({ menuItem }) => this.isMenuItemVisible(menuItem));
+
+    // Dividers alone don't justify a menu.
+    if (!visibleItems.some(({ menuItem }) => !(menuItem.separator || menuItem.divider))) {
+      return '';
+    }
+
+    return visibleItems.map(({ menuItem, index }) => {
       if (menuItem.separator||menuItem.divider) {
         return '<li><hr class="dropdown-divider"></li>';
       }
@@ -290,18 +327,38 @@ class TableRow extends ListViewItem {
         itemClass += ' disabled';
       }
 
+      // Escape dev-supplied fields that flow into HTML/attributes — same
+      // defense-in-depth as ListView's toolbar buttons.
+      const actionAttrs = typeof menuItem.action === 'function'
+        ? `data-action="row-context-menu-item" data-menu-index="${index}"`
+        : `data-action="${this.escapeHtml(menuItem.action)}"`;
+
       return `
         <li>
           <a class="${itemClass}" href="#"
              data-id="{{model.id}}"
-             data-action="${menuItem.action}"
+             ${actionAttrs}
              ${menuItem.disabled ? 'aria-disabled="true" tabindex="-1"' : ''}>
-            ${menuItem.icon ? `<i class="${menuItem.icon} me-2"></i>` : ''}
-            ${menuItem.label}
+            ${menuItem.icon ? `<i class="${this.escapeHtml(menuItem.icon)} me-2"></i>` : ''}
+            ${this.escapeHtml(menuItem.label)}
           </a>
         </li>
       `;
     }).join('');
+  }
+
+  /**
+   * Dispatch a callback context-menu item: look the item up by its original
+   * index and invoke `action(model, app)`.
+   */
+  async onActionRowContextMenuItem(event, element) {
+    event.stopPropagation();
+
+    const index = parseInt(element.getAttribute('data-menu-index'), 10);
+    const menuItem = this.contextMenu && this.contextMenu[index];
+    if (!menuItem || typeof menuItem.action !== 'function') return;
+
+    await menuItem.action(this.model, this.getApp());
   }
 
   /**
@@ -778,13 +835,19 @@ class TableRow extends ListViewItem {
   }
 
   /**
-   * Escape HTML for safe display
+   * Escape HTML for safe display. Explicit replacement (same as ListView's)
+   * rather than div.textContent/innerHTML, because this is also used in
+   * attribute contexts (data-action, editor value="...") where quotes must
+   * be escaped too.
    */
   escapeHtml(text) {
     if (text === null || text === undefined) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   /**

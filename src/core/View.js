@@ -684,6 +684,19 @@ export class View {
     return this.app;
   }
 
+  /**
+   * Permission gate for `permissions` keys on toolbar buttons, context-menu
+   * items, etc. Fail-closed: when permissions are given but no active user
+   * can be resolved (or the user lacks them), the gated element is hidden.
+   * @param {string|string[]} permissions - permission name(s); any-of for arrays
+   * @returns {boolean}
+   */
+  checkPermissions(permissions) {
+    if (!permissions) return true;
+    const user = this.getApp()?.activeUser;
+    return !!(user && typeof user.hasPermission === 'function' && user.hasPermission(permissions));
+  }
+
   handleActionError(action, err, evt, el) {
       this.showError(`Action '${action}' failed: ${err}`, evt, el);
   }

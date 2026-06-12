@@ -631,7 +631,7 @@ ListView ships an opt-in toolbar that mirrors what `TableView` has. Every flag b
 | `title` | `string` | `null` | Toolbar heading (renders as `<h5>` on the left). |
 | `eyebrow` | `string` | `null` | Small uppercase line above the title. |
 | `showRefresh` | `boolean` | `true` | Render the refresh button. Has no effect unless the toolbar shell is rendered. |
-| `toolbarButtons` | `Array<object>` | `[]` | Custom buttons: `{ label, icon, action?, handler?, variant?, title?, className?, permissions? }`. |
+| `toolbarButtons` | `Array<object>` | `[]` | Custom buttons: `{ label, icon, action?, handler?, variant?, title?, className?, permissions? }`. `permissions` is a `string \| string[]` permission gate — delegates to `app.activeUser.hasPermission()` (any-of for arrays) and is **fail-closed**: the button is hidden when there is no active user or the user lacks the permission. |
 | `toolbarRight` | `View` | `null` | Optional View mounted into a right-aligned slot (range pickers, view-mode toggles, etc.). |
 | `dayRangeFilter` | `boolean \| object` | `false` | When truthy, mounts a `SegmentControl` day-range picker in the toolbar and writes `${field}__gte` to `collection.params` on every change (refetches automatically). Boolean `true` → defaults `{ field: 'created', value: '7d', options: [1d, 7d, 30d, 90d], ariaLabel: 'Time range' }`. Object form merges over those defaults. Coexists with `toolbarRight`: day-range mounts to the left, `toolbarRight` to the right. See [Day-range filter](#day-range-filter). |
 

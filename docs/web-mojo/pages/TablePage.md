@@ -428,7 +428,7 @@ All [TableView constructor options](./TableView.md#constructor-options) are pass
 |--------|------|---------|-------------|
 | `columns` | `Array<object>` | `[]` | Column definitions |
 | `actions` | `Array<string>` | `null` | Row actions (`'view'`, `'edit'`, `'delete'`) |
-| `contextMenu` | `Array<object>` | `null` | Row context menu items |
+| `contextMenu` | `Array<object>` | `null` | Row context menu items (`rowContextMenu` is an accepted alias; items support `permissions`, `visible(model)`, and callback actions — see [TableView Context Menus](../components/TableView.md#context-menus)) |
 | `batchActions` | `Array<object>` | `null` | Batch action definitions |
 | `batchBarLocation` | `string` | `'top'` | Batch bar position: `'top'` or `'bottom'` |
 | `clickAction` | `string` | `'view'` | Row click behavior: `'view'` or `'edit'` |

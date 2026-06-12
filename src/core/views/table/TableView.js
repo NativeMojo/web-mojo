@@ -49,7 +49,9 @@ class TableView extends ListView {
     // Table-specific properties
     this.columns = options.columns || [];
     this.actions = options.actions || null;
-    this.contextMenu = options.contextMenu || null;
+    // `rowContextMenu` is an accepted alias for `contextMenu` (the de-facto
+    // key consumers use for per-row menus); explicit `contextMenu` wins.
+    this.contextMenu = options.contextMenu || options.rowContextMenu || null;
     this.batchActions = options.batchActions || null;
 
     // Restore TableView's "default true" semantics for these toolbar flags.
