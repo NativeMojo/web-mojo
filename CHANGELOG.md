@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Core · `epoch` formatter no longer mangles ISO-8601 date strings (ITEM-021)
+
+- **`epoch` is now format-agnostic.** The backend can serialize a timestamp as either epoch seconds or an ISO-8601 string depending on a server setting, but `epoch` used `parseFloat()` — which reads the leading year run of an ISO string (`parseFloat('2026-06-15T…')` → `2026`) and multiplied it into garbage. A membership joined today rendered as **"03/14/2034 · 56 years ago"**. `epoch` now only converts values that are *entirely* numeric (number or fully-numeric string) seconds → ms; ISO/date strings, `Date` instances, and `null`/`undefined`/`''` pass through unchanged for the downstream date formatter (`normalizeEpoch()` already parses ISO via `Date.parse`). **This heals every `epoch|datetime` / `epoch|relative` call site at once** (Member/Group/File/Device/Job/bucket views and tables) — keep piping `epoch|`; no call sites changed.
+- Regression tests added in `test/unit/DataFormatter.test.js` (`describe('epoch')`). Surfaced from MemberView's "Joined" field.
+
 ### Core · TableView permission gating is real now + row context menus support permissions/visible/callback actions (ITEM-020)
 
 - **`checkPermissions()` actually checks permissions.** The only implementation was a `return true` stub on ListView, so `toolbarButtons` entries carrying `permissions:` rendered for every user. The real implementation now lives on `View`: pass-through when no permissions are given, otherwise it delegates to `getApp()?.activeUser?.hasPermission()` (any-of for arrays). **Behavior change — fail-closed:** gated toolbar buttons and menu items are now *hidden* when there is no active user or the user lacks the permission (previously always shown). Subclasses can still override for custom ACLs.

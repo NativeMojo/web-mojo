@@ -119,6 +119,45 @@ module.exports = async function(testContext) {
         expect(formatter.apply('iso', date, true)).toBe('2024-01-15');
       });
     });
+
+    describe('epoch', () => {
+      // ITEM-021 regression — the backend can serialize timestamps as epoch
+      // seconds OR ISO-8601 strings depending on a server setting, so `epoch`
+      // must tolerate both. parseFloat() read the leading year digits of an ISO
+      // string ("2026-…" -> 2026) and multiplied it into garbage.
+      const ISO = '2026-06-15T14:23:13.513746+00:00';
+
+      it('should pass ISO-8601 strings through unchanged', () => {
+        expect(formatter.apply('epoch', ISO)).toBe(ISO);
+        // The corruption that this fixes: NOT 2026 * 1000.
+        expect(formatter.apply('epoch', ISO)).not.toBe(2026000);
+      });
+
+      it('should produce a correct date when piped epoch|datetime on an ISO string', () => {
+        const out = formatter.apply(ISO, ['epoch', 'datetime']);
+        expect(out).toContain('2026');
+        expect(out).not.toContain('2034');
+      });
+
+      it('should convert epoch seconds (number) to milliseconds', () => {
+        expect(formatter.apply('epoch', 1718462593)).toBe(1718462593000);
+      });
+
+      it('should convert a fully-numeric string to milliseconds', () => {
+        expect(formatter.apply('epoch', '1718462593')).toBe(1718462593000);
+      });
+
+      it('should leave null/undefined/empty untouched', () => {
+        expect(formatter.apply('epoch', null)).toBeNull();
+        expect(formatter.apply('epoch', undefined)).toBeUndefined();
+        expect(formatter.apply('epoch', '')).toBe('');
+      });
+
+      it('should pass a Date instance through unchanged', () => {
+        const d = new Date('2026-06-15T14:23:13.000Z');
+        expect(formatter.apply('epoch', d)).toBe(d);
+      });
+    });
   });
 
   describe('Number Formatters', () => {

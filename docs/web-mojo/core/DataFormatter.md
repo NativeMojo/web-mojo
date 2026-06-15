@@ -371,13 +371,20 @@ Format as ISO 8601 string.
 
 ### epoch
 
-Convert epoch seconds to milliseconds (for use with other date formatters).
+Convert epoch **seconds** to milliseconds (for use with other date formatters).
 
 **Syntax:** `epoch`
 
 ```html
 {{timestamp|epoch|date:'YYYY-MM-DD'}}
 ```
+
+**Format-agnostic / null-safe.** Only a value that is *entirely* numeric (a number
+or a fully-numeric string) is treated as epoch seconds and multiplied by 1000.
+Anything else — an **ISO-8601 string** (`2024-01-15T14:30:00Z`), a `Date` instance,
+or `null`/`undefined`/`''` — is passed through **unchanged** so the next formatter
+parses it directly. This lets you keep `created|epoch|datetime` in a template even
+when the backend toggles a field between epoch and ISO serialization.
 
 ---
 
@@ -1570,7 +1577,7 @@ Formatters are applied left-to-right. Each formatter receives the **output** of 
 | `date_range` | Date/Time | Format date range |
 | `datetime_range` | Date/Time | Format datetime range |
 | `iso` | Date/Time | ISO 8601 format |
-| `epoch` | Date/Time | Convert epoch seconds to ms |
+| `epoch` | Date/Time | Convert epoch seconds to ms (ISO strings / Date / null pass through unchanged) |
 | `number` | Number | Locale-formatted number |
 | `currency` | Number | Format cents as currency |
 | `percent` | Number | Format as percentage |

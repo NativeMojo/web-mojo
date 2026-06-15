@@ -47,8 +47,18 @@ class DataFormatter {
     this.register('iso', this.iso.bind(this));
     this.register('epoch', (v) => {
       if (v === null || v === undefined || v === '') return v;
-      const num = parseFloat(v);
-      if (isNaN(num)) return v;
+      // The backend may serialize a timestamp as epoch seconds OR an ISO-8601
+      // string depending on a server setting, so `epoch` must tolerate both.
+      // Only a value that is *entirely* numeric is epoch seconds — anything else
+      // (an ISO/date string, a Date instance) is passed through untouched for the
+      // next formatter to parse via normalizeEpoch()/Date.parse.
+      //
+      // Note: a strict numeric test, not parseFloat() — parseFloat('2026-06-15…')
+      // returns 2026 (the leading year run) and would multiply it into garbage.
+      if (v instanceof Date) return v;
+      if (typeof v === 'string' && !/^\s*[+-]?\d+(\.\d+)?\s*$/.test(v)) return v;
+      const num = Number(v);
+      if (!Number.isFinite(num)) return v;
       // Convert seconds to milliseconds
       return num * 1000;
     });
