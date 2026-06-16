@@ -55,6 +55,11 @@ import SideNavView from '@core/views/navigation/SideNavView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import MOJOUtils from '@core/utils/MOJOUtils.js';
 
+// Chip `variant`/`icon` resolve into a class="" attribute. When supplied as a
+// (model) => string function they can carry raw model data, so we constrain the
+// result to a single CSS-class token before interpolation.
+const CHIP_TOKEN_RE = /^[A-Za-z0-9_-]+$/;
+
 // ── DetailHeaderView ──────────────────────────────────────
 
 /**
@@ -169,10 +174,26 @@ class DetailHeaderView extends View {
                 if (typeof chip.tooltip === 'function') tooltip = chip.tooltip(this.model) || '';
                 else if (chip.tooltip) tooltip = String(chip.tooltip);
 
+                // `variant` and `icon` accept a (model) => string function, same
+                // as `text`/`tooltip` — a status chip almost always wants a
+                // model-derived variant paired with its text. String values
+                // flow through unchanged (backward compatible). Both land in a
+                // class="" attribute, so a function returning raw model data
+                // could carry stray class tokens; sanitize to a single
+                // `[A-Za-z0-9_-]` token and fall back to the safe default
+                // (`light` / no icon) when it doesn't match.
+                const rawVariant = (typeof chip.variant === 'function'
+                    ? chip.variant(this.model) : chip.variant) || 'light';
+                const variant = CHIP_TOKEN_RE.test(rawVariant) ? rawVariant : 'light';
+
+                const rawIcon = (typeof chip.icon === 'function'
+                    ? chip.icon(this.model) : chip.icon) || null;
+                const icon = rawIcon && CHIP_TOKEN_RE.test(rawIcon) ? rawIcon : null;
+
                 return {
-                    icon: chip.icon || null,
+                    icon,
                     text: text != null ? String(text) : '',
-                    variant: chip.variant || 'light',
+                    variant,
                     tooltip,
                     // Optional kebab-cased action — when set, the chip
                     // renders as a click-through <button> carrying

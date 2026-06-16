@@ -103,6 +103,107 @@ module.exports = async function (testContext) {
             expect(view.headerView.element.innerHTML).not.toContain('AI');
         });
 
+        it('evaluates a function `variant` against the model (no stringified source)', async () => {
+            const view = new DetailView({
+                model: makeModel({ is_active: true }),
+                header: {
+                    icon: 'bi-x',
+                    titleField: 'name',
+                    chips: [
+                        { icon: 'bi-circle-fill',
+                          text: 'Status',
+                          variant: m => m.get('is_active') ? 'success' : 'secondary' }
+                    ]
+                },
+                sections: [{ key: 'a', label: 'A', view: makeSection('a') }]
+            });
+            await view.render(false);
+            const html = view.headerView.element.innerHTML;
+            expect(html).toContain('badge bg-success');     // function result used
+            expect(html).not.toContain('bg-m=');            // not the stringified fn
+            expect(html).not.toContain('=&gt;');            // not escaped arrow source
+        });
+
+        it('evaluates a function `icon` against the model', async () => {
+            const view = new DetailView({
+                model: makeModel({ is_active: false }),
+                header: {
+                    icon: 'bi-x',
+                    titleField: 'name',
+                    chips: [
+                        { icon: m => m.get('is_active') ? 'bi-check-circle' : 'bi-x-circle',
+                          text: 'Status' }
+                    ]
+                },
+                sections: [{ key: 'a', label: 'A', view: makeSection('a') }]
+            });
+            await view.render(false);
+            const html = view.headerView.element.innerHTML;
+            expect(html).toContain('bi bi-x-circle');       // function result used
+            expect(html).not.toContain('=&gt;');            // not escaped arrow source
+        });
+
+        it('leaves string `variant`/`icon` unchanged (backward compatible)', async () => {
+            const view = new DetailView({
+                model: makeModel(),
+                header: {
+                    icon: 'bi-x',
+                    titleField: 'name',
+                    chips: [
+                        { icon: 'bi-tag-fill', text: 'Tag', variant: 'primary' }
+                    ]
+                },
+                sections: [{ key: 'a', label: 'A', view: makeSection('a') }]
+            });
+            await view.render(false);
+            const html = view.headerView.element.innerHTML;
+            expect(html).toContain('badge bg-primary');
+            expect(html).toContain('bi bi-tag-fill');
+        });
+
+        it('sanitizes a function `variant` carrying stray class tokens', async () => {
+            const view = new DetailView({
+                model: makeModel(),
+                header: {
+                    icon: 'bi-x',
+                    titleField: 'name',
+                    // Untrusted model data wired straight into variant.
+                    chips: [
+                        { text: 'Status', variant: () => 'success extra-class' }
+                    ]
+                },
+                sections: [{ key: 'a', label: 'A', view: makeSection('a') }]
+            });
+            await view.render(false);
+            const html = view.headerView.element.innerHTML;
+            expect(html).not.toContain('extra-class');       // stray token dropped
+            expect(html).toContain('badge bg-light');        // falls back to safe default
+        });
+
+        it('re-colors a function-variant chip on model-change re-render', async () => {
+            const m = makeModel({ is_active: true });
+            const view = new DetailView({
+                model: m,
+                header: {
+                    icon: 'bi-x',
+                    titleField: 'name',
+                    chips: [
+                        { text: 'Status',
+                          variant: model => model.get('is_active') ? 'success' : 'secondary' }
+                    ]
+                },
+                sections: [{ key: 'a', label: 'A', view: makeSection('a') }]
+            });
+            await view.render(false);
+            expect(view.headerView.element.innerHTML).toContain('badge bg-success');
+
+            m.set('is_active', false);
+            await view.headerView.render();
+            const html = view.headerView.element.innerHTML;
+            expect(html).toContain('badge bg-secondary');
+            expect(html).not.toContain('badge bg-success');
+        });
+
         it('renders the active switch when activeField is set', async () => {
             await dv.render(false);
             const sw = dv.headerView.element.querySelector('input[type="checkbox"]');

@@ -108,11 +108,13 @@ Each chip resolves text and is filtered by an optional predicate:
 
 ```js
 {
-    icon: 'bi-tag-fill',                 // optional icon class
+    icon: 'bi-tag-fill',                 // optional icon class — string OR (model) => string
+    icon: m => m.get('is_active') ? 'bi-check-circle' : 'bi-x-circle', // function form
     text: 'AI-proposed',                 // string — literal
     text: m => `Priority ${m.get('p')}`, // OR function — receives model
     textPath: 'category',                // OR shortcut — model.get('category')
-    variant: 'primary',                  // bg-* variant; defaults to 'light'
+    variant: 'primary',                  // bg-* variant; defaults to 'light' — string OR (model) => string
+    variant: m => m.get('is_active') ? 'success' : 'secondary', // function form
     when: m => m.get('flag'),            // optional — chip omitted when false
     tooltip: 'Source IP is on the allow list',  // optional — Bootstrap tooltip
     tooltip: m => `Verified by ${m.get('verified_by')}`,  // OR function form
@@ -120,7 +122,7 @@ Each chip resolves text and is filtered by an optional predicate:
 }
 ```
 
-Variants pick up the global soft-badge styling (`primary`, `secondary`, `success`, `warning`, `danger`, `info`, `light`). When `tooltip` is set the badge gains `data-bs-toggle="tooltip" title="…"` and Bootstrap's auto-init wires up the hover. The default `enableTooltips: true` on `DetailHeaderView` keeps this working without per-consumer setup.
+Variants pick up the global soft-badge styling (`primary`, `secondary`, `success`, `warning`, `danger`, `info`, `light`). Both `variant` and `icon` accept a `(model) => string` function as well as a literal string — the natural form for a status chip whose color and glyph track model state (a falsy return falls back to `'light'` / no icon). Because the header re-evaluates chips on every model-change re-render, a function chip re-colors automatically after the model's state changes (e.g. activate/deactivate). When `tooltip` is set the badge gains `data-bs-toggle="tooltip" title="…"` and Bootstrap's auto-init wires up the hover. The default `enableTooltips: true` on `DetailHeaderView` keeps this working without per-consumer setup.
 
 When `action` is set, the chip renders as a `<button>` element carrying `data-action="<value>"` instead of a static `<span>`. The click dispatches through the standard `data-action` / `onAction<KebabCase>` pipeline on the nearest parent view — identical to how header `actions[]` buttons work. Chips without `action` keep the static-span markup unchanged, so existing consumers are not affected.
 
