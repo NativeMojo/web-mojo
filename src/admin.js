@@ -51,6 +51,7 @@ export { default as BouncerSignalTablePage } from '@ext/admin/security/BouncerSi
 export { default as BouncerDeviceTablePage } from '@ext/admin/security/BouncerDeviceTablePage.js';
 export { default as BotSignatureTablePage } from '@ext/admin/security/BotSignatureTablePage.js';
 export { default as IPSetTablePage } from '@ext/admin/security/IPSetTablePage.js';
+export { default as GeofencingPage } from '@ext/admin/security/geofence/GeofencingPage.js';
 
 // Security Views
 export { default as BouncerSignalView } from '@ext/admin/security/BouncerSignalView.js';
@@ -186,6 +187,7 @@ import BouncerSignalTablePageClass from '@ext/admin/security/BouncerSignalTableP
 import BouncerDeviceTablePageClass from '@ext/admin/security/BouncerDeviceTablePage.js';
 import BotSignatureTablePageClass from '@ext/admin/security/BotSignatureTablePage.js';
 import IPSetTablePageClass from '@ext/admin/security/IPSetTablePage.js';
+import GeofencingPageClass from '@ext/admin/security/geofence/GeofencingPage.js';
 
 import LogTablePageClass from '@ext/admin/monitoring/LogTablePage.js';
 import MetricsPermissionsTablePageClass from '@ext/admin/monitoring/MetricsPermissionsTablePage.js';
@@ -264,6 +266,10 @@ export function registerSystemPages(app, addToMenu = true) {
     app.registerPage('system/security/bouncer-devices', BouncerDeviceTablePageClass, { permissions: ["view_security"] });
     app.registerPage('system/security/bot-signatures', BotSignatureTablePageClass, { permissions: ["manage_security"] });
     app.registerPage('system/security/ipsets', IPSetTablePageClass, { permissions: ["view_security"] });
+    // Geofence config is platform-wide — sys.-prefixed keys check global user
+    // grants only (group/member grants must not open it; backend enforces the
+    // same). Superuser and the `admin` wildcard pass.
+    app.registerPage('system/security/geofencing', GeofencingPageClass, { permissions: ["sys.view_geofence", "sys.manage_geofence", "sys.security"] });
 
     // Assistant management pages
     app.registerPage('system/assistant/skills', AssistantSkillTablePageClass, { permissions: ["view_admin", "assistant"] });
@@ -338,6 +344,7 @@ export function registerSystemPages(app, addToMenu = true) {
                         { text: 'IP Sets', route: '?page=system/security/ipsets', icon: 'bi-shield-shaded', permissions: ["view_security"] },
                         { text: 'Blocked', route: '?page=system/security/blocked-ips', icon: 'bi-slash-circle', permissions: ["view_security"] },
                         { text: 'Firewall Log', route: '?page=system/security/firewall-log', icon: 'bi-journal-code', permissions: ["view_security"] },
+                        { text: 'Geofencing', route: '?page=system/security/geofencing', icon: 'bi-globe-americas', permissions: ["sys.view_geofence", "sys.manage_geofence", "sys.security"] },
                     ]
                 },
 

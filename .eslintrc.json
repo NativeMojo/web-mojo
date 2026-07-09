@@ -4,6 +4,9 @@
         "es2021": true,
         "node": true
     },
+    "globals": {
+        "bootstrap": "readonly"
+    },
     "extends": ["eslint:recommended"],
     "parserOptions": {
         "ecmaVersion": "latest",
@@ -12,6 +15,10 @@
     "rules": {
         "no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
         "no-console": ["warn", { "allow": ["warn", "error", "assert"] }],
+        "no-useless-escape": "warn",
+        "no-case-declarations": "warn",
+        "no-prototype-builtins": "warn",
+        "no-empty": "warn",
         "no-debugger": "error",
         "no-alert": "warn",
         "no-eval": "error",
@@ -64,6 +71,6 @@
         "*.min.js",
         "vendor/",
         "legacy/",
-        "src/utils/mustache.js"
+        "src/extensions/map/countryCentroids.js"
     ]
 }

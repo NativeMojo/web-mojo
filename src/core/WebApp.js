@@ -533,6 +533,7 @@ class WebApp {
      */
     async showError(message) {
         try {
+            // eslint-disable-next-line no-restricted-syntax -- intentional lazy import (bundle splitting)
             const Modal = (await import('./views/feedback/Modal.js')).default;
             await Modal.alert(message, 'Error', { size: 'md', type: 'error' });
         } catch (e) {
@@ -551,6 +552,7 @@ class WebApp {
      */
     async showSuccess(message) {
         try {
+            // eslint-disable-next-line no-restricted-syntax -- intentional lazy import (bundle splitting)
             const Modal = (await import('./views/feedback/Modal.js')).default;
             await Modal.alert(message, 'Success', { size: 'md', type: 'success' });
         } catch (e) {
@@ -569,6 +571,7 @@ class WebApp {
      */
     async showInfo(message) {
         try {
+            // eslint-disable-next-line no-restricted-syntax -- intentional lazy import (bundle splitting)
             const Modal = (await import('./views/feedback/Modal.js')).default;
             await Modal.alert(message, 'Information', { size: 'md', type: 'info' });
         } catch (e) {
@@ -587,6 +590,7 @@ class WebApp {
      */
     async showWarning(message) {
         try {
+            // eslint-disable-next-line no-restricted-syntax -- intentional lazy import (bundle splitting)
             const Modal = (await import('./views/feedback/Modal.js')).default;
             await Modal.alert(message, 'Warning', { size: 'md', type: 'warning' });
         } catch (e) {
@@ -615,6 +619,7 @@ class WebApp {
             opts = { message: opts };
         }
         try {
+            // eslint-disable-next-line no-restricted-syntax -- intentional lazy import (bundle splitting)
             const Modal = (await import('./views/feedback/Modal.js')).default;
             Modal.showBusy(opts);
         } catch (e) {
@@ -631,6 +636,7 @@ class WebApp {
      */
     async hideLoading() {
         try {
+            // eslint-disable-next-line no-restricted-syntax -- intentional lazy import (bundle splitting)
             const Modal = (await import('./views/feedback/Modal.js')).default;
             Modal.hideBusy();
         } catch (e) {
@@ -643,6 +649,7 @@ class WebApp {
 
     async showModelView(model, options = {}) {
         try {
+            // eslint-disable-next-line no-restricted-syntax -- intentional lazy import (bundle splitting)
             const Modal = (await import('./views/feedback/Modal.js')).default;
             return await Modal.showModelView(model, options);
         } catch (e) {
@@ -655,6 +662,7 @@ class WebApp {
 
     async showModelForm(options = {}) {
         try {
+            // eslint-disable-next-line no-restricted-syntax -- intentional lazy import (bundle splitting)
             const Modal = (await import('./views/feedback/Modal.js')).default;
             return await Modal.modelForm(options);
         } catch (e) {
@@ -667,6 +675,7 @@ class WebApp {
 
     async showForm(options = {}) {
         try {
+            // eslint-disable-next-line no-restricted-syntax -- intentional lazy import (bundle splitting)
             const Modal = (await import('./views/feedback/Modal.js')).default;
             return await Modal.form(options);
         } catch (e) {
@@ -679,6 +688,7 @@ class WebApp {
 
     async showDialog(options = {}) {
         try {
+            // eslint-disable-next-line no-restricted-syntax -- intentional lazy import (bundle splitting)
             const Modal = (await import('./views/feedback/Modal.js')).default;
             return await Modal.dialog(options);
         } catch (e) {
@@ -691,6 +701,7 @@ class WebApp {
 
     async showAlert(options = {}) {
         try {
+            // eslint-disable-next-line no-restricted-syntax -- intentional lazy import (bundle splitting)
             const Modal = (await import('./views/feedback/Modal.js')).default;
             return await Modal.dialog(options);
         } catch (e) {
@@ -702,6 +713,7 @@ class WebApp {
     }
 
     async confirm(message, title = 'Confirm', options = {}) {
+        // eslint-disable-next-line no-restricted-syntax -- intentional lazy import (bundle splitting)
         const Modal = (await import('./views/feedback/Modal.js')).default;
         return await Modal.confirm(message, title, options);
     }

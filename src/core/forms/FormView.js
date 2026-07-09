@@ -1259,6 +1259,7 @@ class FormView extends View {
     const htmlContent = textarea.value || '';
 
     // Dynamically import Modal to avoid circular dependencies
+    // eslint-disable-next-line no-restricted-syntax -- intentional lazy import (bundle splitting)
     const Modal = (await import('@core/views/feedback/Modal.js')).default;
 
     Modal.htmlPreview({
@@ -2091,19 +2092,11 @@ class FormView extends View {
 
 
 
-    try {
-      // Mark this as a form-driven change to prevent sync back
-      this._isFormDrivenChange = true;
+    // Mark this as a form-driven change to prevent sync back
+    this._isFormDrivenChange = true;
 
-      // Model.save with only changed data
-      const result = await this.model.save(changes);
-
-
-      return result;
-    } catch (error) {
-      // Model save error
-      throw error;
-    }
+    // Model.save with only changed data
+    return await this.model.save(changes);
   }
 
   /**

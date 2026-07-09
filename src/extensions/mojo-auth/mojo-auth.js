@@ -1,3 +1,4 @@
+/* global define */ // UMD wrapper — AMD loader global
 /**
  * mojo-auth
  *

@@ -28,7 +28,7 @@
 
 - **Sectioned layout** — left rail of nav links, right pane that hosts one section view at a time
 - **Lazy mount / persistent state** — section views are mounted on first activation and kept alive on switch, so per-section state (form input, scroll position) is preserved
-- **Permission-aware** — sections with a `permissions` string are silently skipped when the active user lacks the permission
+- **Permission-aware** — sections with a `permissions` string (or `string[]` — any-of) are silently skipped when the active user lacks the permission
 - **Group dividers** — `{ type: 'divider', label }` entries draw an uppercase label between groups of links
 - **Responsive collapse** — when the container drops below `minWidth`, the rail becomes a dropdown selector
 - **Dynamic add/remove** — `addSection()` and `removeSection()` rebuild the nav at runtime
@@ -89,7 +89,7 @@ Each entry in the `sections` array is either a **navigable section** or a **divi
     label:       'Details',          // text shown in the rail link
     icon:        'bi-info-circle',   // optional Bootstrap Icons class
     view:        viewInstance,        // any View instance — mounted into the content panel
-    permissions: 'manage_users',     // optional permission string — section hidden if user lacks it
+    permissions: 'manage_users',     // optional permission string or string[] (any-of) — section hidden if user lacks it
     badge:       42,                  // optional count/string pill shown right of the label
 }
 ```
@@ -100,7 +100,7 @@ Each entry in the `sections` array is either a **navigable section** or a **divi
 | `label` | `string` | ✅ | Link text |
 | `icon` | `string` | — | Bootstrap Icons class (e.g. `bi-shield-lock`) |
 | `view` | `View` | ✅ | View instance — mounted on first activation |
-| `permissions` | `string` | — | Permission name — section is omitted if `app.activeUser.hasPerm()` returns false |
+| `permissions` | `string\|string[]` | — | Permission name(s) — section is omitted if `app.activeUser.hasPerm()` returns false (any-of for arrays) |
 | `badge` | `number\|string\|object\|falsy` | — | Optional pill rendered right of the label. See [Badges](#badges) |
 
 ### Badges
@@ -330,7 +330,7 @@ class FileView extends View {
 
 ### Permission-gated sections
 
-Add a `permissions` string and let SideNavView filter the section out for users who lack it. No manual `if` blocks needed.
+Add a `permissions` string (or a `string[]` — any-of) and let SideNavView filter the section out for users who lack it. No manual `if` blocks needed.
 
 ```js
 new SideNavView({
@@ -339,12 +339,20 @@ new SideNavView({
         { key: 'audit',    label: 'Audit Log', view: auditView,
           permissions: 'view_audit_log' },          // hidden from non-auditors
         { key: 'billing',  label: 'Billing', view: billingView,
-          permissions: 'manage_billing' },
+          permissions: ['manage_billing', 'admin'] },   // any-of — needs at least one
     ],
 });
 ```
 
-The check uses `this.getApp().activeUser.hasPerm(permission)`. If the app isn't available yet, the section is allowed through — re-checking happens lazily.
+The check delegates to `View#checkPermissions` (→ `getApp()?.activeUser?.hasPermission()`, arrays any-of) and is **fail-closed**: with no resolvable app or active user, gated sections are hidden, matching page/toolbar/menu gating everywhere else in the framework.
+
+Gating is evaluated at **render and navigation time**, not construction time — all sections are stored, and visibility is decided when the nav renders (by then the view has an app via its parent chain). Practical consequences:
+
+- A gated section appears automatically once a user holding the permission is resolvable — constructing the SideNavView before `app.setActiveUser(...)` doesn't permanently hide it.
+- `showSection(key)` refuses gated keys (returns `false`), including programmatic calls.
+- `getSectionKeys()` returns only the sections the current user may see.
+- An `activeSection` pointing at a gated section falls back to the first visible one.
+- Divider labels whose entire group is gated away are dropped with it.
 
 ### Programmatic switching from a parent action
 

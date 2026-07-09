@@ -71,13 +71,8 @@ class GroupSelectorButton extends View {
 
     async onBeforeRender() {
         await super.onBeforeRender();
-        
-        console.log('GroupSelectorButton onBeforeRender - currentGroup:', this.currentGroup?.get?.('name') || this.currentGroup?.name || 'none');
-        
-        this.buttonClass = this.buttonClass;
-        this.buttonIcon = this.buttonIcon;
-        this.displayName = this.currentGroup?.get?.('name') || 
-                          this.currentGroup?.name || 
+        this.displayName = this.currentGroup?.get?.('name') ||
+                          this.currentGroup?.name ||
                           this.defaultText;
     }
 

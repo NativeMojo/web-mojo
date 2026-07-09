@@ -94,6 +94,6 @@ export function createInput(type, options = {}) {
     throw new Error(`Unknown input type: ${type}`);
   }
   const precision = PRECISION_ALIASES[type];
-  const opts = precision ? { precision, ...options, precision: options.precision || precision } : options;
+  const opts = precision ? { ...options, precision: options.precision || precision } : options;
   return new InputClass(opts);
 }

@@ -952,6 +952,7 @@ export default class PortalApp extends WebApp {
         }
 
         try {
+            // eslint-disable-next-line no-restricted-syntax -- intentional lazy import (bundle splitting)
             const { UserProfileView } = await import('@ext/user-profile/index.js');
             const profileView = new UserProfileView({ model: this.activeUser });
 
@@ -971,6 +972,7 @@ export default class PortalApp extends WebApp {
         if (localStorage.getItem('passkey_setup_dismissed')) return;
 
         try {
+            // eslint-disable-next-line no-restricted-syntax -- intentional lazy import (bundle splitting)
             const { PasskeySetupView } = await import('@ext/user-profile/index.js');
             const setupView = new PasskeySetupView();
 

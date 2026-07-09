@@ -4025,3 +4025,127 @@
 .ticket-view .tv-desc-body th { background: var(--bs-tertiary-bg); font-weight: 600; }
 
 
+
+/* ═══════════════════════════════════════════════════════════════════
+   Geofencing admin (ITEM-023) — posture header, plain-language clauses,
+   simulator decision card, exemption tables. Surfaces use Bootstrap
+   tokens (auto-adapt); semantic tints get dark companions at the bottom
+   of this block.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.geofence-picon {
+    width: 40px;
+    height: 40px;
+    border-radius: 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(13, 110, 253, 0.12);
+    color: var(--bs-primary);
+    font-size: 1.25rem;
+}
+.geofence-status-pill { font-size: 0.8rem; padding: 0.45em 0.9em; }
+
+.geofence-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    color: var(--bs-secondary-color);
+    background: var(--bs-secondary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 999px;
+    padding: 0.25rem 0.7rem;
+}
+.geofence-chip b { color: var(--bs-body-color); font-weight: 600; }
+.geofence-chip.warn {
+    border-color: rgba(255, 193, 7, 0.5);
+    background: rgba(255, 193, 7, 0.12);
+}
+.geofence-chip.warn b { color: var(--bs-warning-text-emphasis); }
+
+.geofence-eyebrow {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--bs-secondary-color);
+}
+
+.geofence-endpoints summary { cursor: pointer; list-style: none; }
+.geofence-endpoints summary::-webkit-details-marker { display: none; }
+.geofence-endpoints summary::before { content: "▸ "; font-size: 0.7rem; }
+.geofence-endpoints[open] summary::before { content: "▾ "; }
+.geofence-endpoint-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.25rem 1rem;
+}
+.geofence-endpoint code { font-size: 0.75rem; color: var(--bs-secondary-color); }
+
+.geofence-clause {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    padding: 0.3rem 0;
+}
+.geofence-clause i { flex: 0 0 auto; }
+.geofence-clause-block i { color: var(--bs-danger); }
+.geofence-clause-warn i { color: var(--bs-warning-text-emphasis); }
+.geofence-clause-ok i { color: var(--bs-success); }
+.geofence-clause-note { color: var(--bs-secondary-color); }
+.geofence-clause .badge { font-size: 0.62rem; }
+
+.geofence-sim-result {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: var(--bs-body-bg);
+}
+.geofence-sim-band {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    font-weight: 600;
+    padding: 0.7rem 1rem;
+}
+.geofence-sim-result.blocked .geofence-sim-band {
+    color: var(--bs-danger);
+    background: rgba(220, 53, 69, 0.08);
+    box-shadow: inset 3px 0 0 var(--bs-danger);
+}
+.geofence-sim-result.allowed .geofence-sim-band {
+    color: var(--bs-success);
+    background: rgba(25, 135, 84, 0.08);
+    box-shadow: inset 3px 0 0 var(--bs-success);
+}
+.geofence-sim-result.exempt .geofence-sim-band {
+    color: var(--bs-info-text-emphasis);
+    background: rgba(13, 202, 240, 0.1);
+    box-shadow: inset 3px 0 0 var(--bs-info);
+}
+.geofence-sim-body { padding: 0.75rem 1rem; }
+.geofence-sim-would { color: var(--bs-warning-text-emphasis); font-weight: 500; margin-bottom: 0.5rem; }
+.geofence-sim-placeholder {
+    border: 1px dashed var(--bs-border-color);
+    border-radius: 0.5rem;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+}
+
+.geofence-row-expired td { opacity: 0.55; }
+.geofence-exempt-table th {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--bs-secondary-color);
+    font-weight: 600;
+}
+
+/* ── Geofencing dark-theme companions ─────────────────────────────── */
+[data-bs-theme="dark"] .geofence-picon { background: rgba(95, 152, 246, 0.18); }
+[data-bs-theme="dark"] .geofence-chip.warn { background: rgba(217, 165, 42, 0.14); border-color: rgba(217, 165, 42, 0.45); }
+[data-bs-theme="dark"] .geofence-sim-result.blocked .geofence-sim-band { background: rgba(229, 99, 108, 0.12); }
+[data-bs-theme="dark"] .geofence-sim-result.allowed .geofence-sim-band { background: rgba(65, 185, 127, 0.12); }
+[data-bs-theme="dark"] .geofence-sim-result.exempt .geofence-sim-band { background: rgba(84, 182, 216, 0.14); }

@@ -1,3 +1,4 @@
+/* global Prism */ // Prism highlighter is loaded from a CDN by the docit host page
 /**
  * DocPage - Main documentation page viewer
  * Displays rendered HTML content from markdown pages. This page is URL-driven.

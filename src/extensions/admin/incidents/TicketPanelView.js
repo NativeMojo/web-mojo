@@ -264,7 +264,7 @@ class TicketPanelView extends View {
         this._setupDragDrop();
         // Wait one microtask so child message-view DOM is settled before we
         // place inline action cards and edit buttons.
-        await new Promise(r => setTimeout(r, 0));
+        await new Promise(r => { setTimeout(r, 0); });
         await this._loadActionCards();
         this._addEditButtons();
         this._setupCollapsible();
@@ -768,7 +768,7 @@ class TicketPanelView extends View {
         // the textarea after the modal renders, then wire shortcuts.
         const wireUp = async () => {
             for (let i = 0; i < 20; i++) {
-                await new Promise(r => setTimeout(r, 50));
+                await new Promise(r => { setTimeout(r, 50); });
                 const ta = document.querySelector('.modal.show [data-ref="desc-textarea"]');
                 if (ta) { this._wireMarkdownTextarea(ta); return ta; }
             }
@@ -956,7 +956,7 @@ class TicketPanelView extends View {
         // ChatView.refresh() doesn't await each message view's render — its inner
         // _renderChildren calls messageView.render(false) without await. Wait one
         // microtask so the message-item DOM is in place before we touch it.
-        await new Promise(r => setTimeout(r, 0));
+        await new Promise(r => { setTimeout(r, 0); });
         await this._loadActionCards();
         this._addEditButtons();
         this._setupCollapsible();

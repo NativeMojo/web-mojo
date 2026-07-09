@@ -242,9 +242,12 @@ class DataFormatter {
   apply(name, value, ...args) {
     // Support the alternate-style call shape `apply(value, [...pipeNames])`
     // used by some callers — they pass the value first and an array of
-    // formatter names to chain. Detect by `value` being an array of strings
-    // (a registered formatter is never an array).
-    if (Array.isArray(value) && value.every(p => typeof p === 'string')) {
+    // formatter names to chain. Detect by `value` being a NON-EMPTY array of
+    // strings (a registered formatter is never an array). The non-empty
+    // guard matters: [] vacuously satisfies every(), and reducing over zero
+    // names returned the seed — the formatter NAME string — so every pipe on
+    // an empty array came back truthy and flipped {{#x|bool}}/{{^x|bool}}.
+    if (Array.isArray(value) && value.length > 0 && value.every(p => typeof p === 'string')) {
       return value.reduce((v, n) => this.apply(n, v, ...args), name);
     }
     try {

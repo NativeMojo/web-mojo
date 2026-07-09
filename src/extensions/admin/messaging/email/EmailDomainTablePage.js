@@ -6,7 +6,7 @@
 import TablePage from '@core/pages/TablePage.js';
 import Modal from '@core/views/feedback/Modal.js';
 import View from '@core/View.js';
-import { EmailDomain, EmailDomainList } from '@ext/admin/models/Email.js';
+import { EmailDomain, EmailDomainList, EmailDomainForms } from '@ext/admin/models/Email.js';
 
 // EmailDomain.ADD_FORM / EDIT_FORM are registered on the model (Email.js).
 

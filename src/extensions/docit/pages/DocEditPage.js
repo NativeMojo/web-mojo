@@ -1,3 +1,4 @@
+/* global toastui */ // Toast UI Editor is loaded from a CDN by the docit host page
 /**
  * DocEditPage - Markdown editor for documentation pages using TOAST UI Editor.
  */

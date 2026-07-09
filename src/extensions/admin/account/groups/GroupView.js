@@ -47,6 +47,8 @@ import { LogList } from '@core/models/Log.js';
 import { IncidentEventList } from '@ext/admin/models/Incident.js';
 import AdminMetadataSection from '../../shared/AdminMetadataSection.js';
 import GroupAuthConfigSection from './GroupAuthConfigSection.js';
+import GroupGeofenceSection from './GroupGeofenceSection.js';
+import { GEOFENCE_VIEW_PERMS } from '@ext/admin/security/geofence/geofenceData.js';
 import ApiKeyView from '../api_keys/ApiKeyView.js';
 import WebhookSubscriptionView from '../webhook_subscriptions/WebhookSubscriptionView.js';
 
@@ -1288,6 +1290,11 @@ class GroupView extends DetailView {
 
         const metadataSection = new AdminMetadataSection({ model });
 
+        // Geofencing panel — appears only for holders of the GLOBAL geofence
+        // grants (it renders the platform floor, which group/member grants
+        // can't read). Platform-wide config stays out of brand-admin reach.
+        const geofenceSection = new GroupGeofenceSection({ model });
+
         // ── Sidebar layout ─────────────────────────────────
         const sections = [
             { key: 'Overview',    label: 'Overview',    icon: 'bi-grid-1x2',       view: overviewSection },
@@ -1298,6 +1305,7 @@ class GroupView extends DetailView {
             { type: 'divider', label: 'Access' },
             { key: 'ApiKeys',     label: 'API Keys',    icon: 'bi-key',            view: apiKeysSection },
             { key: 'Webhooks',    label: 'Webhooks',    icon: 'bi-broadcast',      view: webhookSection, permissions: 'manage_group' },
+            { key: 'Geofencing',  label: 'Geofencing',  icon: 'bi-globe-americas', view: geofenceSection, permissions: GEOFENCE_VIEW_PERMS },
             { type: 'divider', label: 'Activity' },
             { key: 'Events',      label: 'Events',      icon: 'bi-calendar-event', view: eventsSection },
             { key: 'Audit',       label: 'Audit',       icon: 'bi-clock-history',  view: auditSection, permissions: 'view_logs' },

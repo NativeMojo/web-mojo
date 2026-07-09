@@ -33,7 +33,7 @@ The admin extension ships ~50 pre-built admin pages plus an LLM-backed Assistant
 - **Account** — users, members, groups, devices, GeoIP, API keys, admin dashboard.
 - **Security Dashboard** — top-level mission-control link (incident dashboard).
 - **System Security** — tickets, incidents, events, rules.
-- **Network Security** — IPs, IP sets, blocked, firewall log.
+- **Network Security** — IPs, IP sets, blocked, firewall log, geofencing (`system/security/geofencing`: platform rules editor, what-if simulator, blocks log with metrics, exemptions audit; needs django-mojo ≥ v1.2.42). A per-group **Geofencing** section on `GroupView` edits `Group.metadata.geofence` over a read-only platform floor.
 - **Bouncer** — signals, devices, bots.
 - **Job engine** — dashboard, runners, jobs, scheduled tasks.
 - **Messaging** — email domains/mailboxes/templates/sent, public (contact-form) messages, SMS phone numbers, SMS log, SMS provider configs (Twilio / AWS SNS / Mojo Remote).
@@ -278,6 +278,7 @@ Every admin page is registered with a `permissions:` requirement. The framework'
 **Common permission keys (high level):**
 
 - `security` / `view_security` / `manage_security` — admin dashboard, incidents, tickets, events, rule engine, blocked IPs, firewall log, bouncer, bot signatures
+- `sys.view_geofence` / `sys.manage_geofence` / `sys.security` — the Geofencing page and the GroupView Geofencing section. `sys.`-prefixed deliberately: geofence config is platform-wide, so only **global** user grants count — group/member grants never open it (the backend enforces the same rule). `view_geofence` alone renders read-only; write controls additionally need `manage_geofence`/`security`.
 - `view_admin` / `assistant` — AI Assistant admin pages and the topbar Assistant button
 - `view_users` / `manage_users` — users, user devices, GeoIP
 - `view_groups` / `manage_groups` — groups, members, API keys

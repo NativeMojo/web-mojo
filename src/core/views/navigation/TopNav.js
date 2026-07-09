@@ -651,6 +651,7 @@ class TopNav extends View {
         }
 
         // If no group selector in rightItems, create a temporary one
+        // eslint-disable-next-line no-restricted-syntax -- intentional lazy import (bundle splitting)
         const { GroupList } = await import('@core/models/Group.js');
         const tempSelector = new GroupSelectorButton({
             Collection: GroupList,

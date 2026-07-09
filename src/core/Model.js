@@ -643,6 +643,7 @@ class Model {
   }
 
   async showError(message) {
+      // eslint-disable-next-line no-restricted-syntax -- intentional lazy import (bundle splitting)
       const Modal = (await import('@core/views/feedback/Modal.js')).default;
       await Modal.alert(message, 'Error', {
         size: 'md',

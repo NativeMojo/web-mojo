@@ -89,11 +89,11 @@ class SideNavView extends View {
             return;
         }
 
-        // Skip if user lacks required permission
-        if (config.permissions && !this._hasPermission(config.permissions)) {
-            return;
-        }
-
+        // Permission-gated sections are stored unconditionally — visibility
+        // is decided at render/navigation time by _isSectionAllowed(), when
+        // the app/activeUser chain is resolvable. (SideNavViews are typically
+        // constructed inside a DetailView constructor, before any app is
+        // attached, so filtering here would have to guess.)
         this.sectionConfigs.push(config);
         this.sectionKeys.push(config.key);
 
@@ -104,16 +104,57 @@ class SideNavView extends View {
     }
 
     /**
-     * Check if the current user has a permission
-     * @param {string} perm - Permission string
+     * Permission gate for a section config — FAIL CLOSED, like the rest of
+     * the framework (View#checkPermissions: any-of for arrays; no resolvable
+     * active user ⇒ denied). A gated section is hidden until a user holding
+     * the permission is resolvable, never shown "just in case".
+     * @param {object} config - Section config
      * @returns {boolean}
      * @private
      */
-    _hasPermission(perm) {
-        try {
-            return this.getApp().activeUser.hasPerm(perm);
-        } catch {
-            return true; // If app isn't available yet, allow — will be checked at render
+    _isSectionAllowed(config) {
+        if (!config || config.type === 'divider') return true;
+        if (!config.permissions) return true;
+        return this.checkPermissions(config.permissions);
+    }
+
+    /**
+     * The section configs the current user may see, with divider labels that
+     * precede no visible section dropped.
+     * @returns {object[]}
+     * @private
+     */
+    _visibleSectionConfigs() {
+        const visible = this.sectionConfigs.filter(c => this._isSectionAllowed(c));
+        // Drop dividers whose following group has no visible section.
+        return visible.filter((c, i) => {
+            if (c.type !== 'divider') return true;
+            const next = visible[i + 1];
+            return !!next && next.type !== 'divider';
+        });
+    }
+
+    /**
+     * Ordered keys of the sections the current user may see.
+     * @returns {string[]}
+     * @private
+     */
+    _visibleSectionKeys() {
+        return this._visibleSectionConfigs()
+            .filter(c => c.type !== 'divider')
+            .map(c => c.key);
+    }
+
+    /**
+     * Keep activeSection pointing at a section the user may see — a gated
+     * initial section (or a permission change between renders) falls back to
+     * the first visible one.
+     * @private
+     */
+    _reconcileActiveSection() {
+        const keys = this._visibleSectionKeys();
+        if (!this.activeSection || !keys.includes(this.activeSection)) {
+            this.activeSection = keys[0] || null;
         }
     }
 
@@ -125,6 +166,7 @@ class SideNavView extends View {
         // Stylesheet lives in src/core/css/core.css under "SideNavView".
         // Two instance-specific values (`navWidth`, `contentPadding`) are
         // applied as inline `style="..."` attributes below.
+        this._reconcileActiveSection();
         const nav = this.currentMode === 'dropdown'
             ? this._buildDropdownNav()
             : this._buildSidebarNav();
@@ -182,7 +224,7 @@ class SideNavView extends View {
      * @private
      */
     _buildSidebarNav() {
-        return this.sectionConfigs.map(config => {
+        return this._visibleSectionConfigs().map(config => {
             if (config.type === 'divider') {
                 return `<div class="snv-nav-label">${this.escapeHtml(config.label)}</div>`;
             }
@@ -199,10 +241,11 @@ class SideNavView extends View {
      * @private
      */
     _buildDropdownNav() {
-        const activeConfig = this.sectionConfigs.find(c => c.key === this.activeSection);
-        const activeLabel = activeConfig ? activeConfig.label : this.sectionKeys[0];
+        const visible = this._visibleSectionConfigs();
+        const activeConfig = visible.find(c => c.key === this.activeSection);
+        const activeLabel = activeConfig ? activeConfig.label : (this._visibleSectionKeys()[0] || '');
 
-        const items = this.sectionConfigs
+        const items = visible
             .filter(c => c.type !== 'divider')
             .map(config => {
                 const isActive = config.key === this.activeSection;
@@ -285,6 +328,14 @@ class SideNavView extends View {
     async showSection(key) {
         if (!this.sectionViews[key]) {
             console.warn(`SideNavView: Section "${key}" does not exist`);
+            return false;
+        }
+
+        // Fail-closed permission gate — navigating (including programmatic
+        // calls) must not reach a section the user can't see in the nav.
+        const config = this.sectionConfigs.find(c => c.key === key);
+        if (!this._isSectionAllowed(config)) {
+            console.warn(`SideNavView: Section "${key}" is permission-gated`);
             return false;
         }
 
@@ -504,11 +555,11 @@ class SideNavView extends View {
     }
 
     /**
-     * Get all navigable section keys
+     * Get all navigable section keys (sections the current user may see)
      * @returns {string[]}
      */
     getSectionKeys() {
-        return [...this.sectionKeys];
+        return this._visibleSectionKeys();
     }
 
     /**

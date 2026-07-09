@@ -584,6 +584,7 @@ class Modal {
             ...rest
         } = options;
 
+        // eslint-disable-next-line no-restricted-syntax -- intentional lazy import (bundle splitting)
         const FormView = (await import('@core/forms/FormView.js')).default;
         const formView = new FormView({
             fileHandling: options.fileHandling || 'base64',
@@ -673,6 +674,7 @@ class Modal {
             throw new Error('Modal.modelForm requires a model');
         }
 
+        // eslint-disable-next-line no-restricted-syntax -- intentional lazy import (bundle splitting)
         const FormView = (await import('@core/forms/FormView.js')).default;
         const formView = new FormView({
             fileHandling: options.fileHandling || 'base64',
@@ -753,6 +755,7 @@ class Modal {
             ...rest
         } = options;
 
+        // eslint-disable-next-line no-restricted-syntax -- intentional lazy import (bundle splitting)
         const DataView = (await import('@core/views/data/DataView.js')).default;
         const dataView = new DataView({
             data: payload, model, fields, columns, responsive, showEmptyValues, emptyValueText

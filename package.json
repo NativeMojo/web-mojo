@@ -1,6 +1,6 @@
 {
     "name": "web-mojo",
-    "version": "2.5.24",
+    "version": "2.6.0",
     "description": "WEB-MOJO - A lightweight JavaScript framework for building data-driven web applications",
     "type": "module",
     "main": "./dist/index.cjs.js",
@@ -99,8 +99,8 @@
         "debug": "node test/utils/debug-server.js",
         "debug:watch": "node test/utils/debug-server.js --watch",
         "scss": "sass src/styles/main.scss dist/styles/mojo.css --watch",
-        "lint": "eslint src/**/*.js",
-        "lint:fix": "eslint src/**/*.js --fix",
+        "lint": "eslint src",
+        "lint:fix": "eslint src --fix",
         "migrate:camelcase": "node scripts/migrate-to-camelcase.js",
         "migrate:camelcase:dry": "node scripts/migrate-to-camelcase.js --dry-run",
         "migrate:camelcase:backup": "node scripts/migrate-to-camelcase.js --backup",
