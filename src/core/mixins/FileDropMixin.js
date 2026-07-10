@@ -57,6 +57,25 @@ const FileDropMixin = {
   },
 
   /**
+   * Resolve the max upload size for this view.
+   * Precedence: explicit view/page option → app config `max_upload_size` →
+   * caller-supplied fallback. Non-positive or non-numeric candidates are
+   * skipped; if every candidate is invalid, the mixin's 10MB baseline is
+   * returned so the limit is always a usable positive number.
+   * @param {number} explicitSize - Size configured directly on the view (bytes)
+   * @param {number} fallbackSize - Default when neither explicit nor app config is set (bytes)
+   * @returns {number} Max upload size in bytes
+   */
+  resolveMaxUploadSize(explicitSize, fallbackSize) {
+    const candidates = [explicitSize, this.getApp?.()?.config?.max_upload_size, fallbackSize];
+    for (const candidate of candidates) {
+      const size = Number(candidate);
+      if (Number.isFinite(size) && size > 0) return size;
+    }
+    return 10 * 1024 * 1024; // 10MB
+  },
+
+  /**
    * Set up drag and drop event listeners
    * @private
    */
@@ -314,9 +333,14 @@ const FileDropMixin = {
 };
 
 // Apply mixin to View prototype
-export default function applyFileDropMixin(ViewClass) {
+function applyFileDropMixin(ViewClass) {
   Object.assign(ViewClass.prototype, FileDropMixin);
 }
+
+// Default export kept as a single-line statement so the test harness's
+// module transformer can parse it (multi-line function exports get mangled,
+// and so does any comment containing the two export keywords adjacently).
+export default applyFileDropMixin;
 
 // Export the mixin for manual application
 export { FileDropMixin };

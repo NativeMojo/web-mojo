@@ -88,6 +88,7 @@ Pass a configuration object to the `WebApp` constructor:
 | `topbar` | `object` | `{}` | Topbar configuration (forwarded to `layoutConfig`) |
 | `session` | `object` | `{}` | Session/auth configuration |
 | `navigation` | `object` | `{}` | Navigation configuration |
+| `max_upload_size` | `number` | — | App-wide max upload size in **bytes** for upload surfaces that consult it (currently the Admin storage Files page). A page-level `maxFileSize` option wins over it; unset, each surface uses its own default (storage page: 1 GB). Resolved via `FileDropMixin.resolveMaxUploadSize` — see [`mixins/FileDropMixin.md`](../mixins/FileDropMixin.md). Client-side UX guard only; the server still enforces real limits |
 
 ### Router Mode Options
 

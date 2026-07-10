@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Admin · Storage upload limit configurable — 1 GB default, app-level `max_upload_size` (ITEM-024)
+
+- **The Files page (`system/files`) upload cap is no longer hardcoded at 100 MB.** Both upload paths (drag-drop and the Add file picker) now share one resolved limit with the precedence *page option `maxFileSize` → WebApp config `max_upload_size` → 1 GB default*. A 143 MB upload that previously errored ("File size (142.93 MB) exceeds maximum (100 MB)") now passes on default config; deployments needing a different ceiling set `new WebApp({ max_upload_size: N })` (PortalApp/PortalWebApp share the same config object) or pass `maxFileSize` at `registerPage` time. Both error messages report the effective limit.
+- **New `FileDropMixin.resolveMaxUploadSize(explicitSize, fallbackSize)`** — returns the first positive finite number among the explicit option, `app.config.max_upload_size`, and the fallback (mixin 10 MB baseline if every candidate is invalid). The mixin's own `enableFileDrop` default stays 10 MB — `ChatInputView`, `FormView` image fields, and `ImageUploadView` are intentionally unchanged (scoped decision; wire them up separately if wanted).
+- The client-side cap remains a **UX guard only** — server body-size limits and presign policy still enforce real limits, and very large uploads ride the existing single-shot `FileUpload` timeout handling.
+- Tests: `test/unit/FileDropMixin.resolveMaxUploadSize.test.js` (precedence behavior), `test/unit/FileTablePage.uploadLimit.test.js` (source-shape pin: no 100 MB literal remains, both paths use the resolved value, chat/form 10 MB default untouched). Docs: `core/WebApp.md` (config key), `mixins/FileDropMixin.md` (resolver), `extensions/Admin.md` (storage note).
+
 ### Core · SideNavView section permission gating fails closed (and re-evaluates at render)
 
 - **Behavior change — gated sections are now hidden when no user is resolvable.** `SideNavView`'s section `permissions` check returned `true` whenever the app/activeUser couldn't be resolved (or the check threw) — so every permission-gated DetailView section (GroupView's Webhooks/Audit, the Geofencing section, …) rendered for unresolvable users, opposite to the fail-closed gating used by pages, toolbars, and context menus. The check now delegates to `View#checkPermissions` (fail-closed, any-of arrays).

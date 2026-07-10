@@ -38,7 +38,7 @@ The admin extension ships ~50 pre-built admin pages plus an LLM-backed Assistant
 - **Job engine** — dashboard, runners, jobs, scheduled tasks.
 - **Messaging** — email domains/mailboxes/templates/sent, public (contact-form) messages, SMS phone numbers, SMS log, SMS provider configs (Twilio / AWS SNS / Mojo Remote).
 - **Push notifications** — dashboard, configurations, templates, deliveries, devices.
-- **Storage** — file managers, files, S3 buckets.
+- **Storage** — file managers, files, S3 buckets. Uploads on the Files page (`system/files`) are capped client-side at **1 GB by default** — override app-wide with the WebApp config key `max_upload_size` (bytes) or per registration via the `maxFileSize` page option (option wins). The cap is a UX guard; the server still enforces its own limits.
 - **Shortlinks** — links table, click history.
 - **Monitoring** — logs, metrics permissions, CloudWatch dashboard.
 - **System** — settings, API keys.

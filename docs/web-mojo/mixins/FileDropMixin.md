@@ -99,6 +99,21 @@ this.enableFileDrop({
 
 Call `enableFileDrop` in `onInit()`. If the view hasn't rendered yet, the mixin queues setup until `onAfterRender`. After render it attaches listeners immediately.
 
+### `resolveMaxUploadSize(explicitSize, fallbackSize)`
+
+Helper for surfaces that want an app-configurable size limit instead of a hardcoded one. Returns the first **positive finite number** among:
+
+1. `explicitSize` — the view/page's own option (e.g. `options.maxFileSize`)
+2. `this.getApp()?.config?.max_upload_size` — the app-wide WebApp config key (see [`core/WebApp.md`](../core/WebApp.md))
+3. `fallbackSize` — the surface's default
+
+Non-positive or non-numeric candidates are skipped; if every candidate is invalid, the mixin's 10 MB baseline is returned so the result is always usable. The mixin does **not** call this itself — `enableFileDrop`'s `maxFileSize` default stays 10 MB. Surfaces opt in by resolving before enabling (the Admin storage page does this with a 1 GB fallback):
+
+```js
+this.maxUploadSize = this.resolveMaxUploadSize(this.options.maxFileSize, 1024 * 1024 * 1024);
+this.enableFileDrop({ maxFileSize: this.maxUploadSize });
+```
+
 ## Methods Your View Implements
 
 The mixin calls these on your view if they exist:

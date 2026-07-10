@@ -12,6 +12,11 @@ import applyFileDropMixin from '@core/mixins/FileDropMixin.js';
 // upload mixin), so no ADD_FORM is wired.
 File.VIEW_CLASS = FileView;
 
+// Client-side upload ceiling — a UX guard only; the server enforces real
+// limits. Override per page via options.maxFileSize, or app-wide via the
+// WebApp config key `max_upload_size`.
+const DEFAULT_MAX_UPLOAD_SIZE = 1024 * 1024 * 1024; // 1GB
+
 class FileTablePage extends TablePage {
     constructor(options = {}) {
         super({
@@ -109,10 +114,13 @@ class FileTablePage extends TablePage {
             ...options,
         });
 
+        // Resolve once: page option → app config `max_upload_size` → 1GB default.
+        this.maxUploadSize = this.resolveMaxUploadSize(this.options.maxFileSize, DEFAULT_MAX_UPLOAD_SIZE);
+
         // Enable file drop support
         this.enableFileDrop({
             acceptedTypes: ['*/*'],
-            maxFileSize: 100 * 1024 * 1024, // 100MB
+            maxFileSize: this.maxUploadSize,
             multiple: false,
             validateOnDrop: true
         });
@@ -140,10 +148,9 @@ class FileTablePage extends TablePage {
                 return;
             }
 
-            // Validate file size (same as FileDropMixin config)
-            const maxSize = 100 * 1024 * 1024; // 100MB
-            if (file.size > maxSize) {
-                this.showError(`File size (${this._formatFileSize(file.size)}) exceeds maximum (${this._formatFileSize(maxSize)})`);
+            // Validate file size (same resolved limit as the FileDropMixin config)
+            if (file.size > this.maxUploadSize) {
+                this.showError(`File size (${this._formatFileSize(file.size)}) exceeds maximum (${this._formatFileSize(this.maxUploadSize)})`);
                 return;
             }
 
