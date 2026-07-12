@@ -605,9 +605,11 @@ const resp = await metrics.rest.GET('/api/metrics/summary', {
 
 ## ApiKey & ApiKeyList
 
-Represents an API key for programmatic access.
+Represents a group-scoped API key for programmatic access. Requests carry it
+as `Authorization: apikey <token>`; the raw token is only returned at
+creation time.
 
-**Endpoint:** `/api/apikey`
+**Endpoint:** `/api/group/apikey`
 
 ```js
 import { ApiKey, ApiKeyList } from 'web-mojo/models';
@@ -616,19 +618,36 @@ const key = new ApiKey({ id: 3 });
 await key.fetch();
 
 key.get('id');
-key.get('name');        // Human-readable label
-key.get('key');         // The actual API key (only returned on creation)
-key.get('prefix');      // First few characters of the key for identification
+key.get('name');         // Human-readable label
 key.get('is_active');
 key.get('last_used');
-key.get('expires_at');
-key.get('created_at');
-key.get('group');
+key.get('permissions');  // { <name>: true, ... } — granted permissions
+key.get('limits');       // optional rate-limit overrides
+key.get('created');
+key.get('group');        // { id, name } | id
 
 // Fetch all keys for a group
-const keys = new ApiKeyList();
-await keys.fetch({ group_id: groupId });
+const keys = new ApiKeyList({ params: { group: groupId } });
+await keys.fetch();
 ```
+
+### Form helpers
+
+`ApiKeyForms` ships create/edit field configs. An API key "acts as" a member
+of its group, so the create form embeds the **Group Member permission
+catalog** as a switch tabset — the same `Member.PERMISSION_TABSET` the
+MemberView permissions editor consumes (app permissions registered via
+`Member.registerPermissions(...)` appear automatically). Each switch is a
+dotted `permissions.<name>` key saved as a boolean; there is no whole-object
+JSON permissions field, and callers should strip unchecked (`false`)
+permission keys before POSTing a create (grant-only semantics — see
+`ApiKeyTablePage.onActionAdd`).
+
+`ApiKeyForms.edit` is name-only: `is_active` is toggled from the ApiKeyView
+detail header's active switch, and permissions autosave from its Permissions
+section (`ApiKeyView` extends `DetailView`).
+
+Permission threshold for CRUD is `manage_group` / `manage_groups` / `groups`.
 
 ---
 

@@ -1,159 +1,251 @@
 /**
- * ApiKeyView - Group-scoped API key detail and management interface
+ * ApiKeyView - Group-scoped API key detail view built on the DetailView primitive.
  *
- * Shows key metadata, permissions, and provides actions to edit, toggle
- * active state, and delete. The raw token is only displayed at creation
- * time and is not shown here.
+ * Sections:
+ *   Overview     — key facts (ID, group, created, last used) + token note
+ *   Permissions  — autosave tabset (Member.PERMISSION_TABSET); an API key
+ *                  "acts as" a member of its group, so it offers exactly the
+ *                  Group Member permission catalog (ITEM-025)
+ *   ── Reference ──
+ *   Rate Limits  — read-only limits overrides
+ *   Usage        — Authorization header snippet
+ *
+ * is_active is toggled from the header's active switch; the kebab keeps only
+ * Edit name / Delete. The raw token is only displayed at creation time and
+ * is not shown here.
  */
 
 import View from '@core/View.js';
-import ContextMenu from '@core/views/feedback/ContextMenu.js';
+import DetailView from '@core/views/data/DetailView.js';
+import FormView from '@core/forms/FormView.js';
+import dataFormatter from '@core/utils/DataFormatter.js';
+import { Member } from '@core/models/Member.js';
 import { ApiKey, ApiKeyForms } from '@core/models/ApiKey.js';
 
-class ApiKeyView extends View {
+
+// ── Helpers ────────────────────────────────────────────────
+
+function countTruthy(obj) {
+    if (!obj || typeof obj !== 'object') return 0;
+    return Object.values(obj).filter(v => v === true).length;
+}
+
+
+// ── Overview section ───────────────────────────────────────
+
+class ApiKeyOverviewSection extends View {
     constructor(options = {}) {
         super({
-            className: 'api-key-view',
+            className: 'api-key-overview-section',
+            template: `
+                <div class="detail-section-eyebrow">Key</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">ID</div>
+                    <div class="detail-flat-row-value">{{model.id}}</div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Group</div>
+                    <div class="detail-flat-row-value">
+                        {{#groupLabel}}{{groupLabel}}{{/groupLabel}}
+                        {{^groupLabel}}<span class="text-secondary fst-italic">—</span>{{/groupLabel}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Created</div>
+                    <div class="detail-flat-row-value">{{model.created|datetime}}</div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Last used</div>
+                    <div class="detail-flat-row-value">{{lastUsedLabel}}</div>
+                </div>
+
+                <div class="detail-section-eyebrow">Token</div>
+                <p class="text-secondary small mb-0">
+                    The raw token was only shown once, at creation time.
+                    If it has been lost, delete this key and create a new one.
+                </p>
+            `,
             ...options
         });
+    }
 
-        this.model = options.model || new ApiKey(options.data || {});
+    get groupLabel() {
+        const group = this.model?.get?.('group');
+        if (!group) return null;
+        return group.name || `Group ${group}`;
+    }
 
-        this.template = `
-            <div class="api-key-view-container">
-                <!-- Header -->
-                <div class="d-flex justify-content-between align-items-start mb-4">
-                    <!-- Left: Icon & Identity -->
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="fs-1 text-primary">
-                            <i class="bi bi-key"></i>
-                        </div>
-                        <div>
-                            <h3 class="mb-1">{{model.name|default('Unnamed Key')}}</h3>
-                            <div class="text-muted small">
-                                ID: {{model.id}}
-                                <span class="mx-2">|</span>
-                                Group: {{model.group.name|default(model.group)}}
-                            </div>
-                            <div class="mt-1">
-                                <span class="badge {{model.is_active|boolean('bg-success','bg-secondary')}}">
-                                    {{model.is_active|boolean('Active','Inactive')}}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+    get lastUsedLabel() {
+        const lu = this.model?.get?.('last_used');
+        if (!lu) return 'never';
+        return dataFormatter.apply(lu, ['relative']) || 'never';
+    }
+}
 
-                    <!-- Right: Meta & Actions -->
-                    <div class="d-flex align-items-start gap-4">
-                        <div class="text-end">
-                            <div class="text-muted small">Created</div>
-                            <div>{{model.created|datetime}}</div>
-                        </div>
-                        <div data-container="apikey-context-menu"></div>
-                    </div>
-                </div>
 
-                <!-- Details -->
-                <div class="list-group mb-3">
-                    <div class="list-group-item">
-                        <h6 class="mb-1 text-muted">Token Preview</h6>
-                        <p class="mb-1 font-monospace small text-muted">
-                            The raw token is only shown once at creation time.
-                        </p>
-                    </div>
-                    <div class="list-group-item">
-                        <h6 class="mb-1 text-muted">Permissions</h6>
-                        {{#model.permissions}}
-                            <pre class="mb-0 small">{{model.permissions|json}}</pre>
-                        {{/model.permissions}}
-                        {{^model.permissions}}
-                            <span class="text-muted small">No permissions granted</span>
-                        {{/model.permissions}}
-                    </div>
-                    {{#model.limits}}
-                    <div class="list-group-item">
-                        <h6 class="mb-1 text-muted">Rate Limit Overrides</h6>
-                        <pre class="mb-0 small">{{model.limits|json}}</pre>
-                    </div>
-                    {{/model.limits}}
-                    <div class="list-group-item">
-                        <h6 class="mb-1 text-muted">Usage</h6>
-                        <p class="mb-0 small text-muted">
-                            Include in requests as:
-                            <code>Authorization: apikey &lt;token&gt;</code>
-                        </p>
-                    </div>
-                </div>
-            </div>
-        `;
+// ── Permissions section ────────────────────────────────────
+//
+// One autosaving FormView over the live Member.PERMISSION_TABSET cache —
+// the exact MemberPermissionsSection shape. Each switch saves a flat dotted
+// `permissions.<name>` boolean; permissions outside the catalog are never
+// shown and never touched.
+
+class ApiKeyPermissionsSection extends View {
+    constructor(options = {}) {
+        super({
+            className: 'api-key-permissions-section',
+            template: `
+                <div class="detail-section-eyebrow">API key permissions</div>
+                <p class="text-secondary small mb-3">
+                    Grants this key can exercise — the same catalog a group
+                    member can hold. Toggles autosave as soon as you flip them.
+                </p>
+                <div data-container="apikey-perms"></div>
+            `,
+            ...options
+        });
     }
 
     async onInit() {
-        const isActive = this.model.get('is_active');
-
-        const apiKeyMenu = new ContextMenu({
-            containerId: 'apikey-context-menu',
-            className: 'context-menu-view header-menu-absolute',
-            context: this.model,
-            config: {
-                icon: 'bi-three-dots-vertical',
-                items: [
-                    { label: 'Edit', action: 'edit-key', icon: 'bi-pencil' },
-                    isActive
-                        ? { label: 'Deactivate', action: 'deactivate-key', icon: 'bi-x-circle' }
-                        : { label: 'Activate', action: 'activate-key', icon: 'bi-check-circle' },
-                    { type: 'divider' },
-                    { label: 'Delete Key', action: 'delete-key', icon: 'bi-trash', danger: true }
-                ]
-            }
+        this.formView = new FormView({
+            containerId: 'apikey-perms',
+            fields: Member.PERMISSION_TABSET,
+            model: this.model,
+            autosaveModelField: true
         });
-        this.addChild(apiKeyMenu);
+        this.addChild(this.formView);
     }
+}
+
+
+// ── Rate limits section ────────────────────────────────────
+
+class ApiKeyLimitsSection extends View {
+    constructor(options = {}) {
+        super({
+            className: 'api-key-limits-section',
+            template: `
+                <div class="detail-section-eyebrow">Rate limit overrides</div>
+                {{#hasLimits|bool}}
+                    <pre class="small mb-0">{{model.limits|json}}</pre>
+                {{/hasLimits|bool}}
+                {{^hasLimits|bool}}
+                    <p class="text-secondary small mb-0">None — group defaults apply.</p>
+                {{/hasLimits|bool}}
+            `,
+            ...options
+        });
+    }
+
+    get hasLimits() {
+        const limits = this.model?.get?.('limits');
+        return !!limits && typeof limits === 'object' && Object.keys(limits).length > 0;
+    }
+}
+
+
+// ── Usage section ──────────────────────────────────────────
+
+class ApiKeyUsageSection extends View {
+    constructor(options = {}) {
+        super({
+            className: 'api-key-usage-section',
+            template: `
+                <div class="detail-section-eyebrow">Usage</div>
+                <p class="text-secondary small mb-2">Send the key on every request:</p>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Header</div>
+                    <div class="detail-flat-row-value">
+                        <code>Authorization: apikey &lt;token&gt;</code>
+                    </div>
+                </div>
+            `,
+            ...options
+        });
+    }
+}
+
+
+// ── ApiKeyView (assembly) ──────────────────────────────────
+
+class ApiKeyView extends DetailView {
+    constructor(options = {}) {
+        const model = options.model || new ApiKey(options.data || {});
+
+        const overviewSection = new ApiKeyOverviewSection({ model });
+        const permissionsSection = new ApiKeyPermissionsSection({ model });
+        const limitsSection = new ApiKeyLimitsSection({ model });
+        const usageSection = new ApiKeyUsageSection({ model });
+
+        const sections = [
+            { key: 'Overview',    label: 'Overview',    icon: 'bi-grid-1x2',    view: overviewSection },
+            { key: 'Permissions', label: 'Permissions', icon: 'bi-shield-lock', view: permissionsSection },
+            { type: 'divider', label: 'Reference' },
+            { key: 'Limits', label: 'Rate Limits', icon: 'bi-speedometer2', view: limitsSection },
+            { key: 'Usage',  label: 'Usage',       icon: 'bi-book',         view: usageSection }
+        ];
+
+        const chips = [
+            {
+                icon: 'bi-people',
+                text: m => m.get('group')?.name || null,
+                variant: 'info',
+                when: m => !!m.get('group')?.name
+            },
+            {
+                text: m => {
+                    const n = countTruthy(m.get('permissions'));
+                    return n > 0 ? `${n} ${n === 1 ? 'perm' : 'perms'} granted` : null;
+                },
+                variant: 'light',
+                when: m => countTruthy(m.get('permissions')) > 0
+            }
+        ];
+
+        super({
+            className: 'api-key-view',
+            ...options,
+            model,
+            header: {
+                icon: 'bi-key',
+                titleField: 'name',
+                subtitleFn: () => 'The raw token was shown once at creation and is not retrievable.',
+                chips,
+                // Deactivate via the active toggle; the kebab keeps only the
+                // deliberate, less-prominent actions.
+                activeField: 'is_active',
+                contextMenu: {
+                    items: [
+                        { label: 'Edit name', action: 'edit-key', icon: 'bi-pencil' },
+                        { type: 'divider' },
+                        { label: 'Delete Key', action: 'delete-key', icon: 'bi-trash', danger: true }
+                    ]
+                }
+            },
+            sections,
+            activeSection: 'Permissions'
+        });
+
+        // Stash references for action handlers + tests
+        this.overviewSection = overviewSection;
+        this.permissionsSection = permissionsSection;
+        this.limitsSection = limitsSection;
+        this.usageSection = usageSection;
+    }
+
+    // ── Actions ────────────────────────────────────────────
 
     async onActionEditKey() {
         const app = this.getApp();
         const resp = await app.showModelForm({
             title: `Edit API Key — ${this.model.get('name')}`,
             model: this.model,
-            formConfig: ApiKeyForms.edit,
+            formConfig: ApiKeyForms.edit
         });
         if (resp) {
-            this.render();
+            await this.headerView?.render();
         }
-    }
-
-    async onActionDeactivateKey() {
-        const app = this.getApp();
-        const confirmed = await app.confirm({
-            title: 'Deactivate API Key',
-            message: `Deactivate "${this.model.get('name')}"? Requests using this key will be rejected.`,
-            confirmLabel: 'Deactivate',
-            confirmClass: 'btn-warning'
-        });
-        if (!confirmed) return;
-
-        app.showLoading();
-        const resp = await this.model.save({ is_active: false });
-        app.hideLoading();
-        if (resp && resp.success !== false) {
-            app.toast.success('API key deactivated');
-            this.render();
-        } else {
-            app.toast.error('Failed to deactivate key');
-        }
-    }
-
-    async onActionActivateKey() {
-        const app = this.getApp();
-        app.showLoading();
-        const resp = await this.model.save({ is_active: true });
-        app.hideLoading();
-        if (resp && resp.success !== false) {
-            app.toast.success('API key activated');
-            this.render();
-        } else {
-            app.toast.error('Failed to activate key');
-        }
+        return true;
     }
 
     async onActionDeleteKey() {
@@ -164,7 +256,7 @@ class ApiKeyView extends View {
             confirmLabel: 'Delete',
             confirmClass: 'btn-danger'
         });
-        if (!confirmed) return;
+        if (!confirmed) return true;
 
         app.showLoading();
         const resp = await this.model.destroy();
@@ -172,9 +264,15 @@ class ApiKeyView extends View {
         if (resp && resp.success !== false) {
             app.toast.success('API key deleted');
             this.emit('deleted', { model: this.model });
+            const dialog = this.element?.closest('.modal');
+            if (dialog) {
+                const bsModal = window.bootstrap?.Modal?.getInstance(dialog);
+                if (bsModal) bsModal.hide();
+            }
         } else {
             app.toast.error('Failed to delete key');
         }
+        return true;
     }
 }
 

@@ -245,6 +245,18 @@ class SimpleModuleLoader {
                 path: path.join(this.sourceRoot, 'core/models/Member.js'),
                 dependencies: ['Model', 'Collection']
             },
+            'ApiKey': {
+                path: path.join(this.sourceRoot, 'core/models/ApiKey.js'),
+                dependencies: ['Model', 'Collection', 'Member']
+            },
+            'ApiKeyView': {
+                // Tests must stub `global.FormView` (constructible, async
+                // render) before loadModule — the Permissions section news
+                // one up in onInit (same caveat as TableView elsewhere).
+                path: path.join(this.sourceRoot, 'extensions/admin/account/api_keys/ApiKeyView.js'),
+                // ContextMenu: DetailHeaderView constructs one for the kebab.
+                dependencies: ['View', 'DetailView', 'ContextMenu', 'dataFormatter', 'Member', 'ApiKey']
+            },
             'dateFns': {
                 path: path.join(this.sourceRoot, 'core/utils/dateFns.js'),
                 dependencies: []
@@ -517,6 +529,8 @@ class SimpleModuleLoader {
                 Collection: 'Collection',
                 User: 'User',
                 Member: 'Member',
+                // ApiKey.js has only named exports — return all three bindings.
+                ApiKey: '{ ApiKey, ApiKeyList, ApiKeyForms }',
                 dateFns: 'dateFns',
                 Calendar: 'Calendar',
                 CalendarPopover: 'CalendarPopover',
@@ -554,6 +568,8 @@ class SimpleModuleLoader {
             { test: /Router/, name: 'Router' },
             { test: /Rest/, name: 'Rest' },
             { test: /DataFormatter/, name: 'dataFormatter' },
+            { test: /models\/Member(\.js)?$/, name: 'Member' },
+            { test: /models\/ApiKey(\.js)?$/, name: 'ApiKey' },
             { test: /MOJOUtils/, name: 'MOJOUtils' },
             { test: /ListGroupHeaderView/, name: 'ListGroupHeaderView' },
             { test: /ListViewItem/, name: 'ListViewItem' },
@@ -575,6 +591,9 @@ class SimpleModuleLoader {
             { test: /\/DateTimePicker(\.js)?$/, name: 'DateTimePicker' },
             { test: /\/TableView(\.js)?$/, name: 'TableView' },
             { test: /FormPlugins(\.js)?$/, name: 'FormPlugins' },
+            // Static FormView imports resolve to global.FormView — tests
+            // stub it with a constructible class (the TableView pattern).
+            { test: /forms\/FormView(\.js)?$/, name: 'FormView' },
             // FormView's module body calls applyFileDropMixin(FormView) at
             // load time — tests must stub `global.FileDropMixin = (cls) => cls`
             // before loading FormView via loadModuleFromFile.

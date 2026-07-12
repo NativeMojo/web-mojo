@@ -20,9 +20,14 @@ class ApiKeyTablePage extends TablePage {
             Collection: ApiKeyList,
 
             itemViewClass: ApiKeyView,
+            // ApiKeyView is a DetailView: it renders its own header (with the
+            // × close) and needs the flush body — same trio every sibling
+            // DetailView-based admin table passes (ITEM-025).
             viewDialogOptions: {
                 header: false,
-                size: 'lg'
+                size: 'lg',
+                noBodyPadding: true,
+                buttons: []
             },
 
             columns: [
@@ -72,7 +77,15 @@ class ApiKeyTablePage extends TablePage {
         });
         if (!result) return;
 
-        const resp = await model.save(result);
+        // Grant-only create: drop unchecked permission switches so the POST
+        // carries one dotted `permissions.<name>: true` key per granted
+        // permission and nothing else (absent = not granted; explicit falses
+        // would fire the backend's per-key permission gate for nothing).
+        const payload = Object.fromEntries(
+            Object.entries(result).filter(([k, v]) => !k.startsWith('permissions.') || v === true)
+        );
+
+        const resp = await model.save(payload);
         if (!resp?.data?.status) {
             app.showError(resp?.data?.error || 'Failed to create API key');
             return;

@@ -1,5 +1,6 @@
 import Collection from '@core/Collection.js';
 import Model from '@core/Model.js';
+import { Member } from '@core/models/Member.js';
 
 /**
  * ApiKey - Group-scoped API key for external integrations and services.
@@ -46,42 +47,57 @@ class ApiKeyList extends Collection {
 }
 
 /**
- * Forms configuration for ApiKey
+ * Forms configuration for ApiKey.
+ *
+ * Permissions are edited with the same switch/tabset editor a Group Member
+ * uses (an API key "acts as" a member of its group, so it offers exactly the
+ * Member permission catalog). Each switch is a `permissions.<name>` dotted
+ * key saved as a boolean — never a whole-object JSON blob (ITEM-025: the old
+ * `type: 'textarea'` field string-coerced objects to "[object Object]" and
+ * silently corrupted permissions on save).
  */
 const ApiKeyForms = {
     create: {
         title: 'Create API Key',
-        fields: [
-            {
-                name: 'name',
-                type: 'text',
-                label: 'Name',
-                placeholder: 'Mobile App v2',
-                required: true,
-                columns: 12,
-                help: 'A descriptive name to identify this key.'
-            },
-            {
-                name: 'group',
-                type: 'number',
-                label: 'Group ID',
-                required: true,
-                columns: 12,
-                help: 'The group this key is scoped to.'
-            },
-            {
-                name: 'permissions',
-                type: 'textarea',
-                label: 'Permissions (JSON)',
-                placeholder: '{"view_orders": true, "create_orders": true}',
-                columns: 12,
-                help: 'JSON dict of permissions to grant. Leave empty for no permissions.'
-            }
-        ]
+        // `fields` is a getter so the permission tabset is resolved at open
+        // time: Member.PERMISSION_TABSET replaces its tabset element when
+        // apps call Member.registerPermissions(), so a module-load spread
+        // would freeze a stale copy.
+        get fields() {
+            return [
+                {
+                    name: 'name',
+                    type: 'text',
+                    label: 'Name',
+                    placeholder: 'Mobile App v2',
+                    required: true,
+                    columns: 12,
+                    help: 'A descriptive name to identify this key.'
+                },
+                {
+                    name: 'group',
+                    type: 'number',
+                    label: 'Group ID',
+                    required: true,
+                    columns: 12,
+                    help: 'The group this key is scoped to.'
+                },
+                {
+                    type: 'heading',
+                    text: 'Permissions',
+                    level: 6,
+                    class: 'mt-2 mb-0',
+                    columns: 12
+                },
+                ...Member.PERMISSION_TABSET
+            ];
+        }
     },
 
     edit: {
         title: 'Edit API Key',
+        // Name only: is_active lives on the detail header's active switch,
+        // and permissions autosave from the detail view's Permissions section.
         fields: [
             {
                 name: 'name',
@@ -89,20 +105,6 @@ const ApiKeyForms = {
                 label: 'Name',
                 required: true,
                 columns: 12
-            },
-            {
-                name: 'is_active',
-                type: 'switch',
-                label: 'Active',
-                columns: 12,
-                help: 'Deactivate to revoke access without deleting the key.'
-            },
-            {
-                name: 'permissions',
-                type: 'textarea',
-                label: 'Permissions (JSON)',
-                columns: 12,
-                help: 'JSON dict of granted permissions.'
             }
         ]
     }

@@ -298,7 +298,7 @@ Every admin page is registered with a `permissions:` requirement. The framework'
 
 ## Phone Hub — Config Page (`system/phonehub/config`)
 
-`PhoneConfigTablePage` (route `system/phonehub/config`) lists per-group SMS provider configurations and appears under **Phonehub → Config** in the admin sidebar. Each row is one `PhoneConfig` with a provider (Twilio, AWS SNS, or Mojo Remote) and its encrypted credentials. Clicking a row opens `PhoneConfigView` — a read-only detail panel (header badges + Configuration / provider-settings / Metadata sections) with a three-dots context menu, matching the `ApiKeyView` pattern. All mutations live on the context menu.
+`PhoneConfigTablePage` (route `system/phonehub/config`) lists per-group SMS provider configurations and appears under **Phonehub → Config** in the admin sidebar. Each row is one `PhoneConfig` with a provider (Twilio, AWS SNS, or Mojo Remote) and its encrypted credentials. Clicking a row opens `PhoneConfigView` — a read-only detail panel (header badges + Configuration / provider-settings / Metadata sections) with a three-dots context menu. All mutations live on the context menu.
 
 Both the table **Add** button and the context-menu **Edit** action open one combined form whose credential fields (`showWhen`) appear or hide based on the selected provider. Blank credential inputs are stripped before save so existing stored secrets are never accidentally cleared. `PhoneConfig.FORM_DIALOG_CONFIG` opens the dialog at `lg` width.
 

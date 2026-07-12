@@ -1704,11 +1704,21 @@ class GroupView extends DetailView {
         });
         if (!data) return;
 
+        // Grant-only create: drop unchecked permission switches so the POST
+        // carries one dotted `permissions.<name>: true` key per granted
+        // permission and nothing else (absent = not granted; explicit falses
+        // would fire the backend's per-key permission gate for nothing).
+        //
         // Model.save(data) sends `data` as the POST body verbatim — it does
         // NOT serialize from constructor attributes. Pass the payload here
         // (mirrors the proven pattern in ApiKeyTablePage.onActionAdd).
         const newKey = new ApiKey();
-        const payload = { ...data, group: this.model.id };
+        const payload = {
+            ...Object.fromEntries(
+                Object.entries(data).filter(([k, v]) => !k.startsWith('permissions.') || v === true)
+            ),
+            group: this.model.id
+        };
         const resp = await newKey.save(payload);
         if (!resp?.data?.status || (resp?.status && resp.status >= 400)) {
             this.getApp()?.toast?.error(
@@ -1717,8 +1727,12 @@ class GroupView extends DetailView {
             return;
         }
 
+        const grantedPerms = Object.keys(payload)
+            .filter(k => k.startsWith('permissions.'))
+            .map(k => k.slice('permissions.'.length));
+
         const token = resp?.data?.data?.token;
-        await this._showApiKeyTokenDialog(token, payload.name, payload.permissions);
+        await this._showApiKeyTokenDialog(token, payload.name, grantedPerms);
         await this.apiKeysCollection.fetch().catch(() => {});
     }
 
@@ -1765,27 +1779,16 @@ class GroupView extends DetailView {
      * from accidental dismissal even though the obvious copy affordance is
      * right at the token.
      */
-    async _showApiKeyTokenDialog(token, name, permissionsInput) {
+    async _showApiKeyTokenDialog(token, name, grantedPerms) {
         if (!token) {
             this.getApp()?.toast?.success('API key created');
             return;
         }
 
-        // Permissions preview — `permissionsInput` may be a dict, a JSON
-        // string (the textarea passes through verbatim), null, or invalid.
-        // Fall back to "no permissions" on parse failure (matches the
-        // backend's silent coercion to {} in api_key.py:85-86).
-        let permKeys = [];
-        if (permissionsInput) {
-            let parsed = permissionsInput;
-            if (typeof parsed === 'string') {
-                try { parsed = JSON.parse(parsed); }
-                catch { parsed = null; }
-            }
-            if (parsed && typeof parsed === 'object') {
-                permKeys = Object.keys(parsed).filter(k => parsed[k]);
-            }
-        }
+        // Permissions preview — `grantedPerms` is the array of granted
+        // permission names, already extracted from the create form's dotted
+        // `permissions.<name>` switch keys by the caller (ITEM-025).
+        const permKeys = Array.isArray(grantedPerms) ? grantedPerms : [];
 
         const permsHtml = permKeys.length
             ? `<div class="small mt-3">
