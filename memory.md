@@ -34,11 +34,13 @@
 
 ## Lint Baseline
 - `npm run lint` = `eslint src` (fixed 2026-07-08; the old `src/**/*.js` glob never recursed under /bin/sh — extensions were NEVER linted). Baseline: **0 errors / 316 warnings**. Warnings are tracked debt: 4 recommended rules downgraded to warn (`no-useless-escape`, `no-case-declarations`, `no-prototype-builtins`, `no-empty`); intentional lazy `import()` sites carry inline eslint-disable comments; `bootstrap` is a declared global; generated `countryCentroids.js` is ignored (its BQ/ES/TF duplicate keys are a generator artifact).
+- **Unit-testing a heavy DetailView-based view — loader import mechanics (ITEM-026)** — `simple-module-loader` transforms imports at load: a **default** import whose path maps in `importPathToGlobal` → `const X = global.X` (captured at load, so set the global BEFORE `loadModule`; you may then `delete` it — the module keeps its captured ref); an **unmapped default** import → a constructible module-local stub; but an **unmapped named** import (`import { LogList }`) → `const X = undefined`, so a constructor-time `new X()` throws. A view that `new`s a model/collection in its constructor therefore needs that model's path in `importPathToGlobal` (added `models/Log.js → LogList`) and the view registered in the loader. Never leave a `global.<RealModule>` assigned — it leaks into later test files (once broke a `ShortLinkView` `instanceof MetricCard` assertion via loadModule's cache-hit not restoring the global); capture-then-`delete`, or don't touch it. Prefer construction-only assertions (read `headerConfig`/`sectionsConfig`, drive action handlers directly) over full `render()`.
 
 ## Open Questions
 - (empty)
 
 ## Archive
+- ITEM-026 (2026-07-12) MemberView: Audit section gate widened to the server LogList VIEW_PERMS `[manage_logs, view_logs, security, admin]` (was bare `view_logs` — fail-closed but locked out `security`/`manage_logs`-only operators); added an "Edit membership" kebab action (role-only via `showModelForm`; `is_active`=header switch, `display_name`=UserView; shared `Member.EDIT_FORM` untouched). +`MemberView.test.js` (6 tests) + loader registration/`Log.js`→`LogList` mapping. Suite 1331/1331, lint 0 errors. Surfaced by the MojoVerify portal adopting the framework MemberView (portal ITEM-017). Unreleased (version bump pending publish).
 - `RunnerDetailsView.js` was refactored from `this.runner` to `this.model` to match framework patterns.
 - Agent context restructure completed: `AGENT.md`, `docs/agent/architecture.md`, `memory.md`, `prompts/building.md`, `prompts/planning.md`.
 - MultiSelectDropdown + Django lookups filter system shipped.

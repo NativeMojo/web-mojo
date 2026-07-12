@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Admin · MemberView — Audit gate widened to LogList perms + Edit-membership action (ITEM-026)
+
+- **The Member detail "Audit" section no longer hides itself from `security`- or `manage_logs`-only operators.** It gated on a bare `permissions: 'view_logs'`, narrower than the server `LogList` VIEW_PERMS `[manage_logs, view_logs, security, admin]` (`django-mojo apps/logit/models/log.py`) — so an operator holding e.g. `security` was denied the tab client-side even though the API would serve them (fail-closed, no data leak, but a real capability loss for security-specialist roles). The SideNav **section descriptor** (the effective gate, via `SideNavView._isSectionAllowed` → `checkPermissions`) and the underlying `TableView` now both mirror the server list.
+- **New "Edit membership" kebab action** on `MemberView` — edits a member's Role (`metadata.role`) via `showModelForm`, refreshing the header subtitle on a successful save. Role only: `is_active` stays on the header active switch (the ITEM-025 convention — never in an edit form) and Display Name is a User field owned by `UserView`, so the shared `Member.EDIT_FORM` is deliberately left untouched (other consumers unaffected).
+- Tests: `test/unit/MemberView.test.js` (6 behavioral tests — kebab action list, the Audit gate array on both the section descriptor and the TableView, the role-only edit form, and header-refresh-only-on-success). Test-infra: `MemberView` registered in `simple-module-loader`, plus the missing `models/Log.js → LogList` path mapping (a named `{ LogList }` import was transforming to `const LogList = undefined`, breaking constructor-time `new LogList()`).
+
 ### Admin · API Key permissions: Member-parity switch editor + ApiKeyView DetailView migration (ITEM-025)
 
 - **The permissions JSON textarea is gone — it was corrupting data.** `ApiKeyForms.create`/`.edit` declared `permissions` as `type: 'textarea'`: an already-fetched permissions object string-coerced to the literal text `[object Object]` on Edit, and the raw textarea string was POSTed with no `JSON.parse` — so even a name-only save silently overwrote real permissions with a garbage string. Both dialogs (GroupView → API Keys and the standalone admin ApiKeys table) had the bug.

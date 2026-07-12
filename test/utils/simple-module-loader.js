@@ -257,6 +257,15 @@ class SimpleModuleLoader {
                 // ContextMenu: DetailHeaderView constructs one for the kebab.
                 dependencies: ['View', 'DetailView', 'ContextMenu', 'dataFormatter', 'Member', 'ApiKey']
             },
+            'MemberView': {
+                // Tests must set constructible global.TableView + global.LogList
+                // before loadModule (auditSection + logsCollection are new'd in
+                // the constructor), then delete them so they don't leak into
+                // later test files (the transformed module keeps its own captured
+                // references). MetricCard/Timeline/FormView are onInit-only.
+                path: path.join(this.sourceRoot, 'extensions/admin/account/users/MemberView.js'),
+                dependencies: ['View', 'DetailView', 'ContextMenu', 'dataFormatter', 'Member']
+            },
             'dateFns': {
                 path: path.join(this.sourceRoot, 'core/utils/dateFns.js'),
                 dependencies: []
@@ -570,6 +579,7 @@ class SimpleModuleLoader {
             { test: /DataFormatter/, name: 'dataFormatter' },
             { test: /models\/Member(\.js)?$/, name: 'Member' },
             { test: /models\/ApiKey(\.js)?$/, name: 'ApiKey' },
+            { test: /models\/Log(\.js)?$/, name: 'LogList' },
             { test: /MOJOUtils/, name: 'MOJOUtils' },
             { test: /ListGroupHeaderView/, name: 'ListGroupHeaderView' },
             { test: /ListViewItem/, name: 'ListViewItem' },

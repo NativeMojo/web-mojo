@@ -267,7 +267,7 @@ class MemberView extends DetailView {
             showFullscreen: false,
             searchable: false,
             hideActivePillNames: ['model_name', 'model_id'],
-            permissions: 'view_logs',
+            permissions: ['manage_logs', 'view_logs', 'security', 'admin'],
             tableOptions: { striped: false, hover: true },
             columns: [
                 {
@@ -291,7 +291,7 @@ class MemberView extends DetailView {
             { key: 'Overview',    label: 'Overview',    icon: 'bi-grid-1x2',     view: overviewSection },
             { key: 'Permissions', label: 'Permissions', icon: 'bi-shield-lock',  view: permissionsSection },
             { type: 'divider', label: 'Activity' },
-            { key: 'Audit', label: 'Audit', icon: 'bi-clock-history', view: auditSection, permissions: 'view_logs' }
+            { key: 'Audit', label: 'Audit', icon: 'bi-clock-history', view: auditSection, permissions: ['manage_logs', 'view_logs', 'security', 'admin'] }
         ];
 
         // Header chips — only render when value exists (the DetailHeaderView
@@ -345,6 +345,7 @@ class MemberView extends DetailView {
                 actions: [],
                 contextMenu: {
                     items: [
+                        { label: 'Edit membership', action: 'edit-membership', icon: 'bi-pencil' },
                         { label: 'View user',  action: 'view-user',  icon: 'bi-person' },
                         { label: 'View group', action: 'view-group', icon: 'bi-people' },
                         { label: 'Audit log',  action: 'view-audit', icon: 'bi-clock-history' },
@@ -452,6 +453,27 @@ class MemberView extends DetailView {
 
     async onActionViewAudit() {
         await this.showSection('Audit');
+    }
+
+    async onActionEditMembership() {
+        const app = this.getApp();
+        // Role only — is_active lives on the header active switch (framework
+        // convention, ITEM-025), and Display Name is a User field edited from
+        // UserView; neither belongs in the membership edit form.
+        const resp = await app.showModelForm({
+            title: 'Edit membership',
+            model: this.model,
+            formConfig: {
+                fields: [
+                    { name: 'metadata.role', type: 'text', label: 'Role', placeholder: 'Enter role' }
+                ]
+            }
+        });
+        if (resp) {
+            this._refreshComputedFields();
+            await this.headerView?.render();
+        }
+        return true;
     }
 
     async onActionRemoveFromGroup() {
