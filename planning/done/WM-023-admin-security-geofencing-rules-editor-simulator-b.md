@@ -7,7 +7,7 @@ effort: L
 owner: frontend
 opened: 2026-07-07
 depends_on: []
-related: [django-mojo#ITEM-017]
+related: [django-mojo#DM-017]
 links:
   - django-mojo docs/web_developer/account/geofence.md (the REST contract, written for this UI)
 ---
@@ -15,7 +15,7 @@ links:
 
 ## What & Why
 
-The backend admin plane **landed**: **django-mojo#ITEM-017** (closed
+The backend admin plane **landed**: **django-mojo#DM-017** (closed
 2026-07-08, ships in **v1.2.42**) delivered the full REST contract this UI
 consumes, documented — purpose-written for this section — in
 `docs/web_developer/account/geofence.md`: `GET/POST/DELETE /api/geo/rules`
@@ -104,7 +104,7 @@ New admin section under the existing `src/extensions/admin/security/`:
 ### Goal
 Ship the admin geofencing surface — a `system/security/geofencing` page
 (posture header + Rules / Simulator / Blocks log / Exemptions tabs) plus a
-GroupView "Geofencing" section — consuming the django-mojo#ITEM-017 REST
+GroupView "Geofencing" section — consuming the django-mojo#DM-017 REST
 contract, gated by global geofence perms, plain-language-first, with mockups
 approved before any code.
 
@@ -432,7 +432,7 @@ group panel merged view.
     hosting was down at delivery; mockup lives in session scratchpad
     `geofencing-mockups.html` (shared in-chat) — publish/commit a durable
     copy if wanted later.
-- **Backend dependency SATISFIED**: django-mojo#ITEM-017 closed 2026-07-08,
+- **Backend dependency SATISFIED**: django-mojo#DM-017 closed 2026-07-08,
   in v1.2.42. The REST contract is live and documented in
   `docs/web_developer/account/geofence.md` — build against that doc, not
   guesses. mverify_api (MVERIFY-API-014, also done) already enforces in
