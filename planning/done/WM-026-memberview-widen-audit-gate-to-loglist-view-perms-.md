@@ -1,5 +1,5 @@
 ---
-id: ITEM-026
+id: WM-026
 type: feature
 title: MemberView — widen Audit gate to LogList VIEW_PERMS + add Edit-membership action
 priority: P2
@@ -7,7 +7,7 @@ effort: S
 owner: framework
 opened: 2026-07-12
 depends_on: []
-related: [ITEM-025]
+related: [WM-025]
 links: []
 ---
 
@@ -15,7 +15,7 @@ links: []
 
 ## What & Why
 Two gaps in the DetailView-migrated `MemberView`, surfaced while a downstream
-consumer (MojoVerify portal, its ITEM-017) adopted the framework MemberView in
+consumer (MojoVerify portal, its portal#ITEM-017) adopted the framework MemberView in
 place of a bespoke one:
 
 1. **Audit section gate too narrow.** The Audit section gated on a bare
@@ -34,7 +34,7 @@ place of a bespoke one:
       the effective SideNav gate — and the TableView, kept in sync).
 - [ ] An "Edit membership" kebab action edits `metadata.role` via
       `showModelForm` — role only; `is_active` stays on the header active switch
-      (ITEM-025 convention), Display Name is a User field owned by UserView.
+      (WM-025 convention), Display Name is a User field owned by UserView.
 - [ ] Editing refreshes the header subtitle (role) on a successful save only.
 - [ ] Behavioral tests lock both in; unit suite green; `npm run lint` clean.
 
@@ -42,7 +42,7 @@ place of a bespoke one:
 Design decisions (scope):
 - **Role-only edit form**, not the shared `Member.EDIT_FORM` (which also carries
   `user.display_name` + `is_active`): `is_active` belongs on the header switch
-  (ITEM-025), and `display_name` is a User field. `Member.EDIT_FORM` is left
+  (WM-025), and `display_name` is a User field. `Member.EDIT_FORM` is left
   untouched so other consumers are unaffected; the action passes an inline
   role-only `formConfig`.
 - The Edit action mirrors `ApiKeyView.onActionEditKey` (`app.showModelForm` +

@@ -1,5 +1,5 @@
 ---
-id: ITEM-025
+id: WM-025
 type: bug
 title: "GroupView API Key: permissions editor broken (display/save) and detail modal layout — redesign to mirror Group Member permission UI"
 priority: P2
@@ -243,9 +243,9 @@ per `.claude/rules/theming.md`, not a good regression-test candidate.
   yet): `apikey-set-permissions-drops-non-dict-values.md` and
   `permission-gate-fallback-missing-base-groups-users-perm.md`. Backfill
   `depends_on: [org/django-mojo#ITEM-xxx, ...]` on this item once those are
-  scoped and IDed — mirrors the existing ITEM-023 ↔ django-mojo ITEM-017
+  scoped and IDed — mirrors the existing WM-023 ↔ django-mojo#ITEM-017
   cross-repo precedent in this project's history.
-- **Mockup gate**: per standing preference (established during ITEM-023
+- **Mockup gate**: per standing preference (established during WM-023
   geofencing work), UI-heavy items get a mockup phase (both themes) as an
   explicit approval gate before /build starts. This item qualifies — a new
   permission-picker section plus a structural `DetailView` migration.

@@ -1,5 +1,5 @@
 ---
-id: ITEM-016
+id: WM-016
 type: bug
 title: Inline FormView autosave rerenders parent view and resets active tab
 priority: P2

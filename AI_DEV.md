@@ -18,7 +18,7 @@ The skills that drive it:
 | Command | Purpose |
 |---------|---------|
 | `/request <description>` | Chat front door. Files a feature/bug/chore: determines `type` itself, explores read-only (bug: best-effort confirms root cause), and writes an **un-ID'd** item to `planning/inbox/`. Does not allocate an id. |
-| `/scope <file-or-description>` | Triage + plan. Owns intake: allocates the `ITEM-###` id, stamps frontmatter, moves `inbox/ → confirmed/`. Gets your sign-off on a plan. |
+| `/scope <file-or-description>` | Triage + plan. Owns intake: allocates the `WM-###` id (prefix from `planning/.config`, fallback `ITEM`), stamps frontmatter, moves `inbox/ → confirmed/`. Gets your sign-off on a plan. |
 | `/build <confirmed-file>` | Implement a scoped item. Bugs get a failing regression test first. Runs tests, spawns review agents, closes `confirmed/ → done/`. |
 | `/memory` | Show Claude Code project memory (read-only). |
 
@@ -32,7 +32,7 @@ portable across macOS/BSD and GNU/Linux:
 | Script | Does |
 |--------|------|
 | `scripts/board.sh [stage]` | Pipeline at a glance (id, type, priority, title, ready/blocked). |
-| `scripts/intake.sh <inbox-file>` | Allocate next `ITEM-###`, stamp it, `git mv` to `confirmed/`, bump `.next_id`. (Called by `/scope`.) |
+| `scripts/intake.sh <inbox-file>` | Allocate next `WM-###` (prefix from `planning/.config`), stamp it, `git mv` to `confirmed/`, bump `.next_id`. (Called by `/scope`.) |
 | `scripts/ready.sh <confirmed-file>` | `READY` / `BLOCKED` — are all `depends_on` in `done/`? (Called by `/build` pre-flight.) |
 | `scripts/close.sh <confirmed-file>` | Stamp the Resolution block, `git mv` to `done/`. (Called by `/build`.) |
 
@@ -43,7 +43,7 @@ or reused. The folder is the stage; never hand-move files between stages.
 
 ```
 planning/
-├── .next_id        — single bare integer: next ITEM id to assign
+├── .next_id        — single bare integer: next item id to assign (prefix from .config)
 ├── _template.md    — the one item template
 ├── inbox/          — new, unscoped items (no id)
 ├── confirmed/      — scoped, active items (have id + plan in ## Notes)

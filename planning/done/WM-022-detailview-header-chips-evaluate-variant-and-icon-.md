@@ -1,5 +1,5 @@
 ---
-id: ITEM-022
+id: WM-022
 type: bug
 title: "DetailView header chips — evaluate `variant` (and `icon`) as functions like `text`"
 priority: P2

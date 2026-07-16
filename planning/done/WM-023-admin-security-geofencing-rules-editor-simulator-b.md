@@ -1,5 +1,5 @@
 ---
-id: ITEM-023
+id: WM-023
 type: feature
 title: "Admin › Security › Geofencing — rules editor, simulator, blocks log (legal/business audience)"
 priority: P1
@@ -15,7 +15,7 @@ links:
 
 ## What & Why
 
-The backend admin plane **landed**: django-mojo **ITEM-017** (closed
+The backend admin plane **landed**: **django-mojo#ITEM-017** (closed
 2026-07-08, ships in **v1.2.42**) delivered the full REST contract this UI
 consumes, documented — purpose-written for this section — in
 `docs/web_developer/account/geofence.md`: `GET/POST/DELETE /api/geo/rules`

@@ -2,7 +2,7 @@
 name: scope
 description: >-
   Triage and scope a work item before any code is written. Owns intake —
-  allocates the ITEM id, stamps YAML frontmatter, and moves the item from
+  allocates the item id (WM-###, prefix from planning/.config), stamps YAML frontmatter, and moves the item from
   planning/inbox/ to planning/confirmed/. Use when picking up a new item or
   planning approved work.
 user-invocable: true
@@ -27,8 +27,8 @@ If `$ARGUMENTS` is a description of a new item (not a path), first create the
 file in `planning/inbox/` from `planning/_template.md`, then proceed.
 
 When you pick up an item from `planning/inbox/`, run the intake script. It does
-the deterministic, must-be-exact work atomically: allocate the next `ITEM-###`
-from `planning/.next_id`, stamp it into the file's frontmatter, `git mv` the file
+the deterministic, must-be-exact work atomically: allocate the next `WM-###`
+(prefix from `planning/.config`) from `planning/.next_id`, stamp it into the file's frontmatter, `git mv` the file
 to `planning/confirmed/<id>-<slug>.md`, and increment the counter.
 
     scripts/intake.sh planning/inbox/<file>.md
@@ -46,15 +46,15 @@ item already has an `id`. Then:
 ### Item Frontmatter (YAML)
 ```yaml
 ---
-id: ITEM-014           # allocated here if missing; never reassigned
+id: WM-014             # allocated here if missing; never reassigned
 type: bug              # feature | bug | chore
 title: Bonus event not emitted on first purchase
 priority: P2           # P0 (drop everything) | P1 | P2 | P3
 effort: M              # XS | S | M | L | XL  (estimate; no hour precision)
 owner: backend         # team or person
 opened: 2026-06-05     # ISO date
-depends_on: []         # hard blockers: [ITEM-003, org/other-repo#ITEM-007]
-related: []            # soft links: [ITEM-009]  (e.g. the feature a bug came from)
+depends_on: []         # hard blockers: [WM-003, nativemojo/django-mojo#DM-007]
+related: []            # soft links: [WM-009]  (e.g. the feature a bug came from)
 links: []              # external URLs: PRs, design docs, tracker issues
 ---
 ```

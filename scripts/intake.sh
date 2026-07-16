@@ -5,24 +5,41 @@
 set -euo pipefail
 
 src="${1:?usage: scripts/intake.sh <inbox-file>}"
+[ -d planning ] || { echo "error: run from the repo root (no ./planning here)" >&2; exit 1; }
 [ -f "$src" ] || { echo "no such file: $src" >&2; exit 1; }
+case "$src" in planning/inbox/*) ;; *) echo "warning: $src is not in planning/inbox/" >&2 ;; esac
 counter="planning/.next_id"
+
+# Per-project workflow config (id PREFIX etc.); fallback keeps
+# config-less repos working unchanged.
+[ -f planning/.config ] && . planning/.config
+PREFIX="${PREFIX:-ITEM}"
+# Guard against a typo'd config silently mis-numbering items.
+case "$PREFIX" in
+  [!A-Za-z]*|*[!A-Za-z0-9]*)
+    echo "error: invalid PREFIX '$PREFIX' in planning/.config (want letters/digits, starting with a letter)" >&2; exit 1 ;;
+esac
 
 # Refuse if the item already has a non-empty id (don't consume a number).
 have="$(awk -F': *' '/^---/{f++;next} f==1&&$1=="id"{print $2;exit}' "$src" | tr -d '[:space:]')"
 [ -z "${have:-}" ] || { echo "already has id ($have); not consuming a number" >&2; exit 2; }
 
-# N = max(counter, highest existing ITEM-### + 1). Reconciling against the actual
-# tree means a stale or merged-back counter can never hand out a duplicate id.
-# `10#` forces base-10 so a zero-padded value (e.g. 057) isn't parsed as octal.
-# NOTE: `|| true` added to the spec's verbatim line so an empty tree (no ITEM ids
-# yet — the first-ever intake) doesn't trip `set -e` when grep matches nothing.
-hi="$(grep -rhoE 'ITEM-[0-9]+' planning 2>/dev/null | grep -oE '[0-9]+' | sort -n | tail -1 || true)"
+# N = max(counter, highest ASSIGNED id + 1). Reconciling against the actual tree
+# means a stale or merged-back counter can never hand out a duplicate id.
+# Only count real assignments — `id:` frontmatter lines and `<PREFIX>-###-` filenames
+# — NOT every <PREFIX>-### mention, so example ids in _template.md / depends_on / prose
+# don't advance the counter. `10#` forces base-10 (a zero-padded id isn't octal).
+# Trailing `|| true`: with `set -euo pipefail`, an empty match makes grep exit 1
+# and would abort the script — so a repo with no assigned ids yet (every fresh
+# project's first intake) must not fail here; empty hi → N falls back to 1.
+hi="$( { grep -rhoE "^id:[[:space:]]*${PREFIX}-[0-9]+" planning 2>/dev/null
+         find planning -type f -name "${PREFIX}-*-*.md" 2>/dev/null; } \
+       | grep -oE "${PREFIX}-[0-9]+" | grep -oE '[0-9]+' | sort -n | tail -1 || true)"
 ctr=0; [ -f "$counter" ] && ctr="$(tr -dc 0-9 < "$counter")"
 floor=$(( 10#${hi:-0} + 1 ))
 cur=$(( 10#${ctr:-0} ))
 N=$(( cur > floor ? cur : floor ))
-id="$(printf 'ITEM-%03d' "$N")"
+id="$(printf '%s-%03d' "$PREFIX" "$N")"
 
 # Slug from title:, else filename; never empty.
 title="$(awk -F'title:' '/^---/{f++;next} f==1&&/^title:/{print $2;exit}' "$src")"

@@ -1,5 +1,5 @@
 ---
-id: ITEM-015
+id: WM-015
 type: feature
 title: GroupAuthConfigSection — edit registration.extra_fields (extra signup fields)
 priority: P2

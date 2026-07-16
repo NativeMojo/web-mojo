@@ -4,15 +4,38 @@
 # Exit 0 = READY, 1 = BLOCKED, 2 = usage/error.
 set -uo pipefail
 src="${1:?usage: scripts/ready.sh <item-file>}"
+[ -d planning ] || { echo "error: run from the repo root (no ./planning here)" >&2; exit 2; }
 [ -f "$src" ] || { echo "no such file: $src" >&2; exit 2; }
 
-locate() {  # echo the stage folder (done|confirmed|inbox) holding id $1, else nothing
+# Per-project workflow config (id PREFIX etc.); fallback keeps
+# config-less repos working unchanged.
+[ -f planning/.config ] && . planning/.config
+PREFIX="${PREFIX:-ITEM}"
+# Guard against a typo'd config silently mis-numbering items.
+case "$PREFIX" in
+  [!A-Za-z]*|*[!A-Za-z0-9]*)
+    echo "error: invalid PREFIX '$PREFIX' in planning/.config (want letters/digits, starting with a letter)" >&2; exit 2 ;;
+esac
+
+locate() {  # echo the stage folder holding id $1 (done first), else nothing
   local d
-  for d in done confirmed inbox; do
+  for d in done in_progress confirmed inbox future rejected; do
     if grep -rlqE "^id:[[:space:]]*$1[[:space:]]*$" "planning/$d" 2>/dev/null; then
       echo "$d"; return
     fi
   done
+}
+
+# Canonicalize a local id's zero-padding (<PREFIX>-2 / <PREFIX>-02 -> <PREFIX>-002)
+# so a dep resolves regardless of how many digits the author wrote. Only touch
+# strictly numeric <PREFIX>-<digits>; leave anything else (e.g. cross-repo) verbatim.
+norm() {
+  local n="${1#"$PREFIX"-}"
+  if [ "$1" != "$n" ] && [ -n "$n" ] && [ -z "${n//[0-9]/}" ]; then
+    printf '%s-%03d' "$PREFIX" "$(( 10#$n ))"
+  else
+    printf '%s' "$1"
+  fi
 }
 
 # Handle both inline (`depends_on: [ITEM-003, ITEM-007]`) and block style
@@ -30,7 +53,8 @@ ext=(); blockers=()
 [ -z "$deps" ] || while IFS= read -r dep; do
   case "$dep" in
     *"#"*) ext+=("$dep") ;;                                  # cross-repo: can't check locally
-    *) where="$(locate "$dep")"
+    *) dep="$(norm "$dep")"
+       where="$(locate "$dep")"
        [ "$where" = done ] || blockers+=("$dep (${where:-missing})") ;;
   esac
 done <<< "$deps"

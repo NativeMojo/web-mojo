@@ -28,7 +28,9 @@ Authoritative framework docs are in `docs/web-mojo/`; repo layout in
 ## Non-Negotiable Rules
 Workflow scaffolding (imposed by this workflow):
 - IDs come **only** from `/scope` via `scripts/intake.sh` (`planning/.next_id`).
-  Never hand-assign, edit the counter by hand, or reuse an ID.
+  Every item gets `WM-###` — the prefix comes from `planning/.config`
+  (`PREFIX=WM`; scripts default to `ITEM` when the file is absent). Never
+  hand-assign, edit the counter by hand, or reuse an ID.
 - The folder is the stage. Advance an item only by moving its file
   `inbox/` → `confirmed/` (via `scripts/intake.sh`) → `done/` (via
   `scripts/close.sh`). There is no `stage` field.

@@ -1,5 +1,5 @@
 ---
-id: ITEM-017
+id: WM-017
 type: bug
 title: Fix the 9 pre-existing unit test failures (IncidentView stub gap, FileManager inline config, MetricsPermissions Add regression)
 priority: P2
@@ -15,7 +15,7 @@ links: []
 
 ## What & Why
 `npm run test:unit` has 9 long-standing failures (baseline-verified on main
-before ITEM-016). Three independent causes:
+before WM-016). Three independent causes:
 
 1. **IncidentView suite (7 tests, "ListView is not a constructor")** —
    `src/extensions/admin/incidents/IncidentView.js:24` imports `ListView`

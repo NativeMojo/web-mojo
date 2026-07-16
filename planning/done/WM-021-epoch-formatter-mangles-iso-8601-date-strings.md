@@ -1,5 +1,5 @@
 ---
-id: ITEM-021
+id: WM-021
 type: bug
 title: epoch formatter mangles ISO-8601 date strings
 priority: P1
@@ -138,7 +138,7 @@ call site.
 **Docs affected**
 - `docs/web-mojo/core/DataFormatter.md` — `epoch` section (~line 372): note it now passes
   ISO/date strings (and Dates) through unchanged and only converts numeric epoch seconds.
-- `CHANGELOG.md` — add an `### Core · …(ITEM-021)` entry under `## Unreleased`.
+- `CHANGELOG.md` — add an `### Core · …(WM-021)` entry under `## Unreleased`.
 
 **Open questions:** none — approach confirmed by the user (keep `epoch`, make it robust,
 don't strip).
@@ -146,5 +146,5 @@ don't strip).
 ## Resolution
 - closed: 2026-06-15
 - branch: main
-- files changed: CHANGELOG.md,docs/web-mojo/README.md,docs/web-mojo/admin/Admin-Dashboard-Page.md,docs/web-mojo/admin/Admin-Model-Page.md,docs/web-mojo/components/ListView.md,docs/web-mojo/components/TableView.md,docs/web-mojo/core/Model.md,docs/web-mojo/core/View.md,docs/web-mojo/forms/AutoSave.md,docs/web-mojo/forms/FormView.md,docs/web-mojo/forms/README.md,docs/web-mojo/models/BuiltinModels.md,docs/web-mojo/pages/TablePage.md,memory.md,package.json,planning/.next_id,planning/done/ITEM-016-inline-formview-autosave-rerenders-parent-view-and.md,planning/done/ITEM-017-fix-the-9-pre-existing-unit-test-failures-incident.md,planning/done/ITEM-018-write-docs-web-mojo-forms-autosave-md-dangling-lin.md,planning/done/ITEM-019-admin-full-access-permission-is-mislabeled-log-adm.md,planning/done/ITEM-020-tableview-gating-never-runs-checkpermissions-is-a-.md,src/core/Model.js,src/core/View.js,src/core/forms/FormView.js,src/core/models/Member.js,src/core/models/User.js,src/core/models/index.js,src/core/pages/TablePage.js,src/core/views/data/DataView.js,src/core/views/feedback/ModalView.js,src/core/views/list/ListView.js,src/core/views/table/TableRow.js,src/core/views/table/TableView.js,src/extensions/admin/models/index.js,src/extensions/admin/monitoring/MetricsPermissionsTablePage.js,src/extensions/admin/storage/FileManagerTablePage.js,src/templates.js,src/version.js,test/unit/FormView.autosaveSkipRender.test.js,test/unit/IncidentView.test.js,test/unit/Member.test.js,test/unit/TableView.permissionGating.test.js,test/unit/User.test.js,test/utils/simple-module-loader.js
+- files changed: CHANGELOG.md,docs/web-mojo/README.md,docs/web-mojo/admin/Admin-Dashboard-Page.md,docs/web-mojo/admin/Admin-Model-Page.md,docs/web-mojo/components/ListView.md,docs/web-mojo/components/TableView.md,docs/web-mojo/core/Model.md,docs/web-mojo/core/View.md,docs/web-mojo/forms/AutoSave.md,docs/web-mojo/forms/FormView.md,docs/web-mojo/forms/README.md,docs/web-mojo/models/BuiltinModels.md,docs/web-mojo/pages/TablePage.md,memory.md,package.json,planning/.next_id,planning/done/WM-016-inline-formview-autosave-rerenders-parent-view-and.md,planning/done/WM-017-fix-the-9-pre-existing-unit-test-failures-incident.md,planning/done/WM-018-write-docs-web-mojo-forms-autosave-md-dangling-lin.md,planning/done/WM-019-admin-full-access-permission-is-mislabeled-log-adm.md,planning/done/WM-020-tableview-gating-never-runs-checkpermissions-is-a-.md,src/core/Model.js,src/core/View.js,src/core/forms/FormView.js,src/core/models/Member.js,src/core/models/User.js,src/core/models/index.js,src/core/pages/TablePage.js,src/core/views/data/DataView.js,src/core/views/feedback/ModalView.js,src/core/views/list/ListView.js,src/core/views/table/TableRow.js,src/core/views/table/TableView.js,src/extensions/admin/models/index.js,src/extensions/admin/monitoring/MetricsPermissionsTablePage.js,src/extensions/admin/storage/FileManagerTablePage.js,src/templates.js,src/version.js,test/unit/FormView.autosaveSkipRender.test.js,test/unit/IncidentView.test.js,test/unit/Member.test.js,test/unit/TableView.permissionGating.test.js,test/unit/User.test.js,test/utils/simple-module-loader.js
 - tests added: `test/unit/DataFormatter.test.js` — `describe('epoch')` (6 cases): ISO passthrough, `epoch|datetime` renders correct year, epoch-seconds number → ms, numeric string → ms, null/undefined/'' untouched, Date passthrough.

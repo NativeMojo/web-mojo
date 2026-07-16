@@ -28,7 +28,7 @@ Read `CLAUDE.md` for conventions. Read the item file in `planning/confirmed/`.
   stop and say so; only proceed on `READY`.
 
 ## Workflow
-1. State what you're about to build (one sentence; include the ITEM id)
+1. State what you're about to build (one sentence; include the item id, WM-###)
 2. Show your implementation plan — get confirmation before writing code
 3. **If `type: bug`:** write a regression test that reproduces the bug and
    confirm it fails BEFORE touching the fix.

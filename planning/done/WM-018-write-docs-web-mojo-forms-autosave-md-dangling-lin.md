@@ -1,5 +1,5 @@
 ---
-id: ITEM-018
+id: WM-018
 type: chore
 title: Write docs/web-mojo/forms/AutoSave.md (dangling link in FormView.md)
 priority: P3
@@ -18,7 +18,7 @@ links: []
 for details." under the `autosaveModelField` option, but the file does not
 exist — the only dangling doc link in the authoritative `docs/web-mojo/`
 tree. Autosave now has subtle documented semantics (300ms batching,
-`skipRender` non-disruptive saves from ITEM-016, error-revert path) that
+`skipRender` non-disruptive saves from WM-016, error-revert path) that
 deserve the dedicated page the link promises.
 
 ## Acceptance Criteria
@@ -32,7 +32,7 @@ deserve the dedicated page the link promises.
 
 ## Notes
 Content sourced from FormView.js (handleFieldChange ~796, handleFieldSave
-~904, executeBatchSave ~930, revertFields ~1007) and the ITEM-016 skipRender
+~904, executeBatchSave ~930, revertFields ~1007) and the WM-016 skipRender
 contract documented in Model.md / FormView.md / memory.md.
 
 ## Resolution

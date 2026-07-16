@@ -12,7 +12,7 @@ inbox/  →  confirmed/  →  done/
 
 - **`inbox/`** — new, unscoped items (no id yet). Drop a file here from
   `_template.md`, or let `/scope` create it from a description.
-- **`confirmed/`** — scoped, active items (have an `ITEM-###` id and an agreed
+- **`confirmed/`** — scoped, active items (have a `WM-###` id and an agreed
   plan in `## Notes`).
 - **`done/`** — closed items (resolved history — never reformat or renumber).
 
@@ -38,7 +38,8 @@ Reference material (not work items): `mockups/` (HTML/UI sketches) and `notes/`
 
 ## IDs
 
-Every scoped item gets `ITEM-###`, allocated once from `planning/.next_id`
+Every scoped item gets `WM-###` (prefix from `planning/.config`, fallback
+`ITEM` when the file is absent), allocated once from `planning/.next_id`
 (a single bare integer) by `scripts/intake.sh` — never hand-assigned, never
 reused. `.next_id` reconciles against the tree, so it self-corrects.
 
@@ -47,14 +48,14 @@ reused. `.next_id` reconciles against the tree, so it self-corrects.
 Start from `_template.md`. YAML frontmatter:
 
 ```yaml
-id: ITEM-014      # blank in inbox; /scope assigns it
+id: WM-014        # blank in inbox; /scope assigns it
 type: bug         # feature | bug | chore
 title: ...
 priority: P2      # P0 | P1 | P2 | P3
 effort: M         # XS | S | M | L | XL
 owner: ...
 opened: 2026-06-05
-depends_on: []    # hard blockers (ITEM-### or org/repo#ITEM-###)
+depends_on: []    # hard blockers: [WM-003, nativemojo/django-mojo#DM-007]
 related: []       # soft links
 links: []         # external URLs
 ```
@@ -63,6 +64,6 @@ Then `## What & Why`, `## Acceptance Criteria`, `## Repro — bugs only`,
 `## Notes` (filled during `/scope`), and `## Resolution` (filled at close).
 
 ## Reference notation
-- Same-repo item → `ITEM-001`
-- Item in another repo → `org/repo#ITEM-001`
+- Same-repo item → `WM-001`
+- Item in another repo → `nativemojo/django-mojo#DM-007` (that repo's own prefix)
 - External thing (PR, design doc, tracker issue) → a full URL, in `links`
