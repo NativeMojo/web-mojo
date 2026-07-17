@@ -366,6 +366,13 @@ class ModalView extends View {
                 continue;
             }
 
+            // `when(context)` visibility predicate — same API as
+            // ContextMenu.visibleItems() (DetailView kebab path). The best
+            // model this header can offer is the body view's.
+            if (typeof item.when === 'function' && !item.when(this.bodyView?.model ?? null)) {
+                continue;
+            }
+
             if (item.permissions) {
                 try {
                     const app = this.getApp?.();

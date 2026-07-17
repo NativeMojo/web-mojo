@@ -266,6 +266,24 @@ class SimpleModuleLoader {
                 path: path.join(this.sourceRoot, 'extensions/admin/account/users/MemberView.js'),
                 dependencies: ['View', 'DetailView', 'ContextMenu', 'dataFormatter', 'Member']
             },
+            'UserView': {
+                // Construction news up collections + section ListViews, so tests
+                // must set constructible globals BEFORE loadModule and delete
+                // them after (the transformed module keeps captured references):
+                //   global.Modal (object stub — handlers call Modal.confirm/form)
+                //   global.ListView / TableView / TabView / FormView /
+                //   MetricCard / Timeline (constructible view stubs)
+                //   global.UserModelsStub  = { User, UserDeviceList }
+                //     (User stub needs SYSTEM_PERMISSION_FIELDS /
+                //      APP_PERMISSION_FIELDS statics — read in the constructor)
+                //   global.LogList, global.IncidentModelsStub,
+                //   global.PushModelsStub, global.LoginEventModelsStub,
+                //   global.GroupModelsStub, global.PasskeysModelsStub
+                // `rest` resolves to the real global.Rest singleton — spy on
+                // Rest.POST to assert outgoing endpoint URLs/payloads.
+                path: path.join(this.sourceRoot, 'extensions/admin/account/users/UserView.js'),
+                dependencies: ['View', 'DetailView', 'ContextMenu', 'dataFormatter', 'MOJOUtils', 'Rest', 'Member', 'grouping']
+            },
             'dateFns': {
                 path: path.join(this.sourceRoot, 'core/utils/dateFns.js'),
                 dependencies: []
@@ -580,6 +598,13 @@ class SimpleModuleLoader {
             { test: /models\/Member(\.js)?$/, name: 'Member' },
             { test: /models\/ApiKey(\.js)?$/, name: 'ApiKey' },
             { test: /models\/Log(\.js)?$/, name: 'LogList' },
+            // UserView model imports — tests stub these on `global` before
+            // loadModule('UserView') (see the UserView registry entry).
+            { test: /core\/models\/User(\.js)?$/, name: 'UserModelsStub' },
+            { test: /core\/models\/Group(\.js)?$/, name: 'GroupModelsStub' },
+            { test: /core\/models\/Passkeys(\.js)?$/, name: 'PasskeysModelsStub' },
+            { test: /admin\/models\/Push(\.js)?$/, name: 'PushModelsStub' },
+            { test: /admin\/models\/LoginEvent(\.js)?$/, name: 'LoginEventModelsStub' },
             { test: /MOJOUtils/, name: 'MOJOUtils' },
             { test: /ListGroupHeaderView/, name: 'ListGroupHeaderView' },
             { test: /ListViewItem/, name: 'ListViewItem' },

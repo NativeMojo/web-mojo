@@ -468,6 +468,7 @@ class UserProfileSection extends View {
                                 <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="unverify-email" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
                             {{/model.is_email_verified|bool}}
                             {{^model.is_email_verified|bool}}
+                                <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="send-verification-email" title="Send verification email"><i class="bi bi-envelope-arrow-up"></i></button>
                                 <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="force-verify-email" title="Force verify"><i class="bi bi-patch-check"></i></button>
                             {{/model.is_email_verified|bool}}
                         {{/hasEmail|bool}}
@@ -514,9 +515,9 @@ class UserProfileSection extends View {
                     <div class="admin-security-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-key"></i></div>
                     <div class="admin-security-info">
                         <div class="admin-security-title">Password</div>
-                        <div class="admin-security-desc">{{#hasEmail|bool}}Send a password reset link to {{model.email}}{{/hasEmail|bool}}{{^hasEmail|bool}}<span class="text-secondary fst-italic">No email on file</span>{{/hasEmail|bool}}</div>
+                        <div class="admin-security-desc">{{#hasResetContact|bool}}Send a password reset link or code to {{resetContactLabel}}{{/hasResetContact|bool}}{{^hasResetContact|bool}}<span class="text-secondary fst-italic">No email or phone on file</span>{{/hasResetContact|bool}}</div>
                     </div>
-                    {{#hasEmail|bool}}<button type="button" class="btn btn-sm btn-outline-secondary" data-action="reset-password"><i class="bi bi-envelope me-1"></i>Send Reset Link</button>{{/hasEmail|bool}}
+                    {{#hasResetContact|bool}}<button type="button" class="btn btn-sm btn-outline-secondary" data-action="reset-password"><i class="bi bi-envelope me-1"></i>Send Reset…</button>{{/hasResetContact|bool}}
                 </div>
 
                 <div class="detail-section-eyebrow">
@@ -605,6 +606,9 @@ class UserProfileSection extends View {
     get hasPhone()     { return !!this.model?.get?.('phone_number'); }
     get hasTimezone()  { return !!this.model?.get?.('metadata')?.timezone; }
     get timezone()     { return this.model?.get?.('metadata')?.timezone || ''; }
+    // Password reset works over email OR phone (SMS code) — WM-027.
+    get hasResetContact()   { return this.hasEmail || this.hasPhone; }
+    get resetContactLabel() { return this.model?.get?.('email') || this.model?.get?.('phone_number') || ''; }
 
     /**
      * Admin tier == `users` / `manage_users` / `is_superuser`. Backend was
@@ -1398,12 +1402,13 @@ class UserView extends DetailView {
             // reason-keyed status badge driven by `disable.reason`.
         ];
 
-        // Context menu — admin-tier items carry `permissions: [...]` and are
-        // filtered by ModalView.filterContextMenuItems against app.activeUser
-        // (Phase 4). Email-keyed actions (`reset-password`, `send-magic-link`)
-        // stay ungated — backend trusts the email recipient, not the JWT.
-        // Email/phone verification flips are surfaced through Phase 3's
-        // identity cards, not here.
+        // Context menu — admin-tier items carry `permissions: [...]` and
+        // conditional items carry `when: (model) => bool`; both are enforced
+        // by ContextMenu.visibleItems() (fail-closed, re-evaluated per
+        // render — WM-027). Contact-keyed actions (`reset-password`,
+        // `send-magic-link`) stay ungated — backend trusts the email/SMS
+        // recipient, not the JWT. Email/phone verification flips are
+        // surfaced through Phase 3's identity cards, not here.
         const ADMIN_PERMS = ['users', 'manage_users'];
         const contextItems = [
             { label: 'Edit User',              action: 'edit-user',              icon: 'bi-pencil',         permissions: ADMIN_PERMS },
@@ -1413,7 +1418,11 @@ class UserView extends DetailView {
             { label: 'Change Password',        action: 'change-password',        icon: 'bi-key',            permissions: ADMIN_PERMS },
             { label: 'Send Password Reset',    action: 'reset-password',         icon: 'bi-envelope' },
             { label: 'Send Magic Login Link',  action: 'send-magic-link',        icon: 'bi-link-45deg' },
+            { label: 'Resend Invite',          action: 'resend-invite',          icon: 'bi-envelope-plus',  permissions: ADMIN_PERMS,
+              when: m => !!m?.get?.('email') && !m?.get?.('last_login') },
             { type: 'divider' },
+            { label: 'Reset MFA',              action: 'reset-mfa',              icon: 'bi-shield-x',       permissions: ADMIN_PERMS,
+              when: m => !!m?.get?.('requires_mfa') },
             { label: 'Clear Rate Limit',       action: 'clear-rate-limit',       icon: 'bi-shield-slash',   permissions: ADMIN_PERMS },
             { label: 'Revoke All Sessions',    action: 'revoke-all-sessions',    icon: 'bi-box-arrow-right', permissions: ADMIN_PERMS }
         ];
@@ -1609,20 +1618,57 @@ class UserView extends DetailView {
     }
 
     // ── Header actions ─────────────────────────────────────
+    //
+    // Send-flow endpoints below are the django-mojo routes verified in
+    // source (mojo/apps/account/rest/user.py): `auth/magic/send` (:825),
+    // `auth/forgot` (:687) and the `/api/user/<id>` POST_SAVE_ACTION body
+    // pattern (models/user.py RestMeta.POST_SAVE_ACTIONS). Both send
+    // endpoints always answer success (anti-enumeration) and carry a
+    // 5-per-IP / 5-min strict rate limit — a 429 surfaces via the error
+    // toast like any other failure.
 
     async onActionSendMagicLink() {
         const email = this.model.get('email');
-        if (!email) {
-            this.getApp()?.toast?.error('User has no email on file');
+        const phone = this.model.get('phone_number');
+        if (!email && !phone) {
+            this.getApp()?.toast?.error('User has no email or phone on file');
             return true;
         }
-        const confirmed = await Modal.confirm(
-            `Send a magic login link to <strong>${escapeHtml(email)}</strong>?`,
-            'Send Magic Login Link'
-        );
-        if (!confirmed) return true;
 
-        const resp = await rest.POST('/api/auth/magic-link', { email });
+        // Both channels on file → let the admin choose. One channel →
+        // plain confirm (no fake choice).
+        let channel = email ? 'email' : 'sms';
+        if (email && phone) {
+            const data = await Modal.form({
+                title: 'Send Magic Login Link',
+                size: 'sm',
+                submitText: 'Send',
+                fields: [
+                    { name: 'channel', type: 'select', label: 'Send via', value: 'email', cols: 12,
+                      options: [
+                          { value: 'email', label: `Email link to ${email}` },
+                          { value: 'sms',   label: `Text link to ${phone}` }
+                      ] }
+                ]
+            });
+            if (!data) return true;
+            channel = data.channel || 'email';
+        } else {
+            const dest = email || phone;
+            const confirmed = await Modal.confirm(
+                `Send a magic login link to <strong>${escapeHtml(dest)}</strong>?`,
+                'Send Magic Login Link'
+            );
+            if (!confirmed) return true;
+        }
+
+        // Identifier: email when present, else phone_number — the backend
+        // looks the account up from either. `method: 'sms'` routes the
+        // delivery; email is the backend default (no key sent).
+        const body = email ? { email } : { phone_number: phone };
+        if (channel === 'sms') body.method = 'sms';
+
+        const resp = await rest.POST('/api/auth/magic/send', body);
         if (resp.success) {
             this.getApp()?.toast?.success('Magic login link sent');
         } else {
@@ -1633,19 +1679,56 @@ class UserView extends DetailView {
 
     async onActionResetPassword() {
         const email = this.model.get('email');
-        if (!email) {
-            this.getApp()?.toast?.error('User has no email on file');
+        const phone = this.model.get('phone_number');
+        if (!email && !phone) {
+            this.getApp()?.toast?.error('User has no email or phone on file');
             return true;
         }
-        const confirmed = await Modal.confirm(
-            `Send a password reset email to <strong>${escapeHtml(email)}</strong>?`,
-            'Send Password Reset'
-        );
-        if (!confirmed) return true;
 
-        const resp = await rest.POST('/api/auth/password/reset', { email });
+        // Delivery variants the backend supports: email link, email code,
+        // SMS code. There is NO SMS-link variant ("link mode is email-only"
+        // per the backend). SMS is only offered when a phone is on file —
+        // the backend silently no-ops an SMS send to a phone-less user.
+        const options = [];
+        if (email) {
+            options.push({ value: 'link',     label: `Email a reset link to ${email}` });
+            options.push({ value: 'code',     label: `Email a 6-digit code to ${email}` });
+        }
+        if (phone) {
+            options.push({ value: 'sms-code', label: `Text a 6-digit code to ${phone}` });
+        }
+
+        let delivery = options[0].value;
+        if (options.length > 1) {
+            const data = await Modal.form({
+                title: 'Send Password Reset',
+                size: 'sm',
+                submitText: 'Send',
+                fields: [
+                    { name: 'delivery', type: 'select', label: 'Delivery', value: delivery, cols: 12, options }
+                ]
+            });
+            if (!data) return true;
+            delivery = data.delivery || delivery;
+        } else {
+            const confirmed = await Modal.confirm(
+                `${escapeHtml(options[0].label)}?`,
+                'Send Password Reset'
+            );
+            if (!confirmed) return true;
+        }
+
+        const body = email ? { email } : { phone_number: phone };
+        if (delivery === 'link') {
+            body.method = 'link';
+        } else {
+            body.method = 'code';
+            if (delivery === 'sms-code') body.channel = 'sms';
+        }
+
+        const resp = await rest.POST('/api/auth/forgot', body);
         if (resp.success) {
-            this.getApp()?.toast?.success('Password reset email sent');
+            this.getApp()?.toast?.success('Password reset sent');
         } else {
             this.getApp()?.toast?.error(resp.message || 'Failed to send password reset');
         }
@@ -2026,11 +2109,105 @@ class UserView extends DetailView {
             'Revoke All Sessions'
         );
         if (!confirmed) return true;
-        const resp = await rest.POST(`/api/user/${this.model.id}/sessions/revoke`);
+        // `revoke_sessions` is a POST_SAVE_ACTION on the User model — same
+        // body pattern as `disable`/`reactivate` above. There is no nested
+        // /sessions/revoke route.
+        const resp = await rest.POST(`/api/user/${this.model.id}`, { revoke_sessions: {} });
         if (resp.success) {
             this.getApp()?.toast?.success('All sessions revoked');
         } else {
             this.getApp()?.toast?.error(resp.message || 'Failed to revoke sessions');
+        }
+        return true;
+    }
+
+    /**
+     * Re-send the invite email to a user who has never logged in
+     * (`send_invite` POST_SAVE_ACTION — same body pattern web-mojo already
+     * uses at user creation in UserTablePage). Kebab item is `when`-gated
+     * to email-on-file + `last_login == null`.
+     */
+    async onActionResendInvite() {
+        const email = this.model.get('email');
+        if (!email) {
+            this.getApp()?.toast?.error('User has no email on file');
+            return true;
+        }
+        const confirmed = await Modal.confirm(
+            `Resend the invite email to <strong>${escapeHtml(email)}</strong>?`,
+            'Resend Invite'
+        );
+        if (!confirmed) return true;
+        const resp = await rest.POST(`/api/user/${this.model.id}`, { send_invite: true });
+        if (resp.success) {
+            this.getApp()?.toast?.success('Invite sent');
+        } else {
+            this.getApp()?.toast?.error(resp.message || 'Failed to send invite');
+        }
+        return true;
+    }
+
+    /**
+     * Reset MFA — disables the user's TOTP enrollment (`disable_totp`
+     * POST_SAVE_ACTION; admin-capable, no TOTP code required; no-ops
+     * gracefully when nothing is enrolled). The checkbox additionally
+     * clears `requires_mfa`. Default is to KEEP requiring MFA: login with
+     * `requires_mfa` and no enabled methods proceeds without a challenge,
+     * so the user is never locked out — they re-enroll TOTP or fall back
+     * to verified-SMS / passkey MFA.
+     */
+    async onActionResetMfa() {
+        const data = await Modal.form({
+            title: 'Reset MFA',
+            size: 'sm',
+            submitText: 'Reset MFA',
+            fields: [
+                { name: 'clear_requirement', type: 'switch', cols: 12, value: false,
+                  label: 'Also stop requiring MFA for this account',
+                  help: 'Leave off to keep MFA required — the user re-enrolls an authenticator at next login, or falls back to verified-SMS / passkey MFA.' }
+            ]
+        });
+        if (!data) return true;
+
+        const body = { disable_totp: true };
+        if (data.clear_requirement) body.requires_mfa = false;
+
+        const resp = await rest.POST(`/api/user/${this.model.id}`, body);
+        if (resp.success) {
+            if (data.clear_requirement) this.model.set('requires_mfa', false);
+            this.getApp()?.toast?.success('MFA reset — authenticator enrollment cleared');
+            await this._fullRefresh();
+        } else {
+            this.getApp()?.toast?.error(resp.message || 'Failed to reset MFA');
+        }
+        return true;
+    }
+
+    /**
+     * Send the user a verification link for their (unverified) email.
+     * Complements the blunt "Force verify" override with the proper
+     * "make the user prove it" path.
+     *
+     * Endpoint note: `/api/auth/email/verify/send` (public, accepts an
+     * email/username body — admin-targetable). NOT the similarly named
+     * `/api/auth/verify/email/send`, which is JWT-scoped to the caller.
+     */
+    async onActionSendVerificationEmail() {
+        const email = this.model.get('email');
+        if (!email) {
+            this.getApp()?.toast?.error('User has no email on file');
+            return true;
+        }
+        const confirmed = await Modal.confirm(
+            `Send a verification link to <strong>${escapeHtml(email)}</strong>?`,
+            'Send Verification Email'
+        );
+        if (!confirmed) return true;
+        const resp = await rest.POST('/api/auth/email/verify/send', { email });
+        if (resp.success) {
+            this.getApp()?.toast?.success('Verification email sent');
+        } else {
+            this.getApp()?.toast?.error(resp.message || 'Failed to send verification email');
         }
         return true;
     }
@@ -2124,21 +2301,12 @@ class UserView extends DetailView {
         return true;
     }
 
-    async onActionImpersonate() {
-        const confirmed = await Modal.confirm(
-            `Sign in as <strong>${escapeHtml(this.model.get('display_name') || this.model.get('email') || 'this user')}</strong>?`,
-            'Impersonate'
-        );
-        if (!confirmed) return true;
-        const resp = await rest.POST('/api/auth/impersonate', { user: this.model.id });
-        if (resp.success) {
-            this.getApp()?.toast?.success('Impersonation started');
-            window.location.reload();
-        } else {
-            this.getApp()?.toast?.error(resp.message || 'Failed to impersonate');
-        }
-        return true;
-    }
+    // Impersonate was removed in WM-027 — the handler targeted
+    // `/api/auth/impersonate`, a route that has never existed in
+    // django-mojo, and was wired to no UI. Real impersonation is the
+    // cross-repo pair: django-mojo planning/inbox/
+    // admin-impersonation-handoff-code.md (backend, one-time handoff code)
+    // + web-mojo planning/inbox/userview-impersonate-view-as-user.md (UI).
 
     async onActionChangeAvatar() {
         // Mirror UserProfileView.onActionChangeAvatar — Modal.updateModelImage

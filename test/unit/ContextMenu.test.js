@@ -232,4 +232,83 @@ module.exports = async function(testContext) {
             host.remove();
         });
     });
+
+    // ── WM-027: item gating (`permissions` fail-closed + `when(context)`) ──
+    //
+    // Before WM-027 the DetailView kebab path rendered every configured item
+    // — `permissions` keys were only honored by ModalView's own header
+    // filter, which DetailViews opened with `header: false` never hit.
+    describe('ContextMenu item gating (WM-027)', () => {
+        function gatedMenu(items, { app = null, context } = {}) {
+            const menu = new ContextMenu({ config: { items }, context });
+            menu.getApp = () => app;
+            return menu;
+        }
+
+        const adminApp = {
+            activeUser: {
+                hasPermission: (perms) =>
+                    (Array.isArray(perms) ? perms : [perms]).includes('manage_users')
+            }
+        };
+
+        it('permissions are fail-closed: gated items hidden when no active user resolves', async () => {
+            const menu = gatedMenu([
+                { label: 'Edit', action: 'edit', permissions: ['manage_users'] },
+                { label: 'Open', action: 'open' }
+            ]);
+            const html = await menu.renderTemplate();
+            expect(html).not.toContain('data-item-action="edit"');
+            expect(html).toContain('data-item-action="open"');
+        });
+
+        it('permissions show the item when the active user holds any listed permission', async () => {
+            const menu = gatedMenu(
+                [{ label: 'Edit', action: 'edit', permissions: ['users', 'manage_users'] }],
+                { app: adminApp }
+            );
+            const html = await menu.renderTemplate();
+            expect(html).toContain('data-item-action="edit"');
+        });
+
+        it('when(context) hides items and re-evaluates on each render', async () => {
+            const record = { flag: true };
+            const menu = gatedMenu(
+                [{ label: 'Flag', action: 'flag', when: (c) => !!c.flag }],
+                { context: record }
+            );
+            expect(await menu.renderTemplate()).toContain('data-item-action="flag"');
+            record.flag = false;
+            expect(await menu.renderTemplate()).not.toContain('data-item-action="flag"');
+        });
+
+        it('dividers collapse when their group is fully filtered out', async () => {
+            const menu = gatedMenu([
+                { label: 'A', action: 'a' },
+                { type: 'divider' },
+                { label: 'B', action: 'b', permissions: ['manage_users'] }
+            ]);
+            const html = await menu.renderTemplate();
+            expect(html).toContain('data-item-action="a"');
+            expect(html).not.toContain('dropdown-divider');
+        });
+
+        it('renders nothing when every item is filtered out', async () => {
+            const menu = gatedMenu([
+                { label: 'B', action: 'b', permissions: ['manage_users'] }
+            ]);
+            expect(await menu.renderTemplate()).toBe('');
+        });
+
+        it('filtered-out items cannot be dispatched through onActionMenuItemClick', async () => {
+            let handled = 0;
+            const menu = gatedMenu([
+                { label: 'B', action: 'b', permissions: ['manage_users'], handler: () => { handled += 1; } }
+            ]);
+            const anchor = document.createElement('a');
+            anchor.setAttribute('data-item-action', 'b');
+            await menu.onActionMenuItemClick(new window.Event('click', { cancelable: true }), anchor);
+            expect(handled).toBe(0);
+        });
+    });
 };

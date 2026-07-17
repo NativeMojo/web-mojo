@@ -9,6 +9,9 @@
  * - Renders a dropdown button with a configurable icon.
  * - Generates menu items from a configuration array.
  * - Supports dividers, icons, labels, and links.
+ * - Per-item gating: `permissions: [...]` (any-of, fail-closed against
+ *   app.activeUser) and `when: (context) => bool` (visibility predicate
+ *   over `this.context`, re-evaluated every render). See visibleItems().
  * - Handles actions via inline handlers or by emitting an 'action' event.
  * - Supports right-click usage via `openAt(x, y, contextItem)` and the
  *   `ContextMenu.attachToRightClick()` static helper.
@@ -81,10 +84,42 @@ class ContextMenu extends View {
     }
 
     /**
+     * The config items the current user/context may see, in order.
+     *
+     * Two gates, matching the rest of the framework:
+     *   - `permissions` — any-of array, FAIL CLOSED via View#checkPermissions
+     *     (same semantics as SideNavView sections and ModalView's own
+     *     header menu filter).
+     *   - `when(context)` — visibility predicate over `this.context` (the
+     *     model, in the DetailView header kebab). Mirrors the `when:`
+     *     callbacks on DetailView header chips. Re-evaluated on every
+     *     render, so menu items track model state live.
+     *
+     * Dividers that end up leading, trailing, or doubled after filtering
+     * are dropped so the menu never shows an orphaned separator.
+     * @returns {object[]}
+     */
+    visibleItems() {
+        const isDivider = (item) => item.type === 'divider' || item.separator;
+        const items = (this.config.items || []).filter(item => {
+            if (isDivider(item)) return true;
+            if (item.permissions && !this.checkPermissions(item.permissions)) return false;
+            if (typeof item.when === 'function' && !item.when(this.context)) return false;
+            return true;
+        });
+        return items.filter((item, i) => {
+            if (!isDivider(item)) return true;
+            if (i === 0) return false;
+            const next = items[i + 1];
+            return !!next && !isDivider(next);
+        });
+    }
+
+    /**
      * Build the dropdown menu HTML from the configuration.
      */
     async renderTemplate() {
-        const menuItems = this.config.items || [];
+        const menuItems = this.visibleItems();
         if (menuItems.length === 0) {
             return ''; // Don't render anything if there are no items
         }
@@ -139,7 +174,10 @@ class ContextMenu extends View {
         if (debug) console.log('[ContextMenu] menu-item-click', { action, hasParent: !!this.parent, parentClass: this.parent?.constructor?.name });
         if (!action) return;
 
-        const menuItem = this.config.items.find(item => item.action === action);
+        // Look up from the *visible* set — a permissions/when-filtered item
+        // is not in the DOM, but a stale anchor or synthetic dispatch must
+        // not resurrect it either.
+        const menuItem = this.visibleItems().find(item => item.action === action);
         if (!menuItem || menuItem.disabled) {
             if (debug) console.log('[ContextMenu] no matching item or disabled', { action, found: !!menuItem, disabled: menuItem?.disabled });
             return;

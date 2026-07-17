@@ -102,6 +102,8 @@ new DetailView({
 | `closable` | `boolean` | Default `true`. Renders an X with `data-bs-dismiss="modal"`. Set false for non-modal hosts |
 | `contextMenu` | `{ items: [...] }` | Optional [`ContextMenu`](ContextMenu.md) config — items are dispatched on the parent view via `data-action` |
 
+The header kebab is a real [`ContextMenu`](ContextMenu.md) child, so its items support the same gating: `permissions` (any-of, fail-closed against `app.activeUser`) and `when: (model) => bool` (evaluated against the `DetailView`'s `model` on every render). See [ContextMenu's Menu Item Configuration](ContextMenu.md#menu-item-configuration) for the full item shape.
+
 ### Chips
 
 Each chip resolves text and is filtered by an optional predicate:

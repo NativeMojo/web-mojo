@@ -176,10 +176,15 @@ export default class AdminSecuritySection extends View {
     // `onActionRevokeAllSessions`). Single canonical handler per action
     // across kebab + Profile card + this section.
     //
-    // `send-email-verification` was removed in Phase 3 — the endpoint is
-    // JWT-scoped and can't be admin-targeted at another user. Admins use
-    // Send Magic Login Link instead so the user verifies their own email
-    // after logging in.
+    // `send-email-verification` was removed in Phase 3 on the reasoning
+    // that the endpoint is JWT-scoped. That's true of
+    // `/api/auth/verify/email/send` (rest/verify.py — self-only), but
+    // `/api/auth/email/verify/send` (rest/user.py) is public and accepts
+    // an email/username body, so it CAN be admin-targeted. WM-027 restored
+    // the action in the Profile email row
+    // (`UserView.onActionSendVerificationEmail`). Phone verification
+    // remains genuinely self-only (`auth/verify/phone/send` reads
+    // request.user) — no admin affordance exists for it.
 
     // ── MFA actions ─────────────────────────────────
 

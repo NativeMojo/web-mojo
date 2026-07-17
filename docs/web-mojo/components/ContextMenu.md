@@ -28,10 +28,11 @@ It is also the building block used internally by [Dialog](Dialog.md) for its hea
 - **Bootstrap 5 dropdown** — uses the standard `data-bs-toggle="dropdown"` mechanism
 - **Two action styles** — items can either dispatch a `data-action` to the parent view, or invoke an inline `handler(context, event, element)` callback
 - **Per-item context** — pass any object as `context` and every handler/action receives it
+- **Per-item gating** — `permissions: [...]` (any-of, fail-closed against `app.activeUser`) and `when: (context) => bool` (visibility predicate, re-evaluated on every render)
 - **Dividers, danger items, disabled items, external links** — the common menu primitives are all supported out of the box
 - **Embedded in any view** — added with `addChild()` and a `containerId`, just like any other child view
 
-> **Note.** `ContextMenu` is intentionally minimal. It does **not** itself filter items by user permission. If you need permission-gated items, filter the `items` array yourself before constructing the menu (see [Common Patterns](#permission-filtering)). The `permissions` key supported by [Dialog](Dialog.md)'s `contextMenu` option is a Dialog-level feature, not a ContextMenu one.
+> **Note.** Item gating is enforced by `visibleItems()` at render time — the same fail-closed semantics as [SideNavView](SideNavView.md) sections and Dialog's header menu filter. A hidden item also cannot be dispatched through `onActionMenuItemClick`. Dividers left leading, trailing, or doubled after filtering are dropped automatically.
 
 ---
 
@@ -115,6 +116,8 @@ Each entry in `config.items` is a plain object. Two kinds are recognized:
   icon:     'bi-trash',             // optional — Bootstrap Icons class
   danger:   true,                   // optional — adds .text-danger styling
   disabled: false,                  // optional — adds .disabled and prevents dispatch
+  permissions: ['manage_users'],    // optional — any-of gate against app.activeUser (fail-closed)
+  when:     (ctx) => !!ctx.get('email'), // optional — visibility predicate over menu context
   handler:  (ctx, event, el) => {}  // optional — see "Inline handlers" below
 }
 ```
@@ -126,6 +129,8 @@ Each entry in `config.items` is a plain object. Two kinds are recognized:
 | `icon` | `string` | Bootstrap Icons class (e.g. `'bi-pencil'`) |
 | `danger` | `boolean` | Adds `text-danger` class — used for destructive actions |
 | `disabled` | `boolean` | Adds `disabled` class and short-circuits clicks |
+| `permissions` | `string\|string[]` | Hide the item unless `app.activeUser.hasPermission(...)` passes (any-of for arrays). **Fail-closed** — no resolvable user means hidden |
+| `when` | `function` | `(context) => bool` — hide the item when falsy. Evaluated against the menu's `context` (the model, in a [DetailView](DetailView.md) header kebab) on **every render**, so items track state live |
 | `handler` | `function` | Inline callback — when present, action dispatch is **suppressed** in favor of this function |
 
 ### Link items
@@ -294,49 +299,43 @@ class IncidentRowView extends View {
 
 ### Permission filtering
 
-Build the items array conditionally — `ContextMenu` has no permission system of its own.
+Put `permissions` on the item — the menu enforces it fail-closed (any-of for arrays, hidden when no active user resolves). Dividers whose whole group is filtered out are dropped automatically:
 
 ```js
-async onInit() {
-  const user = this.getApp().activeUser;
-
-  const items = [
-    { label: 'View', action: 'view-record', icon: 'bi-eye' }
-  ];
-
-  if (user.hasPermission('edit_records')) {
-    items.push({ label: 'Edit', action: 'edit-record', icon: 'bi-pencil' });
+this.addChild(new ContextMenu({
+  containerId: 'row-menu',
+  context: this.model,
+  config: {
+    items: [
+      { label: 'View',   action: 'view-record',   icon: 'bi-eye' },
+      { label: 'Edit',   action: 'edit-record',   icon: 'bi-pencil', permissions: 'edit_records' },
+      { type: 'divider' },
+      { label: 'Delete', action: 'delete-record', icon: 'bi-trash', danger: true,
+        permissions: ['delete_records', 'admin'] }
+    ]
   }
-
-  if (user.hasPermission('delete_records')) {
-    items.push({ type: 'divider' });
-    items.push({ label: 'Delete', action: 'delete-record', icon: 'bi-trash', danger: true });
-  }
-
-  this.addChild(new ContextMenu({
-    containerId: 'row-menu',
-    context: this.model,
-    config: { items }
-  }));
-}
+}));
 ```
 
 ### State-dependent items
 
-Re-build the menu when the underlying state changes — items are evaluated at construction time, so a fresh array is the cleanest approach:
+Use `when:` — it is re-evaluated against the menu's `context` on every render, so items appear/disappear as the model changes without rebuilding the menu:
 
 ```js
-buildMenuItems() {
-  return [
+config: {
+  items: [
     { label: 'Edit Details', action: 'edit-file', icon: 'bi-pencil' },
-    this.model.get('is_public')
-      ? { label: 'Make Private', action: 'make-private', icon: 'bi-lock' }
-      : { label: 'Make Public',  action: 'make-public',  icon: 'bi-unlock' },
+    { label: 'Make Private', action: 'make-private', icon: 'bi-lock',
+      when: (m) => !!m.get('is_public') },
+    { label: 'Make Public',  action: 'make-public',  icon: 'bi-unlock',
+      when: (m) => !m.get('is_public') },
     { type: 'divider' },
     { label: 'Delete', action: 'delete-file', icon: 'bi-trash', danger: true }
-  ];
+  ]
 }
 ```
+
+For state that lives outside the menu's `context`, building a fresh items array and re-rendering still works.
 
 ### Inline handlers (no parent action plumbing)
 
@@ -487,9 +486,9 @@ async onActionDeleteRow(event, element) { /* ... */ }
 { label: 'Delete', action: 'delete-row', handler: (ctx) => { /* ... */ } }
 ```
 
-### ⚠️ Putting permission checks inside the menu config
+### ⚠️ Expecting `permissions`-gated items to show for anonymous users
 
-`ContextMenu` does not interpret a `permissions` key on items — that key is silently ignored. For permission-gated menus, filter the items array before constructing the menu (see [Permission filtering](#permission-filtering)). If you specifically want a Dialog's header menu with permission checks, use [Dialog](Dialog.md)'s `contextMenu` option instead, which has its own filter step.
+The `permissions` gate is **fail-closed**: when no `app.activeUser` resolves (not logged in yet, app not attached, permission check throws), the gated item is hidden — never shown "just in case". If an item must be visible to everyone, don't put `permissions` on it. (Before WM-027 this key was silently ignored by ContextMenu and only enforced by Dialog's own header filter — menus relying on that leak now hide those items correctly.)
 
 ### ⚠️ Replacing `className` instead of extending it
 
