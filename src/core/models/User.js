@@ -137,6 +137,10 @@ User.GRANULAR_PERMISSION_TABS = [
             { name: "manage_vault", label: "Manage Vault" },
             { name: "manage_docit", label: "Manage Docs" },
             { name: "manage_shortlinks", label: "Manage Shortlinks" },
+            { name: "view_geofence", label: "View Geofence Config" },
+            { name: "manage_geofence", label: "Manage Geofence Config" },
+            { name: "bypass_geofence", label: "Bypass Geofence (Whitelist)",
+              tooltip: "Exempts this user from ALL geofence rules on authenticated requests. Login-time geofencing still applies until backend post-login support lands." },
         ]
     },
 ];

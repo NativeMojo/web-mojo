@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Admin · Geofence permissions registered — whitelist + config toggles on UserView (WM-029)
+
+- **`bypass_geofence`, `view_geofence`, and `manage_geofence` are now settable from the admin UI.** django-mojo has honored all three as per-user JSON perm flags (bypass short-circuits every geofence check on authenticated requests; view/manage gate the Admin › Security › Geofencing screens), but none were registered in `User.GRANULAR_PERMISSION_TABS` — so they appeared in no permission tabset and admins had to POST them by hand. All three now live in the **Platform** tab, which surfaces them automatically as autosave switches in UserView › Sys Perms and in the users-table Edit Permissions modal (both rebuild from the registry).
+- The bypass switch is labeled **"Bypass Geofence (Whitelist)"** with a tooltip flagging the grant's weight and the current backend caveat: login endpoints geofence pre-auth, so a whitelisted user in a blocked region still can't complete a *fresh* login until django-mojo's post-login-geofence lands (existing sessions/tokens work immediately — the check is never cached).
+- Deliberately **no `CATEGORY_GRANULAR_MAP` entry for `bypass_geofence`** — no category perm should imply a geofence exemption; it must be granted explicitly (superusers hold it implicitly server-side). view/manage need no mapping either: the geofence page gates already accept `sys.security`.
+- Tests: `test/unit/User.test.js` (+3 — Platform-tab registration, bypass switch field shape/label/tooltip, no-category-implies-bypass).
+
 ### Admin · UserView account actions — 404 endpoint fixes + full admin action surface (WM-027)
 
 - **The password-reset and magic-link actions actually work now.** `onActionResetPassword` posted `/api/auth/password/reset` and `onActionSendMagicLink` posted `/api/auth/magic-link` — neither route has ever existed in django-mojo, so both 404'd on every click (the correct constants were already in `mojo-auth.js`, just never reused). Reset now initiates via **`POST /api/auth/forgot`** and magic link via **`POST /api/auth/magic/send`**, verified against the backend route decorators (`mojo/apps/account/rest/user.py:687`, `:825`).

@@ -136,6 +136,31 @@ module.exports = async function (testContext) {
         });
     });
 
+    describe('geofence permission registration (WM-029)', () => {
+        it('registers the three geofence perms in the Platform tab', () => {
+            const platform = User.GRANULAR_PERMISSION_TABS.find(t => t.label === 'Platform');
+            const names = platform.permissions.map(p => p.name);
+            expect(names).toContain('view_geofence');
+            expect(names).toContain('manage_geofence');
+            expect(names).toContain('bypass_geofence');
+        });
+
+        it('emits permissions.bypass_geofence as a labeled switch with the weight-of-grant tooltip', () => {
+            const tabset = User.SYSTEM_PERMISSION_FIELDS[0];
+            const platformTab = tabset.tabs.find(t => t.label === 'Platform');
+            const field = platformTab.fields.find(f => f.name === 'permissions.bypass_geofence');
+            expect(field).toBeDefined();
+            expect(field.type).toBe('switch');
+            expect(field.label).toBe('Bypass Geofence (Whitelist)');
+            expect(field.tooltip).toMatch(/geofence/i);
+        });
+
+        it('no category permission implies bypass_geofence', () => {
+            const implied = Object.values(User.CATEGORY_GRANULAR_MAP).flat();
+            expect(implied).not.toContain('bypass_geofence');
+        });
+    });
+
     describe('User.registerCategoryMap', () => {
         it('extends GRANULAR_TO_CATEGORY so app categories satisfy app granular gates', () => {
             // Before registration: app granular has no parent category.
