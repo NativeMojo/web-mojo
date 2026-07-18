@@ -284,6 +284,21 @@ class ListView extends View {
     this._autoRefreshPaused = false;
     this._autoRefreshHandlers = null;
 
+    // -------- WM-035 view persistence — opt-in per-table saved view --------
+    // `persistState: true` remembers how each user likes this list/table —
+    // sort, page size, day-range value, and active filter params — in
+    // localStorage under a stable identity (`persistKey`, or the page route +
+    // collection endpoint). Restored on the next visit, with precedence
+    // URL > saved > configured defaults (saved state only fills params the
+    // current query didn't already set). Strictly opt-in: the storage layer
+    // is lazily touched ONLY when this flag is on (privacy + zero side effects
+    // otherwise). The persisted blob is versioned (`{ v: 1, ... }`); corrupt
+    // or stale entries are discarded silently. TableView layers column
+    // visibility onto the same entry.
+    // See `docs/web-mojo/components/ListView.md` (View persistence).
+    this.persistState = options.persistState === true;
+    this.persistKey = options.persistKey || null;
+
     // "Show more" state
     this.loadingMore = false;
 
@@ -301,7 +316,26 @@ class ListView extends View {
   // ============================================================
 
   async onInit() {
+    // Snapshot the params already on the passed-in collection BEFORE
+    // `_initCollection` layers on configured defaults (pageSize / defaultQuery /
+    // collectionParams). These pre-existing keys are "the query" — for a
+    // TablePage they're the URL params it applied before constructing this
+    // view. Saved state (WM-035) fills only the slots the query didn't set,
+    // giving the precedence URL > saved > configured defaults.
+    const queryKeys = (this.persistState && this.options.collection && this.options.collection.params)
+      ? Object.keys(this.options.collection.params)
+      : [];
+
     this._initCollection(this.options.collection || this.options.Collection);
+
+    // WM-035 — rehydrate the saved view before the day-range control is built
+    // and before the first fetch, so restored sort/size/filters/day-range feed
+    // that initial request. No-op (and zero storage access) unless persistState
+    // is set. Also attach the save-on-change listener.
+    if (this.persistState) {
+      this._restorePersistedState(queryKeys);
+      this.on('params-changed', () => this._savePersistedState());
+    }
 
     if (this.dayRangeFilter) {
       this._seedDayRangeParams();
@@ -3191,6 +3225,181 @@ class ListView extends View {
     if (this._autoRefreshDocHidden()) return true;
     if (this.selectedItems && this.selectedItems.size > 0) return true;
     return false;
+  }
+
+  // ============================================================
+  // View persistence (WM-035) — opt-in per-table saved view
+  //
+  // Persisted blob shape (versioned): `{ v: 1, sort?, size?, dayRange?,
+  // filters?: {…raw params…}, hidden?: [columnKey] }`. `filters` is the raw
+  // `collection.params` set MINUS start/size/sort and the day-range field
+  // param (which is re-derived from `dayRange`), so `field__in` collapsed keys
+  // and `dr_*` daterange triplets round-trip verbatim (preset matching depends
+  // on it). `hidden` is written by TableView's column chooser.
+  // ============================================================
+
+  /**
+   * The localStorage key for this view's saved state. Uses the explicit
+   * `persistKey` when supplied, else a stable identity of page route +
+   * collection endpoint (`<pathname>::<endpoint>`), namespaced under
+   * `mojo:tableview:`.
+   * @private
+   */
+  _persistStorageKey() {
+    const id = this.persistKey || this._defaultPersistKey();
+    return `mojo:tableview:${id}`;
+  }
+
+  /** @private */
+  _defaultPersistKey() {
+    const route = (typeof window !== 'undefined' && window.location && window.location.pathname) || '';
+    const endpoint = (this.collection && this.collection.endpoint) || '';
+    return `${route}::${endpoint}`;
+  }
+
+  /**
+   * Resolve the localStorage backing object, or null when it's unavailable
+   * (SSR / privacy mode / access throws). All storage access funnels through
+   * here so the feature degrades to a no-op rather than throwing.
+   * @private
+   */
+  _persistStorage() {
+    try {
+      const ls = (typeof globalThis !== 'undefined') ? globalThis.localStorage : null;
+      if (ls && typeof ls.getItem === 'function') return ls;
+    } catch (e) { /* access denied */ }
+    return null;
+  }
+
+  /**
+   * Read + validate the saved blob. Discards (and clears) anything that isn't
+   * this schema version or won't parse, returning null.
+   * @private
+   */
+  _readPersistedState() {
+    const store = this._persistStorage();
+    if (!store) return null;
+    let raw;
+    try { raw = store.getItem(this._persistStorageKey()); } catch (e) { return null; }
+    if (!raw) return null;
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch (e) { this._clearPersistedStorage(); return null; }
+    if (!parsed || typeof parsed !== 'object' || parsed.v !== 1) {
+      this._clearPersistedStorage();
+      return null;
+    }
+    return parsed;
+  }
+
+  /** @private */
+  _writePersistedState(state) {
+    const store = this._persistStorage();
+    if (!store) return;
+    try { store.setItem(this._persistStorageKey(), JSON.stringify(state)); } catch (e) { /* quota / denied */ }
+  }
+
+  /** @private */
+  _clearPersistedStorage() {
+    const store = this._persistStorage();
+    if (!store) return;
+    try { store.removeItem(this._persistStorageKey()); } catch (e) { /* denied */ }
+  }
+
+  /**
+   * Rehydrate the collection params from the saved blob. Fills only slots the
+   * current query didn't already set (URL > saved), so a shared link always
+   * wins. The day-range value is restored onto `this.dayRangeFilter` so the
+   * subsequent seed/control build uses it. Column visibility is delegated to
+   * the TableView hook. No-op unless persistState is on.
+   * @private
+   */
+  _restorePersistedState(queryKeys = []) {
+    if (!this.persistState || !this.collection) return;
+    const saved = this._readPersistedState();
+    if (!saved) return;
+
+    const params = this.collection.params || (this.collection.params = {});
+    // `start`/`size` are structural paging defaults every Collection carries
+    // from construction, so they can't signal a real URL query. Drop them from
+    // the query set: `sort`, filters, and the day-range field strictly honor
+    // URL > saved (they only appear when a query set them), while page `size`
+    // is treated as a per-user viewing preference — saved size is restored over
+    // the paging default (and a URL-provided size, since TablePage always
+    // round-trips size through the URL). Documented in TableView.md.
+    const fromQuery = new Set(queryKeys);
+    fromQuery.delete('start');
+    fromQuery.delete('size');
+
+    if (saved.sort !== undefined && !fromQuery.has('sort')) params.sort = saved.sort;
+    if (saved.size !== undefined) params.size = saved.size;
+
+    // Day-range: restore the selected value (re-seeded to a fresh epoch by the
+    // day-range block) unless the query already carried the field param.
+    if (saved.dayRange !== undefined && this.dayRangeFilter) {
+      const field = this.dayRangeFilter.field || 'created';
+      if (!fromQuery.has(`${field}__gte`)) {
+        this.dayRangeFilter.value = saved.dayRange;
+      }
+    }
+
+    // Filters — restore each key the query didn't set, verbatim (field__in /
+    // dr_* triplets preserved so preset matching still works).
+    if (saved.filters && typeof saved.filters === 'object') {
+      Object.keys(saved.filters).forEach((key) => {
+        if (!fromQuery.has(key)) params[key] = saved.filters[key];
+      });
+    }
+
+    // Column visibility (TableView only).
+    if (typeof this._restoreHiddenColumns === 'function') {
+      this._restoreHiddenColumns(saved.hidden);
+    }
+  }
+
+  /**
+   * Serialize the current view state to localStorage. Called on every
+   * `params-changed` (and by TableView on a column toggle). No-op unless
+   * persistState is on.
+   * @private
+   */
+  _savePersistedState() {
+    if (!this.persistState) return;
+    const params = (this.collection && this.collection.params) || {};
+    const dayRangeGteKey = this.dayRangeFilter ? `${this.dayRangeFilter.field || 'created'}__gte` : null;
+
+    const filters = {};
+    Object.keys(params).forEach((key) => {
+      if (key === 'start' || key === 'size' || key === 'sort') return;
+      if (dayRangeGteKey && key === dayRangeGteKey) return; // re-derived from dayRange
+      const value = params[key];
+      if (value === undefined || value === null || value === '') return;
+      filters[key] = value;
+    });
+
+    const state = { v: 1 };
+    if (params.sort !== undefined) state.sort = params.sort;
+    if (params.size !== undefined) state.size = params.size;
+    if (this.dayRangeControl && typeof this.dayRangeControl.getValue === 'function') {
+      state.dayRange = this.dayRangeControl.getValue();
+    } else if (this.dayRangeFilter) {
+      state.dayRange = this.dayRangeFilter.value;
+    }
+    if (Object.keys(filters).length > 0) state.filters = filters;
+    if (typeof this._getHiddenColumnKeys === 'function') {
+      const hidden = this._getHiddenColumnKeys();
+      if (hidden && hidden.length > 0) state.hidden = hidden;
+    }
+
+    this._writePersistedState(state);
+  }
+
+  /**
+   * Public escape hatch — forget this table's saved view (both the view state
+   * and, via the TableView hook, any hidden columns), reverting to defaults.
+   */
+  clearPersistedState() {
+    this._clearPersistedStorage();
+    if (typeof this._onClearPersistedState === 'function') this._onClearPersistedState();
   }
 
   // ============================================================

@@ -106,6 +106,11 @@ class TablePage extends Page {
       // Auto-refresh (WM-034) — same forwarding pattern.
       autoRefresh: options.autoRefresh,
 
+      // View persistence + column chooser (WM-035) — same forwarding pattern.
+      persistState: options.persistState,
+      persistKey: options.persistKey,
+      columnChooser: options.columnChooser,
+
       // Display options for the HTML table element
       tableOptions: {
         striped: true,

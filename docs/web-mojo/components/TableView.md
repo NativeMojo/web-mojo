@@ -273,6 +273,9 @@ await table.mount('#users-table');
 | `paginated` | `boolean` | `true` | Show pagination controls |
 | `showAdd` | `boolean` | `true` | Show the Add button |
 | `showExport` | `boolean` | `true` | Show the Export button |
+| `columnChooser` | `boolean` | `false` | Show the icon-only "Columns" show/hide dropdown ([details](#column-chooser-columnchooser)) |
+| `persistState` | `boolean` | `false` | Persist sort/size/day-range/filters (+ hidden columns) to `localStorage` ([details](#view-persistence-persiststate)) |
+| `persistKey` | `string` | *route+endpoint* | Explicit storage identity for `persistState` |
 
 ### Toolbar & Display
 
@@ -680,6 +683,108 @@ is disabled under `prefers-reduced-motion`.
 
 **Forwarding through TablePage.** Pass any of `emptyState`, `loadingStyle`, or
 `showResultCount` straight to `TablePage` — it forwards them to the inner
+TableView via its option whitelist.
+
+---
+
+## View persistence (`persistState`)
+
+`persistState: true` remembers **how each user likes this table** — sort, page
+size, day-range selection, and active filter params — in `localStorage`, and
+restores it on the next visit. TablePage's URL sync covers *sharing* a view;
+this covers *returning* to one. Strictly opt-in: **no storage is read or
+written at all** unless the flag is set.
+
+```javascript
+new TableView({
+  collection: events,
+  columns,
+  persistState: true,
+  persistKey: 'admin-events'   // optional — see key scheme below
+});
+```
+
+**What is saved.** A versioned blob `{ v: 1, sort?, size?, dayRange?, filters?,
+hidden? }`:
+
+- `sort` / `size` — the active sort string and page size.
+- `dayRange` — the day-range **selection** (e.g. `'30d'`), re-seeded to a fresh
+  epoch on restore (never the stale `created__gte` value).
+- `filters` — the raw `collection.params` set minus `start`/`size`/`sort` and
+  the day-range field, so `field__in` collapsed keys and `dr_*` daterange
+  triplets round-trip **verbatim** (preset active-state matching depends on it).
+  The page `start` (scroll position) is intentionally not persisted.
+- `hidden` — hidden column keys, written by the [column chooser](#column-chooser-columnchooser).
+
+**Key scheme.** The storage key is `mojo:tableview:<id>` where `<id>` is the
+explicit `persistKey`, or — when omitted — a stable identity of
+`<window.location.pathname>::<collection.endpoint>`. Give sibling tables on the
+same route distinct `persistKey`s.
+
+**Restore precedence: URL > saved > configured defaults.** On construction the
+params already on the collection (for a TablePage, the URL query it applied)
+are treated as "the query"; saved state fills only the slots the query didn't
+set, so a shared link always wins. Configured defaults (`defaultQuery`,
+`collectionParams`) lose to saved state. One deliberate nuance: **page `size`
+is treated as a per-user viewing preference** — a saved size is restored even
+over a URL-provided size (TablePage always round-trips size through the URL, so
+it can't otherwise be distinguished from the paging default). `sort`, filters,
+and the day-range strictly honor URL > saved.
+
+**Reset.** Call `clearPersistedState()` to forget this table's saved view (and,
+with the chooser on, un-hide every column). The chooser's *Reset to defaults*
+entry does the same.
+
+**Schema safety.** The blob is versioned; a corrupt or wrong-version entry is
+discarded silently and the table falls back to its configured defaults.
+
+---
+
+## Column chooser (`columnChooser`)
+
+`columnChooser: true` adds an **icon-only "Columns" toolbar dropdown**
+(`bi-layout-three-columns`; its text label only shows at `d-xxl`) whose
+checkboxes show/hide columns. The wide EventTablePage is the driving case.
+
+```javascript
+new TableView({
+  collection: events,
+  columns: [
+    { key: 'id', label: 'ID', hideable: false },       // locked — always shown
+    { key: 'timestamp', label: 'Timestamp' },
+    { key: 'level', label: 'Level' },
+    { key: 'message', label: 'Message' },
+    { key: 'ip', label: 'IP Address' }
+  ],
+  actions: ['view'],
+  columnChooser: true,
+  persistState: true            // hidden set persists too (see below)
+});
+```
+
+**Visibility is view-state, never config.** Hiding a column adds its key to an
+internal set — the caller's `columns` array is **never mutated**. The header,
+body rows, footer totals, the WM-033 skeleton, and colspan math (grouped-row
+and expandable-row detail cells) all honor the current visibility.
+
+**Locked columns.** A column with `hideable: false` (e.g. an id or actions
+column) renders as a disabled, lock-marked row in the chooser and can never be
+hidden.
+
+**Persistence.** When `persistState` is also on, the hidden set is saved under
+the same storage entry (as `hidden`) and restored on the next visit; a *"Saved
+for this table"* footer appears in the dropdown. With `persistState` off the
+chooser is fully functional but purely in-memory (no storage access).
+
+**Reset.** The *Reset to defaults* entry re-shows every column and clears the
+saved view. Emits `columns:change { hidden }` on each toggle and `columns:reset`
+on reset.
+
+When `columnChooser` is **not** set, no dropdown, styles, or markup are emitted
+— the table is byte-identical to before.
+
+**Forwarding through TablePage.** Pass `persistState`, `persistKey`, and
+`columnChooser` straight to `TablePage`; it forwards them to the inner
 TableView via its option whitelist.
 
 ---

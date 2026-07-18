@@ -124,6 +124,16 @@ module.exports = async function (testContext) {
       expect(fixturePage({ autoRefresh: 30 }).tableViewConfig.autoRefresh).toBe(30);
     });
 
+    it('forwards `persistState` + `persistKey`', () => {
+      const page = fixturePage({ persistState: true, persistKey: 'k' });
+      expect(page.tableViewConfig.persistState).toBe(true);
+      expect(page.tableViewConfig.persistKey).toBe('k');
+    });
+
+    it('forwards `columnChooser`', () => {
+      expect(fixturePage({ columnChooser: true }).tableViewConfig.columnChooser).toBe(true);
+    });
+
     it('omitting these options leaves them undefined (no defaults)', () => {
       const page = fixturePage();
       expect(page.tableViewConfig.dayRangeFilter).toBeUndefined();
@@ -139,6 +149,9 @@ module.exports = async function (testContext) {
       expect(page.tableViewConfig.loadingStyle).toBeUndefined();
       expect(page.tableViewConfig.showResultCount).toBeUndefined();
       expect(page.tableViewConfig.autoRefresh).toBeUndefined();
+      expect(page.tableViewConfig.persistState).toBeUndefined();
+      expect(page.tableViewConfig.persistKey).toBeUndefined();
+      expect(page.tableViewConfig.columnChooser).toBeUndefined();
     });
   });
 };

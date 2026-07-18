@@ -65,6 +65,16 @@ class TableView extends ListView {
     this.expandedRows = new Set();       // model ids currently expanded
     this.expandChildViews = new Map();   // model id -> child View instance
 
+    // -------- Column chooser (opt-in via `columnChooser`) — WM-035 --------
+    // `columnChooser: true` adds an icon-only "Columns" toolbar dropdown whose
+    // checkboxes show/hide columns. Visibility is VIEW STATE — `_hiddenColumns`
+    // holds hidden column keys and the caller's `columns` config array is never
+    // mutated. Columns marked `hideable: false` are locked (always shown). The
+    // hidden set persists via the shared persistState mechanism iff that flag
+    // is also on. See `docs/web-mojo/components/TableView.md` (Column chooser).
+    this.columnChooser = options.columnChooser === true;
+    this._hiddenColumns = new Set();     // column keys hidden from the table
+
     // Restore TableView's "default true" semantics for these toolbar flags.
     // ListView treats them as opt-in (default false). TableView preserves its
     // historical defaults so existing usage is unchanged.
@@ -178,6 +188,241 @@ class TableView extends ListView {
         column.label = column.key.charAt(0).toUpperCase() + column.key.slice(1);
       }
     });
+  }
+
+  // ============================================================
+  // Column chooser / visibility (WM-035)
+  // ============================================================
+
+  /**
+   * Whether a column may be hidden via the chooser. Columns opt OUT with
+   * `hideable: false` (e.g. an id or actions column) — everything else is
+   * hideable by default.
+   * @private
+   */
+  _isColumnHideable(column) {
+    return column && column.hideable !== false;
+  }
+
+  /**
+   * Whether a column is currently hidden. A locked (`hideable: false`) column
+   * is never hidden regardless of any stale persisted key.
+   * @private
+   */
+  _isColumnHidden(column) {
+    if (!this.columnChooser) return false;
+    if (!this._isColumnHideable(column)) return false;
+    return this._hiddenColumns.has(column.key);
+  }
+
+  /**
+   * The columns to actually render. Returns the caller's `columns` array
+   * verbatim (same reference) when the chooser is off or nothing is hidden, so
+   * the opt-out path is byte-identical. Never mutates `this.columns`.
+   * @private
+   */
+  _getVisibleColumns() {
+    if (!this.columnChooser || this._hiddenColumns.size === 0) return this.columns;
+    return this.columns.filter((column) => !this._isColumnHidden(column));
+  }
+
+  /**
+   * Hidden column keys for persistence (only genuinely-hideable ones). Read by
+   * ListView's `_savePersistedState`.
+   * @private
+   */
+  _getHiddenColumnKeys() {
+    if (!this.columnChooser) return [];
+    return this.columns
+      .filter((column) => this._isColumnHideable(column) && this._hiddenColumns.has(column.key))
+      .map((column) => column.key);
+  }
+
+  /**
+   * Restore hidden columns from a persisted blob (called by ListView during
+   * `_restorePersistedState`, before the first render). Rebuilds the baked
+   * template + any already-built rows so the restored visibility takes effect.
+   * @private
+   */
+  _restoreHiddenColumns(hidden) {
+    if (!this.columnChooser || !Array.isArray(hidden) || hidden.length === 0) return;
+    hidden.forEach((key) => {
+      const column = this.columns.find((c) => c.key === key);
+      if (column && this._isColumnHideable(column)) this._hiddenColumns.add(key);
+    });
+    if (this._hiddenColumns.size === 0) return;
+    this.template = this.buildTableTemplate();
+    this._templateCache = null;
+    if (this.itemViews.size > 0) this._buildItems();
+  }
+
+  /**
+   * ListView `clearPersistedState()` hook — reset visibility to defaults (all
+   * columns shown) and repaint.
+   * @private
+   */
+  _onClearPersistedState() {
+    if (this._hiddenColumns.size === 0) return;
+    this._hiddenColumns.clear();
+    this._rebuildForColumnChange();
+  }
+
+  /**
+   * Re-bake the table template (header/footer reflect the visible columns) and
+   * rebuild the row views (TableRow re-generates its cells from the visible
+   * column set), then re-render once. Returns the render promise so callers can
+   * await a settled DOM. Used after any visibility change.
+   * @private
+   */
+  _rebuildForColumnChange() {
+    this.template = this.buildTableTemplate();
+    this._templateCache = null;    // template is cached (cacheTemplate); invalidate it
+
+    // Rebuild the row views against the new visible-column set. Mirrors
+    // `_buildItems` minus its own fire-and-forget render so we drive a single
+    // awaitable render below.
+    this._clearItems();
+    if (this.collection && !this.collection.isEmpty()) {
+      this.isEmpty = false;
+      this.collection.forEach((model, index) => this._createItemView(model, index));
+      this._applyPersistedSelections();
+      this._buildGroupHeaders();
+    } else {
+      this.isEmpty = true;
+    }
+
+    // Always re-render: in production the view is mounted (re-renders in
+    // place); render() also repopulates innerHTML for a not-yet-connected view.
+    return this.render();
+  }
+
+  /**
+   * Toggle a data-action="toggle-column" checkbox. Ignores locked columns.
+   * Persists the new hidden set when persistState is on.
+   */
+  async onActionToggleColumn(_event, element) {
+    const key = element.getAttribute('data-column-key');
+    const column = this.columns.find((c) => c.key === key);
+    if (!column || !this._isColumnHideable(column)) return;
+
+    if (this._hiddenColumns.has(key)) {
+      this._hiddenColumns.delete(key);
+    } else {
+      this._hiddenColumns.add(key);
+    }
+
+    await this._rebuildForColumnChange();
+    if (this.persistState) this._savePersistedState();
+    this.emit('columns:change', { hidden: this._getHiddenColumnKeys() });
+  }
+
+  /**
+   * "Reset to defaults" chooser entry — show every column again AND clear the
+   * saved view (both column + view state share one storage entry).
+   */
+  async onActionColumnChooserReset(event, _element) {
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+    const hadHidden = this._hiddenColumns.size > 0;
+    this._hiddenColumns.clear();
+    // clearPersistedState() runs the _onClearPersistedState hook, but that only
+    // rebuilds when something was hidden; when nothing was hidden we still want
+    // the storage entry gone (sort/filter view state) without a needless render.
+    this._clearPersistedStorage();
+    if (hadHidden) await this._rebuildForColumnChange();
+    this.emit('columns:reset');
+  }
+
+  /**
+   * The icon-only "Columns" toolbar dropdown. Locked (`hideable: false`)
+   * columns render as disabled, lock-marked rows; hideable columns are
+   * whole-row-clickable checkboxes. The persistence footer only shows when
+   * persistState is on. Returns '' when the chooser is off.
+   * @private
+   */
+  _buildColumnChooserTemplate() {
+    if (!this.columnChooser) return '';
+
+    const items = this.columns.map((column) => {
+      const label = this.escapeHtml(column.label || column.title || column.key);
+      if (!this._isColumnHideable(column)) {
+        return `
+          <label class="column-chooser-item is-locked" title="Always shown">
+            <input class="form-check-input" type="checkbox" checked disabled>
+            <span class="form-check-label">${label}</span>
+            <i class="bi bi-lock-fill column-chooser-lock" aria-hidden="true"></i>
+          </label>`;
+      }
+      const checked = this._isColumnHidden(column) ? '' : 'checked';
+      return `
+        <label class="column-chooser-item">
+          <input class="form-check-input" type="checkbox" ${checked}
+                 data-action="toggle-column" data-column-key="${this.escapeHtml(column.key)}">
+          <span class="form-check-label">${label}</span>
+        </label>`;
+    }).join('');
+
+    const persistHint = this.persistState
+      ? '<div class="column-chooser-persist"><i class="bi bi-check2-circle"></i>Saved for this table</div>'
+      : '';
+
+    return `
+      <div class="dropdown">
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false" title="Choose columns">
+          <i class="bi bi-layout-three-columns"></i><span class="d-none d-xxl-inline ms-1">Columns</span>
+        </button>
+        <div class="dropdown-menu dropdown-menu-end column-chooser-menu" role="menu">
+          <h6 class="dropdown-header">Show columns</h6>
+          ${items}
+          <li><hr class="dropdown-divider"></li>
+          <a class="dropdown-item d-flex align-items-center" href="#" data-action="column-chooser-reset">
+            <i class="bi bi-arrow-counterclockwise me-2"></i>Reset to defaults
+          </a>
+          ${persistHint}
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Scoped styles for the column-chooser dropdown. Token-first per
+   * `.claude/rules/theming.md`; the one black-at-4% hover carries its
+   * rgba(255,255,255) dark companion. Emitted once, only when the chooser is
+   * enabled (opt-out path carries zero CSS).
+   * @private
+   */
+  _buildColumnChooserStyles() {
+    return `
+      <style>
+        .column-chooser-menu { min-width: 268px; }
+        .column-chooser-menu .dropdown-header {
+          color: var(--bs-secondary-color);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          font-size: 0.7rem;
+          font-weight: 600;
+        }
+        .column-chooser-item {
+          display: flex; align-items: center; gap: 0.5rem;
+          margin: 0; padding: 0.35rem 1rem; cursor: pointer;
+        }
+        .column-chooser-item .form-check-input { margin-top: 0; flex: 0 0 auto; }
+        .column-chooser-item .form-check-label { cursor: pointer; flex: 1 1 auto; color: var(--bs-body-color); }
+        .column-chooser-item:hover { background: rgba(0, 0, 0, 0.04); }
+        .column-chooser-item.is-locked { cursor: default; opacity: 0.72; }
+        .column-chooser-item.is-locked:hover { background: transparent; }
+        .column-chooser-item.is-locked .form-check-label { color: var(--bs-secondary-color); }
+        .column-chooser-lock { color: var(--bs-secondary-color); font-size: 0.8rem; }
+        .column-chooser-persist {
+          padding: 0.4rem 1rem 0.15rem;
+          color: var(--bs-secondary-color);
+          font-size: 0.72rem;
+          display: flex; align-items: center; gap: 0.35rem;
+        }
+
+        [data-bs-theme="dark"] .column-chooser-item:hover { background: var(--bs-secondary-bg); }
+      </style>
+    `;
   }
 
   /**
@@ -367,7 +612,7 @@ class TableView extends ListView {
    * math (see `_groupHeaderViewOptions`).
    */
   _getRowExpandColspan() {
-    const dataCols = this.columns?.length || 0;
+    const dataCols = this._getVisibleColumns().length || 0;
     const selectCol = this.isSelectable() ? 1 : 0;
     const actionsCol = (this.actions || this.contextMenu) ? 1 : 0;
     const expandCol = this.isRowExpandEnabled() ? 1 : 0;
@@ -565,6 +810,7 @@ class TableView extends ListView {
     return `
       <div class="mojo-table-wrapper">
         ${this.isRowExpandEnabled() ? this._buildRowExpandStyles() : ''}
+        ${this.columnChooser ? this._buildColumnChooserStyles() : ''}
         ${this._hasFeedbackFeature() ? this._buildFeedbackStyles() : ''}
         ${this.buildToolbarTemplate()}
         ${batchPanelTop}
@@ -618,7 +864,7 @@ class TableView extends ListView {
       ? '<td class="text-end"><span class="skeleton-line w-40 ms-auto"></span></td>'
       : '';
 
-    const cells = this.columns.map((column, i) => {
+    const cells = this._getVisibleColumns().map((column, i) => {
       const alignClass = this.getAlignClass(column.align);
       const w = widths[i % widths.length];
       return `<td class="${alignClass}"><span class="skeleton-line ${w}"></span></td>`;
@@ -679,6 +925,11 @@ class TableView extends ListView {
       }
     }
 
+    // Column chooser dropdown — icon-only, sits alongside Sort / Add Filter.
+    if (this.columnChooser) {
+      baseButtons += this._buildColumnChooserTemplate();
+    }
+
     return baseButtons;
   }
 
@@ -707,7 +958,7 @@ class TableView extends ListView {
     }
 
     // Column headers
-    this.columns.forEach((column) => {
+    this._getVisibleColumns().forEach((column) => {
       const { fieldKey } = this.parseColumnKey(column.key);
 
       const sortable = this.sortable && column.sortable !== false;
@@ -786,13 +1037,16 @@ class TableView extends ListView {
       footerCells += '<td></td>';
     }
 
-    let totalColumnIndex = 0;
-    this.columns.forEach((column, index) => {
+    // Iterate visible columns so the footer column count matches the header;
+    // total cells stay keyed by the column's absolute index in
+    // `footerTotalColumns` so the `col_N` keys line up with
+    // calculateFooterTotals / updateFooterTotals regardless of visibility.
+    this._getVisibleColumns().forEach((column, index) => {
       const responsiveClasses = this.getResponsiveClasses(column.visibility);
       const alignClass = this.getAlignClass(column.align);
 
       if (column.footer_total) {
-        const safeKey = `col_${totalColumnIndex}`;
+        const safeKey = `col_${this.footerTotalColumns.indexOf(column)}`;
         const formatter = this.parseColumnKey(column.key).formatter || column.formatter;
         let cellContent;
         if (formatter && typeof formatter === 'string') {
@@ -802,7 +1056,6 @@ class TableView extends ListView {
         }
 
         footerCells += `<td class="table-footer-total ${responsiveClasses} ${alignClass}" data-total-column="${safeKey}">${cellContent}</td>`;
-        totalColumnIndex++;
       } else if (index === 0) {
         footerCells += `<td class="table-footer-label ${responsiveClasses} ${alignClass}"><strong>Totals</strong></td>`;
       } else {
@@ -914,7 +1167,7 @@ class TableView extends ListView {
       listView: this,
       tableView: this,
       template: this.itemTemplate,
-      columns: this.columns,
+      columns: this._getVisibleColumns(),
       actions: this.actions,
       contextMenu: this.contextMenu,
       batchActions: this.batchActions,
@@ -1010,7 +1263,7 @@ class TableView extends ListView {
    * @protected
    */
   _groupHeaderViewOptions(_model, _key, _index) {
-    const dataCols = this.columns?.length || 0;
+    const dataCols = this._getVisibleColumns().length || 0;
     const selectCol = this.isSelectable() ? 1 : 0;
     const actionsCol = (this.actions || this.contextMenu) ? 1 : 0;
     const expandCol = this.isRowExpandEnabled() ? 1 : 0;

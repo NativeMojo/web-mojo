@@ -821,6 +821,8 @@ ListView ships an opt-in toolbar that mirrors what `TableView` has. Every flag b
 | `toolbarRight` | `View` | `null` | Optional View mounted into a right-aligned slot (range pickers, view-mode toggles, etc.). |
 | `dayRangeFilter` | `boolean \| object` | `false` | When truthy, mounts a `SegmentControl` day-range picker in the toolbar and writes `${field}__gte` to `collection.params` on every change (refetches automatically). Boolean `true` → defaults `{ field: 'created', value: '7d', options: [1d, 7d, 30d, 90d], ariaLabel: 'Time range' }`. Object form merges over those defaults. Coexists with `toolbarRight`: day-range mounts to the left, `toolbarRight` to the right. See [Day-range filter](#day-range-filter). |
 | `filterPresets` | `Array<object>` | `[]` | Author-defined "common queries" rendered as a compact joined `btn-group` segment. Each preset `{ key, label, icon?, params, description? }` bundles a set of filter params applied in one click. Mutual-exclusion + toggle-off; active state is derived from strict param matching. See [Filter presets](#filter-presets). |
+| `persistState` | `boolean` | `false` | Persist sort, page size, day-range value, and active filter params to `localStorage`, restored on the next visit (precedence URL > saved > defaults). Strictly opt-in — no storage is touched unless set. See [View persistence](#view-persistence). |
+| `persistKey` | `string` | *route+endpoint* | Explicit storage identity for `persistState`; defaults to `<route>::<endpoint>`. |
 
 ### Pagination
 
@@ -955,6 +957,37 @@ const listView = new ListView({
   }
 });
 ```
+
+---
+
+## View persistence
+
+`persistState: true` remembers the user's view — **sort, page size, day-range
+selection, and active filter params** — in `localStorage`, restored on the next
+visit. Strictly opt-in: no storage is read or written unless the flag is set.
+
+```javascript
+new ListView({
+  collection: articles,
+  itemTemplate: '<div class="card">{{model.title}}</div>',
+  searchable: true,
+  filters: [{ name: 'topic', label: 'Topic', type: 'select', options: ['ops', 'patterns'] }],
+  persistState: true,
+  persistKey: 'articles-list'   // optional; defaults to <route>::<endpoint>
+});
+```
+
+The saved blob is versioned (`{ v: 1, … }`); corrupt or stale entries are
+discarded silently. Restore precedence is **URL > saved > configured defaults**
+— saved state fills only the slots the incoming query didn't set. Filter params
+are stored raw so `field__in` collapsed keys and `dr_*` daterange triplets
+round-trip verbatim (preset active-state matching depends on it). Call
+`clearPersistedState()` to forget the saved view.
+
+TableView builds on this same mechanism and adds a persisted column chooser —
+see [TableView → View persistence](./TableView.md#view-persistence-persiststate)
+and [Column chooser](./TableView.md#column-chooser-columnchooser) for the full
+contract and the exact key scheme.
 
 ---
 
