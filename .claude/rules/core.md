@@ -51,4 +51,8 @@ Before closing any task:
 - Template rules are respected.
 - Validation or tests appropriate to the task have been run.
 - Docs and `CHANGELOG.md` are updated if public behavior changed.
+- A runnable example in `examples/portal/` is added or updated when a public
+  component or component option changed — follow `examples/portal/README.md`
+  (single-file rule, `example.json`, `TOPIC_TAXONOMY`, then
+  `npm run examples:registry`).
 - The final handoff explains what changed, why, and how to verify it.

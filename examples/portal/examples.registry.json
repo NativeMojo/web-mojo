@@ -1,6 +1,6 @@
 {
   "generatedAt": "static",
-  "pageCount": 93,
+  "pageCount": 97,
   "pages": [
     {
       "name": "ActiveGroup",
@@ -752,6 +752,102 @@
       "section": "Components",
       "icon": "bi-table",
       "order": 34,
+      "topic": "components",
+      "group": "Lists & Tables"
+    },
+    {
+      "name": "TableView",
+      "area": "components",
+      "route": "components/table-view/feedback-states",
+      "title": "TableView — feedback states",
+      "summary": "`emptyState` (configured + filtered-empty branches), `loadingStyle: 'skeleton'`, and `showResultCount` — the loading/empty/summary chrome.",
+      "docs": "docs/web-mojo/components/TableView.md",
+      "tags": [
+        "table",
+        "collection",
+        "sort",
+        "filter",
+        "pagination",
+        "batch-actions"
+      ],
+      "page": "TableViewFeedbackStatesExample.js",
+      "modulePath": "./examples/components/TableView/TableViewFeedbackStatesExample.js",
+      "sourcePath": "examples/portal/examples/components/TableView/TableViewFeedbackStatesExample.js",
+      "section": "Components",
+      "icon": "bi-table",
+      "order": 37,
+      "topic": "components",
+      "group": "Lists & Tables"
+    },
+    {
+      "name": "TableView",
+      "area": "components",
+      "route": "components/table-view/filter-presets",
+      "title": "TableView — filter presets",
+      "summary": "`filterPresets` renders named one-click queries as a toolbar segment (≤4 inline); mutually exclusive, derived active state, `'@me'` token.",
+      "docs": "docs/web-mojo/components/TableView.md",
+      "tags": [
+        "table",
+        "collection",
+        "sort",
+        "filter",
+        "pagination",
+        "batch-actions"
+      ],
+      "page": "TableViewFilterPresetsExample.js",
+      "modulePath": "./examples/components/TableView/TableViewFilterPresetsExample.js",
+      "sourcePath": "examples/portal/examples/components/TableView/TableViewFilterPresetsExample.js",
+      "section": "Components",
+      "icon": "bi-table",
+      "order": 36,
+      "topic": "components",
+      "group": "Lists & Tables"
+    },
+    {
+      "name": "TableView",
+      "area": "components",
+      "route": "components/table-view/power-tools",
+      "title": "TableView — power tools",
+      "summary": "`persistState` + `persistKey` + `columnChooser` (with `hideable: false`) + `autoRefresh: 30` on one wide table; reset via `clearPersistedState()`.",
+      "docs": "docs/web-mojo/components/TableView.md",
+      "tags": [
+        "table",
+        "collection",
+        "sort",
+        "filter",
+        "pagination",
+        "batch-actions"
+      ],
+      "page": "TableViewPowerToolsExample.js",
+      "modulePath": "./examples/components/TableView/TableViewPowerToolsExample.js",
+      "sourcePath": "examples/portal/examples/components/TableView/TableViewPowerToolsExample.js",
+      "section": "Components",
+      "icon": "bi-table",
+      "order": 39,
+      "topic": "components",
+      "group": "Lists & Tables"
+    },
+    {
+      "name": "TableView",
+      "area": "components",
+      "route": "components/table-view/row-expand",
+      "title": "TableView — expandable rows",
+      "summary": "`rowExpand` chevron column opens a full-width string-template detail row; `rowExpandMultiple` toggles single vs many open.",
+      "docs": "docs/web-mojo/components/TableView.md",
+      "tags": [
+        "table",
+        "collection",
+        "sort",
+        "filter",
+        "pagination",
+        "batch-actions"
+      ],
+      "page": "TableViewRowExpandExample.js",
+      "modulePath": "./examples/components/TableView/TableViewRowExpandExample.js",
+      "sourcePath": "examples/portal/examples/components/TableView/TableViewRowExpandExample.js",
+      "section": "Components",
+      "icon": "bi-table",
+      "order": 38,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -2483,6 +2579,34 @@
               "docs": "docs/web-mojo/components/TableView.md"
             },
             {
+              "route": "components/table-view/filter-presets",
+              "title": "TableView — filter presets",
+              "summary": "`filterPresets` renders named one-click queries as a toolbar segment (≤4 inline); mutually exclusive, derived active state, `'@me'` token.",
+              "icon": "bi-table",
+              "docs": "docs/web-mojo/components/TableView.md"
+            },
+            {
+              "route": "components/table-view/feedback-states",
+              "title": "TableView — feedback states",
+              "summary": "`emptyState` (configured + filtered-empty branches), `loadingStyle: 'skeleton'`, and `showResultCount` — the loading/empty/summary chrome.",
+              "icon": "bi-table",
+              "docs": "docs/web-mojo/components/TableView.md"
+            },
+            {
+              "route": "components/table-view/row-expand",
+              "title": "TableView — expandable rows",
+              "summary": "`rowExpand` chevron column opens a full-width string-template detail row; `rowExpandMultiple` toggles single vs many open.",
+              "icon": "bi-table",
+              "docs": "docs/web-mojo/components/TableView.md"
+            },
+            {
+              "route": "components/table-view/power-tools",
+              "title": "TableView — power tools",
+              "summary": "`persistState` + `persistKey` + `columnChooser` (with `hideable: false`) + `autoRefresh: 30` on one wide table; reset via `clearPersistedState()`.",
+              "icon": "bi-table",
+              "docs": "docs/web-mojo/components/TableView.md"
+            },
+            {
               "route": "components/data-view",
               "title": "DataView",
               "summary": "Structured key/value display with field types for email, URL, boolean, dates, and JSON.",
@@ -3235,6 +3359,34 @@
           "route": "components/table-view/row-stripe",
           "title": "TableView row stripe",
           "summary": "Severity-coded 4px left-edge stripe per row, inherited from ListView — same callback, same six tokens.",
+          "icon": "bi-table",
+          "docs": "docs/web-mojo/components/TableView.md"
+        },
+        {
+          "route": "components/table-view/filter-presets",
+          "title": "TableView — filter presets",
+          "summary": "`filterPresets` renders named one-click queries as a toolbar segment (≤4 inline); mutually exclusive, derived active state, `'@me'` token.",
+          "icon": "bi-table",
+          "docs": "docs/web-mojo/components/TableView.md"
+        },
+        {
+          "route": "components/table-view/feedback-states",
+          "title": "TableView — feedback states",
+          "summary": "`emptyState` (configured + filtered-empty branches), `loadingStyle: 'skeleton'`, and `showResultCount` — the loading/empty/summary chrome.",
+          "icon": "bi-table",
+          "docs": "docs/web-mojo/components/TableView.md"
+        },
+        {
+          "route": "components/table-view/row-expand",
+          "title": "TableView — expandable rows",
+          "summary": "`rowExpand` chevron column opens a full-width string-template detail row; `rowExpandMultiple` toggles single vs many open.",
+          "icon": "bi-table",
+          "docs": "docs/web-mojo/components/TableView.md"
+        },
+        {
+          "route": "components/table-view/power-tools",
+          "title": "TableView — power tools",
+          "summary": "`persistState` + `persistKey` + `columnChooser` (with `hideable: false`) + `autoRefresh: 30` on one wide table; reset via `clearPersistedState()`.",
           "icon": "bi-table",
           "docs": "docs/web-mojo/components/TableView.md"
         },

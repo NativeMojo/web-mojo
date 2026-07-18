@@ -87,6 +87,9 @@ A task is closed only when:
 - [ ] Tests pass and cover the new behavior (regression test, if a bug)
 - [ ] No new lint/type errors introduced (`npm run lint`)
 - [ ] Docs / `CHANGELOG.md` updated if public behavior changed
+- [ ] Runnable example in `examples/portal/` added/updated if a public
+      component or option changed (`examples/portal/README.md`, then
+      `npm run examples:registry`)
 - [ ] `memory.md` updated if a decision was made
 - [ ] Item closed with `scripts/close.sh` (file now in `planning/done/`)
 
