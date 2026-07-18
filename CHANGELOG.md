@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+### Core · ListView/TableView UX power pass — six opt-in table features (WM-032..WM-036, epic WM-038)
+
+All strictly opt-in — tables that pass none of the new options render byte-identically (locked by an all-options-off regression test). All are forwarded through `TablePage` with option-forwarding regression coverage, documented in `ListView.md`/`TableView.md`, and theme-correct in light and dark.
+
+- **`filterPresets:` (WM-032)** — author-named filter bundles as a compact grouped segment (day-range SegmentControl family): inline beside day-range for ≤4 presets, scrollable row above the pills for 5+. One click applies the bundle (`setFilter` + `applyFilters`); mutual exclusion with toggle-off; active state *derived* from strict param matching so removing a pill or clearing filters deactivates the preset automatically; `'@me'` token resolves the active user at apply and match time. API: `applyPreset(key)` / `clearPreset()` / `getActivePreset()` + `preset:change` event.
+- **`emptyState:` / `loadingStyle: 'skeleton'` / `showResultCount:` (WM-033)** — rich empty states with a truly-empty vs no-filter-matches branch (filtered variant auto-offers Clear filters); shimmer skeleton rows echoing the real column/card silhouettes (size-capped, reduced-motion guard); "Showing N of M · filtered" summary in the pills row. `emptyMessage` remains the fallback.
+- **`autoRefresh: <seconds>` (WM-034)** — interval refetch (5s floor) preserving current params; pauses while the tab is hidden/blurred, during row selection, inline cell edits, and open row menus; immediate refetch on focus resume; leak-proof across cached page revisits.
+- **`persistState:` + `persistKey:` (WM-035)** — per-table view memory in localStorage (versioned blob: sort, size, day-range, filters — `field__in`/`dr_*` round-trip verbatim) with **URL > saved > defaults** precedence; `clearPersistedState()`.
+- **`columnChooser: true` (WM-035)** — icon-only Columns dropdown (label at xxl+): whole-row checkboxes, `hideable: false` locked rows, visibility as view-state (caller's `columns` config never mutated), persisted iff `persistState` is on; header/footer totals/skeleton/expand-colspan/grouping all respect visibility.
+- **`rowExpand:` + `rowExpandMultiple:` (WM-036)** — chevron-toggled inline detail rows (`(model) => string | View`), dynamic colspan across selection/actions columns, single-open by default, expanded state survives re-renders and collapses on page change; `row:expand:toggle` event.
+
+Cross-feature composition is covered by a dedicated interaction suite (preset→zero-rows renders the filtered empty state; all-on renders each feature's markup once; all-off is byte-identical; refresh ticks prune vanished expanded rows; skeletons mirror expand/selection cells).
+
+*(Trailing from the same epic: `stats:` live stat strip (WM-037) — blocked on django-mojo aggregation support.)*
+
+### Core · Menu items HTML-escape dev-supplied strings; framework escapers made quote-safe (WM-031)
+
+- **Security hardening.** `ContextMenu.buildMenuItemHTML` and `ModalView.buildContextMenu` interpolated item `label`, `icon`, `href`, `target`, `action` (and, in ModalView, custom `data-*` values) — plus the dropdown trigger's `icon`/`buttonClass` — straight into HTML/attributes without escaping. No shipping caller feeds those from model data today, but nothing stopped a future `label: 'Open <display_name>'` from rendering as live markup. All are now HTML-escaped via the view's `escapeHtml`; attribute values escape quotes too, so a `"`-bearing value can't break out of its attribute. `data-action`/`data-item-action` still dispatch correctly because `getAttribute()` decodes the entities back to the original string.
+- **`View.escapeHtml` — and `FormBuilder` / `TagInput` / `ComboInput` / `ChatInputView` — are now quote-safe.** Each defined its own `escapeHtml` via `div.textContent`/`innerHTML`, which escapes `& < >` but **not** `"`/`'` — unsafe wherever the result lands in an attribute (e.g. `ListView`'s `data-format=` / icon `class=`, which use the inherited `View.escapeHtml`). They now use explicit-replacement `& < > " '` (the form `TableRow` already used). Purely additive: output is byte-identical for values without quotes.
+- **Deferred to follow-ups** (separate surfaces / defect classes, filed in `planning/inbox/`): escaping `ModalView.buildFooter()` button fields and the modal *title* (same unescaped-config class, different methods); and `href` **scheme** sanitization on link items (`javascript:`/`data:` still pass — escaping prevents attribute breakout only, not scheme abuse; care needed not to break `mailto:`/`tel:`/relative hrefs).
+- Tests: `test/unit/ContextMenu.test.js` (+5), new `test/unit/ModalView.test.js` (+5), `test/unit/View.test.js` (+3). Test-infra: `ModalView` registered in `simple-module-loader`. Full suite 1377/1377; lint 0 errors / 316 warnings.
+
 ### Admin · Geofence permissions registered — whitelist + config toggles on UserView (WM-029)
 
 - **`bypass_geofence`, `view_geofence`, and `manage_geofence` are now settable from the admin UI.** django-mojo has honored all three as per-user JSON perm flags (bypass short-circuits every geofence check on authenticated requests; view/manage gate the Admin › Security › Geofencing screens), but none were registered in `User.GRANULAR_PERMISSION_TABS` — so they appeared in no permission tabset and admins had to POST them by hand. All three now live in the **Platform** tab, which surfaces them automatically as autosave switches in UserView › Sys Perms and in the users-table Edit Permissions modal (both rebuild from the registry).
