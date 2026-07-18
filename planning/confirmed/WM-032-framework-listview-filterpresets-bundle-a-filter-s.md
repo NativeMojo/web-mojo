@@ -1,13 +1,13 @@
 ---
-id:
+id: WM-032
 type: feature
 title: "Framework: ListView `filterPresets:` — bundle a filter set behind a toolbar chip"
 priority: P2
-effort: TBD
-owner: TBD
+effort: L
+owner: core
 opened: 2026-05-10
 depends_on: []
-related: []
+related: [WM-038]
 links: []
 ---
 # Framework: ListView `filterPresets:` — bundle a filter set behind a toolbar chip
@@ -173,3 +173,50 @@ Per "Tests" above.
 - **Function-form `params` vs. token strings.** Both have tradeoffs. Strings serialize to URLs cleanly; functions are more flexible. Build phase picks one. If both are supported, document the precedence (string wins for URL serialization).
 - **Chip vs. tab visual treatment.** Filter pills are subtle (`btn-sm`); presets are a step more visible (top-of-toolbar, primary entry points). They should look different from filter pills so the user doesn't conflate them. Build phase picks the right tier — probably tonal pills slightly larger than filter pills.
 - **Where in the toolbar do presets render** — to the left of search, between search and filter, or in a row above? Build phase eyeballs. Recommended: row above the standard filter toolbar, so the preset bar reads as a "common queries" header.
+
+## Notes
+
+Agreed plan (scoped 2026-07-18, approved by Ian as part of epic WM-038):
+
+**Two trims from the original AC (both add-later-compatible):**
+1. **No additive mode** (AC-A opt-in dropped) — mutual-exclusion + toggle-off
+   only. All 15 listed use cases are mutual-exclusion; revisit on demand.
+2. **No `?preset=key` URL marker** (AC-C dropped) — the underlying filter
+   params already round-trip via TablePage's generic URL sync, and active
+   state is *derived* (strict param matching), so chips re-highlight on
+   reload for free for static presets. Dynamic-value presets (frozen relative
+   dates) just don't re-highlight — acceptable v1.
+
+**Implementation (recon-verified):**
+- All in `ListView.js` — TableView inherits the toolbar untouched
+  (`buildToolbarTemplate` at ListView.js:439-467); new `filter-presets` row
+  between the toolbar flex header and the `filter-pills` container; gate
+  `_isToolbarEnabled()` (:413).
+- Do NOT reuse SegmentControl (strictly one-of-N, no deselect) — dedicated
+  chip renderer copying its `data-action` + repaint pattern; innerHTML
+  re-render like `buildActivePills()`.
+- Apply = null-out previous preset's keys, `setFilter()` loop for the new
+  bundle, `applyFilters()` (start reset + fetch + pills + `params-changed`
+  → TablePage URL sync for free). Toggle-off = null-out own keys.
+- Active state derived: every resolved param matches `getActiveFilters()`
+  (match via getActiveFilters, not raw params — `__in` collapsing).
+- Preset-applied params render as normal pills (removable; removal
+  deactivates the chip via derived matching).
+- `'@me'` token only (resolved at apply AND match time → "Mine"
+  re-highlights after reload). No function-form params in v1.
+- `TablePage.js`: one forwarding line (`filterPresets: options.filterPresets`
+  in the ~:85 block) + assertion in TablePage.option-forwarding.test.js.
+- Tests: new `test/unit/ListView.filterPresets.test.js` — render, apply+start
+  reset, active match, toggle-off, mutual exclusion, manual-edit deactivate,
+  `@me` resolution, no-config → no row.
+- Styling: Bootstrap token classes only (`btn-sm btn-outline-secondary` /
+  `btn-primary` active); chip row `overflow-x: auto; white-space: nowrap`,
+  ≥40px tap targets.
+- Edge cases: collision with dayRangeFilter's `field__gte` (last writer wins,
+  documented); `@me` with no active user → skip param; duplicate keys → dev
+  warning.
+- Docs: ListView.md "Filter presets" section; cross-refs TableView.md,
+  TablePage.md; CHANGELOG.
+
+**Epic context:** wave 1 of WM-038 (parallel with WM-033/034/036); mockups
+(light+dark) approved in epic phase 0 before build.
