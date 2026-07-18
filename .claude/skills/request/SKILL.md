@@ -45,7 +45,10 @@ existing features:
 - `.claude/rules/` (layer conventions: views, api, testing, theming)
 
 ## 3. Clarify
-Resolve real ambiguity with the user before writing. Don't write a vague item.
+Resolve real ambiguity with the user before writing — the API/UI contract,
+permissions, edge cases, and what's out of scope (features); the repro and
+expected-vs-actual (bugs). Don't write a vague item; a good inbox item is
+unambiguous enough to scope against.
 
 ## 4. Write planning/inbox/<slug>.md from planning/_template.md
 - frontmatter: `id:` **blank** (a bare `id:` line — strip the template's comment,
