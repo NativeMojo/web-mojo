@@ -34,6 +34,7 @@ TableView extends [ListView](./ListView.md) to render collections as full-featur
 - [Context Menus](#context-menus)
 - [Click Action](#click-action)
 - [Custom Action Handlers](#custom-action-handlers)
+- [Expandable rows](#expandable-rows)
 
 ### Toolbar
 - [Search](#search)
@@ -292,6 +293,13 @@ await table.mount('#users-table');
 | `selectable` | `boolean` | `false` | Shorthand: sets `selectionMode` to `'multiple'` if true |
 | `batchActions` | `Array<object>` | `null` | Batch action definitions |
 | `batchBarLocation` | `string` | `'bottom'` | `'top'` or `'bottom'` |
+
+### Expandable Rows
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `rowExpand` | `function` | `null` | `(model) => string \| View`. Enables a chevron toggle column that expands an inline detail row beneath the data row. See [Expandable rows](#expandable-rows). |
+| `rowExpandMultiple` | `boolean` | `false` | Allow several rows expanded at once. Default is single-open (opening one collapses the others). |
 
 ### Forms & Dialogs
 
@@ -574,6 +582,66 @@ new TableView({
 ```
 
 See [ListView — Built-in helpers](./ListView.md#built-in-helpers) for signatures, options, and edge-case details.
+
+---
+
+## Expandable rows
+
+Set `rowExpand: (model) => string | View` to turn on inline detail rows. A
+narrow chevron toggle cell becomes the table's **first column**; clicking it
+expands a full-width detail row beneath the data row that renders your
+author-supplied content for that row's model. It kills the "open a modal to
+read one more field" flow for quick-look cases.
+
+```js
+const table = new TableView({
+  collection: incidentCollection,
+  columns: [
+    { key: 'priority', label: 'Priority' },
+    { key: 'title', label: 'Title' }
+  ],
+  actions: ['view'],
+  rowExpand: (model) => `
+    <dl class="detail-grid">
+      <dt>Description</dt><dd>${model.get('description')}</dd>
+      <dt>Rule</dt><dd><code>${model.get('rule')}</code></dd>
+    </dl>
+  `
+});
+```
+
+**String vs View content.** The callback may return:
+
+- **A string** — templated straight into the detail cell (wrap dynamic values
+  in your own escaping if they're untrusted).
+- **A `View` instance** — mounted via `addChild()` with an explicit
+  `render()` (the [Dynamic Children](../core/ViewChildViews.md#dynamic-children)
+  pattern, since the detail row is added after the table has already rendered).
+  The View is destroyed when its row collapses or the table rebuilds.
+
+```js
+// A View payload — receives the row's model.
+rowExpand: (model) => new IncidentQuickLookView({ model })
+```
+
+**Single vs multiple open.** By default only one row is open at a time —
+expanding another collapses the first. Pass `rowExpandMultiple: true` to allow
+several open simultaneously.
+
+**State & lifecycle.**
+
+- Expanded state is keyed by model id and survives a **pure re-render** (e.g. a
+  selection change), so open rows stay open.
+- A **page change** (or any refetch that replaces the rows) collapses
+  everything — the detail rows belong to the previous page's models.
+- Emits `row:expand:toggle` `{ model, expanded }` on each toggle.
+
+**Layout.** The detail row's `<td>` spans every column — chevron + selection
+(when selectable) + data columns + actions. The panel surface uses
+`var(--bs-tertiary-bg)` with a primary left accent and renders correctly in
+both light and dark themes. When `rowExpand` is **not** set, no chevron column
+is emitted and the table markup is byte-identical to before — the feature is
+fully opt-in.
 
 ---
 

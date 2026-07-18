@@ -54,6 +54,17 @@ class TableView extends ListView {
     this.contextMenu = options.contextMenu || options.rowContextMenu || null;
     this.batchActions = options.batchActions || null;
 
+    // -------- Expandable detail rows (opt-in via `rowExpand`) --------
+    // `rowExpand: (model) => string | View` renders an inline full-width
+    // detail row beneath its data row. A narrow chevron toggle cell becomes
+    // the first column. State (which model ids are open) lives here so it
+    // survives a pure re-render; `expandChildViews` tracks View-returning
+    // payloads so they can be destroyed on collapse / rebuild.
+    this.rowExpand = typeof options.rowExpand === 'function' ? options.rowExpand : null;
+    this.rowExpandMultiple = options.rowExpandMultiple === true;
+    this.expandedRows = new Set();       // model ids currently expanded
+    this.expandChildViews = new Map();   // model id -> child View instance
+
     // Restore TableView's "default true" semantics for these toolbar flags.
     // ListView treats them as opt-in (default false). TableView preserves its
     // historical defaults so existing usage is unchanged.
@@ -343,6 +354,200 @@ class TableView extends ListView {
   }
 
   /**
+   * Whether expandable detail rows are enabled (a `rowExpand` callback was
+   * provided). Read by TableRow to decide whether to render the chevron cell.
+   */
+  isRowExpandEnabled() {
+    return typeof this.rowExpand === 'function';
+  }
+
+  /**
+   * Colspan for the full-width detail row: chevron col (+1 when enabled) +
+   * selection col + data cols + actions col. Mirrors the group-header colspan
+   * math (see `_groupHeaderViewOptions`).
+   */
+  _getRowExpandColspan() {
+    const dataCols = this.columns?.length || 0;
+    const selectCol = this.isSelectable() ? 1 : 0;
+    const actionsCol = (this.actions || this.contextMenu) ? 1 : 0;
+    const expandCol = this.isRowExpandEnabled() ? 1 : 0;
+    return Math.max(1, expandCol + selectCol + dataCols + actionsCol);
+  }
+
+  /**
+   * Toggle the inline detail row for `model`. Called by TableRow's chevron
+   * handler. Single-open by default (`rowExpandMultiple: true` allows several).
+   */
+  async toggleRowExpand(model, rowView) {
+    if (!this.isRowExpandEnabled() || !model) return;
+    const id = model.id;
+    const isOpen = this.expandedRows.has(id);
+
+    if (isOpen) {
+      this._collapseRow(id);
+    } else {
+      if (!this.rowExpandMultiple) {
+        Array.from(this.expandedRows).forEach((otherId) => this._collapseRow(otherId));
+      }
+      this.expandedRows.add(id);
+      const rv = rowView || this.itemViews.get(id);
+      if (rv && rv.element) {
+        rv.element.classList.add('expanded');
+        const toggle = rv.element.querySelector('.mojo-expand-toggle');
+        if (toggle) toggle.setAttribute('aria-expanded', 'true');
+      }
+      await this._renderExpandedRow(id);
+    }
+
+    this.emit('row:expand:toggle', { model, expanded: this.expandedRows.has(id) });
+  }
+
+  /**
+   * Collapse a single expanded row: drop it from state, remove its detail
+   * `<tr>` from the DOM, destroy any View payload, and reset the chevron.
+   * @private
+   */
+  _collapseRow(id) {
+    this.expandedRows.delete(id);
+
+    const detail = this.element?.querySelector(`tr.mojo-detail-row[data-detail-for="${id}"]`);
+    if (detail) detail.remove();
+
+    const child = this.expandChildViews.get(id);
+    if (child) {
+      this.removeChild(child);
+      this.expandChildViews.delete(id);
+    }
+
+    const rv = this.itemViews.get(id);
+    if (rv && rv.element) {
+      rv.element.classList.remove('expanded');
+      const toggle = rv.element.querySelector('.mojo-expand-toggle');
+      if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  /**
+   * Build and insert the detail `<tr>` for an expanded model directly after
+   * its data row. String payloads template into the panel; View payloads are
+   * mounted via `addChild()` + an explicit `render()` (the Dynamic Children
+   * pattern for children added after the parent has already rendered).
+   * @private
+   */
+  async _renderExpandedRow(id) {
+    const rowView = this.itemViews.get(id);
+    if (!rowView || !rowView.element || !rowView.element.parentNode) return;
+
+    // Never leave a stale detail row behind.
+    const existing = this.element?.querySelector(`tr.mojo-detail-row[data-detail-for="${id}"]`);
+    if (existing) existing.remove();
+
+    const model = rowView.model;
+    let content;
+    try {
+      content = this.rowExpand(model);
+    } catch (error) {
+      console.error('TableView rowExpand() threw for model', id, error);
+      return;
+    }
+
+    const colspan = this._getRowExpandColspan();
+    const detailRow = document.createElement('tr');
+    detailRow.className = 'mojo-detail-row';
+    detailRow.setAttribute('data-detail-for', id);
+
+    const isView = content && typeof content === 'object' && typeof content.render === 'function';
+
+    if (isView) {
+      const containerId = `row-expand-${id}`;
+      detailRow.innerHTML =
+        `<td colspan="${colspan}"><div class="mojo-detail-panel">` +
+        `<div data-container="${containerId}"></div></div></td>`;
+      rowView.element.after(detailRow);
+
+      this.addChild(content, { containerId });
+      this.expandChildViews.set(id, content);
+      await content.render();
+    } else {
+      const html = content == null ? '' : String(content);
+      detailRow.innerHTML =
+        `<td colspan="${colspan}"><div class="mojo-detail-panel">${html}</div></td>`;
+      rowView.element.after(detailRow);
+    }
+  }
+
+  /**
+   * Re-materialize every expanded detail row after a full re-render (which
+   * wipes `innerHTML`, detaching detail rows and any View payload elements).
+   * Rows whose model is no longer present — e.g. after a page change — are
+   * collapsed, satisfying "page change collapses all".
+   * @private
+   */
+  async _renderExpandedRows() {
+    if (!this.isRowExpandEnabled()) return;
+
+    // Drop expanded ids whose row is gone (page change / filter refetch).
+    Array.from(this.expandedRows).forEach((id) => {
+      if (!this.itemViews.has(id)) this._collapseRow(id);
+    });
+
+    if (this.expandedRows.size === 0) return;
+
+    // Tear down stale View payloads whose elements were detached by the
+    // parent's innerHTML wipe, then rebuild each surviving detail row fresh.
+    this.expandChildViews.forEach((child) => this.removeChild(child));
+    this.expandChildViews.clear();
+
+    // Each detail row targets an independent data row, so rebuild in parallel.
+    await Promise.all(Array.from(this.expandedRows, (id) => this._renderExpandedRow(id)));
+  }
+
+  /**
+   * Scoped inline styles for the chevron cell + detail panel. Emitted only
+   * when `rowExpand` is enabled so the opt-out path has zero markup/CSS delta.
+   * Light defaults first; the literal-tint dark companions are clustered at
+   * the bottom (per .claude/rules/theming.md).
+   * @private
+   */
+  _buildRowExpandStyles() {
+    return `
+      <style>
+        .table-view-component .col-expand { width: 2.4rem; padding: 0 !important; }
+        .table-view-component .mojo-expand-toggle {
+          display: flex; align-items: center; justify-content: center;
+          width: 100%; height: 100%; padding: 0.4rem 0;
+          cursor: pointer; color: var(--bs-secondary-color);
+          background: transparent; border: 0;
+        }
+        .table-view-component .mojo-expand-toggle:hover { color: var(--bs-emphasis-color); }
+        .table-view-component .mojo-expand-toggle .bi {
+          transition: transform 0.18s ease; font-size: 0.95rem; line-height: 1;
+        }
+        .table-view-component .table-row.expanded .mojo-expand-toggle .bi { transform: rotate(90deg); }
+        .table-view-component .table-row.expanded .mojo-expand-toggle { color: var(--bs-primary); }
+
+        .table-view-component tr.mojo-detail-row > td {
+          padding: 0 !important;
+          border-bottom: 1px solid var(--bs-border-color) !important;
+          background: rgba(0, 0, 0, 0.02);
+        }
+        .table-view-component .mojo-detail-panel {
+          margin: 0.6rem 0.85rem 0.9rem 3rem;
+          background: var(--bs-tertiary-bg);
+          border: 1px solid var(--bs-border-color);
+          border-left: 3px solid var(--bs-primary);
+          border-radius: 0.5rem;
+          padding: 0.95rem 1.1rem;
+        }
+
+        [data-bs-theme="dark"] .table-view-component tr.mojo-detail-row > td {
+          background: rgba(255, 255, 255, 0.015);
+        }
+      </style>
+    `;
+  }
+
+  /**
    * Build the complete table template
    */
   buildTableTemplate() {
@@ -359,6 +564,7 @@ class TableView extends ListView {
 
     return `
       <div class="mojo-table-wrapper">
+        ${this.isRowExpandEnabled() ? this._buildRowExpandStyles() : ''}
         ${this.buildToolbarTemplate()}
         ${batchPanelTop}
         <div class="table-container"${fontSize}>
@@ -447,6 +653,11 @@ class TableView extends ListView {
   buildTableHeaderTemplate() {
     let headerCells = '';
 
+    // Expand chevron header (empty, narrow) — first column when enabled.
+    if (this.isRowExpandEnabled()) {
+      headerCells += '<th class="col-expand mojo-expand-cell"></th>';
+    }
+
     // Selection checkbox header
     if (this.isSelectable()) {
       headerCells += `
@@ -531,6 +742,10 @@ class TableView extends ListView {
    */
   buildTableFooterTemplate() {
     let footerCells = '';
+
+    if (this.isRowExpandEnabled()) {
+      footerCells += '<td></td>';
+    }
 
     if (this.isSelectable()) {
       footerCells += '<td></td>';
@@ -708,6 +923,7 @@ class TableView extends ListView {
 
     if (this.hasFooterTotals) this.updateFooterTotals();
     this.updateSortIcons();
+    await this._renderExpandedRows();
   }
 
   // -------- Cell-editing events (table-only) --------
@@ -745,10 +961,11 @@ class TableView extends ListView {
     const dataCols = this.columns?.length || 0;
     const selectCol = this.isSelectable() ? 1 : 0;
     const actionsCol = (this.actions || this.contextMenu) ? 1 : 0;
+    const expandCol = this.isRowExpandEnabled() ? 1 : 0;
     return {
       tagName: 'tr',
       className: `list-group-header-row list-group-header-row--${this.groupHeaderStyle}`,
-      colspan: Math.max(1, dataCols + selectCol + actionsCol)
+      colspan: Math.max(1, expandCol + dataCols + selectCol + actionsCol)
     };
   }
 

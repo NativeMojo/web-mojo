@@ -93,10 +93,39 @@ class TableRow extends ListViewItem {
   }
 
   /**
+   * Whether this row's TableView has an `rowExpand` callback configured.
+   * Guarded (feature-detect the method) so plain/stub tableViews — and the
+   * "no rowExpand option" case — render byte-identical markup with no chevron
+   * column.
+   */
+  _isRowExpandEnabled() {
+    return !!(
+      this.tableView &&
+      typeof this.tableView.isRowExpandEnabled === 'function' &&
+      this.tableView.isRowExpandEnabled()
+    );
+  }
+
+  /**
    * Build the row template with table cells
    */
   buildRowTemplate() {
     let template = '';
+
+    // Expand chevron cell — first column, opt-in via TableView `rowExpand`.
+    // `stopPropagation` in the handler keeps row actions / context menu from
+    // firing when the chevron is clicked.
+    if (this._isRowExpandEnabled()) {
+      template += `
+        <td class="col-expand mojo-expand-cell">
+          <button type="button" class="mojo-expand-toggle"
+                  data-action="toggle-expand"
+                  aria-label="Toggle details" aria-expanded="false">
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </td>
+      `;
+    }
 
     // Selection checkbox cell
     if (this.tableView && this.tableView.isSelectable()) {
@@ -412,6 +441,29 @@ class TableRow extends ListViewItem {
     const id = this.model.get ? this.model.get('id') : this.model.id;
     if (id) {
       this.element.setAttribute('data-id', id);
+    }
+
+    // Reflect expanded state on the row so the chevron rotates and the CSS
+    // hook (`.table-row.expanded`) applies. State lives on the TableView
+    // (`expandedRows`), keyed by model id, so it survives a pure re-render.
+    if (this._isRowExpandEnabled()) {
+      const expanded = !!(this.tableView.expandedRows && this.tableView.expandedRows.has(id));
+      this.element.classList.toggle('expanded', expanded);
+      const toggle = this.element.querySelector('.mojo-expand-toggle');
+      if (toggle) toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    }
+  }
+
+  /**
+   * Toggle the inline detail row for this model. Delegates to the TableView,
+   * which owns the detail-row DOM (it spans every column, so it lives outside
+   * this single-`<tr>` view). `stopPropagation` prevents the click from also
+   * triggering row-level actions or the context menu.
+   */
+  async onActionToggleExpand(event, _element) {
+    event.stopPropagation();
+    if (this.tableView && typeof this.tableView.toggleRowExpand === 'function') {
+      await this.tableView.toggleRowExpand(this.model, this);
     }
   }
 
