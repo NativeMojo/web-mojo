@@ -23,6 +23,9 @@ Review the latest commit and update documentation to match code changes.
    - New extension or component → add a new doc file and update the index
    - Behavioral change visible to users → update `CHANGELOG.md`
    - New model file → check if `docs/web-mojo/core/Model.md` references need updating
+   - New public component or option → check that `examples/portal/` has a runnable
+     example for it (per `examples/portal/README.md`); **report** the gap if not —
+     building examples is the build session's job, not yours
 3. Read existing docs before editing — match the established style and structure.
 4. Update `docs/web-mojo/README.md` index if new doc files were added.
 5. Return a summary of what was updated and why.

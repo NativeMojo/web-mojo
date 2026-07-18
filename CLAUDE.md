@@ -5,7 +5,8 @@ This file is loaded automatically by Claude Code. Keep it under 150 lines.
 ## Start Every Thread Here
 1. Read this file in full.
 2. Read `memory.md`.
-3. Run `scripts/board.sh` — the current pipeline at a glance (inbox/confirmed/done).
+3. Run `scripts/board.sh` — the current pipeline at a glance
+   (inbox/confirmed/in_progress/done).
 4. Pick your mode and invoke its skill — its instructions load automatically:
    - Filing new work (bug/feature/chore) → `/request`  (writes an un-ID'd item to `planning/inbox/`)
    - Triaging / planning an item → `/scope`
@@ -13,7 +14,8 @@ This file is loaded automatically by Claude Code. Keep it under 150 lines.
    - (`/memory` shows project memory state.)
 5. Read the item:
    - New, unscoped → `planning/inbox/`
-   - Scoped, active → `planning/confirmed/`
+   - Scoped + planned → `planning/confirmed/`
+   - Mid-build (claimed) → `planning/in_progress/`
 6. Read `docs/web-mojo/README.md`, then the exact topic docs for what you touch.
 
 ## Project Map
@@ -23,7 +25,8 @@ published to npm as `web-mojo`. Core runtime classes live in `src/core/`
 `src/extensions/`. UI is Mustache templates + Bootstrap 5.3 (light **and** dark
 themes). A custom test harness lives in `test/` (`node test/test-runner.js`).
 Authoritative framework docs are in `docs/web-mojo/`; repo layout in
-`docs/agent/architecture.md`.
+`docs/agent/architecture.md`. Workflow architecture: `WORKFLOW.md`; command
+reference: `AI_DEV.md`.
 
 ## Non-Negotiable Rules
 Workflow scaffolding (imposed by this workflow):
@@ -32,11 +35,16 @@ Workflow scaffolding (imposed by this workflow):
   (`PREFIX=WM`; scripts default to `ITEM` when the file is absent). Never
   hand-assign, edit the counter by hand, or reuse an ID.
 - The folder is the stage. Advance an item only by moving its file
-  `inbox/` → `confirmed/` (via `scripts/intake.sh`) → `done/` (via
-  `scripts/close.sh`). There is no `stage` field.
+  `inbox/` → `confirmed/` (via `scripts/intake.sh`) → `in_progress/` (via
+  `scripts/start.sh`; WIP = 1) → `done/` (via `scripts/close.sh`). There is no
+  `stage` field. `future/`/`rejected/` park items via `scripts/close.sh <file>
+  future|rejected` (no ID consumed from `inbox/`).
 - One item = one file. `type` (`feature | bug | chore`) distinguishes them.
-- Never `/build` an item whose `depends_on` aren't all in `planning/done/`
-  (`scripts/ready.sh` checks this).
+- The `## Plan` is the "designed" signal: while the `PLAN PENDING` marker is in
+  the file the item is `UNPLANNED` and `scripts/start.sh` / `/build` refuse it —
+  only `/scope` completes the plan and deletes the marker.
+- Never `/build` an item that is `UNPLANNED` or whose `depends_on` aren't all in
+  `planning/done/` (`scripts/ready.sh` checks this).
 
 Project rules (verified in the codebase — see `.claude/rules/` for detail):
 - The primary data object for a view is `this.model` — never `this.runner`,
@@ -51,12 +59,15 @@ Project rules (verified in the codebase — see `.claude/rules/` for detail):
   add separate admin-scoped endpoints.
 - New components must render correctly in both light and dark themes from day one
   (`.claude/rules/theming.md`).
-- Git: never create a branch, commit, or push without the user's explicit
-  permission. Work on the current branch.
+- Git: never create a branch or worktree, and never push, without the user's
+  explicit permission. Work in place on the current branch; commit finished work
+  by explicit pathspec — never `git add -A` (`.claude/rules/git.md`).
 
 ## Layer Conventions → `.claude/rules/`
-Layer-specific conventions are path-scoped rule files that load automatically:
+Rule files load automatically (layer rules are path-scoped via `globs:`):
 - `core.md` — philosophy, imports, forbidden actions, delivery checklist
+- `git.md` — no branches/worktrees/push; commit-on-finish by explicit pathspec
+- `build-baseline.md` — green `npm test` baseline before the first edit
 - `views.md` — View/Page lifecycle, data binding, actions/containers, templates
 - `api.md` — Models, Collections, REST conventions, response handling
 - `testing.md` — custom test runner, commands, regression rules, Chrome UI
@@ -91,6 +102,7 @@ A task is closed only when:
       component or option changed (`examples/portal/README.md`, then
       `npm run examples:registry`)
 - [ ] `memory.md` updated if a decision was made
+- [ ] Work committed by explicit pathspec (no push — `.claude/rules/git.md`)
 - [ ] Item closed with `scripts/close.sh` (file now in `planning/done/`)
 
 ## Trust Order

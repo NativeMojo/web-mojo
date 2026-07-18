@@ -29,6 +29,7 @@ Classify from the description; only ask if it's genuinely ambiguous:
 State the chosen type (one line) before continuing.
 
 ## 2. Explore (read-only, via the Explore subagent)
+Keep wide recon out of your main context; work from Explore's summary.
 - **bug**: trace the path; narrow to a root cause or 2–3 candidates; best-effort
   confirm by analysis and state confidence (confirmed | high | medium | speculative).
   Don't write/run a test — `/build` writes the failing regression test first.
@@ -47,7 +48,8 @@ existing features:
 Resolve real ambiguity with the user before writing. Don't write a vague item.
 
 ## 4. Write planning/inbox/<slug>.md from planning/_template.md
-- frontmatter: `id:` **blank**, `type: <chosen>`, `title`, `priority`,
+- frontmatter: `id:` **blank** (a bare `id:` line — strip the template's comment,
+  or intake refuses it), `type: <chosen>`, `title`, `priority`,
   `opened: <today>`, deps/related/links as known (leave `effort`/`owner` `TBD`)
 - `## What & Why`, `## Acceptance Criteria`
 - `## Repro` — bugs only (steps, Expected, Actual)
@@ -58,12 +60,15 @@ Resolve real ambiguity with the user before writing. Don't write a vague item.
 slug = title, lowercased, hyphenated.
 
 ## 5. Hand off
-Print the path + chosen type and `To scope it: /scope planning/inbox/<slug>.md`.
+Print the path + chosen type and
+`To scope it: /scope planning/inbox/<slug>.md (same session is fine — the item file carries everything; start fresh if this one is already long).`
 
 ## Forbidden
 - Implementation code (a bug fix included)
 - Allocating an id / editing `planning/.next_id` / running `scripts/intake.sh`
   (leave `id:` blank — `/scope` owns intake)
 - Moving the file out of `planning/inbox/`
-- Writing a vague item
+- Writing a vague item instead of resolving ambiguity with the user
+- For a bug you can't confirm: say so and set confidence to `speculative` — don't
+  force it
 - Proposing separate admin-scoped REST endpoints (admins filter with query params)

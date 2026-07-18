@@ -1,8 +1,8 @@
 ---
 name: security-review
-description: Review recent code changes for security concerns
+description: Review recent code changes for security concerns including permission gaps, data exposure, injection risks, and auth bypasses. Use after code changes are committed.
 tools: Bash, Read, Grep, Glob
-model: sonnet
+model: opus
 ---
 
 Review the latest commit for security concerns in the WEB-MOJO framework.
@@ -39,10 +39,22 @@ Review the latest commit for security concerns in the WEB-MOJO framework.
 
 3. Rate each finding: **critical** / **warning** / **info**
 4. Return a structured report with file:line references and recommended fixes.
+5. If no concerns: return "Security review passed — no concerns found".
+
+## Report Format
+
+For each finding:
+```
+[CRITICAL/WARNING/INFO] <category> — <file>:<line>
+  <description of the concern>
+  Recommended: <what to do about it>
+```
 
 ## Rules
 
 - Read-only — do NOT make edits.
-- Focus on the diff, not the entire codebase.
-- If no security concerns are found, say so explicitly.
-- Consider the framework's permission model: User → Group → Member with granular permissions per Model.
+- Be specific: cite exact file paths and line numbers.
+- Focus on changes in the diff, not pre-existing issues (unless a change makes an existing issue worse).
+- Don't flag intentional patterns — e.g. `{{{triple braces}}}` on framework-built HTML is by design; the concern is untrusted input reaching it.
+- Escapers must be explicit-replace (quote-safe `& < > " '`), never `div.textContent`/`innerHTML`-based — they're used in attribute contexts.
+- Consider the framework's permission model: User → Group → Member with granular permissions per Model; UI gating goes through `View#checkPermissions` and must fail closed.
