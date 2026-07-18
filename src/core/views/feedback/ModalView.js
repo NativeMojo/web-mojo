@@ -322,24 +322,28 @@ class ModalView extends View {
                 : '';
         }
 
-        const triggerIcon = this.contextMenu.icon || 'bi-three-dots-vertical';
-        const buttonClass = this.contextMenu.buttonClass || 'btn btn-link p-1 mojo-modal-context-menu-btn';
+        // Trigger icon/buttonClass are dev-supplied config strings too — escape
+        // them for the same reason the item fields are escaped below.
+        const triggerIcon = this.escapeHtml(this.contextMenu.icon || 'bi-three-dots-vertical');
+        const buttonClass = this.escapeHtml(this.contextMenu.buttonClass || 'btn btn-link p-1 mojo-modal-context-menu-btn');
 
         const menuItemsHtml = menuItems.map(item => {
             if (item.type === 'divider') {
                 return '<li><hr class="dropdown-divider"></li>';
             }
-            const icon = item.icon ? `<i class="${item.icon} me-2"></i>` : '';
-            const label = item.label || '';
+            // Escape every dev-supplied string flowing into HTML/attributes
+            // (label/icon/href/target/action + custom data-* values).
+            const icon = item.icon ? `<i class="${this.escapeHtml(item.icon)} me-2"></i>` : '';
+            const label = this.escapeHtml(item.label || '');
 
             if (item.href) {
-                return `<li><a class="dropdown-item" href="${item.href}"${item.target ? ` target="${item.target}"` : ''}>${icon}${label}</a></li>`;
+                return `<li><a class="dropdown-item" href="${this.escapeHtml(item.href)}"${item.target ? ` target="${this.escapeHtml(item.target)}"` : ''}>${icon}${label}</a></li>`;
             } else if (item.action) {
                 const dataAttrs = Object.keys(item)
                     .filter(key => key.startsWith('data-'))
-                    .map(key => `${key}="${item[key]}"`)
+                    .map(key => `${key}="${this.escapeHtml(item[key])}"`)
                     .join(' ');
-                return `<li><a class="dropdown-item" data-action="${item.action}" ${dataAttrs}>${icon}${label}</a></li>`;
+                return `<li><a class="dropdown-item" data-action="${this.escapeHtml(item.action)}" ${dataAttrs}>${icon}${label}</a></li>`;
             }
             return '';
         }).join('');

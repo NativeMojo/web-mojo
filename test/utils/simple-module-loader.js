@@ -230,6 +230,13 @@ class SimpleModuleLoader {
                 path: path.join(this.sourceRoot, 'core/views/feedback/ContextMenu.js'),
                 dependencies: ['View']
             },
+            'ModalView': {
+                // Extends View, imports only View — construct via
+                // Object.create(ModalView.prototype) in tests to skip the
+                // heavy constructor and drive methods (e.g. buildContextMenu).
+                path: path.join(this.sourceRoot, 'core/views/feedback/ModalView.js'),
+                dependencies: ['View']
+            },
             // Modal is the canonical dialog/modal surface. Tests typically
             // pre-set `global.Dialog` to a mock before loading Modal so the
             // transformed `import Dialog from './Dialog.js'` picks it up.

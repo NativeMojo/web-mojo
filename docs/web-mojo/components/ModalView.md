@@ -67,6 +67,12 @@ modal.on('hidden', () => {
 | `maxWidthPercent` / `maxHeightPercent` | `number` | `0.9` / `0.8` | Auto-sizing viewport caps |
 | `onShow` / `onShown` / `onHide` / `onHidden` / `onHidePrevented` | `function` | `null` | Bootstrap event callbacks |
 
+> **Escaping:** Header context-menu item strings — `label`, `icon`, `href`,
+> `target`, `action`, and any custom `data-*` attribute values — are
+> HTML-escaped when the menu renders (attribute-safe — quotes included), so
+> building them from model data is safe. An escaped `action` still dispatches
+> correctly (the browser decodes the attribute back to the original string).
+
 ### Button Configuration
 
 ```js

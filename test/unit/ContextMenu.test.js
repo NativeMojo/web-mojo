@@ -311,4 +311,55 @@ module.exports = async function(testContext) {
             expect(handled).toBe(0);
         });
     });
+
+    // ── WM-031: buildMenuItemHTML escapes dev-supplied item strings ──
+    describe('buildMenuItemHTML escaping (WM-031)', () => {
+        const menu = () => new ContextMenu({ config: { items: [] } });
+
+        it('escapes a malicious label so injected markup renders inert', () => {
+            const html = menu().buildMenuItemHTML({
+                label: '<img src=x onerror=alert(1)>', action: 'open'
+            });
+            expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
+            expect(html).not.toContain('<img');
+            expect(html).not.toContain('onerror=alert(1)>');
+        });
+
+        it('escapes href/target/icon on link items (no attribute breakout)', () => {
+            const html = menu().buildMenuItemHTML({
+                label: 'Open',
+                icon: 'bi-box"><script>bad()</script>',
+                href: '/x"><img src=y onerror=alert(1)>',
+                target: '_blank" onmouseover="evil()'
+            });
+            expect(html).not.toContain('"><img');
+            expect(html).not.toContain('"><script>');
+            expect(html).not.toContain('onmouseover="evil()');
+            expect(html).toContain('&quot;');
+        });
+
+        it('escapes the action attribute but keeps dispatch matching intact', () => {
+            const html = menu().buildMenuItemHTML({ label: 'X', action: 'a"b' });
+            expect(html).toContain('data-item-action="a&quot;b"');
+            // getAttribute() decodes entities, so the handler still matches item.action.
+        });
+
+        it('leaves clean static-label items unescaped (no behavior change)', () => {
+            const html = menu().buildMenuItemHTML({ label: 'Edit', action: 'edit', icon: 'bi-pencil' });
+            expect(html).toContain('data-item-action="edit"');
+            expect(html).toContain('<i class="bi-pencil me-2"></i>Edit');
+            expect(html).not.toContain('&');
+        });
+
+        it('escapes the trigger icon and button class from menu config', async () => {
+            const m = new ContextMenu({ config: {
+                icon: 'x"><img src=y onerror=alert(1)>',
+                buttonClass: 'btn"><script>bad()</script>',
+                items: [{ label: 'Edit', action: 'edit' }]
+            } });
+            const html = await m.renderTemplate();
+            expect(html).not.toContain('"><img');
+            expect(html).not.toContain('"><script>');
+        });
+    });
 };

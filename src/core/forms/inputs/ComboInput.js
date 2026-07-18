@@ -723,9 +723,14 @@ class ComboInput extends View {
    */
   escapeHtml(str) {
     if (str == null) return '';
-    const div = document.createElement('div');
-    div.textContent = String(str);
-    return div.innerHTML;
+    // Explicit replacement (not div.textContent/innerHTML) so quotes are
+    // escaped too — used in attribute contexts.
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   /**

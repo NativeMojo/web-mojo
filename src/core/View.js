@@ -712,9 +712,15 @@ export class View {
   escapeHtml(str) {
     if (typeof str !== 'string') return str;
 
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    // Explicit replacement (not div.textContent/innerHTML) so quotes are
+    // escaped too — this is also used in attribute contexts (e.g. ListView
+    // data-format, ContextMenu href/target) where a stray " would break out.
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   contains(el) {

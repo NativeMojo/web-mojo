@@ -25,6 +25,27 @@ module.exports = async function(testContext) {
     const View = loadModule('View');
     const Model = loadModule('Model');
 
+    describe('View — escapeHtml (quote-safe, attribute-context)', () => {
+        it('escapes the five HTML-significant characters, including quotes', () => {
+            const view = new View();
+            expect(view.escapeHtml(`<a href="x" onclick='y'>&`))
+                .toBe('&lt;a href=&quot;x&quot; onclick=&#39;y&#39;&gt;&amp;');
+        });
+
+        it('neutralizes an <img onerror> payload (no raw tag survives)', () => {
+            const out = new View().escapeHtml('<img src=x onerror=alert(1)>');
+            expect(out).toBe('&lt;img src=x onerror=alert(1)&gt;');
+            expect(out).not.toContain('<img');
+        });
+
+        it('passes non-strings through unchanged (existing contract)', () => {
+            const view = new View();
+            expect(view.escapeHtml(42)).toBe(42);
+            expect(view.escapeHtml(null)).toBe(null);
+            expect(view.escapeHtml(undefined)).toBe(undefined);
+        });
+    });
+
     describe('View — construction', () => {
         it('defaults to div, mojo-view className, and auto-generated id', () => {
             const view = new View();

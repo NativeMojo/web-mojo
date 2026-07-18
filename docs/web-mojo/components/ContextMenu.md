@@ -146,6 +146,11 @@ If an item has an `href`, it renders as a plain `<a>` and the framework dispatch
 }
 ```
 
+> **Escaping:** `label`, `icon`, `href`, and `target` are HTML-escaped when the
+> menu renders (attribute-safe — quotes included), so building them from model
+> data is safe. An escaped `action` still dispatches correctly (the browser
+> decodes the attribute back to the original string).
+
 ### Dividers
 
 Either of these renders a horizontal divider:

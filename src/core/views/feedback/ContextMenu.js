@@ -124,8 +124,10 @@ class ContextMenu extends View {
             return ''; // Don't render anything if there are no items
         }
 
-        const triggerIcon = this.config.icon || 'bi-three-dots';
-        const buttonClass = this.config.buttonClass || 'btn btn-link text-secondary ps-3 pe-0 pt-0 pb-1';
+        // Trigger icon/buttonClass are dev-supplied config strings too — escape
+        // them for the same reason the item fields are escaped below.
+        const triggerIcon = this.escapeHtml(this.config.icon || 'bi-three-dots');
+        const buttonClass = this.escapeHtml(this.config.buttonClass || 'btn btn-link text-secondary ps-3 pe-0 pt-0 pb-1');
         const dropdownId = `context-menu-${this.id}`;
 
         const menuItemsHtml = menuItems.map(item => this.buildMenuItemHTML(item)).join('');
@@ -150,13 +152,15 @@ class ContextMenu extends View {
             return '<li><hr class="dropdown-divider"></li>';
         }
 
-        const icon = item.icon ? `<i class="${item.icon} me-2"></i>` : '';
-        const label = item.label || '';
+        // Escape every dev-supplied string — nothing stops a future caller
+        // from feeding model data into a label/icon/href (e.g. "Open <name>").
+        const icon = item.icon ? `<i class="${this.escapeHtml(item.icon)} me-2"></i>` : '';
+        const label = this.escapeHtml(item.label || '');
         const itemClass = `dropdown-item ${item.danger ? 'text-danger' : ''} ${item.disabled ? 'disabled' : ''}`;
-        const action = item.action || '';
+        const action = this.escapeHtml(item.action || '');
 
         if (item.href) {
-            return `<li><a class="${itemClass}" href="${item.href}" target="${item.target || '_self'}">${icon}${label}</a></li>`;
+            return `<li><a class="${itemClass}" href="${this.escapeHtml(item.href)}" target="${this.escapeHtml(item.target || '_self')}">${icon}${label}</a></li>`;
         }
 
         return `<li><a class="${itemClass}" href="#" data-action="menu-item-click" data-item-action="${action}">${icon}${label}</a></li>`;

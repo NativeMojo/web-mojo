@@ -332,9 +332,15 @@ class ChatInputView extends View {
      * @returns {string}
      */
     escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+        if (text == null) return '';
+        // Explicit replacement (not div.textContent/innerHTML) so quotes are
+        // escaped too — used in attribute contexts.
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 }
 
