@@ -565,22 +565,23 @@ class TableView extends ListView {
     return `
       <div class="mojo-table-wrapper">
         ${this.isRowExpandEnabled() ? this._buildRowExpandStyles() : ''}
+        ${this._hasFeedbackFeature() ? this._buildFeedbackStyles() : ''}
         ${this.buildToolbarTemplate()}
         ${batchPanelTop}
         <div class="table-container"${fontSize}>
           {{#loading}}
-            <div class="mojo-table-loading d-flex justify-content-center align-items-center py-5">
+            ${this._loadingContent(`<div class="mojo-table-loading d-flex justify-content-center align-items-center py-5">
               <div class="spinner-border" role="status">
                 <span class="visually-hidden">Loading...</span>
               </div>
-            </div>
+            </div>`)}
           {{/loading}}
           {{^loading}}
             {{#isEmpty}}
-              <div class="table-empty text-center py-5">
+              ${this._emptyContent(`<div class="table-empty text-center py-5">
                 <i class="bi bi-inbox fa-2x mb-2 text-muted"></i>
                 <p class="text-muted">{{emptyMessage}}</p>
-              </div>
+              </div>`)}
             {{/isEmpty}}
             {{^isEmpty}}
               <table class="${this.buildTableClasses()}">
@@ -595,6 +596,40 @@ class TableView extends ListView {
         ${this.paginated ? this.buildPaginationTemplate() : ''}
       </div>
     `;
+  }
+
+  /**
+   * TableView skeleton (WM-033) — a full `<table>` whose header matches the
+   * real column layout and whose body is N shimmer rows (N from
+   * `_skeletonRowCount()`). Cell widths echo the real columns via cycled
+   * `skeleton-line w-*` classes; leading (expand / selection) and trailing
+   * (actions) cells mirror the row structure so the silhouette lines up.
+   * Overrides the ListView card-silhouette version.
+   * @private
+   */
+  _buildSkeletonHtml() {
+    const rowCount = this._skeletonRowCount();
+    const widths = ['w-90', 'w-75', 'w-60', 'w-40', 'w-25'];
+
+    const lead =
+      (this.isRowExpandEnabled() ? '<td class="col-expand"></td>' : '') +
+      (this.isSelectable() ? '<td></td>' : '');
+    const trail = (this.actions || this.contextMenu)
+      ? '<td class="text-end"><span class="skeleton-line w-40 ms-auto"></span></td>'
+      : '';
+
+    const cells = this.columns.map((column, i) => {
+      const alignClass = this.getAlignClass(column.align);
+      const w = widths[i % widths.length];
+      return `<td class="${alignClass}"><span class="skeleton-line ${w}"></span></td>`;
+    }).join('');
+
+    let body = '';
+    for (let i = 0; i < rowCount; i++) {
+      body += `<tr class="mojo-skeleton-row" aria-hidden="true">${lead}${cells}${trail}</tr>`;
+    }
+
+    return `<table class="${this.buildTableClasses()}">${this.buildTableHeaderTemplate()}<tbody>${body}</tbody></table>`;
   }
 
   /**

@@ -249,6 +249,25 @@ class ListView extends View {
     this.groupHeaderViews = new Map();
     this._renderOrder = [];
 
+    // -------- WM-033 feedback states — all opt-in --------
+    // Three independent upgrades that share the list body render path:
+    //   1. `emptyState: {icon, title, message, action:{label, action, icon}}`
+    //      — a rich empty panel (icon chip + title + message + optional CTA)
+    //      replacing the bare `emptyMessage` string. A truly-empty list shows
+    //      the configured content; a *filtered*-empty list (getActiveFilters()
+    //      non-empty) auto-swaps to a "No results match your filters" panel
+    //      with a Clear filters button (reuses onActionClearAllFilters).
+    //      `emptyMessage` stays the untouched fallback when this is absent.
+    //   2. `loadingStyle: 'skeleton'` — shimmer placeholder rows/cards during
+    //      fetch instead of the spinner (spinner is still the default).
+    //   3. `showResultCount: true` — a "Showing N of M" line rendered with the
+    //      active-filter pills, "· filtered" when any filter is active.
+    // Every option defaults off; a page that sets none renders unchanged.
+    // See `docs/web-mojo/components/ListView.md` (Feedback states).
+    this.emptyState = this._normalizeEmptyState(options.emptyState);
+    this.loadingStyle = options.loadingStyle === 'skeleton' ? 'skeleton' : 'default';
+    this.showResultCount = options.showResultCount === true;
+
     // "Show more" state
     this.loadingMore = false;
 
@@ -294,6 +313,17 @@ class ListView extends View {
     this.searchValue = this.getActiveFilters().search || '';
     // Show-more visibility derives from collection state at render time.
     this.hasMore = this._computeHasMore();
+
+    // WM-033 feedback states — build the skeleton / rich-empty markup for
+    // the current render pass (unescaped `{{{…}}}` template slots). Both are
+    // empty strings on the default paths, so no-option pages keep the
+    // spinner + `emptyMessage` markup exactly.
+    this.skeletonHtml = (this.loadingStyle === 'skeleton' && this.loading)
+      ? this._buildSkeletonHtml()
+      : '';
+    this.emptyStateHtml = (this.emptyState && this.isEmpty && !this.loading)
+      ? this._buildEmptyStateHtml()
+      : '';
   }
 
   async onAfterRender() {
@@ -352,20 +382,21 @@ class ListView extends View {
    */
   _defaultBareTemplate() {
     return `
+      ${this._hasFeedbackFeature() ? this._buildFeedbackStyles() : ''}
       <div class="list-view-container">
         {{#loading}}
-          <div class="list-loading">
+          ${this._loadingContent(`<div class="list-loading">
             <div class="spinner-border spinner-border-sm" role="status">
               <span class="visually-hidden">Loading...</span>
             </div>
             Loading...
-          </div>
+          </div>`)}
         {{/loading}}
         {{^loading}}
           {{#isEmpty}}
-            <div class="list-empty">
+            ${this._emptyContent(`<div class="list-empty">
               {{emptyMessage}}
-            </div>
+            </div>`)}
           {{/isEmpty}}
           {{^isEmpty}}
             <div class="list-items" data-container="items"></div>
@@ -391,21 +422,22 @@ class ListView extends View {
 
     return `
       <div class="list-view-wrapper">
+        ${this._hasFeedbackFeature() ? this._buildFeedbackStyles() : ''}
         ${toolbar}
         <div class="list-view-container">
           {{#loading}}
-            <div class="list-loading text-center py-4">
+            ${this._loadingContent(`<div class="list-loading text-center py-4">
               <div class="spinner-border spinner-border-sm" role="status">
                 <span class="visually-hidden">Loading...</span>
               </div>
               Loading...
-            </div>
+            </div>`)}
           {{/loading}}
           {{^loading}}
             {{#isEmpty}}
-              <div class="list-empty text-center py-4 text-muted">
+              ${this._emptyContent(`<div class="list-empty text-center py-4 text-muted">
                 {{emptyMessage}}
-              </div>
+              </div>`)}
             {{/isEmpty}}
             {{^isEmpty}}
               <div class="list-items" data-container="items"></div>
@@ -739,7 +771,14 @@ class ListView extends View {
   }
 
   buildActivePills() {
-    if (this.hideActivePills) return '';
+    // WM-033: the result-count summary rides in the filter-pills row, before
+    // the pills. It's '' when showResultCount is off, so the pills markup is
+    // byte-identical for pages that don't opt in.
+    const countHtml = this.showResultCount ? this._buildResultCountSummary() : '';
+
+    if (this.hideActivePills) {
+      return countHtml ? this._wrapPillRow(countHtml) : '';
+    }
 
     const activeFilters = this.getActiveFilters();
     const hasSearch = activeFilters.search && activeFilters.search.toString().trim() !== '';
@@ -751,7 +790,9 @@ class ListView extends View {
       filterEntries = filterEntries.filter(([key]) => !this.hideActivePillNames.includes(key));
     }
 
-    if (filterEntries.length === 0 && !hasSearch) return '';
+    if (filterEntries.length === 0 && !hasSearch) {
+      return countHtml ? this._wrapPillRow(countHtml) : '';
+    }
 
     const pills = filterEntries.map(([paramKey, value]) => {
       const { field } = parseFilterKey(paramKey);
@@ -802,8 +843,26 @@ class ListView extends View {
       <div class="row mt-2">
         <div class="col-12">
           <div class="d-flex flex-wrap align-items-center">
-            ${pills}
+            ${countHtml}${pills}
             ${clearAllButton}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Wrap arbitrary inner markup in the standard active-pills row shell. Used
+   * for the count-only case (WM-033) where the result-count summary renders
+   * without any filter pills.
+   * @private
+   */
+  _wrapPillRow(inner) {
+    return `
+      <div class="row mt-2">
+        <div class="col-12">
+          <div class="d-flex flex-wrap align-items-center">
+            ${inner}
           </div>
         </div>
       </div>
@@ -854,6 +913,243 @@ class ListView extends View {
           </button>
         </div>
       {{/hasMore}}
+    `;
+  }
+
+  // ============================================================
+  // Feedback states (WM-033) — rich empty, skeletons, result count
+  // ============================================================
+
+  /**
+   * Normalize the `emptyState:` option into `{ icon, title, message, action }`
+   * or null when absent. `action` is `{ label, action, icon }` where `action`
+   * is a kebab-case `data-action` name (routed like any toolbar action, e.g.
+   * `'add'` → onActionAdd). Returns null for a non-object so the feature stays
+   * inert and `emptyMessage` remains the fallback.
+   * @private
+   */
+  _normalizeEmptyState(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    let action = null;
+    if (raw.action && typeof raw.action === 'object' && raw.action.action) {
+      action = {
+        label: raw.action.label || 'Action',
+        action: raw.action.action,
+        icon: raw.action.icon || null
+      };
+    }
+    return {
+      icon: raw.icon || 'inbox',
+      title: raw.title || null,
+      message: raw.message || null,
+      action
+    };
+  }
+
+  /**
+   * True when any of the three opt-in feedback features is enabled. Gates the
+   * one-time `<style>` block emission so opt-out pages carry zero extra CSS.
+   * @private
+   */
+  _hasFeedbackFeature() {
+    return !!this.emptyState || this.loadingStyle === 'skeleton' || this.showResultCount;
+  }
+
+  /**
+   * Loading-block content for the body template. Returns the unescaped
+   * skeleton slot when `loadingStyle: 'skeleton'`, otherwise the caller's
+   * default spinner markup verbatim (byte-identical opt-out).
+   * @private
+   */
+  _loadingContent(defaultMarkup) {
+    return this.loadingStyle === 'skeleton' ? '{{{skeletonHtml}}}' : defaultMarkup;
+  }
+
+  /**
+   * Empty-block content for the body template. Returns the unescaped rich
+   * empty-state slot when `emptyState` is configured, otherwise the caller's
+   * default `emptyMessage` markup verbatim (byte-identical opt-out).
+   * @private
+   */
+  _emptyContent(defaultMarkup) {
+    return this.emptyState ? '{{{emptyStateHtml}}}' : defaultMarkup;
+  }
+
+  /**
+   * Skeleton row count: `collection.params.size` capped at 8, defaulting to 5
+   * when size isn't set. Shared by the ListView (card) and TableView (row)
+   * skeleton builders.
+   * @private
+   */
+  _skeletonRowCount() {
+    const size = this.collection?.params?.size;
+    const n = (typeof size === 'number' && size > 0) ? size : 5;
+    return Math.min(n, 8);
+  }
+
+  /**
+   * ListView skeleton — stacked card silhouettes. TableView overrides this to
+   * emit a column-matched `<table>`. Called from onBeforeRender only while
+   * loading + `loadingStyle: 'skeleton'`.
+   * @private
+   */
+  _buildSkeletonHtml() {
+    const rows = this._skeletonRowCount();
+    let cards = '';
+    for (let i = 0; i < rows; i++) {
+      cards += '<div class="list-skeleton-card">'
+        + '<span class="skeleton-line w-40"></span>'
+        + '<span class="skeleton-line w-90"></span>'
+        + '<span class="skeleton-line w-60"></span>'
+        + '</div>';
+    }
+    return `<div class="list-skeleton" aria-hidden="true">${cards}</div>`;
+  }
+
+  /**
+   * Build the rich empty-state panel. Branches on `getActiveFilters()`:
+   * non-empty → the filtered variant ("No results match your filters" +
+   * Clear filters button reusing onActionClearAllFilters); empty → the
+   * configured truly-empty content with its optional CTA. Search counts as
+   * an active filter. Returns '' when `emptyState` isn't configured.
+   * @private
+   */
+  _buildEmptyStateHtml() {
+    const es = this.emptyState;
+    if (!es) return '';
+
+    const activeCount = Object.keys(this.getActiveFilters()).length;
+    const isFiltered = activeCount > 0;
+
+    let icon;
+    let title;
+    let message;
+    let buttonHtml;
+
+    if (isFiltered) {
+      icon = 'funnel';
+      title = 'No results match your filters';
+      const plural = activeCount === 1 ? 'filter' : 'filters';
+      message = `No items match the ${activeCount} active ${plural}. Try widening or removing a filter.`;
+      buttonHtml = '<button class="btn btn-outline-primary" data-action="clear-all-filters">'
+        + '<i class="bi bi-x-circle me-1"></i>Clear filters</button>';
+    } else {
+      icon = es.icon || 'inbox';
+      title = es.title || this.emptyMessage;
+      message = es.message || '';
+      if (es.action) {
+        const iconHtml = es.action.icon
+          ? `<i class="bi ${this.escapeHtml(es.action.icon)} me-1"></i>`
+          : '';
+        buttonHtml = `<button class="btn btn-primary" data-action="${this.escapeHtml(es.action.action)}">`
+          + `${iconHtml}${this.escapeHtml(es.action.label)}</button>`;
+      } else {
+        buttonHtml = '';
+      }
+    }
+
+    const titleHtml = title ? `<div class="empty-state-title h6">${this.escapeHtml(title)}</div>` : '';
+    const messageHtml = message ? `<p class="empty-state-message">${this.escapeHtml(message)}</p>` : '';
+
+    return `
+      <div class="table-empty-state">
+        <span class="empty-state-icon"><i class="bi bi-${this.escapeHtml(icon)}"></i></span>
+        ${titleHtml}
+        ${messageHtml}
+        ${buttonHtml}
+      </div>
+    `;
+  }
+
+  /**
+   * Build the "Showing N of M" result-count summary from `collection.meta`
+   * (`count`) and the current loaded length. Appends a "· filtered" marker
+   * when any filter is active. Returns '' when `showResultCount` is off or the
+   * total count isn't known yet. Rendered inside the filter-pills row by
+   * `buildActivePills`.
+   * @private
+   */
+  _buildResultCountSummary() {
+    if (!this.showResultCount || !this.collection) return '';
+    const meta = this.collection.meta || {};
+    const total = typeof meta.count === 'number' ? meta.count : null;
+    if (total === null) return '';
+
+    const shown = this.collection.length();
+    const isFiltered = Object.keys(this.getActiveFilters()).length > 0;
+    const fmt = (n) => Number(n).toLocaleString();
+    const filteredSuffix = isFiltered
+      ? ' <span class="count-filtered">· filtered</span>'
+      : '';
+
+    return `<span class="result-count-summary me-2 mb-1">`
+      + `Showing <strong>${fmt(shown)}</strong> of <strong>${fmt(total)}</strong>${filteredSuffix}</span>`;
+  }
+
+  /**
+   * One-time `<style>` block for the three feedback features (skeleton
+   * shimmer, empty-state chip, result-count summary). Token-based so both
+   * themes track automatically; the shimmer's moving band is a component tint
+   * (black-on-light) with its rgba(255,255,255) dark companion, and the
+   * animation is disabled under prefers-reduced-motion. Emitted once per
+   * template, only when `_hasFeedbackFeature()`.
+   * @private
+   */
+  _buildFeedbackStyles() {
+    return `
+      <style>
+        .table-empty-state { text-align: center; padding: 3rem 1.5rem; }
+        .table-empty-state .empty-state-icon {
+          display: inline-flex; align-items: center; justify-content: center;
+          width: 4rem; height: 4rem; border-radius: 50%;
+          margin-bottom: 1rem; font-size: 1.75rem;
+          background: var(--bs-secondary-bg);
+          color: var(--bs-secondary-color);
+          border: 1px solid var(--bs-border-color);
+        }
+        .table-empty-state .empty-state-title {
+          font-weight: 600; color: var(--bs-emphasis-color); margin-bottom: 0.35rem;
+        }
+        .table-empty-state .empty-state-message {
+          color: var(--bs-secondary-color); max-width: 26rem; margin: 0 auto 1.25rem;
+        }
+
+        .skeleton-line {
+          display: block; height: 0.85rem; border-radius: 0.35rem;
+          background-color: var(--bs-secondary-bg);
+          background-image: linear-gradient(90deg,
+            rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.06) 50%, rgba(0, 0, 0, 0) 100%);
+          background-size: 200% 100%; background-repeat: no-repeat;
+          animation: mojo-skeleton-shimmer 1.4s ease-in-out infinite;
+        }
+        [data-bs-theme="dark"] .skeleton-line {
+          background-image: linear-gradient(90deg,
+            rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.07) 50%, rgba(255, 255, 255, 0) 100%);
+        }
+        .skeleton-line.w-90 { width: 90%; }
+        .skeleton-line.w-75 { width: 75%; }
+        .skeleton-line.w-60 { width: 60%; }
+        .skeleton-line.w-40 { width: 40%; }
+        .skeleton-line.w-25 { width: 25%; }
+        .skeleton-line.skeleton-pill { height: 1.35rem; width: 4rem; border-radius: 999px; }
+        .list-skeleton-card {
+          display: flex; flex-direction: column; gap: 0.5rem;
+          padding: 0.85rem 1rem; margin-bottom: 0.5rem;
+          border: 1px solid var(--bs-border-color-translucent);
+          border-radius: 0.5rem;
+        }
+        @keyframes mojo-skeleton-shimmer {
+          0% { background-position: 150% 0; }
+          100% { background-position: -50% 0; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .skeleton-line { animation: none; }
+        }
+
+        .result-count-summary { font-size: 0.8rem; color: var(--bs-secondary-color); }
+        .result-count-summary strong { color: var(--bs-emphasis-color); font-weight: 600; }
+        .result-count-summary .count-filtered { color: var(--bs-primary); }
+      </style>
     `;
   }
 

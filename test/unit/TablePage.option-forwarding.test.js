@@ -107,6 +107,19 @@ module.exports = async function (testContext) {
       expect(page.tableViewConfig.rowExpandMultiple).toBe(true);
     });
 
+    it('forwards `emptyState`', () => {
+      const es = { icon: 'inbox', title: 'None' };
+      expect(fixturePage({ emptyState: es }).tableViewConfig.emptyState).toBe(es);
+    });
+
+    it('forwards `loadingStyle`', () => {
+      expect(fixturePage({ loadingStyle: 'skeleton' }).tableViewConfig.loadingStyle).toBe('skeleton');
+    });
+
+    it('forwards `showResultCount`', () => {
+      expect(fixturePage({ showResultCount: true }).tableViewConfig.showResultCount).toBe(true);
+    });
+
     it('omitting these options leaves them undefined (no defaults)', () => {
       const page = fixturePage();
       expect(page.tableViewConfig.dayRangeFilter).toBeUndefined();
@@ -118,6 +131,9 @@ module.exports = async function (testContext) {
       expect(page.tableViewConfig.filterPresets).toBeUndefined();
       expect(page.tableViewConfig.rowExpand).toBeUndefined();
       expect(page.tableViewConfig.rowExpandMultiple).toBeUndefined();
+      expect(page.tableViewConfig.emptyState).toBeUndefined();
+      expect(page.tableViewConfig.loadingStyle).toBeUndefined();
+      expect(page.tableViewConfig.showResultCount).toBeUndefined();
     });
   });
 };

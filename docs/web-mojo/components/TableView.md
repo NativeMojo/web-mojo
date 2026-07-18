@@ -645,6 +645,44 @@ fully opt-in.
 
 ---
 
+## Feedback states — rich empty, skeletons, result count
+
+TableView inherits three **opt-in** body-render upgrades from ListView. Each
+defaults off, so a table that sets none renders exactly as before. See
+[ListView → Feedback states](./ListView.md#feedback-states--rich-empty-skeletons-result-count)
+for the full contract; the TableView specifics:
+
+| Option | Effect on a table |
+|--------|-------------------|
+| `emptyState` | Replaces the bare `bi-inbox` + `emptyMessage` block with an icon-chip panel. Auto-branches to a **Clear filters** panel when `getActiveFilters()` is non-empty (search counts). `emptyMessage` stays the fallback when omitted. |
+| `loadingStyle: 'skeleton'` | Renders a `<table>` whose header and cell widths **echo your `columns`** during fetch (leading expand/selection cells and a trailing actions cell are mirrored). Row count = `collection.params.size`, capped at 8. Spinner is still the default. |
+| `showResultCount: true` | Renders a *"Showing N of M · filtered"* summary in the filter-pills row (the toolbar is always on for TableView). Reads `collection.meta.count`. |
+
+```javascript
+new TableView({
+  collection: events,
+  columns,
+  loadingStyle: 'skeleton',
+  showResultCount: true,
+  emptyState: {
+    icon: 'inbox',
+    title: 'No events yet',
+    message: 'Events from your integrations will show up here.',
+    action: { label: 'Add integration', action: 'add', icon: 'bi-plus-lg' }
+  }
+});
+```
+
+All three use Bootstrap surface tokens (`var(--bs-secondary-bg)` shimmer base,
+etc.) and render correctly in light and dark from day one; the skeleton shimmer
+is disabled under `prefers-reduced-motion`.
+
+**Forwarding through TablePage.** Pass any of `emptyState`, `loadingStyle`, or
+`showResultCount` straight to `TablePage` — it forwards them to the inner
+TableView via its option whitelist.
+
+---
+
 ## Built-in Actions
 
 The `actions` option defines which action buttons appear in each row:

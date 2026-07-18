@@ -572,6 +572,89 @@ new ListView({
 
 ---
 
+## Feedback states — rich empty, skeletons, result count
+
+Three **opt-in** upgrades to the list body's loading / empty / summary chrome.
+Each defaults off; a list that sets none renders exactly as before. TableView
+inherits all three (it renders a table-shaped skeleton and reuses the same
+empty-state + result-count markup).
+
+### Rich empty states — `emptyState`
+
+Replaces the bare `emptyMessage` string with a centered panel: an icon chip,
+a title, a message, and an optional call-to-action button.
+
+```javascript
+new ListView({
+  collection: apiKeys,
+  itemTemplate: '...',
+  emptyState: {
+    icon: 'key',                       // Bootstrap icon name (no `bi bi-` prefix)
+    title: 'No API keys yet',
+    message: 'API keys let scripts authenticate without a password.',
+    action: { label: 'Add your first API key', action: 'add', icon: 'bi-plus-lg' }
+  }
+});
+```
+
+`action.action` is a kebab-case `data-action` name, routed exactly like any
+toolbar action (`'add'` → `onActionAdd`). Omit `action` for a no-CTA panel.
+
+The panel has **two variants**, chosen automatically at render time:
+
+- **Truly empty** (no active filters) → your configured `icon` / `title` /
+  `message` / `action`.
+- **Filtered empty** (`getActiveFilters()` returns anything — a live search
+  counts) → a framework panel: *"No results match your filters"* plus a
+  **Clear filters** button wired to `onActionClearAllFilters`. This is the
+  safety net for filter presets whose click returns zero rows.
+
+`emptyMessage` is untouched and remains the fallback whenever `emptyState`
+is absent.
+
+### Loading skeletons — `loadingStyle: 'skeleton'`
+
+Swaps the spinner for shimmer placeholder rows during a fetch (driven by the
+existing `fetch:start` / `fetch:end` collection events). ListView renders card
+silhouettes; TableView renders a `<table>` whose header + cell widths echo the
+real `columns`. Row count is `collection.params.size`, capped at 8. The spinner
+remains the default (`loadingStyle` absent or any value other than `'skeleton'`).
+
+```javascript
+new TableView({ collection, columns, loadingStyle: 'skeleton' });
+```
+
+The shimmer uses `var(--bs-secondary-bg)` as its base with a black-on-light /
+white-on-dark moving band, and is disabled under `prefers-reduced-motion`.
+
+### Result-count summary — `showResultCount: true`
+
+Renders a *"Showing N of M"* line in the filter-pills row (before the pills),
+from `collection.meta.count` and the current loaded length. A **· filtered**
+marker is appended when any filter is active. Nothing renders when the total
+count isn't known yet. Because it lives in the pills row, the summary is shown
+whenever the toolbar is enabled (always on TableView).
+
+```javascript
+new TableView({ collection, columns, showResultCount: true });
+```
+
+### Constructor options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `emptyState` | `object` | `null` | `{ icon, title, message, action: { label, action, icon } }`. Rich empty panel with an automatic truly-empty vs filtered-empty branch. |
+| `loadingStyle` | `string` | `'default'` | `'skeleton'` renders shimmer rows/cards during fetch; anything else keeps the spinner. |
+| `showResultCount` | `boolean` | `false` | Render a "Showing N of M · filtered" summary in the filter-pills row. |
+
+### Out of scope
+
+- Per-row skeleton content matching real cell text (silhouettes are generic).
+- A standalone count element outside the pills row.
+- Persisting the empty-state CTA through custom event payloads (it dispatches a plain `data-action`).
+
+---
+
 ## Installation
 
 ListView is part of the web-mojo core:

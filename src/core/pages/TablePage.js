@@ -98,6 +98,11 @@ class TablePage extends Page {
       rowExpand: options.rowExpand,
       rowExpandMultiple: options.rowExpandMultiple,
 
+      // Feedback states (WM-033) — same forwarding pattern.
+      emptyState: options.emptyState,
+      loadingStyle: options.loadingStyle,
+      showResultCount: options.showResultCount,
+
       // Display options for the HTML table element
       tableOptions: {
         striped: true,
