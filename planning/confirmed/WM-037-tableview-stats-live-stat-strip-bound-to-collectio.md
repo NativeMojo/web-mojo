@@ -6,7 +6,7 @@ priority: P2
 effort: L
 owner: core
 opened: 2026-07-18
-depends_on: [nativemojo/django-mojo#table-stats-aggregation]
+depends_on: [nativemojo/django-mojo#DM-051]
 related: [WM-038, WM-032, WM-034]
 links: []
 ---
@@ -49,10 +49,9 @@ side, filed separately in that repo's pipeline).
 
 ## Notes
 Pre-scoped in the WM-EPIC session (2026-07-18):
-- **Blocked on the django-mojo aggregation item** (filed in that repo's
-  `planning/inbox/` as `table-stats-aggregation`; the dep ref here gets its
-  real `DM-###` once django-mojo's /scope picks it up — update `depends_on`
-  then). Per workflow rules this item cannot /build until that dep is done.
+- **Blocked on the django-mojo aggregation item** — now scoped as
+  `nativemojo/django-mojo#DM-051` (`depends_on` updated 2026-07-18). Per
+  workflow rules this item cannot /build until that dep is done.
 - **Trails the epic**: epic waves 1–2 ship without it; this is wave 3 /
   follow-on. UI may be designed (mockups in epic phase 0) but code waits for
   the contract.

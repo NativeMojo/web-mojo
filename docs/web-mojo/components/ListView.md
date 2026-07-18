@@ -212,8 +212,9 @@ new TableView({
 - **One click applies the whole bundle.** Each entry in `params` is set via `setFilter()`, `start` is reset to `0`, and the collection refetches. The applied params render as normal, removable filter pills below the toolbar.
 - **Mutual exclusion + toggle-off.** Clicking a new preset clears the previously-active preset's params; clicking the active preset again clears it. There is no additive mode.
 - **Derived active state.** A preset is active when **every** one of its resolved params strictly matches the current active filters (matched through `getActiveFilters()`, so Django `__in` collapsing is honored). Editing or removing any of a preset's filter pills breaks the match and the segment button returns to inactive automatically — no stored "active" flag to drift.
+- **Most-specific match wins.** When one preset's params are a strict subset of another's (e.g. Errors `{level__gte: 4}` ⊂ Auth `{path__icontains: '/auth', level__gte: 4}`), applying the superset makes **both** match. `getActivePreset()` returns the one with the **most** resolved param keys — the narrower, correct chip highlights, and mutual-exclusion/toggle reads against it. Ties (equal key counts) resolve to the first matching preset in array order.
 
-**`@me` token.** A `params` value of `'@me'` resolves to the active user's id (`this.getApp().activeUser.id`) at **apply and match** time — so a "Mine" preset re-highlights after a reload. When no active user can be resolved, that single param is skipped (the preset just applies its remaining params, or none). This is the only supported token; use a plain value for everything else.
+**`@me` token.** A `params` value of `'@me'` resolves to the active user's id (`this.getApp().activeUser.id`) at **apply and match** time — so a "Mine" preset re-highlights after a reload. When no active user can be resolved, that single param is **silently skipped** (the preset just applies its remaining params, or none). A preset whose *only* param is `'@me'` therefore applies nothing and **never highlights** in an unauthenticated context — this is expected, e.g. in the examples portal, which has no signed-in user. This is the only supported token; use a plain value for everything else.
 
 **Placement.** With **≤4 presets** the segment sits inline in the toolbar's right group, as a sibling of the day-range control. With **5+ presets** it moves to its own row above the filter pills and scrolls horizontally (`overflow-x: auto`) instead of wrapping. On touch pointers the tap target is bumped (`@media (pointer: coarse)`) while desktop stays compact.
 
@@ -600,6 +601,12 @@ new ListView({
 `action.action` is a kebab-case `data-action` name, routed exactly like any
 toolbar action (`'add'` → `onActionAdd`). Omit `action` for a no-CTA panel.
 
+> **Note.** The CTA dispatches its `data-action` into the same TableView/ListView
+> handler chain as every other action — it does **not** wire up behavior on its
+> own. `action: 'add'` only does something if the view actually handles it (an
+> `onAdd` / add-form config, e.g. `showAdd` + `addForm` or `Model.ADD_FORM`).
+> Point it at an action the view already implements, or the button is inert.
+
 The panel has **two variants**, chosen automatically at render time:
 
 - **Truly empty** (no active filters) → your configured `icon` / `title` /
@@ -686,6 +693,14 @@ new TableView({
     dropdown is open.
 - **Resume.** Regaining focus / visibility fires an **immediate** refetch, then
   the timer continues at its normal cadence.
+- **Quiet indicator.** While auto-refresh is active a compact, muted
+  `bi-arrow-repeat` icon (no button chrome, no label, `--bs-secondary-color`)
+  sits in the toolbar's right group near the action buttons, with a
+  `title="Auto-refresh: <n>s"` and a visually-hidden text alternative for
+  assistive tech. Each **successful** tick gives it a brief spin
+  (`prefers-reduced-motion` suppresses the animation). Setting `autoRefresh`
+  enables the toolbar so the indicator always has a home; pass
+  `autoRefreshIndicator: false` to hide it while keeping the refresh running.
 - **Lifecycle.** The timer starts when the view mounts and is torn down on
   unmount / destroy. On a cached `Page` re-entry the view re-mounts and the
   timer resumes; the implementation guarantees a single interval per view
@@ -699,11 +714,12 @@ new TableView({
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `autoRefresh` | `number` | `0` (off) | Seconds between silent refetches; clamped to a 5s minimum. Pauses while hidden/blurred, while a selection is active, and (TableView) during an inline edit or open row menu. |
+| `autoRefreshIndicator` | `boolean` | `true` | When `autoRefresh` is on, shows a quiet muted `bi-arrow-repeat` toolbar indicator that spins on each successful tick. Set `false` to hide it while keeping the refresh running. Ignored when `autoRefresh` is off. |
 
 ### Out of scope
 
-- A visible refresh indicator (spinner/dot) — none is rendered; the refetch is silent.
-- Object-form config (`{ interval, indicator }`) — the seconds-number API is the only surface.
+- A full progress/countdown UI — the indicator is a quiet icon that pulses on each tick, not a live "next refresh in Ns" timer.
+- Object-form config (`{ interval, indicator }`) — the seconds-number `autoRefresh` plus the boolean `autoRefreshIndicator` are the only surface.
 - Per-tick backoff / adaptive cadence.
 
 ---

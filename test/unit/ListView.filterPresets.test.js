@@ -41,6 +41,20 @@ module.exports = async function (testContext) {
     { key: 'rate-limited', label: 'Rate-limited', params: { status: 429 } }
   ];
 
+  // Subset-shadowing case: `errors` params ⊂ `auth` params, and `errors`
+  // comes FIRST in the array. Applying `auth` makes BOTH match, so a naive
+  // first-match-wins would wrongly return `errors`.
+  const SHADOW_PRESETS = [
+    { key: 'errors', label: 'Errors', params: { level__gte: 4 } },
+    { key: 'auth', label: 'Auth', params: { path__icontains: '/auth', level__gte: 4 } }
+  ];
+
+  // Two presets with identical resolved params → a match tie.
+  const TIE_PRESETS = [
+    { key: 'first', label: 'First', params: { level__gte: 4 } },
+    { key: 'second', label: 'Second', params: { level__gte: 4 } }
+  ];
+
   async function makeView(presets, collection) {
     const c = collection || makeRestCollection();
     const listView = new ListView({
@@ -259,6 +273,57 @@ module.exports = async function (testContext) {
       // Nothing resolved → the preset never registers as active.
       expect(listView.getActivePreset()).toBeNull();
       expect(captured[0]).toEqual({ key: 'mine', params: {} });
+    });
+  });
+
+  // --------------------------------------------------------------
+  describe('ListView filterPresets — most-specific-match-wins (subset shadowing)', () => {
+    it('applying the superset preset marks IT active, not the subset that also matches', async () => {
+      const { listView, collection } = await makeView(SHADOW_PRESETS);
+
+      await listView.applyPreset('auth');
+
+      // Both presets' params are satisfied, but `auth` (2 keys) must win over
+      // `errors` (1 key) even though `errors` is earlier in the array.
+      expect(collection.params.path__icontains).toBe('/auth');
+      expect(collection.params.level__gte).toBe(4);
+      expect(listView.getActivePreset()?.key).toBe('auth');
+    });
+
+    it('applying the subset preset marks IT active (superset does not match)', async () => {
+      const { listView, collection } = await makeView(SHADOW_PRESETS);
+
+      await listView.applyPreset('errors');
+
+      // Only `level__gte` is set → `auth` (which also needs `path__icontains`)
+      // cannot match, so the subset is unambiguously active.
+      expect(collection.params.level__gte).toBe(4);
+      expect(collection.params.path__icontains).toBeUndefined();
+      expect(listView.getActivePreset()?.key).toBe('errors');
+    });
+
+    it('clicking the subset chip while the superset is applied switches to the subset (not toggle-off)', async () => {
+      const { listView, collection } = await makeView(SHADOW_PRESETS);
+
+      await listView.applyPreset('auth');
+      expect(listView.getActivePreset()?.key).toBe('auth');
+
+      // Clicking `errors` must read as a switch (mutual exclusion clears the
+      // superset's extra key), NOT a toggle-off that only drops the shared key.
+      await listView.applyPreset('errors');
+
+      expect(listView.getActivePreset()?.key).toBe('errors');
+      expect(collection.params.level__gte).toBe(4);
+      expect(collection.params.path__icontains).toBeUndefined();
+    });
+
+    it('ties (equal resolved param counts) resolve to the first matching preset', async () => {
+      const { listView } = await makeView(TIE_PRESETS);
+
+      await listView.applyPreset('second');
+
+      // Both match with one key each → the earlier preset wins the tie.
+      expect(listView.getActivePreset()?.key).toBe('first');
     });
   });
 

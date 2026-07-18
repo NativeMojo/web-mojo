@@ -247,4 +247,81 @@ module.exports = async function (testContext) {
       expect(listView._autoRefreshTimer).toBeNull();
     });
   });
+
+  // --------------------------------------------------------------
+  describe('WM-034 auto-refresh toolbar indicator', () => {
+    function makeListView(opts = {}) {
+      return new ListView({
+        collection: seeded(2),
+        itemTemplate: '<div>{{model.name}}</div>',
+        ...opts
+      });
+    }
+
+    it('renders a quiet indicator in the toolbar when autoRefresh is on', async () => {
+      const lv = makeListView({ autoRefresh: 20 });
+      await mountInto(lv);
+
+      const indicator = lv.element.querySelector('[data-autorefresh-indicator]');
+      expect(indicator).not.toBeNull();
+      expect(indicator.classList.contains('mojo-autorefresh-indicator')).toBe(true);
+      expect(indicator.getAttribute('title')).toBe('Auto-refresh: 20s');
+      // Muted icon, aria-hidden, with a visually-hidden text alternative.
+      const icon = indicator.querySelector('i.bi-arrow-repeat');
+      expect(icon).not.toBeNull();
+      expect(icon.getAttribute('aria-hidden')).toBe('true');
+      expect(indicator.querySelector('.visually-hidden')).not.toBeNull();
+
+      await lv.destroy();
+    });
+
+    it('is hidden when autoRefreshIndicator: false (feature still runs)', async () => {
+      const lv = makeListView({ autoRefresh: 20, autoRefreshIndicator: false });
+      await mountInto(lv);
+
+      expect(lv._autoRefreshMs).toBe(20000);
+      expect(lv._autoRefreshTimer).not.toBeNull();
+      expect(lv.element.querySelector('[data-autorefresh-indicator]')).toBeNull();
+      expect(lv.element.innerHTML).not.toContain('mojo-autorefresh-indicator');
+
+      await lv.destroy();
+    });
+
+    it('is absent entirely when autoRefresh is off', async () => {
+      const lv = makeListView();
+      await mountInto(lv);
+
+      expect(lv.element.querySelector('[data-autorefresh-indicator]')).toBeNull();
+      expect(lv.element.innerHTML).not.toContain('mojo-autorefresh-indicator');
+
+      await lv.destroy();
+    });
+
+    it('a successful tick adds the pulse class, then clears it', async () => {
+      const collection = seeded(2);
+      const lv = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        autoRefresh: 10
+      });
+      await mountInto(lv);
+
+      const indicator = lv.element.querySelector('[data-autorefresh-indicator]');
+      expect(indicator).not.toBeNull();
+      expect(indicator.classList.contains('is-refreshing')).toBe(false);
+
+      jest.spyOn(collection, 'fetch').mockResolvedValue({ data: { data: [] } });
+
+      lv._autoRefreshTick();
+      // Let the mocked fetch promise + its .then() settle.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(indicator.classList.contains('is-refreshing')).toBe(true);
+
+      // The pulse class is stripped after the ~600ms window.
+      await new Promise((resolve) => setTimeout(resolve, 650));
+      expect(indicator.classList.contains('is-refreshing')).toBe(false);
+
+      await lv.destroy();
+    });
+  });
 };

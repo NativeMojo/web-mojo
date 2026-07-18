@@ -283,6 +283,11 @@ class ListView extends View {
     this._autoRefreshTimer = null;
     this._autoRefreshPaused = false;
     this._autoRefreshHandlers = null;
+    // A quiet toolbar indicator (muted `bi-arrow-repeat`) is shown whenever
+    // auto-refresh is active; pass `autoRefreshIndicator: false` to hide it.
+    // Off when auto-refresh is off, so it never adds toolbar markup by itself.
+    this.autoRefreshIndicator = options.autoRefreshIndicator !== false;
+    this._autoRefreshPulseTimer = null;
 
     // -------- WM-035 view persistence — opt-in per-table saved view --------
     // `persistState: true` remembers how each user likes this list/table —
@@ -529,9 +534,20 @@ class ListView extends View {
       this.dayRangeFilter ||
       (this.filterPresets && this.filterPresets.length > 0) ||
       (this.toolbarButtons && this.toolbarButtons.length > 0) ||
+      this._autoRefreshIndicatorEnabled() ||
       this.options.showAdd ||
       this.options.showExport
     );
+  }
+
+  /**
+   * @returns {boolean} true when the auto-refresh toolbar indicator should
+   * render — auto-refresh is active and it wasn't opted out. Gates both the
+   * toolbar slot and its style block (off → zero markup, byte-identical).
+   * @private
+   */
+  _autoRefreshIndicatorEnabled() {
+    return this._autoRefreshMs > 0 && this.autoRefreshIndicator !== false;
   }
 
   _hasAnyFilters() {
@@ -563,9 +579,16 @@ class ListView extends View {
     const presetRowSlot = (hasPresets && !presetsInline) ? `<div data-container="filter-presets" class="preset-scroll mt-3"></div>` : '';
     const presetStyle = hasPresets ? this._buildPresetStyle() : '';
 
+    // Auto-refresh indicator: a quiet muted icon near the action buttons,
+    // gated on the option (off → no slot, no style — byte-identical render).
+    const showIndicator = this._autoRefreshIndicatorEnabled();
+    const indicatorSlot = showIndicator ? this._buildAutoRefreshIndicatorSlot() : '';
+    const indicatorStyle = showIndicator ? this._buildAutoRefreshIndicatorStyle() : '';
+
     const rightGroup = `
       <div class="d-flex align-items-center gap-2 flex-wrap ${titleBlock ? 'ms-auto' : ''}">
         ${this.buildActionButtonsTemplate()}
+        ${indicatorSlot}
         ${sortDropdown}
         ${this.filterable ? this.buildFilterDropdownTemplate() : ''}
         ${this.searchable && this.searchPlacement === 'toolbar' ? this.buildSearchTemplate() : ''}
@@ -578,6 +601,7 @@ class ListView extends View {
     return `
       <div class="table-action-buttons mb-3">
         ${presetStyle}
+        ${indicatorStyle}
         <div class="d-flex align-items-center gap-3 flex-wrap">
           ${titleBlock}
           ${rightGroup}
@@ -1444,11 +1468,28 @@ class ListView extends View {
   /**
    * Get the currently-active preset's full config object, or null. Active
    * state is derived — no stored "active preset" field to drift.
+   *
+   * Most-specific-match-wins: when several presets match at once (e.g. one
+   * preset's params are a strict subset of another's — Errors `{level__gte:4}`
+   * ⊂ Auth `{path__icontains:'/auth', level__gte:4}`), the one with the MOST
+   * resolved param keys is returned so the correct (narrower) chip highlights
+   * and mutual-exclusion/toggle logic reads it. Ties resolve to the first
+   * matching preset in array order.
    * @returns {object|null}
    */
   getActivePreset() {
     if (!this.filterPresets || this.filterPresets.length === 0) return null;
-    return this.filterPresets.find((p) => this._presetMatches(p)) || null;
+    let best = null;
+    let bestCount = -1;
+    for (const preset of this.filterPresets) {
+      if (!this._presetMatches(preset)) continue;
+      const count = Object.keys(this._resolvePresetParams(preset)).length;
+      if (count > bestCount) {   // strict `>` → ties keep the earlier preset
+        best = preset;
+        bestCount = count;
+      }
+    }
+    return best;
   }
 
   /**
@@ -1588,6 +1629,72 @@ class ListView extends View {
         }
       </style>
     `;
+  }
+
+  /**
+   * Compact, quiet auto-refresh indicator for the toolbar right-group: a
+   * muted `bi-arrow-repeat` icon with no button chrome and no text label. The
+   * icon is `aria-hidden`; a visually-hidden span carries the text
+   * alternative for assistive tech. `_pulseAutoRefreshIndicator()` adds the
+   * `is-refreshing` class on each successful tick to fire a brief spin.
+   * @private
+   */
+  _buildAutoRefreshIndicatorSlot() {
+    const secs = Math.round(this._autoRefreshMs / 1000);
+    const label = `Auto-refresh: ${secs}s`;
+    return `<span class="mojo-autorefresh-indicator" data-autorefresh-indicator title="${this.escapeHtml(label)}">
+              <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+              <span class="visually-hidden">${this.escapeHtml(label)}</span>
+            </span>`;
+  }
+
+  /**
+   * Inline `<style>` for the auto-refresh indicator. Muted via
+   * `--bs-secondary-color` (auto-tracks both themes — no literals). The spin
+   * animation only plays while `is-refreshing` is set and is suppressed under
+   * `prefers-reduced-motion`. Emitted once, only when the indicator renders.
+   * @private
+   */
+  _buildAutoRefreshIndicatorStyle() {
+    return `
+      <style>
+        .mojo-autorefresh-indicator {
+          display: inline-flex;
+          align-items: center;
+          color: var(--bs-secondary-color);
+          font-size: 0.9rem;
+          line-height: 1;
+        }
+        .mojo-autorefresh-indicator .bi { display: block; }
+        .mojo-autorefresh-indicator.is-refreshing .bi {
+          animation: mojo-autorefresh-spin 0.6s ease;
+        }
+        @keyframes mojo-autorefresh-spin {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .mojo-autorefresh-indicator.is-refreshing .bi { animation: none; }
+        }
+      </style>
+    `;
+  }
+
+  /**
+   * Flash the toolbar auto-refresh indicator: add the `is-refreshing` class
+   * (fires the CSS spin) and strip it after ~600ms. Coalesces rapid ticks by
+   * resetting its own timer; a no-op when the indicator isn't in the DOM.
+   * @private
+   */
+  _pulseAutoRefreshIndicator() {
+    const el = this.element?.querySelector('[data-autorefresh-indicator]');
+    if (!el) return;
+    el.classList.add('is-refreshing');
+    if (this._autoRefreshPulseTimer) clearTimeout(this._autoRefreshPulseTimer);
+    this._autoRefreshPulseTimer = setTimeout(() => {
+      el.classList.remove('is-refreshing');
+      this._autoRefreshPulseTimer = null;
+    }, 600);
   }
 
   setCollection(collection) {
@@ -3136,6 +3243,10 @@ class ListView extends View {
       clearInterval(this._autoRefreshTimer);
       this._autoRefreshTimer = null;
     }
+    if (this._autoRefreshPulseTimer) {
+      clearTimeout(this._autoRefreshPulseTimer);
+      this._autoRefreshPulseTimer = null;
+    }
     this._unbindAutoRefreshListeners();
     this._autoRefreshPaused = false;
   }
@@ -3208,9 +3319,11 @@ class ListView extends View {
     if (!this.isMounted()) { this._stopAutoRefresh(); return; }
     if (this._autoRefreshShouldSkip()) return;
     if (!this.collection || !this.collection.restEnabled) return;
-    Promise.resolve(this.collection.fetch()).catch((err) => {
-      console.warn('ListView autoRefresh: fetch failed', err);
-    });
+    Promise.resolve(this.collection.fetch())
+      .then(() => this._pulseAutoRefreshIndicator())
+      .catch((err) => {
+        console.warn('ListView autoRefresh: fetch failed', err);
+      });
   }
 
   /**
