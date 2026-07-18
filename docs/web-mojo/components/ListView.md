@@ -655,6 +655,59 @@ new TableView({ collection, columns, showResultCount: true });
 
 ---
 
+## Auto-refresh
+
+Monitoring-flavored screens (incident / log / event tables) go stale until a
+manual reload. Set `autoRefresh: <seconds>` and ListView silently refetches the
+collection on an interval — no reset of filters, sort, or paging, and no scroll
+jump. TableView inherits it unchanged.
+
+```javascript
+new TableView({
+  collection: new IncidentCollection(),
+  columns,
+  autoRefresh: 30,   // refetch every 30s
+  selectable: true
+});
+```
+
+### Behavior
+
+- **Silent refetch.** Each tick calls `collection.fetch()` with the current
+  `collection.params` intact. Collection's own dedup/cancel machinery handles an
+  overlap with an in-flight request, so no extra guard is needed.
+- **Minimum interval.** The value is a number of **seconds**, clamped to a **5s
+  floor** to prevent hammering the API (`autoRefresh: 2` behaves as `5`).
+- **Smart pause (checked at tick time — it skips, it does not stop):**
+  - the browser tab is hidden or the window is blurred;
+  - a selection is active (batch-action mode) — a refresh that reset the
+    checkboxes mid-selection is worse than staleness;
+  - (TableView only) an inline cell edit is open, or a row context menu /
+    dropdown is open.
+- **Resume.** Regaining focus / visibility fires an **immediate** refetch, then
+  the timer continues at its normal cadence.
+- **Lifecycle.** The timer starts when the view mounts and is torn down on
+  unmount / destroy. On a cached `Page` re-entry the view re-mounts and the
+  timer resumes; the implementation guarantees a single interval per view
+  instance (no accumulation across revisits), and a tick that finds its view
+  detached self-terminates so nothing leaks.
+- **Opt-out is free.** With `autoRefresh` absent (or `≤0` / non-number) no timer
+  and no focus/visibility listeners are created — byte-identical to before.
+
+### Constructor option
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `autoRefresh` | `number` | `0` (off) | Seconds between silent refetches; clamped to a 5s minimum. Pauses while hidden/blurred, while a selection is active, and (TableView) during an inline edit or open row menu. |
+
+### Out of scope
+
+- A visible refresh indicator (spinner/dot) — none is rendered; the refetch is silent.
+- Object-form config (`{ interval, indicator }`) — the seconds-number API is the only surface.
+- Per-tick backoff / adaptive cadence.
+
+---
+
 ## Installation
 
 ListView is part of the web-mojo core:

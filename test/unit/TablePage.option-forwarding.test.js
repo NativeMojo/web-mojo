@@ -120,6 +120,10 @@ module.exports = async function (testContext) {
       expect(fixturePage({ showResultCount: true }).tableViewConfig.showResultCount).toBe(true);
     });
 
+    it('forwards `autoRefresh`', () => {
+      expect(fixturePage({ autoRefresh: 30 }).tableViewConfig.autoRefresh).toBe(30);
+    });
+
     it('omitting these options leaves them undefined (no defaults)', () => {
       const page = fixturePage();
       expect(page.tableViewConfig.dayRangeFilter).toBeUndefined();
@@ -134,6 +138,7 @@ module.exports = async function (testContext) {
       expect(page.tableViewConfig.emptyState).toBeUndefined();
       expect(page.tableViewConfig.loadingStyle).toBeUndefined();
       expect(page.tableViewConfig.showResultCount).toBeUndefined();
+      expect(page.tableViewConfig.autoRefresh).toBeUndefined();
     });
   });
 };

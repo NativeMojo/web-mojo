@@ -268,6 +268,22 @@ class ListView extends View {
     this.loadingStyle = options.loadingStyle === 'skeleton' ? 'skeleton' : 'default';
     this.showResultCount = options.showResultCount === true;
 
+    // -------- WM-034 auto-refresh — opt-in interval refetch --------
+    // `autoRefresh: <seconds>` silently refetches the collection on an
+    // interval (clamped to a 5s minimum), preserving the current
+    // `collection.params` (filters / sort / paging). The tick is guarded:
+    // it skips (without clearing the timer) while the tab is hidden or the
+    // window is blurred, while a selection is active, and — for TableView —
+    // while an inline cell edit or a row context menu is open. On regaining
+    // focus the timer fires an immediate refetch then resumes normal cadence.
+    // Absent → `_autoRefreshMs === 0`, so no timer and no listeners are ever
+    // created (byte-identical behavior for pages that don't opt in).
+    // See `docs/web-mojo/components/ListView.md` (Auto-refresh).
+    this._autoRefreshMs = this._normalizeAutoRefresh(options.autoRefresh);
+    this._autoRefreshTimer = null;
+    this._autoRefreshPaused = false;
+    this._autoRefreshHandlers = null;
+
     // "Show more" state
     this.loadingMore = false;
 
@@ -305,6 +321,20 @@ class ListView extends View {
     if (this.collection && (this.options.fetchOnMount || !this.collection.lastFetchTime)) {
       this.collection.fetch();
     }
+    // Start the opt-in auto-refresh timer now the view is live. Fires on
+    // first mount and on every cached-page re-entry (the page re-mounts its
+    // children). No-op when `autoRefresh` wasn't set, and idempotent so a
+    // re-entry never stacks a second interval.
+    this._startAutoRefresh();
+  }
+
+  async onBeforeUnmount() {
+    await super.onBeforeUnmount();
+    // Tear the timer + listeners down when a standalone view unmounts. (For
+    // a TableView hosted inside a cached Page this hook doesn't fire on the
+    // child — the parent only unbinds child events — so `_autoRefreshTick`
+    // self-terminates on its next tick when it finds itself detached.)
+    this._stopAutoRefresh();
   }
 
   async onBeforeRender() {
@@ -3032,10 +3062,143 @@ class ListView extends View {
   }
 
   // ============================================================
+  // Auto-refresh (WM-034) — opt-in interval refetch with smart pause
+  // ============================================================
+
+  /**
+   * Normalize the `autoRefresh:` option into an interval in milliseconds.
+   * Accepts a positive number of seconds, clamped to a 5s floor to prevent
+   * hammering the API. Anything else (absent / non-number / ≤0) → 0, which
+   * disables the feature entirely (no timer, no listeners).
+   * @private
+   */
+  _normalizeAutoRefresh(raw) {
+    if (typeof raw !== 'number' || !isFinite(raw) || raw <= 0) return 0;
+    return Math.max(5, raw) * 1000;
+  }
+
+  /**
+   * Start the auto-refresh interval + focus/visibility listeners. No-op when
+   * `autoRefresh` wasn't configured, and idempotent — a second call while a
+   * timer is already live returns immediately, so cached-page re-entries
+   * (which re-fire onAfterMount) never stack a second interval.
+   * @private
+   */
+  _startAutoRefresh() {
+    if (!this._autoRefreshMs) return;
+    if (this._autoRefreshTimer) return;
+    this._autoRefreshPaused = this._autoRefreshDocHidden();
+    this._bindAutoRefreshListeners();
+    this._autoRefreshTimer = setInterval(() => this._autoRefreshTick(), this._autoRefreshMs);
+  }
+
+  /**
+   * Fully tear down the timer and its focus/visibility listeners. Safe to
+   * call when nothing is running.
+   * @private
+   */
+  _stopAutoRefresh() {
+    if (this._autoRefreshTimer) {
+      clearInterval(this._autoRefreshTimer);
+      this._autoRefreshTimer = null;
+    }
+    this._unbindAutoRefreshListeners();
+    this._autoRefreshPaused = false;
+  }
+
+  /**
+   * Bind window focus/blur + document visibilitychange listeners so the
+   * timer can pause while the tab is backgrounded and resume (with an
+   * immediate refetch) when the user returns. Idempotent.
+   * @private
+   */
+  _bindAutoRefreshListeners() {
+    if (this._autoRefreshHandlers) return;
+    const onBlur = () => { this._autoRefreshPaused = true; };
+    const onFocus = () => { this._autoRefreshPaused = false; this._autoRefreshResume(); };
+    const onVisibility = () => {
+      const hidden = this._autoRefreshDocHidden();
+      this._autoRefreshPaused = hidden;
+      if (!hidden) this._autoRefreshResume();
+    };
+    this._autoRefreshHandlers = { onBlur, onFocus, onVisibility };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('blur', onBlur);
+      window.addEventListener('focus', onFocus);
+    }
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVisibility);
+    }
+  }
+
+  /** @private */
+  _unbindAutoRefreshListeners() {
+    const h = this._autoRefreshHandlers;
+    if (!h) return;
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('blur', h.onBlur);
+      window.removeEventListener('focus', h.onFocus);
+    }
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', h.onVisibility);
+    }
+    this._autoRefreshHandlers = null;
+  }
+
+  /** @private */
+  _autoRefreshDocHidden() {
+    return typeof document !== 'undefined'
+      && (document.visibilityState === 'hidden' || document.hidden === true);
+  }
+
+  /**
+   * Regaining focus / visibility fires an immediate guarded refetch, then the
+   * existing interval carries on at its normal cadence. No-op when no timer
+   * is live (so a stray focus event after teardown can't refetch).
+   * @private
+   */
+  _autoRefreshResume() {
+    if (!this._autoRefreshTimer) return;
+    this._autoRefreshTick();
+  }
+
+  /**
+   * One interval tick. Self-terminates if the view is no longer mounted
+   * (covers a cached Page that exited without an unmount hook reaching this
+   * child). Otherwise skips silently while any pause condition holds, then
+   * issues a silent `collection.fetch()` that preserves current params —
+   * Collection's own dedup/cancel machinery handles overlap.
+   * @private
+   */
+  _autoRefreshTick() {
+    if (!this.isMounted()) { this._stopAutoRefresh(); return; }
+    if (this._autoRefreshShouldSkip()) return;
+    if (!this.collection || !this.collection.restEnabled) return;
+    Promise.resolve(this.collection.fetch()).catch((err) => {
+      console.warn('ListView autoRefresh: fetch failed', err);
+    });
+  }
+
+  /**
+   * Pause predicate evaluated at tick time. Base ListView pauses while the
+   * tab is hidden/blurred or a selection is active. TableView overrides this
+   * to also pause during an inline cell edit or an open row context menu.
+   * @protected
+   * @returns {boolean} true → skip this tick (do not clear the timer).
+   */
+  _autoRefreshShouldSkip() {
+    if (this._autoRefreshPaused) return true;
+    if (this._autoRefreshDocHidden()) return true;
+    if (this.selectedItems && this.selectedItems.size > 0) return true;
+    return false;
+  }
+
+  // ============================================================
   // Cleanup
   // ============================================================
 
   async destroy() {
+    this._stopAutoRefresh();
     if (this.collection) {
       this.collection.off('add', this._onModelsAdded, this);
       this.collection.off('remove', this._onModelsRemoved, this);

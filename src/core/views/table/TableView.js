@@ -966,6 +966,23 @@ class TableView extends ListView {
   async _onCellSave(event) { this.emit('cell:save', event); }
   _onCellCancel(event) { this.emit('cell:cancel', event); }
 
+  /**
+   * WM-034 — extend ListView's auto-refresh pause predicate with the two
+   * table-only cases: an in-progress inline cell edit (any TableRow with a
+   * non-empty `editingCells` set) or an open row context menu / dropdown
+   * (cheap `.dropdown-menu.show` DOM check). A silent refetch mid-edit would
+   * discard the editor; mid-menu it would close the menu under the user.
+   * @protected
+   */
+  _autoRefreshShouldSkip() {
+    if (super._autoRefreshShouldSkip()) return true;
+    for (const row of this.itemViews.values()) {
+      if (row && row.editingCells && row.editingCells.size > 0) return true;
+    }
+    if (this.element && this.element.querySelector('.dropdown-menu.show')) return true;
+    return false;
+  }
+
   // ============================================================
   // Grouped rows (TableView-aware overrides)
   //

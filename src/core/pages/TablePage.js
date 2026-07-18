@@ -103,6 +103,9 @@ class TablePage extends Page {
       loadingStyle: options.loadingStyle,
       showResultCount: options.showResultCount,
 
+      // Auto-refresh (WM-034) — same forwarding pattern.
+      autoRefresh: options.autoRefresh,
+
       // Display options for the HTML table element
       tableOptions: {
         striped: true,
