@@ -220,3 +220,19 @@ Agreed plan (scoped 2026-07-18, approved by Ian as part of epic WM-038):
 
 **Epic context:** wave 1 of WM-038 (parallel with WM-033/034/036); mockups
 (light+dark) approved in epic phase 0 before build.
+
+**Mockup APPROVED by Ian 2026-07-18**
+(`planning/mockups/filter-presets/wm-032-filter-presets.html`) — final visual
+design, supersedes the earlier "chip" styling language above:
+- Presets render as a **compact joined `btn-group btn-sm` segment** in the
+  same visual family as the day-range SegmentControl — square group corners,
+  dense padding (`--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .6rem`),
+  active `btn-primary`, inactive `btn-outline-secondary`, `aria-pressed`.
+  NOT pill-shaped chips; NO lead-in label; icons sparse (only where they earn
+  space). Do not reuse the SegmentControl class (no deselect support) — copy
+  its markup/paint pattern in a dedicated toggle-off-capable renderer.
+- **Placement branches on preset count**: ≤4 presets → inline in the toolbar
+  right-group as a sibling of the day-range segment; 5+ → own scrollable row
+  (`overflow-x: auto; flex-wrap: nowrap`) above the filter pills.
+- Touch: `@media (pointer: coarse)` padding bump — desktop stays compact
+  (this supersedes the earlier "≥40px tap targets" line).

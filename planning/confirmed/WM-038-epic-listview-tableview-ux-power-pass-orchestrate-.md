@@ -66,6 +66,16 @@ Orchestration plan (agreed with Ian 2026-07-18):
   aggregation item (`table-stats-aggregation` in that repo's inbox) is done.
 - Dropped from the epic by decision: saved views (user-defined presets) and
   WebSocket live rows — revisit on demand.
+- **Phase 0 mockups delivered 2026-07-18** (repo convention:
+  `planning/mockups/{component}/`):
+  - `planning/mockups/filter-presets/wm-032-filter-presets.html`
+  - `planning/mockups/feedback-states/wm-033-feedback-states.html`
+  - `planning/mockups/column-chooser/wm-035-column-chooser.html`
+  - `planning/mockups/row-expand/wm-036-row-expand.html`
+  - `planning/mockups/stat-strip/wm-037-stat-strip.html`
+  Each: self-contained HTML, light/dark toggle, mission-control dark palette,
+  token-based CSS written as the implementation would ship it. Awaiting Ian's
+  batch approval — the wave-1 gate.
 
 ## Resolution
 - closed: YYYY-MM-DD

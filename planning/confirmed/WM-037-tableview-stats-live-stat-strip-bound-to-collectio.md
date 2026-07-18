@@ -59,6 +59,19 @@ Pre-scoped in the WM-EPIC session (2026-07-18):
 - Depends conceptually on WM-032's preset machinery (apply/derive-active) —
   list WM-032 in `related`, and reuse its helpers rather than duplicating.
 - Mockup gate: stat strip mockup (light+dark) in epic phase 0.
+- **Mockup APPROVED by Ian 2026-07-18 — Variant B** (inset grouped track) in
+  `planning/mockups/stat-strip/wm-037-stat-strip.html`. Design system to honor
+  (supersedes the "tone" wording in the AC — near-monochrome, Apple-grade):
+  - iOS-segmented feel: soft rounded `--bs-tertiary-bg` rail; active stat is
+    a **raised neutral pill** (light: `--bs-body-bg` pill + whisper shadow;
+    dark: *lighter* `--bs-secondary-bg` pill on the darker rail + inset
+    white-5% highlight — never a colored fill).
+  - Type: number 1.4375rem / 600 / tabular-nums / -0.02em, `--bs-emphasis-color`,
+    number above sentence-case 0.8125rem `--bs-secondary-color` label. No caps.
+  - **Color budget: one 6px danger dot** on the single critical stat only
+    (dark companion #ff6b7d). All numerals monochrome; no per-stat hues.
+  - 180ms ease transitions; hover barely-perceptible (dark companion
+    rgba(255,255,255,0.03)); degraded stat = em-dash, non-interactive.
 
 ## Resolution
 - closed: YYYY-MM-DD

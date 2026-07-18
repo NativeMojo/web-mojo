@@ -61,6 +61,9 @@ Pre-scoped in the WM-EPIC session (2026-07-18):
   Both touch the toolbar — do not parallelize with each other or run this
   wave concurrently with wave-1 toolbar work (WM-032).
 - Mockup gate: chooser dropdown mockup (light+dark) in epic phase 0.
+- Ian (2026-07-18): the Columns toolbar button is **icon-only**
+  (`bi-layout-three-columns`, title tooltip); its text label renders only on
+  really wide displays (`d-none d-xxl-inline`). Mockup updated to match.
 
 ## Resolution
 - closed: YYYY-MM-DD

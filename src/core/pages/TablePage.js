@@ -91,6 +91,13 @@ class TablePage extends Page {
       // Row stripe — same forwarding pattern.
       rowStripe: options.rowStripe,
 
+      // Filter presets (WM-032) — same forwarding pattern.
+      filterPresets: options.filterPresets,
+
+      // Expandable detail rows (WM-036) — same forwarding pattern.
+      rowExpand: options.rowExpand,
+      rowExpandMultiple: options.rowExpandMultiple,
+
       // Display options for the HTML table element
       tableOptions: {
         striped: true,

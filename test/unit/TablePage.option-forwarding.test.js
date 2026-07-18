@@ -94,6 +94,19 @@ module.exports = async function (testContext) {
       expect(page.tableViewConfig.rowStripe).toBe(fn);
     });
 
+    it('forwards `filterPresets`', () => {
+      const presets = [{ key: 'errors', label: 'Errors', params: { level__gte: 4 } }];
+      const page = fixturePage({ filterPresets: presets });
+      expect(page.tableViewConfig.filterPresets).toBe(presets);
+    });
+
+    it('forwards `rowExpand` + `rowExpandMultiple`', () => {
+      const fn = (model) => `<div>${model.get('id')}</div>`;
+      const page = fixturePage({ rowExpand: fn, rowExpandMultiple: true });
+      expect(page.tableViewConfig.rowExpand).toBe(fn);
+      expect(page.tableViewConfig.rowExpandMultiple).toBe(true);
+    });
+
     it('omitting these options leaves them undefined (no defaults)', () => {
       const page = fixturePage();
       expect(page.tableViewConfig.dayRangeFilter).toBeUndefined();
@@ -102,6 +115,9 @@ module.exports = async function (testContext) {
       expect(page.tableViewConfig.groupHeaderLabel).toBeUndefined();
       expect(page.tableViewConfig.groupHeaderStyle).toBeUndefined();
       expect(page.tableViewConfig.rowStripe).toBeUndefined();
+      expect(page.tableViewConfig.filterPresets).toBeUndefined();
+      expect(page.tableViewConfig.rowExpand).toBeUndefined();
+      expect(page.tableViewConfig.rowExpandMultiple).toBeUndefined();
     });
   });
 };
