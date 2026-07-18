@@ -52,6 +52,11 @@ export { default as BouncerDeviceTablePage } from '@ext/admin/security/BouncerDe
 export { default as BotSignatureTablePage } from '@ext/admin/security/BotSignatureTablePage.js';
 export { default as IPSetTablePage } from '@ext/admin/security/IPSetTablePage.js';
 export { default as GeofencingPage } from '@ext/admin/security/geofence/GeofencingPage.js';
+// Geofence rule↔form mapping (pure, unit-tested) — reused by consuming portals
+// (e.g. MojoVerify's per-tenant payments-geofence editor) so the friendly-editor
+// projection of the rule DSL has a single source of truth.
+export { isAdvancedRule, ruleToForm, formToRule, regionName } from '@ext/admin/security/geofence/geofenceData.js';
+export { buildRuleFields, countryName } from '@ext/admin/security/geofence/GeofenceRuleForm.js';
 
 // Security Views
 export { default as BouncerSignalView } from '@ext/admin/security/BouncerSignalView.js';
