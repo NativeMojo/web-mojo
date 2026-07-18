@@ -30,6 +30,7 @@
  *   - 'filter:remove' - Emitted when a filter pill is removed
  *   - 'filters:clear' - Emitted when "Clear All" is clicked
  *   - 'params-changed' - Emitted whenever sort/page/filter/search changes
+ *   - 'preset:change' - Emitted when a filter preset is applied ({ key, params }) or cleared (null)
  *
  * @example
  * // Plain list, unchanged from prior behavior.
@@ -147,6 +148,16 @@ class ListView extends View {
     // etc.). Boolean true → defaults; object form merges over defaults.
     this.dayRangeFilter = this._normalizeDayRangeFilter(options.dayRangeFilter);
     this.dayRangeControl = null;
+
+    // Filter presets: opt-in `filterPresets:` array of author-defined
+    // "common queries" rendered as a compact joined btn-group segment.
+    // Each preset bundles a set of filter params applied in one click.
+    // Mutual-exclusion + toggle-off only (no additive mode). Active state
+    // is *derived* — a preset is active when every one of its resolved
+    // params strictly matches getActiveFilters(). Empty / absent → the
+    // whole feature is inert (byte-identical rendering & behavior).
+    // See `docs/web-mojo/components/ListView.md` (Filter presets).
+    this.filterPresets = this._normalizeFilterPresets(options.filterPresets);
 
     // Export configuration (gated by `showAdd` / `showExport` toolbar
     // options, which default to off on ListView). exportSource is 'remote'
@@ -324,6 +335,7 @@ class ListView extends View {
     // Filter pills + native search-clear listener wiring.
     if (this._isToolbarEnabled()) {
       this.updateFilterPills();
+      this.renderFilterPresets();
       this.setupSearchClearListener();
     }
   }
@@ -419,6 +431,7 @@ class ListView extends View {
       (this.sortOptions && this.sortOptions.length > 0) ||
       this.toolbarRight ||
       this.dayRangeFilter ||
+      (this.filterPresets && this.filterPresets.length > 0) ||
       (this.toolbarButtons && this.toolbarButtons.length > 0) ||
       this.options.showAdd ||
       this.options.showExport
@@ -444,12 +457,23 @@ class ListView extends View {
     const dayRangeSlot = this.dayRangeFilter ? `<div data-container="toolbar-day-range"></div>` : '';
     const sortDropdown = (this.sortOptions && this.sortOptions.length > 0) ? this.buildSortDropdownTemplate() : '';
 
+    // Filter presets: ≤4 → inline in the right-group (sibling of day-range);
+    // 5+ → its own scrollable row above the filter pills. The container is
+    // filled at render time by `renderFilterPresets()` so the derived active
+    // state repaints on every fetch (like `updateFilterPills`).
+    const hasPresets = this.filterPresets && this.filterPresets.length > 0;
+    const presetsInline = hasPresets && this._presetsInline();
+    const presetInlineSlot = presetsInline ? `<div data-container="filter-presets" class="preset-segment-slot"></div>` : '';
+    const presetRowSlot = (hasPresets && !presetsInline) ? `<div data-container="filter-presets" class="preset-scroll mt-3"></div>` : '';
+    const presetStyle = hasPresets ? this._buildPresetStyle() : '';
+
     const rightGroup = `
       <div class="d-flex align-items-center gap-2 flex-wrap ${titleBlock ? 'ms-auto' : ''}">
         ${this.buildActionButtonsTemplate()}
         ${sortDropdown}
         ${this.filterable ? this.buildFilterDropdownTemplate() : ''}
         ${this.searchable && this.searchPlacement === 'toolbar' ? this.buildSearchTemplate() : ''}
+        ${presetInlineSlot}
         ${dayRangeSlot}
         ${rightSlot}
       </div>
@@ -457,10 +481,12 @@ class ListView extends View {
 
     return `
       <div class="table-action-buttons mb-3">
+        ${presetStyle}
         <div class="d-flex align-items-center gap-3 flex-wrap">
           ${titleBlock}
           ${rightGroup}
         </div>
+        ${presetRowSlot}
         <div data-container="filter-pills"></div>
       </div>
     `;
@@ -940,6 +966,268 @@ class ListView extends View {
     if (!ok) return false;
     if (!silent) this._onDayRangeChange({ value, previous });
     return true;
+  }
+
+  // ============================================================
+  // Filter presets (compact joined btn-group segment)
+  //
+  // Author-defined "common queries" bundled behind a toolbar segment.
+  // Mutual-exclusion + toggle-off only; active state is derived from
+  // strict param matching against getActiveFilters(). The `'@me'` token
+  // in a preset's params resolves to the active user's id at apply AND
+  // match time (skipped when no active user).
+  // ============================================================
+
+  /**
+   * Normalize the `filterPresets:` option into a clean array of
+   * `{ key, label, icon, params, description }`. Drops entries without a
+   * `key`, warns on (and drops) duplicate keys. Returns `[]` when the
+   * option is absent / empty so the whole feature stays inert.
+   * @private
+   */
+  _normalizeFilterPresets(raw) {
+    if (!Array.isArray(raw) || raw.length === 0) return [];
+    const seen = new Set();
+    const presets = [];
+    raw.forEach((p) => {
+      if (!p || !p.key) return;
+      if (seen.has(p.key)) {
+        console.warn(`ListView: duplicate filterPresets key '${p.key}' — ignoring the later one.`);
+        return;
+      }
+      seen.add(p.key);
+      presets.push({
+        key: p.key,
+        label: p.label || p.key,
+        icon: p.icon || null,
+        params: (p.params && typeof p.params === 'object') ? p.params : {},
+        description: p.description || null
+      });
+    });
+    return presets;
+  }
+
+  /**
+   * Placement branch: ≤4 presets render inline (sibling of the day-range
+   * segment); 5+ get their own scrollable row above the filter pills.
+   * @private
+   */
+  _presetsInline() {
+    return this.filterPresets.length <= 4;
+  }
+
+  _getPreset(key) {
+    return this.filterPresets.find((p) => p.key === key) || null;
+  }
+
+  /**
+   * Resolve a preset's raw params into concrete filter values. The `'@me'`
+   * token resolves to the active user's id; when no active user can be
+   * resolved that param is skipped (both at apply and match time so the
+   * derived active state stays consistent).
+   * @private
+   */
+  _resolvePresetParams(preset) {
+    const out = {};
+    const raw = preset?.params || {};
+    Object.keys(raw).forEach((key) => {
+      const value = raw[key];
+      if (value === '@me') {
+        const uid = this.getApp()?.activeUser?.id;
+        if (uid === undefined || uid === null) return; // skip — no active user
+        out[key] = uid;
+      } else {
+        out[key] = value;
+      }
+    });
+    return out;
+  }
+
+  /**
+   * A preset is active when every one of its resolved params strictly
+   * matches the current active filters. Matching goes through
+   * getActiveFilters() (not raw collection.params) so `__in` collapsing is
+   * honored. A preset whose params all resolve away (e.g. only `'@me'`
+   * with no active user) never matches.
+   * @private
+   */
+  _presetMatches(preset) {
+    const resolved = this._resolvePresetParams(preset);
+    const keys = Object.keys(resolved);
+    if (keys.length === 0) return false;
+    const active = this.getActiveFilters();
+    return keys.every((key) => {
+      const value = resolved[key];
+      if (Array.isArray(value)) {
+        if (value.length === 0) return true;
+        const { field } = parseFilterKey(key);
+        if (value.length === 1) {
+          return active[field] !== undefined && String(active[field]) === String(value[0]);
+        }
+        const inVal = active[`${field}__in`];
+        return inVal !== undefined && String(inVal) === value.join(',');
+      }
+      return active[key] !== undefined && String(active[key]) === String(value);
+    });
+  }
+
+  /**
+   * Null out every resolved param key belonging to a preset (used by
+   * toggle-off and by mutual-exclusion when switching presets).
+   * @private
+   */
+  _clearPresetParams(preset) {
+    const resolved = this._resolvePresetParams(preset);
+    Object.keys(resolved).forEach((key) => this.setFilter(key, null));
+  }
+
+  /**
+   * Get the currently-active preset's full config object, or null. Active
+   * state is derived — no stored "active preset" field to drift.
+   * @returns {object|null}
+   */
+  getActivePreset() {
+    if (!this.filterPresets || this.filterPresets.length === 0) return null;
+    return this.filterPresets.find((p) => this._presetMatches(p)) || null;
+  }
+
+  /**
+   * Apply a preset by key. Toggles off if it's already the active preset;
+   * otherwise clears the previously-active preset's params (mutual
+   * exclusion), applies the new bundle, refetches, and repaints.
+   * @param {string} key
+   * @returns {Promise<boolean>} false when the key is unknown.
+   */
+  async applyPreset(key) {
+    const preset = this._getPreset(key);
+    if (!preset) return false;
+
+    const active = this.getActivePreset();
+
+    // Toggle-off: re-clicking the active preset clears it.
+    if (active && active.key === preset.key) {
+      await this.clearPreset();
+      return true;
+    }
+
+    // Mutual exclusion: drop the previously-active preset's params first.
+    if (active) this._clearPresetParams(active);
+
+    const resolved = this._resolvePresetParams(preset);
+    Object.keys(resolved).forEach((k) => this.setFilter(k, resolved[k]));
+
+    await this.applyFilters();       // start = 0 + fetch + pills + params-changed
+    this.renderFilterPresets();      // repaint derived active state
+    this.emit('preset:change', { key: preset.key, params: resolved });
+    return true;
+  }
+
+  /**
+   * Clear the active preset (removes its params). No-op when nothing is
+   * active, but still repaints and emits `preset:change` with null.
+   * @returns {Promise<void>}
+   */
+  async clearPreset() {
+    const active = this.getActivePreset();
+    if (active) {
+      this._clearPresetParams(active);
+      await this.applyFilters();
+    }
+    this.renderFilterPresets();
+    this.emit('preset:change', null);
+  }
+
+  /**
+   * Toolbar action — apply/toggle a preset from its segment button.
+   */
+  async onActionApplyPreset(event, element) {
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+    const key = element?.getAttribute('data-preset-key');
+    if (!key) return;
+    await this.applyPreset(key);
+  }
+
+  /**
+   * Fill the `filter-presets` container with the joined segment, painting
+   * the derived-active button as `btn-primary`. innerHTML re-render pattern
+   * mirroring `updateFilterPills`. No-op when presets aren't configured or
+   * the container isn't in the DOM yet.
+   */
+  renderFilterPresets() {
+    if (!this.filterPresets || this.filterPresets.length === 0) return;
+    const container = this.element?.querySelector('[data-container="filter-presets"]');
+    if (!container) return;
+    container.innerHTML = this._buildPresetSegment();
+  }
+
+  /**
+   * Build the joined `btn-group btn-sm preset-segment` markup with the
+   * active button styled `btn-primary` (derived from param matching).
+   * @private
+   */
+  _buildPresetSegment() {
+    const active = this.getActivePreset();
+    const activeKey = active ? active.key : null;
+
+    const buttons = this.filterPresets.map((preset) => {
+      const isActive = preset.key === activeKey;
+      const cls = isActive ? 'btn btn-primary' : 'btn btn-outline-secondary';
+      const icon = preset.icon ? `<i class="bi ${this.escapeHtml(preset.icon)}"></i> ` : '';
+      const titleAttr = preset.description ? ` title="${this.escapeHtml(preset.description)}"` : '';
+      return `<button type="button"
+                      class="${cls}"
+                      data-action="apply-preset"
+                      data-preset-key="${this.escapeHtml(preset.key)}"
+                      aria-pressed="${isActive ? 'true' : 'false'}"${titleAttr}>${icon}${this.escapeHtml(preset.label)}</button>`;
+    }).join('');
+
+    return `<div class="btn-group btn-group-sm preset-segment" role="group" aria-label="Filter presets">${buttons}</div>`;
+  }
+
+  /**
+   * Inline `<style>` for the preset segment. Token-based (auto-tracks both
+   * themes); the single scrollbar-thumb literal carries its dark companion.
+   * Emitted once from the toolbar template (only when presets exist).
+   * @private
+   */
+  _buildPresetStyle() {
+    return `
+      <style>
+        .preset-segment .btn {
+          --bs-btn-padding-y: 0.25rem;
+          --bs-btn-padding-x: 0.6rem;
+          font-size: 0.8125rem;
+          font-weight: 500;
+        }
+        .preset-segment .btn .bi { font-size: 0.8rem; }
+
+        /* Touch: bump the tap target only on coarse pointers — desktop stays compact. */
+        @media (pointer: coarse) {
+          .preset-segment .btn {
+            --bs-btn-padding-y: 0.5rem;
+            --bs-btn-padding-x: 0.85rem;
+          }
+        }
+
+        /* 5+ presets: own row, scroll horizontally instead of wrapping. */
+        .preset-scroll {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: thin;
+          padding-bottom: 0.2rem;
+        }
+        .preset-scroll .btn-group { flex-wrap: nowrap; }
+        .preset-scroll .btn { white-space: nowrap; }
+        .preset-scroll::-webkit-scrollbar { height: 6px; }
+        .preset-scroll::-webkit-scrollbar-thumb {
+          background: rgba(0, 0, 0, 0.15);
+          border-radius: 999px;
+        }
+        [data-bs-theme="dark"] .preset-scroll::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.12);
+        }
+      </style>
+    `;
   }
 
   setCollection(collection) {

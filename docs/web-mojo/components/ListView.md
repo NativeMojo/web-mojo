@@ -183,6 +183,56 @@ listView.on('range:change', ({ field, value, previous, params }) => {
 
 ---
 
+### Filter presets
+
+`filterPresets:` renders author-defined "common queries" as a compact joined `btn-group` segment in the toolbar — the same visual family as the day-range `SegmentControl` (square group corners, dense padding, active `btn-primary`). Each preset bundles a set of filter params applied to the collection in a single click. This is the first-class UI for the pattern behind Gmail tabs / Linear views / Sentry saved searches, so a heavy-filter table gives users named entry points instead of a wall of dropdowns.
+
+Inherited by `TableView` and forwarded by `TablePage` — configure it the same way on any of the three.
+
+```js
+new TableView({
+  collection,                         // a REST-backed Collection
+  columns: [...],
+  filterPresets: [
+    {
+      key: 'errors-24h',              // stable identifier
+      label: 'Errors 24h',           // button copy
+      icon: 'bi-exclamation-triangle',// optional Bootstrap icon (sparse — only where it earns space)
+      params: { level__gte: 4, created__gte: '1d' },
+      description: 'High and critical errors in the last day'  // optional tooltip
+    },
+    { key: 'auth', label: 'Auth failures', params: { path__icontains: '/auth', level__gte: 4 } },
+    { key: 'mine', label: 'Mine', icon: 'bi-person', params: { owner: '@me' } }  // @me → active user id
+  ]
+});
+```
+
+**Behavior.**
+
+- **One click applies the whole bundle.** Each entry in `params` is set via `setFilter()`, `start` is reset to `0`, and the collection refetches. The applied params render as normal, removable filter pills below the toolbar.
+- **Mutual exclusion + toggle-off.** Clicking a new preset clears the previously-active preset's params; clicking the active preset again clears it. There is no additive mode.
+- **Derived active state.** A preset is active when **every** one of its resolved params strictly matches the current active filters (matched through `getActiveFilters()`, so Django `__in` collapsing is honored). Editing or removing any of a preset's filter pills breaks the match and the segment button returns to inactive automatically — no stored "active" flag to drift.
+
+**`@me` token.** A `params` value of `'@me'` resolves to the active user's id (`this.getApp().activeUser.id`) at **apply and match** time — so a "Mine" preset re-highlights after a reload. When no active user can be resolved, that single param is skipped (the preset just applies its remaining params, or none). This is the only supported token; use a plain value for everything else.
+
+**Placement.** With **≤4 presets** the segment sits inline in the toolbar's right group, as a sibling of the day-range control. With **5+ presets** it moves to its own row above the filter pills and scrolls horizontally (`overflow-x: auto`) instead of wrapping. On touch pointers the tap target is bumped (`@media (pointer: coarse)`) while desktop stays compact.
+
+**API surface.**
+
+```js
+listView.applyPreset('errors-24h');   // apply (or toggle off if already active). Returns false for an unknown key.
+listView.clearPreset();               // clear the active preset's params.
+listView.getActivePreset();           // the active preset's full config object, or null.
+
+listView.on('preset:change', (payload) => {
+  // payload = { key, params } on apply, or null on clear.
+});
+```
+
+**Edge cases.** A preset param that collides with the day-range field (`created__gte`) is last-writer-wins — the more recent of a preset click or a day-range change owns the param. Duplicate `key`s log a dev warning and only the first is kept. No `filterPresets` (or an empty array) → zero rendering and behavior change (fully opt-in).
+
+---
+
 ## Pagination & Show More
 
 Two modes — pick the right one for the list shape.
@@ -634,6 +684,7 @@ ListView ships an opt-in toolbar that mirrors what `TableView` has. Every flag b
 | `toolbarButtons` | `Array<object>` | `[]` | Custom buttons: `{ label, icon, action?, handler?, variant?, title?, className?, permissions? }`. `permissions` is a `string \| string[]` permission gate — delegates to `app.activeUser.hasPermission()` (any-of for arrays) and is **fail-closed**: the button is hidden when there is no active user or the user lacks the permission. |
 | `toolbarRight` | `View` | `null` | Optional View mounted into a right-aligned slot (range pickers, view-mode toggles, etc.). |
 | `dayRangeFilter` | `boolean \| object` | `false` | When truthy, mounts a `SegmentControl` day-range picker in the toolbar and writes `${field}__gte` to `collection.params` on every change (refetches automatically). Boolean `true` → defaults `{ field: 'created', value: '7d', options: [1d, 7d, 30d, 90d], ariaLabel: 'Time range' }`. Object form merges over those defaults. Coexists with `toolbarRight`: day-range mounts to the left, `toolbarRight` to the right. See [Day-range filter](#day-range-filter). |
+| `filterPresets` | `Array<object>` | `[]` | Author-defined "common queries" rendered as a compact joined `btn-group` segment. Each preset `{ key, label, icon?, params, description? }` bundles a set of filter params applied in one click. Mutual-exclusion + toggle-off; active state is derived from strict param matching. See [Filter presets](#filter-presets). |
 
 ### Pagination
 
