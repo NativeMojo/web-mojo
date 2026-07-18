@@ -258,14 +258,21 @@ class ListView extends View {
     //      non-empty) auto-swaps to a "No results match your filters" panel
     //      with a Clear filters button (reuses onActionClearAllFilters).
     //      `emptyMessage` stays the untouched fallback when this is absent.
-    //   2. `loadingStyle: 'skeleton'` — shimmer placeholder rows/cards during
-    //      fetch instead of the spinner (spinner is still the default).
+    //   2. `loadingStyle` — the loading visual during fetch. Skeleton shimmer
+    //      rows/cards are the DEFAULT; pass `loadingStyle: 'spinner'` (or the
+    //      `'default'` alias) to opt back into the classic spinner. This is the
+    //      one feedback default that is NOT off — the skeleton is a deliberate,
+    //      owner-approved upgrade to the loading visual only; non-loading
+    //      renders are unchanged.
     //   3. `showResultCount: true` — a "Showing N of M" line rendered with the
     //      active-filter pills, "· filtered" when any filter is active.
-    // Every option defaults off; a page that sets none renders unchanged.
-    // See `docs/web-mojo/components/ListView.md` (Feedback states).
+    // `emptyState` and `showResultCount` default off; a page that sets neither
+    // (and doesn't touch `loadingStyle`) renders unchanged apart from the
+    // loading visual. See `docs/web-mojo/components/ListView.md` (Feedback states).
     this.emptyState = this._normalizeEmptyState(options.emptyState);
-    this.loadingStyle = options.loadingStyle === 'skeleton' ? 'skeleton' : 'default';
+    this.loadingStyle = (options.loadingStyle === 'spinner' || options.loadingStyle === 'default')
+      ? 'spinner'
+      : 'skeleton';
     this.showResultCount = options.showResultCount === true;
 
     // -------- WM-034 auto-refresh — opt-in interval refetch --------

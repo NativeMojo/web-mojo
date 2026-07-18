@@ -33,6 +33,7 @@ export class View {
     this.template    = opts.template || opts.templateUrl || "";                 // string or function(model) -> string
     this.data        = opts.data ?? {};                    // data for Mustache or basic templating
     this.isRendering     = false;
+    this._renderQueued   = false;                           // coalesce a render requested mid-flight
     this.lastRenderTime  = 0;
     this.mounted         = false;
     this.debug           = opts.debug ?? false;
@@ -218,6 +219,21 @@ export class View {
   async render(allowMount = true, container = null) {
     const now = Date.now();
 
+    // A render requested while one is already in flight is otherwise dropped
+    // by the canRender() guard below — leaving the view stuck on whatever
+    // state the in-flight pass captured. This bites fire-and-forget re-renders
+    // that race: e.g. a collection emitting `fetch:start` then `fetch:end`
+    // synchronously, or those events arriving while the initial mount render
+    // is still running. Coalesce instead: remember that a repaint was asked
+    // for (keeping only the latest args) and run exactly one trailing render
+    // after the current pass completes. Only one is queued at a time, so there
+    // is no unbounded loop or double-render storm.
+    if (this.isRendering) {
+      this._renderQueued = true;
+      this._renderQueuedArgs = { allowMount, container };
+      return this;
+    }
+
     if (!this.canRender()) {
         return this;
     }
@@ -251,6 +267,16 @@ export class View {
     } finally {
       // FIX #4: always reset isRendering
       this.isRendering = false;
+    }
+
+    // Drain a render coalesced during this pass. Exactly one trailing render
+    // runs per completed pass; if it in turn queues another, that pass drains
+    // it the same way — bounded by real requests, never a runaway loop.
+    if (this._renderQueued) {
+      this._renderQueued = false;
+      const queued = this._renderQueuedArgs || { allowMount: true, container: null };
+      this._renderQueuedArgs = null;
+      await this.render(queued.allowMount, queued.container);
     }
 
     return this;

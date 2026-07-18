@@ -1,15 +1,18 @@
 /**
  * ListView / TableView feedback states — WM-033
  *
- * Three opt-in body-render upgrades that share the ListView render path:
+ * Three body-render upgrades that share the ListView render path:
  *   1. `emptyState: {icon, title, message, action}` — rich empty panel with a
  *      truly-empty vs filtered-empty branch (filtered auto-offers Clear filters).
- *   2. `loadingStyle: 'skeleton'` — shimmer placeholder rows/cards during fetch.
+ *   2. `loadingStyle` — shimmer skeleton rows/cards during fetch are the DEFAULT;
+ *      pass `loadingStyle: 'spinner'` (or the `'default'` alias) to opt back.
  *   3. `showResultCount: true` — a "Showing N of M" line in the filter-pills row.
  *
- * Every feature is strictly opt-in — a page that sets none keeps the spinner,
- * the bare `emptyMessage`, and no count line. Tests assert both the enabled
- * behavior and the opt-out (no markup delta).
+ * `emptyState` and `showResultCount` are strictly opt-in (a page that sets
+ * neither keeps the bare `emptyMessage` and no count line). `loadingStyle` is
+ * the one default-on visual — the skeleton replaced the spinner as the default
+ * loading state, scoped ONLY to that loading visual; non-loading renders are
+ * unchanged. Tests assert both the enabled behavior and the opt-out.
  */
 
 module.exports = async function (testContext) {
@@ -176,10 +179,25 @@ module.exports = async function (testContext) {
       expect(tv.element.querySelector('.mojo-skeleton-row')).toBeNull();
     });
 
-    it('default (no loadingStyle) keeps the spinner during loading', async () => {
+    it('default (no loadingStyle) now renders the skeleton during loading', async () => {
       const tv = new TableView({
         collection: seeded(3),
         columns: COLUMNS
+      });
+      await tv.render();
+
+      tv.collection.emit('fetch:start');
+      await tv.render();
+      // Skeleton is the default loading visual now — no spinner.
+      expect(tv.element.querySelectorAll('.mojo-skeleton-row').length).toBeGreaterThan(0);
+      expect(tv.element.querySelector('.mojo-table-loading .spinner-border')).toBeNull();
+    });
+
+    it("loadingStyle: 'spinner' opts back into the classic spinner", async () => {
+      const tv = new TableView({
+        collection: seeded(3),
+        columns: COLUMNS,
+        loadingStyle: 'spinner'
       });
       await tv.render();
 
@@ -279,7 +297,7 @@ module.exports = async function (testContext) {
 
   // --------------------------------------------------------------
   describe('WM-033 opt-in guarantee — no options, no markup delta', () => {
-    it('a plain TableView renders none of the feedback markup/styles', async () => {
+    it('a plain TableView carries no opt-in feedback markup (skeleton is the default loading visual)', async () => {
       const tv = new TableView({
         collection: new Collection([]),
         columns: COLUMNS
@@ -287,13 +305,18 @@ module.exports = async function (testContext) {
       await tv.render();
 
       const html = tv.element.innerHTML;
-      expect(html).not.toContain('skeleton-line');
-      expect(html).not.toContain('table-empty-state');
-      expect(html).not.toContain('result-count-summary');
-      expect(html).not.toContain('mojo-skeleton-shimmer');
+      // emptyState + result-count remain strictly opt-in → no MARKUP renders.
+      // (The shared feedback <style> block names these classes as CSS
+      // selectors, so assert on the DOM, not the raw string.)
+      expect(tv.element.querySelector('.table-empty-state')).toBeNull();
+      expect(tv.element.querySelector('.result-count-summary')).toBeNull();
+      // Skeleton is the DEFAULT loading visual now → its style block is
+      // present, but no skeleton ROWS render while not loading.
+      expect(html).toContain('mojo-skeleton-shimmer');
+      expect(tv.element.querySelector('.mojo-skeleton-row')).toBeNull();
     });
 
-    it('a plain ListView renders none of the feedback markup/styles', async () => {
+    it('a plain ListView carries no opt-in feedback markup (skeleton is the default loading visual)', async () => {
       const listView = new ListView({
         collection: seeded(3),
         itemTemplate: '<div>{{model.name}}</div>'
@@ -301,19 +324,38 @@ module.exports = async function (testContext) {
       await listView.render();
 
       const html = listView.element.innerHTML;
-      expect(html).not.toContain('skeleton-line');
-      expect(html).not.toContain('empty-state-icon');
-      expect(html).not.toContain('result-count-summary');
+      // emptyState + result-count remain strictly opt-in → no MARKUP renders.
+      // (Their class names live in the shared feedback <style> block as CSS
+      // selectors, so assert on the DOM rather than the raw string.)
+      expect(listView.element.querySelector('.empty-state-icon')).toBeNull();
+      expect(listView.element.querySelector('.result-count-summary')).toBeNull();
+      // Skeleton default → style present, no skeleton cards while not loading.
+      expect(html).toContain('mojo-skeleton-shimmer');
+      expect(listView.element.querySelector('.list-skeleton-card')).toBeNull();
     });
 
-    it('flags default off when the options are absent', async () => {
+    it('loadingStyle defaults to skeleton; spinner / default opt back; other flags stay off', async () => {
       const listView = new ListView({
         collection: seeded(1),
         itemTemplate: '<div>{{model.name}}</div>'
       });
       expect(listView.emptyState).toBeNull();
-      expect(listView.loadingStyle).toBe('default');
+      expect(listView.loadingStyle).toBe('skeleton');
       expect(listView.showResultCount).toBe(false);
+
+      const spinner = new ListView({
+        collection: seeded(1),
+        itemTemplate: '<div>{{model.name}}</div>',
+        loadingStyle: 'spinner'
+      });
+      expect(spinner.loadingStyle).toBe('spinner');
+
+      const aliased = new ListView({
+        collection: seeded(1),
+        itemTemplate: '<div>{{model.name}}</div>',
+        loadingStyle: 'default'
+      });
+      expect(aliased.loadingStyle).toBe('spinner');
     });
   });
 };

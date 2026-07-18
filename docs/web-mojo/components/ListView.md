@@ -619,17 +619,24 @@ The panel has **two variants**, chosen automatically at render time:
 `emptyMessage` is untouched and remains the fallback whenever `emptyState`
 is absent.
 
-### Loading skeletons — `loadingStyle: 'skeleton'`
+### Loading skeletons — `loadingStyle` (skeleton by default)
 
-Swaps the spinner for shimmer placeholder rows during a fetch (driven by the
-existing `fetch:start` / `fetch:end` collection events). ListView renders card
-silhouettes; TableView renders a `<table>` whose header + cell widths echo the
-real `columns`. Row count is `collection.params.size`, capped at 8. The spinner
-remains the default (`loadingStyle` absent or any value other than `'skeleton'`).
+Shimmer placeholder rows during a fetch (driven by the existing `fetch:start` /
+`fetch:end` collection events) are the **default** loading visual. ListView
+renders card silhouettes; TableView renders a `<table>` whose header + cell
+widths echo the real `columns`. Row count is `collection.params.size`, capped at
+8.
+
+To restore the classic spinner, pass `loadingStyle: 'spinner'` (the value
+`'default'` is accepted as an alias):
 
 ```javascript
-new TableView({ collection, columns, loadingStyle: 'skeleton' });
+new TableView({ collection, columns });                      // skeleton (default)
+new TableView({ collection, columns, loadingStyle: 'spinner' }); // classic spinner
 ```
+
+Only the loading visual changed — non-loading renders (items, empty state,
+toolbar) are unchanged whichever style you pick.
 
 The shimmer uses `var(--bs-secondary-bg)` as its base with a black-on-light /
 white-on-dark moving band, and is disabled under `prefers-reduced-motion`.
@@ -651,7 +658,7 @@ new TableView({ collection, columns, showResultCount: true });
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `emptyState` | `object` | `null` | `{ icon, title, message, action: { label, action, icon } }`. Rich empty panel with an automatic truly-empty vs filtered-empty branch. |
-| `loadingStyle` | `string` | `'default'` | `'skeleton'` renders shimmer rows/cards during fetch; anything else keeps the spinner. |
+| `loadingStyle` | `string` | `'skeleton'` | Loading visual during fetch. Skeleton shimmer rows/cards are the default; pass `'spinner'` (or the `'default'` alias) to restore the classic spinner. |
 | `showResultCount` | `boolean` | `false` | Render a "Showing N of M · filtered" summary in the filter-pills row. |
 
 ### Out of scope

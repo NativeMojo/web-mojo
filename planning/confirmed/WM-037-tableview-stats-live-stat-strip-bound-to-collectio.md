@@ -52,6 +52,20 @@ Pre-scoped in the WM-EPIC session (2026-07-18):
 - **Blocked on the django-mojo aggregation item** — now scoped as
   `nativemojo/django-mojo#DM-051` (`depends_on` updated 2026-07-18). Per
   workflow rules this item cannot /build until that dep is done.
+- **Agreed backend contract (DM-051 scope session, 2026-07-18):** counts are a
+  **separate debounced call** (not piggybacked on the rows fetch) to the SAME
+  list endpoint with the table's current filter params plus
+  `_mode=count&_stats=<urlencoded JSON>` where `_stats` maps chip keys to
+  filter-param bundles, e.g. `{"open":{"status":"open"},"high":{"priority__gt":7}}`.
+  Response: `{"count": <total under current filters>, "stats": {"open": 12,
+  "broken": null}, "took_ms": 20, "status": true}`. Bundle params use
+  *identical semantics to list filter params* — clicking a chip = merging its
+  bundle into the table query, so chip count always equals the post-click
+  table count. Degrade to label-only when the `stats` key is **absent**
+  (old server / non-RestMeta endpoint — no error, no console spam) or when a
+  bundle's value is `null` (that bundle failed to evaluate). Cap: 12 bundles
+  per request (server setting `MOJO_REST_AGG_STATS_CAP`); empty bundle `{}` =
+  "All" chip (base count).
 - **Trails the epic**: epic waves 1–2 ship without it; this is wave 3 /
   follow-on. UI may be designed (mockups in epic phase 0) but code waits for
   the contract.

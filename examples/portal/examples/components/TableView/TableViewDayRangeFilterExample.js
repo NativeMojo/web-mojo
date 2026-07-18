@@ -48,6 +48,9 @@ class FakeServerEventsCollection extends Collection {
 
     async fetch() {
         this.emit('fetch:start');
+        // Yield between start/end so the (default) skeleton is actually
+        // visible — a fetch that emits both synchronously would flash it away.
+        await new Promise((r) => { setTimeout(r, 150); });
         const since = this.params.created__gte || 0;
         const all = SEED_EVENTS.filter((e) => e.created >= since);
         const start = this.params.start || 0;

@@ -46,6 +46,9 @@ class FakeHostsCollection extends Collection {
 
     async fetch() {
         this.emit('fetch:start');
+        // Yield between start/end so the (default) skeleton is actually
+        // visible — a fetch that emits both synchronously would flash it away.
+        await new Promise((r) => { setTimeout(r, 150); });
         const p = this.params;
         const rows = SEED_HOSTS.filter((h) => (
             (p.region === undefined || h.region === p.region)

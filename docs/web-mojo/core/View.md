@@ -519,6 +519,16 @@ await view.render();
 8. Calls `onAfterRender()`
 9. Binds events
 
+**Coalesced (queued) renders.** A render is a single in-flight pass — a second
+`render()` call that arrives while one is already running is *not* dropped.
+Instead it is coalesced: the view remembers that a repaint was requested (with
+the latest arguments) and runs **exactly one** trailing render after the current
+pass finishes. This keeps fire-and-forget re-renders that race — e.g. a
+collection emitting `fetch:start` then `fetch:end` synchronously, or those
+events arriving while the initial mount render is still running — from leaving
+the view stuck on the in-flight pass's captured state. Only one render is queued
+at a time, so there is no unbounded loop or double-render storm.
+
 ---
 
 ### mount(container)

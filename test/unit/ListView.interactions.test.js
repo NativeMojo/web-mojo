@@ -346,32 +346,40 @@ module.exports = async function (testContext) {
   // --------------------------------------------------------------
   // Scenario 6 — all-options-OFF control (opt-in guarantee)
   // --------------------------------------------------------------
-  describe('interactions — plain TableView carries no wave-1 delta', () => {
-    it('none of preset / skeleton / count / empty-state / expand markup or styles render', async () => {
+  describe('interactions — plain TableView carries no opt-in wave-1 delta', () => {
+    it('no preset / count / empty-state / expand markup or styles; skeleton is the default loading visual', async () => {
       const tv = new TableView({ collection: seeded(3), columns: COLUMNS });
       await tv.render();
 
       const html = tv.element.innerHTML;
 
-      // No wave-1 markup.
+      // No wave-1 markup. (No skeleton ROWS either — a populated, not-loading
+      // render never shows them regardless of loadingStyle.)
       expect(tv.element.querySelector('.preset-segment')).toBeNull();
       expect(tv.element.querySelector('.col-expand')).toBeNull();
       expect(tv.element.querySelector('.result-count-summary')).toBeNull();
       expect(tv.element.querySelector('.table-empty-state')).toBeNull();
       expect(tv.element.querySelector('.mojo-skeleton-row')).toBeNull();
 
-      // No wave-1 style blocks.
-      expect(html).not.toContain('@keyframes mojo-skeleton-shimmer');
+      // Opt-in style blocks (rowExpand / preset) stay absent — these
+      // non-loading assertions are unchanged. (result-count markup absence is
+      // covered by the querySelector('.result-count-summary') check above; its
+      // class name is a CSS selector inside the default skeleton <style> block,
+      // so a raw string check would false-positive.)
       expect(html).not.toContain('mojo-detail-panel');
       expect(html).not.toContain('.preset-segment .btn');
-      expect(html).not.toContain('skeleton-line');
-      expect(html).not.toContain('result-count-summary');
 
-      // No wave-1 state.
+      // LOADING-STATE change: skeleton is now the DEFAULT loading visual, so its
+      // style block ships by default (it did not before). Only the loading
+      // visual moved — the non-loading markup above is untouched.
+      expect(html).toContain('@keyframes mojo-skeleton-shimmer');
+      expect(html).toContain('skeleton-line');
+
+      // No wave-1 state. loadingStyle now defaults to 'skeleton' (was 'default').
       expect(tv._autoRefreshMs).toBe(0);
       expect(tv._autoRefreshTimer).toBeNull();
       expect(tv.emptyState).toBeNull();
-      expect(tv.loadingStyle).toBe('default');
+      expect(tv.loadingStyle).toBe('skeleton');
       expect(tv.showResultCount).toBe(false);
       expect(tv.isRowExpandEnabled()).toBe(false);
       expect(tv.filterPresets).toEqual([]);

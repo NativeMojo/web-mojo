@@ -651,15 +651,17 @@ fully opt-in.
 
 ## Feedback states — rich empty, skeletons, result count
 
-TableView inherits three **opt-in** body-render upgrades from ListView. Each
-defaults off, so a table that sets none renders exactly as before. See
+TableView inherits three body-render upgrades from ListView. `emptyState` and
+`showResultCount` are opt-in (off by default); `loadingStyle` defaults to the
+skeleton shimmer (pass `'spinner'` to opt back). A table that sets none renders
+exactly as before apart from the loading visual. See
 [ListView → Feedback states](./ListView.md#feedback-states--rich-empty-skeletons-result-count)
 for the full contract; the TableView specifics:
 
 | Option | Effect on a table |
 |--------|-------------------|
 | `emptyState` | Replaces the bare `bi-inbox` + `emptyMessage` block with an icon-chip panel. Auto-branches to a **Clear filters** panel when `getActiveFilters()` is non-empty (search counts). `emptyMessage` stays the fallback when omitted. |
-| `loadingStyle: 'skeleton'` | Renders a `<table>` whose header and cell widths **echo your `columns`** during fetch (leading expand/selection cells and a trailing actions cell are mirrored). Row count = `collection.params.size`, capped at 8. Spinner is still the default. |
+| `loadingStyle` (skeleton by default) | During fetch, renders a `<table>` whose header and cell widths **echo your `columns`** (leading expand/selection cells and a trailing actions cell are mirrored). Row count = `collection.params.size`, capped at 8. This is the **default** loading visual — pass `loadingStyle: 'spinner'` (or the `'default'` alias) to restore the classic spinner. |
 | `showResultCount: true` | Renders a *"Showing N of M · filtered"* summary in the filter-pills row (the toolbar is always on for TableView). Reads `collection.meta.count`. |
 
 ```javascript
