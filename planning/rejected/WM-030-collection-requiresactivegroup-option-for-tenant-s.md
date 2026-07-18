@@ -1,10 +1,10 @@
 ---
-id:
+id: WM-030
 type: feature
 title: "Collection — `requiresActiveGroup` option for tenant-scoped fetches"
 priority: P2
-effort: TBD
-owner: TBD
+effort: M
+owner: core
 opened: 2026-05-21
 depends_on: []
 related: []
@@ -104,19 +104,32 @@ active-group module. Defining that accessor is part of this work.
 
 ---
 
-<!-- Fill in when the request is resolved, then move the file to planning/done/ -->
 ## Resolution
-**Status**: Resolved — YYYY-MM-DD
+**Status**: Rejected (won't build) — 2026-07-18
 
-**Files changed**:
-- `src/...`
+**Rationale**: Superseded by framework evolution since filing (2026-05-21).
+Both motivations are now covered by newer mechanisms:
 
-**Tests run**:
-- `npm run ...`
+1. *"CollectionSelect can't be scoped"* — solved. `CollectionSelect` /
+   `CollectionMultiSelect` gained a field-level `requiresActiveGroup`
+   (`src/core/forms/inputs/CollectionSelect.js:165,221`), and `defaultParams`
+   accepts a callback for runtime values.
+2. *"Per-page `setParams({group})` boilerplate"* — mostly solved.
+   `TablePage.requiresGroup` + `groupField` injects `activeGroup.id` into the
+   query per visit (`src/core/pages/TablePage.js:428`), pages receive
+   `onGroupChange()` on group switch, and `Page.requiresGroup` gates pages on
+   group presence. No `setParams({ group: activeGroup })` boilerplate exists
+   anywhere in framework source or examples.
 
-**Docs updated**:
-- `docs/...`
-- `CHANGELOG.md` (if applicable)
+Building it anyway would add a **third** parallel tenant-scoping mechanism
+(alongside `TablePage.requiresGroup` and the field-level flag) and couple the
+currently app-agnostic `Collection` data layer to the window app singleton —
+cost outweighs the declare-once ergonomic gain. Decision confirmed by Ian
+2026-07-18.
 
-**Validation**:
-[How the final behavior was verified]
+**Known residual edge (not filed)**: the field-level flag stamps
+`collection.params.group` once at `setupCollection()` and can go stale if the
+active group changes while a form is open — a ~2-line fix inside
+CollectionSelect/CollectionMultiSelect if it ever bites. Reopen from this
+rationale only if consuming apps show real raw-Collection group-threading pain
+that TablePage and the field flag don't reach.
