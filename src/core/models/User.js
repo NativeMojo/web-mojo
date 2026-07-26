@@ -137,6 +137,9 @@ User.GRANULAR_PERMISSION_TABS = [
             { name: "manage_vault", label: "Manage Vault" },
             { name: "manage_docit", label: "Manage Docs" },
             { name: "manage_shortlinks", label: "Manage Shortlinks" },
+            { name: "view_dns", label: "View DNS" },
+            { name: "manage_dns", label: "Manage DNS",
+              tooltip: "Manage domains, DNS records, provider credentials and certificates. Adopting a hosted zone and reading certificate key material stay restricted to platform superusers." },
             { name: "view_geofence", label: "View Geofence Config" },
             { name: "manage_geofence", label: "Manage Geofence Config" },
             { name: "bypass_geofence", label: "Bypass Geofence (Whitelist)",
@@ -149,7 +152,10 @@ User.GRANULAR_PERMISSION_TABS = [
 // Maps each category permission to the granular permissions it covers.
 // If a user has a category perm, all its granular perms are implicitly granted.
 User.CATEGORY_GRANULAR_MAP = {
-    security: ["view_security", "manage_security"],
+    // dnsman's RestMeta accepts `security` for both VIEW_PERMS and SAVE_PERMS
+    // on every model, so mapping both grants here mirrors the backend exactly
+    // rather than over-granting.
+    security: ["view_security", "manage_security", "view_dns", "manage_dns"],
     users: ["view_users", "manage_users", "view_members"],
     groups: ["view_groups", "manage_groups", "manage_group"],
     comms: ["manage_chat", "manage_aws", "view_notifications", "manage_notifications", "send_notifications",

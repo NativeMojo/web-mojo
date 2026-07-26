@@ -602,6 +602,9 @@ class SimpleModuleLoader {
             { test: /Router/, name: 'Router' },
             { test: /Rest/, name: 'Rest' },
             { test: /DataFormatter/, name: 'dataFormatter' },
+            // dnsData is dependency-free; tests set `global.dnsData` before
+            // loadModuleFromFile('Dns') so models/Dns.js can resolve it.
+            { test: /dns\/dnsData(\.js)?$/, name: 'dnsData' },
             { test: /models\/Member(\.js)?$/, name: 'Member' },
             { test: /models\/ApiKey(\.js)?$/, name: 'ApiKey' },
             { test: /models\/Log(\.js)?$/, name: 'LogList' },
