@@ -10,8 +10,9 @@ This eliminates the wasteful "is this failure mine?" investigation after the fac
    (the custom runner — `node test/test-runner.js`; unit + integration + build).
    The narrow commands (`npm run test:unit`, …) are for the edit loop, not the
    baseline — the baseline must match what you'll compare against at the end.
-2. Record the baseline in the work item (under `## Notes`): total / passed /
-   failed from the runner's summary, and the names of any pre-existing failures.
+2. Record the baseline on the board item's activity trail
+   (`comment_on_item`): total / passed / failed from the runner's summary, and
+   the names of any pre-existing failures.
 3. **Interpret the baseline:**
    - **All green** → every failure you see after your change is YOURS. Fix all of
      them before closing. No exceptions, no "pre-existing" excuses.
@@ -36,7 +37,7 @@ reason.
   invariant: green before → green after.
 
 ## Notes
-- One entity runs tests per build (see the build skill's test-lock invariant) —
+- One entity runs tests per build — the session that owns the board item —
   results must be attributable to exactly one set of edits.
 - The runner prints a per-suite summary; read that, not scrollback guesses. To
   isolate one file there is no `--grep` — temporarily move the others (see

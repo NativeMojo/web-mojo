@@ -104,4 +104,4 @@ window.app.currentPage.sideNav.showSection('SectionName')
 - After implementing any new page, view, or SideNavView section
 - After modifying templates, column configs, or section definitions
 - After changing core framework files (EventDelegate, SideNavView, TableView)
-- Before marking a request as done in `planning/done/`
+- Before landing a board item at `review` / `done`

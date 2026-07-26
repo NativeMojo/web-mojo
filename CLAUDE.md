@@ -5,18 +5,14 @@ This file is loaded automatically by Claude Code. Keep it under 150 lines.
 ## Start Every Thread Here
 1. Read this file in full.
 2. Read `memory.md`.
-3. Run `scripts/board.sh` — the current pipeline at a glance
-   (inbox/confirmed/in_progress/done).
-4. Pick your mode and invoke its skill — its instructions load automatically:
-   - Filing new work (bug/feature/chore) → `/request`  (writes an un-ID'd item to `planning/inbox/`)
-   - Triaging / planning an item → `/scope`
-   - Implementing a scoped item  → `/build`
+3. Pick your mode and invoke its skill — its instructions load automatically:
+   - Filing new work (bug/feature/chore) → `/maestro-task`  (creates a board item at `stage=inbox`)
+   - Triaging / planning an item → `/maestro-scope`
+   - Implementing a planned item  → `/maestro-build`
    - (`/memory` shows project memory state.)
-5. Read the item:
-   - New, unscoped → `planning/inbox/`
-   - Scoped + planned → `planning/confirmed/`
-   - Mid-build (claimed) → `planning/in_progress/`
-6. Read `docs/web-mojo/README.md`, then the exact topic docs for what you touch.
+4. Read the item from the board — `get_board_item(<id>)` via the maestro MCP.
+   The board is resolved from `.claude/maestro.json`.
+5. Read `docs/web-mojo/README.md`, then the exact topic docs for what you touch.
 
 ## Project Map
 WEB-MOJO is the source repo for a browser-side JavaScript framework/library
@@ -25,26 +21,28 @@ published to npm as `web-mojo`. Core runtime classes live in `src/core/`
 `src/extensions/`. UI is Mustache templates + Bootstrap 5.3 (light **and** dark
 themes). A custom test harness lives in `test/` (`node test/test-runner.js`).
 Authoritative framework docs are in `docs/web-mojo/`; repo layout in
-`docs/agent/architecture.md`. Workflow architecture: `WORKFLOW.md`; command
-reference: `AI_DEV.md`.
+`docs/agent/architecture.md`.
 
 ## Non-Negotiable Rules
 Workflow scaffolding (imposed by this workflow):
-- IDs come **only** from `/scope` via `scripts/intake.sh` (`planning/.next_id`).
-  Every item gets `WM-###` — the prefix comes from `planning/.config`
-  (`PREFIX=WM`; scripts default to `ITEM` when the file is absent). Never
-  hand-assign, edit the counter by hand, or reuse an ID.
-- The folder is the stage. Advance an item only by moving its file
-  `inbox/` → `confirmed/` (via `scripts/intake.sh`) → `in_progress/` (via
-  `scripts/start.sh`; WIP = 1) → `done/` (via `scripts/close.sh`). There is no
-  `stage` field. `future/`/`rejected/` park items via `scripts/close.sh <file>
-  future|rejected` (no ID consumed from `inbox/`).
-- One item = one file. `type` (`feature | bug | chore`) distinguishes them.
-- The `## Plan` is the "designed" signal: while the `PLAN PENDING` marker is in
-  the file the item is `UNPLANNED` and `scripts/start.sh` / `/build` refuse it —
-  only `/scope` completes the plan and deletes the marker.
-- Never `/build` an item that is `UNPLANNED` or whose `depends_on` aren't all in
-  `planning/done/` (`scripts/ready.sh` checks this).
+- **Work lives on the maestro board, not in this repo.** The board item is the
+  work record: state (stage, priority, owner) in its column values, the spec in
+  its markdown description, progress on its activity trail. There is no
+  `planning/` pipeline and no `WM-###` ids — items are referenced by board id.
+- Board resolution comes from `.claude/maestro.json` — workspace `17`
+  (NativeMojo), board `11` (Backlog), project `14` (web-mojo). Board 11 is
+  **shared with django-mojo** (project `12`); always set `project: 14` on items
+  filed from this repo so they stay attributable.
+- Stage is a column value, advanced only via `update_board_item`:
+  `inbox → scoped → planned → building → review → done`.
+- The `## Plan` section in the item description is the "designed" signal.
+  `/maestro-build` refuses an item whose description has no `## Plan` — only
+  `/maestro-scope` writes it.
+- Never `/maestro-build` an item owned by someone else without asking, and never
+  claim one silently — the owner column is the WIP claim.
+- Scratch copies live in `planning/.cache/<id>.md` (gitignored); build-start
+  snapshots in `planning/built/<id>.md`. These are maestro working files —
+  the board remains the source of truth.
 
 Project rules (verified in the codebase — see `.claude/rules/` for detail):
 - The primary data object for a view is `this.model` — never `this.runner`,
@@ -75,14 +73,16 @@ Rule files load automatically (layer rules are path-scoped via `globs:`):
 - `docs.md` — where docs live, when to update, quick lookup
 
 ## Working with AI — What Works Here
-- Safe to generate wholesale: new `planning/inbox/` items from
-  `planning/_template.md`; new isolated View/extension files following a sibling.
+- Safe to generate wholesale: new board-item workspecs (template in
+  `.claude/skills/maestro-task/SKILL.md`); new isolated View/extension files
+  following a sibling.
 - Write incrementally (read surrounding code first): anything touching `View` /
   `Page` lifecycle, `Rest` response nesting (`resp.data.data`), Mustache template
   rendering, or CSS theme tokens in `src/core/css/`.
 - Tests: `npm run test:unit` is the fast loop. The runner is custom
   (`node test/test-runner.js`) — not Jest CLI; there's no `--grep` for one file.
-- Don't `ls` or bulk-read `planning/done/` (120+ resolved items) or `node_modules/`.
+- Don't bulk-read `node_modules/`. On the board, fetch the one item you need with
+  `get_board_item(<id>)` rather than pulling every description from `get_board`.
 
 ## Pre-Edit Checklist
 Before modifying any file:
@@ -103,7 +103,8 @@ A task is closed only when:
       `npm run examples:registry`)
 - [ ] `memory.md` updated if a decision was made
 - [ ] Work committed by explicit pathspec (no push — `.claude/rules/git.md`)
-- [ ] Item closed with `scripts/close.sh` (file now in `planning/done/`)
+- [ ] Board item landed at `review` (PR opened) or `done` (committed to main),
+      with a closing comment on its activity trail
 
 ## Trust Order
 When docs and code conflict:

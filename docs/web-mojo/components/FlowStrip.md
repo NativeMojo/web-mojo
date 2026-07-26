@@ -173,7 +173,7 @@ The strip's grid columns default to 4. Override per-instance via the `--flow-str
 - The CSS lives in [`src/core/css/core.css`](../../src/core/css/core.css) under `FlowStrip`. Do not duplicate the rules.
 - `value` and `hint` are rendered as **trusted HTML**; `num`, `title`, `action`, `actionIcon`, and `actionData` keys/values are escaped.
 - For long, time-ordered sequences (job events, audit history) prefer [`Timeline`](Timeline.md). FlowStrip is for short configuration sequences where each cell describes a stable stage of the record.
-- The legacy `.rs-flow*` CSS in `admin.css` predates this primitive and remains for `RuleSetView` until that view is migrated to `FlowStrip` (see `planning/done/detailview-migration-rethink.md`).
+- The legacy `.rs-flow*` CSS in `admin.css` predates this primitive and remains for `RuleSetView` until that view is migrated to `FlowStrip`.
 
 ---
 

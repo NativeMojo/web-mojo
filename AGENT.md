@@ -7,31 +7,30 @@
 ## Start Every Thread Here
 1. Read `CLAUDE.md` in full.
 2. Read `memory.md`.
-3. Run `scripts/board.sh` — the planning pipeline at a glance.
-4. Pick your mode and invoke its skill:
-   - Filing new work → `/request`
-   - Triaging / planning an item → `/scope`
-   - Implementing a scoped item  → `/build`
-5. Read the item: new/unscoped → `planning/inbox/`; scoped/planned →
-   `planning/confirmed/`; mid-build → `planning/in_progress/`.
-6. Read `docs/web-mojo/README.md`, then the exact topic docs for what you touch.
+3. Pick your mode and invoke its skill:
+   - Filing new work → `/maestro-task`
+   - Triaging / planning an item → `/maestro-scope`
+   - Implementing a planned item  → `/maestro-build`
+4. Read the item from the board: `get_board_item(<id>)` via the maestro MCP.
+5. Read `docs/web-mojo/README.md`, then the exact topic docs for what you touch.
 
 ## Work Item Model
-One kind of work item, distinguished by `type` (`feature | bug | chore`). The
-folder is the stage — `inbox/ → confirmed/ → in_progress/ → done/` — advanced
-only by the scripts. IDs (`WM-###`, prefix from `planning/.config`) come only
-from `/scope` via `scripts/intake.sh`. See `planning/README.md`; architecture
-map in `WORKFLOW.md`, command reference in `AI_DEV.md`.
+Work lives on the **maestro board**, not in this repo. One kind of work item,
+distinguished by a `Kind:` line (`feature | bug | chore`) in its markdown
+workspec. Stage is a column value advanced via `update_board_item`:
+`inbox → scoped → planned → building → review → done`. Items are referenced by
+board id. Board resolution is `.claude/maestro.json` → workspace 17
+(NativeMojo), board 11 (Backlog), project 14 (web-mojo). Board 11 is shared
+with django-mojo (project 12).
 
 ## Source of Truth
 | File | Use |
 |---|---|
 | `CLAUDE.md` | Master agent contract — thread start, rules, done criteria |
-| `WORKFLOW.md` / `AI_DEV.md` | Workflow architecture map / command reference |
+| `.claude/maestro.json` | Board resolution (workspace / board / project) |
 | `.claude/rules/*.md` | Conventions (core, git, build-baseline, views, api, testing, theming, docs) |
-| `.claude/skills/{request,scope,build}/SKILL.md` | The `/request`, `/scope`, `/build` mode instructions |
-| `scripts/{intake,start,board,ready,close}.sh` | Planning pipeline helpers |
-| `planning/` | Work items (`inbox/ → confirmed/ → in_progress/ → done/`, plus `future/`, `rejected/`) |
+| `.claude/skills/maestro-{task,scope,build}/SKILL.md` | The `/maestro-task`, `/maestro-scope`, `/maestro-build` mode instructions |
+| maestro board 11 | Work items — the source of truth for all planned/in-flight work |
 | `memory.md` | Active decisions, gotchas, current work |
 | `docs/web-mojo/**` | Authoritative framework docs (index: `README.md`) |
 | `docs/agent/architecture.md` | Repo layout, source map, extension map |

@@ -8,11 +8,11 @@
 - If you believe a branch is warranted, ask the user first and wait for an explicit yes.
 
 ## Why no parallel checkouts
-The planning pipeline lives **in the working tree**: the stage folders
-(`planning/inbox|confirmed|in_progress|done`), the ID counter
-(`planning/.next_id`), and the WIP = 1 claim (`in_progress/`) are all files here.
-A second checkout forks that state — two counters minting the same `WM-###`, two
-`in_progress/` claims, planning moves that never merge. One tree, one pipeline.
+Work is claimed on the **maestro board** (owner + `stage=building`), but the
+build itself happens in this working tree, and the board has no notion of which
+checkout holds the claim. A second checkout means two trees building against one
+claimed item — divergent commits, a build-start snapshot in one tree and the
+edits in another, and a `done` stage that describes neither. One tree, one claim.
 
 ## Commits
 - **Commit when you finish a request.** Once the work for a request is complete
