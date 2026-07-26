@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Panel — v5</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ── Reset ────────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { margin: 0; height: 100%; overflow: hidden; }
+
+        :root {
+            --panel-w: 460px;
+            --sidebar-w: 210px;
+            --font: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --mono: 'DM Mono', ui-monospace, monospace;
+            --surface-raised: rgba(0, 0, 0, 0.024);
+            --surface-hover: rgba(0, 0, 0, 0.04);
+            --ink-faint: rgba(0, 0, 0, 0.36);
+            --ink-muted: rgba(0, 0, 0, 0.52);
+            --ink-body: rgba(0, 0, 0, 0.82);
+            --ink-strong: rgba(0, 0, 0, 0.92);
+            --accent: #1a73e8;
+            --accent-bg: rgba(26, 115, 232, 0.06);
+            --green: #34a853;
+            --green-bg: rgba(52, 168, 83, 0.06);
+            --red: #ea4335;
+            --red-bg: rgba(234, 67, 53, 0.06);
+            --amber: #e8a317;
+            --amber-bg: rgba(232, 163, 23, 0.06);
+            --border: rgba(0, 0, 0, 0.08);
+            --border-strong: rgba(0, 0, 0, 0.14);
+        }
+
+        [data-bs-theme="dark"] {
+            --surface-raised: rgba(255, 255, 255, 0.04);
+            --surface-hover: rgba(255, 255, 255, 0.06);
+            --ink-faint: rgba(255, 255, 255, 0.28);
+            --ink-muted: rgba(255, 255, 255, 0.50);
+            --ink-body: rgba(255, 255, 255, 0.80);
+            --ink-strong: rgba(255, 255, 255, 0.92);
+            --accent-bg: rgba(26, 115, 232, 0.12);
+            --green-bg: rgba(52, 168, 83, 0.10);
+            --red-bg: rgba(234, 67, 53, 0.10);
+            --amber-bg: rgba(232, 163, 23, 0.10);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-strong: rgba(255, 255, 255, 0.14);
+        }
+
+        body { font-family: var(--font); }
+
+        /* ── Portal layout ────────────────────────────── */
+        .portal {
+            display: flex;
+            height: 100%;
+            background: var(--bs-body-bg);
+        }
+
+        /* ── Sidebar ──────────────────────────────────── */
+        .sidebar {
+            width: var(--sidebar-w);
+            flex-shrink: 0;
+            background: var(--bs-tertiary-bg);
+            border-right: 1px solid var(--border);
+            padding: 16px 0;
+        }
+        .sidebar-brand {
+            padding: 0 16px 14px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--ink-strong);
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 6px;
+        }
+        .sidebar a {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 7px 16px;
+            font-size: 0.82rem;
+            color: var(--ink-muted);
+            text-decoration: none;
+            transition: all 0.12s;
+        }
+        .sidebar a:hover { background: var(--surface-hover); color: var(--ink-body); }
+        .sidebar a.active { color: var(--accent); font-weight: 500; background: var(--accent-bg); }
+
+        /* ── Main content ─────────────────────────────── */
+        .main {
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow-y: auto;
+            padding: 20px 24px;
+            transition: all 0.25s ease;
+        }
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .topbar h5 { margin: 0; font-weight: 600; font-size: 1rem; color: var(--ink-strong); }
+
+        /* ── Ticket table ─────────────────────────────── */
+        .tkt-table { font-size: 0.82rem; width: 100%; border-collapse: collapse; }
+        .tkt-table th {
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--ink-faint);
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--border-strong);
+        }
+        .tkt-table td { padding: 10px 10px; border-bottom: 1px solid var(--border); color: var(--ink-body); vertical-align: middle; }
+        .tkt-table tr { cursor: pointer; transition: background 0.1s; }
+        .tkt-table tbody tr:hover { background: var(--surface-hover); }
+        .tkt-table tr.selected { background: var(--accent-bg); }
+        .tkt-id { color: var(--ink-faint); font-family: var(--mono); font-size: 0.78rem; }
+        .tkt-title { font-weight: 450; }
+        .tkt-time { color: var(--ink-faint); font-size: 0.78rem; white-space: nowrap; }
+
+        .pill {
+            display: inline-block;
+            padding: 1px 7px;
+            border-radius: 10px;
+            font-size: 0.68rem;
+            font-weight: 500;
+            letter-spacing: 0.01em;
+        }
+        .pill-new     { background: var(--accent-bg); color: var(--accent); }
+        .pill-open    { background: var(--green-bg); color: var(--green); }
+        .pill-prog    { background: var(--amber-bg); color: var(--amber); }
+        .pill-closed  { background: var(--surface-raised); color: var(--ink-faint); }
+        .pill-resolved{ background: var(--green-bg); color: var(--green); }
+
+        .cat-dot {
+            display: inline-block;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            margin-right: 4px;
+            vertical-align: middle;
+        }
+        .cat-security { background: var(--red); }
+        .cat-ticket   { background: var(--accent); }
+        .cat-group    { background: var(--ink-faint); }
+
+        .action-dot {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            color: var(--amber);
+            font-size: 0.7rem;
+            font-weight: 500;
+            margin-left: 6px;
+        }
+        .action-dot::before {
+            content: '';
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        /* ── Panel ────────────────────────────────────── */
+        #panel {
+            width: 0;
+            overflow: hidden;
+            flex-shrink: 0;
+            border-left: 1px solid var(--border);
+            transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .panel-open #panel { width: var(--panel-w); }
+        .panel-inner {
+            width: var(--panel-w);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: var(--bs-body-bg);
+        }
+
+        /* ── Panel header ─────────────────────────────── */
+        .ph {
+            padding: 8px 16px 6px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .ph-topbar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .ph-id {
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            color: var(--ink-faint);
+            font-weight: 400;
+        }
+        .ph-time {
+            font-size: 0.68rem;
+            color: var(--ink-faint);
+            margin-left: 2px;
+        }
+        .ph-btns {
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+        .ph-title {
+            font-size: 0.84rem;
+            font-weight: 500;
+            color: var(--ink-strong);
+            line-height: 1.3;
+            margin: 3px 0 0;
+            cursor: pointer;
+            transition: color 0.12s;
+        }
+        .ph-title:hover { color: var(--accent); }
+        .ph-title i {
+            font-size: 0.6rem;
+            vertical-align: middle;
+            margin-left: 3px;
+            opacity: 0;
+            transition: opacity 0.12s;
+        }
+        .ph-title:hover i { opacity: 0.6; }
+        .ph-meta {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            margin-top: 4px;
+        }
+
+        /* ── Editable meta fields ─────────────────────── */
+        .ph-fields {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+        }
+        .ph-field {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.72rem;
+            color: var(--ink-muted);
+            padding: 2px 7px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.12s;
+            border: 1px solid transparent;
+            position: relative;
+        }
+        .ph-field:hover {
+            background: var(--surface-hover);
+            border-color: var(--border);
+            color: var(--ink-body);
+        }
+        .ph-field i { font-size: 0.68rem; }
+        .ph-field .caret {
+            font-size: 0.55rem;
+            opacity: 0;
+            transition: opacity 0.12s;
+            margin-left: -1px;
+        }
+        .ph-field:hover .caret { opacity: 0.6; }
+        .ph-sep {
+            color: var(--ink-faint);
+            font-size: 0.6rem;
+            margin: 0 1px;
+            user-select: none;
+        }
+
+        .ph-status {
+            cursor: pointer;
+            transition: filter 0.12s;
+        }
+        .ph-status:hover { filter: brightness(0.9); }
+
+        .ph-btns { display: flex; gap: 2px; align-items: center; flex-shrink: 0; }
+        .ph-btn {
+            width: 28px; height: 28px;
+            display: flex; align-items: center; justify-content: center;
+            border: none; background: none;
+            color: var(--ink-faint);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.12s;
+        }
+        .ph-btn:hover { background: var(--surface-hover); color: var(--ink-body); }
+
+        /* ── AI toggle — plain Bootstrap switch ───────── */
+        .ai-switch {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-right: 6px;
+        }
+        .ai-switch label {
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--ink-faint);
+            cursor: pointer;
+            margin: 0;
+            user-select: none;
+        }
+        .ai-switch .form-check-input:checked ~ label { color: var(--accent); }
+        .ai-switch .form-check-input {
+            width: 1.8em;
+            height: 1em;
+            margin: 0;
+            cursor: pointer;
+        }
+        .ai-switch .form-check-input:focus { box-shadow: none; }
+
+        /* ── Linked incident ──────────────────────────── */
+        .linked {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.75rem;
+            color: var(--ink-muted);
+            flex-shrink: 0;
+        }
+        .linked i { color: var(--amber); font-size: 0.72rem; }
+        .linked a { color: var(--accent); text-decoration: none; font-weight: 500; }
+        .linked a:hover { text-decoration: underline; }
+        .linked .lpill {
+            font-size: 0.62rem;
+            padding: 0 5px;
+            border-radius: 3px;
+            background: var(--amber-bg);
+            color: var(--amber);
+            font-weight: 500;
+        }
+
+        /* ── Conversation ─────────────────────────────── */
+        .conv {
+            flex: 1;
+            overflow-y: auto;
+            padding: 6px 0;
+        }
+        .conv::-webkit-scrollbar { width: 5px; }
+        .conv::-webkit-scrollbar-track { background: transparent; }
+        .conv::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+        /* ── Note ─────────────────────────────────────── */
+        .n {
+            display: flex;
+            gap: 9px;
+            padding: 10px 16px;
+            transition: background 0.1s;
+        }
+        .n:hover { background: var(--surface-raised); }
+
+        .n-av {
+            width: 26px; height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.62rem;
+            font-weight: 600;
+            color: #fff;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .n-av.bot { background: #3c4043; }
+        .n-av.user { background: var(--accent); }
+        [data-bs-theme="dark"] .n-av.bot { background: #5f6368; }
+
+        .n-body { flex: 1; min-width: 0; }
+
+        .n-head {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 3px;
+        }
+        .n-who {
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--ink-body);
+        }
+        .n-bot-tag {
+            font-size: 0.58rem;
+            padding: 0 4px;
+            border-radius: 3px;
+            background: var(--surface-raised);
+            color: var(--ink-faint);
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+        .n-when {
+            font-size: 0.7rem;
+            color: var(--ink-faint);
+            margin-left: auto;
+        }
+        .n-txt {
+            font-size: 0.8rem;
+            color: var(--ink-body);
+            line-height: 1.55;
+        }
+        .n-txt.clamped {
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .n-more {
+            font-size: 0.72rem;
+            color: var(--accent);
+            cursor: pointer;
+            margin-top: 2px;
+            display: inline-block;
+        }
+        .n-more:hover { text-decoration: underline; }
+        .n-txt code {
+            font-family: var(--mono);
+            font-size: 0.74rem;
+            padding: 1px 4px;
+            border-radius: 3px;
+            background: var(--surface-raised);
+        }
+        .n-you .n-who { color: var(--accent); }
+
+        /* ── Divider ──────────────────────────────────── */
+        .sep {
+            height: 1px;
+            margin: 2px 16px;
+            background: var(--border);
+        }
+
+        /* ── Resolved actions summary (collapsed) ─────── */
+        .actions-summary {
+            margin: 6px 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 7px;
+            border: 1px dashed var(--border-strong);
+            transition: all 0.12s;
+            font-size: 0.74rem;
+            color: var(--ink-muted);
+        }
+        .actions-summary:hover {
+            background: var(--surface-hover);
+            border-color: var(--accent);
+            color: var(--ink-body);
+        }
+        .actions-summary i { font-size: 0.7rem; }
+        .actions-summary .count {
+            font-weight: 500;
+        }
+        .actions-summary .dots {
+            display: flex;
+            gap: 3px;
+            margin-left: auto;
+        }
+        .actions-summary .sdot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+        }
+
+        /* Expanded resolved actions region */
+        .actions-expanded {
+            display: none;
+        }
+        .actions-expanded.show {
+            display: block;
+        }
+        .actions-collapse-btn {
+            display: block;
+            margin: 4px 16px 6px;
+            font-size: 0.72rem;
+            color: var(--accent);
+            cursor: pointer;
+            padding: 3px 0;
+        }
+        .actions-collapse-btn:hover { text-decoration: underline; }
+
+        /* ── Action card ──────────────────────────────── */
+        .ac {
+            margin: 8px 16px 4px;
+            border: 1px solid var(--border-strong);
+            border-radius: 10px;
+            background: var(--bs-body-bg);
+            overflow: hidden;
+        }
+        .ac-top {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px 0;
+        }
+        .ac-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .ac-dot.rule    { background: var(--accent); }
+        .ac-dot.block   { background: var(--red); }
+        .ac-dot.escalate{ background: var(--amber); }
+        .ac-dot.update  { background: var(--green); }
+        .ac-label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--ink-strong);
+            flex: 1;
+        }
+        .ac-badge {
+            font-size: 0.65rem;
+            font-weight: 500;
+            padding: 1px 6px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+        .ac-badge.approved { background: var(--green-bg); color: var(--green); }
+        .ac-badge.denied   { background: var(--red-bg); color: var(--red); }
+
+        .ac-detail {
+            padding: 6px 12px 0;
+            font-size: 0.74rem;
+            color: var(--ink-muted);
+            line-height: 1.5;
+        }
+        .ac-detail code {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+        }
+        .ac-ref {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.72rem;
+            color: var(--accent);
+            cursor: pointer;
+            padding: 3px 8px;
+            margin-top: 4px;
+            border-radius: 5px;
+            transition: all 0.12s;
+        }
+        .ac-ref:hover {
+            background: var(--accent-bg);
+            text-decoration: underline;
+        }
+        .ac-ref i { font-size: 0.65rem; }
+        .ac-foot {
+            padding: 8px 12px 10px;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .btn-approve, .btn-deny {
+            font-family: var(--font);
+            font-size: 0.74rem;
+            font-weight: 500;
+            padding: 4px 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.12s;
+        }
+        .btn-approve {
+            background: var(--green);
+            color: #fff;
+        }
+        .btn-approve:hover { filter: brightness(1.08); }
+        .btn-deny {
+            background: transparent;
+            color: var(--ink-muted);
+            border: 1px solid var(--border-strong);
+        }
+        .btn-deny:hover { background: var(--surface-hover); color: var(--red); border-color: var(--red); }
+
+        /* ── Resolved card ────────────────────────────── */
+        .ac.resolved {
+            border-color: var(--border);
+        }
+        .ac.resolved .ac-top { padding-bottom: 10px; }
+        .ac.resolved .ac-label { color: var(--ink-muted); font-weight: 400; }
+
+        /* ── Diff ─────────────────────────────────────── */
+        .diff {
+            margin: 6px 12px 0;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+            font-family: var(--mono);
+            font-size: 0.7rem;
+        }
+        .diff-row {
+            display: flex;
+            padding: 3px 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        .diff-row:last-child { border-bottom: none; }
+        .diff-row.del { background: var(--red-bg); color: var(--red); text-decoration: line-through; }
+        .diff-row.add { background: var(--green-bg); color: var(--green); }
+        .diff-row.same { color: var(--ink-faint); }
+        .diff-prefix { width: 16px; flex-shrink: 0; color: inherit; user-select: none; }
+
+        /* ── Input ────────────────────────────────────── */
+        .input-bar {
+            border-top: 1px solid var(--border);
+            padding: 10px 16px;
+            flex-shrink: 0;
+        }
+        .input-wrap {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        .input-bar textarea {
+            flex: 1;
+            font-family: var(--font);
+            font-size: 0.8rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 7px 10px;
+            resize: none;
+            background: var(--bs-body-bg);
+            color: var(--ink-body);
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .input-bar textarea:focus { border-color: var(--accent); }
+        .input-bar textarea::placeholder { color: var(--ink-faint); }
+        .send-btn {
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            border: none;
+            background: var(--accent);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            font-size: 0.85rem;
+            transition: filter 0.12s;
+        }
+        .send-btn:hover { filter: brightness(1.1); }
+        .input-tools {
+            display: flex;
+            gap: 2px;
+            margin-top: 4px;
+        }
+        .input-tool-btn {
+            border: none;
+            background: none;
+            color: var(--ink-faint);
+            font-size: 0.78rem;
+            padding: 2px 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.12s;
+        }
+        .input-tool-btn:hover { background: var(--surface-hover); color: var(--ink-body); }
+
+        /* ── Resize ───────────────────────────────────── */
+        .resize-handle {
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 4px;
+            cursor: col-resize;
+            z-index: 10;
+        }
+        .resize-handle:hover { background: var(--accent); opacity: 0.2; }
+
+        /* ── Inline dropdown mockup ───────────────────── */
+        .dropdown-mock {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 2px;
+            background: var(--bs-body-bg);
+            border: 1px solid var(--border-strong);
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+            padding: 4px;
+            min-width: 140px;
+            z-index: 100;
+            display: none;
+            font-size: 0.75rem;
+        }
+        .dropdown-mock.show { display: block; }
+        .dropdown-mock .dd-item {
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            color: var(--ink-body);
+            transition: background 0.1s;
+        }
+        .dropdown-mock .dd-item:hover { background: var(--surface-hover); }
+        .dropdown-mock .dd-item.active { background: var(--accent-bg); color: var(--accent); font-weight: 500; }
+        [data-bs-theme="dark"] .dropdown-mock { box-shadow: 0 4px 16px rgba(0,0,0,0.30); }
+
+        /* ── Description modal ────────────────────────── */
+        .desc-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.35);
+            z-index: 9000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .desc-overlay.show { display: flex; }
+        [data-bs-theme="dark"] .desc-overlay { background: rgba(0,0,0,0.55); }
+        .desc-modal {
+            background: var(--bs-body-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+            width: 560px;
+            max-height: 70vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        [data-bs-theme="dark"] .desc-modal { box-shadow: 0 12px 40px rgba(0,0,0,0.40); }
+        .desc-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+        }
+        .desc-header h6 { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--ink-strong); }
+        .desc-close {
+            background: none; border: none; color: var(--ink-faint);
+            font-size: 1rem; cursor: pointer; padding: 0;
+        }
+        .desc-close:hover { color: var(--ink-body); }
+        .desc-body {
+            padding: 18px;
+            overflow-y: auto;
+            font-size: 0.82rem;
+            color: var(--ink-body);
+            line-height: 1.65;
+        }
+        .desc-body h3 { font-size: 0.9rem; font-weight: 600; margin: 14px 0 6px; color: var(--ink-strong); }
+        .desc-body h3:first-child { margin-top: 0; }
+        .desc-body ul { padding-left: 18px; margin: 6px 0; }
+        .desc-body li { margin: 3px 0; }
+        .desc-body code {
+            font-family: var(--mono);
+            font-size: 0.76rem;
+            padding: 1px 4px;
+            border-radius: 3px;
+            background: var(--surface-raised);
+        }
+        .desc-body pre {
+            background: var(--surface-raised);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-family: var(--mono);
+            font-size: 0.74rem;
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+        .desc-body blockquote {
+            border-left: 3px solid var(--accent);
+            padding: 4px 12px;
+            margin: 8px 0;
+            color: var(--ink-muted);
+            font-style: italic;
+        }
+
+        /* ── Theme toggle ─────────────────────────────── */
+        .theme-toggle {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            z-index: 9999;
+            font-family: var(--font);
+            font-size: 0.72rem;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bs-body-bg);
+            color: var(--ink-muted);
+            cursor: pointer;
+        }
+        .theme-toggle:hover { background: var(--surface-hover); }
+    </style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()">
+    <i class="bi bi-circle-half me-1"></i>Theme
+</button>
+
+<!-- Description modal -->
+<div class="desc-overlay" id="desc-overlay" onclick="if(event.target===this)closeDesc()">
+    <div class="desc-modal">
+        <div class="desc-header">
+            <h6>Ticket #1042 — Description</h6>
+            <button class="desc-close" onclick="closeDesc()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="desc-body">
+            <h3>SSH Brute Force Attack — 185.220.101.45</h3>
+            <p>Automated detection triggered by Incident #389. A sustained SSH brute force campaign originating from a known TOR exit node has been detected targeting the primary authentication cluster.</p>
+
+            <h3>Key Indicators</h3>
+            <ul>
+                <li><strong>847 failed login attempts</strong> over 6 hours against <code>auth-ssh-01</code> and <code>auth-ssh-02</code></li>
+                <li>Source IP <code>185.220.101.45</code> — registered to <em>Zwiebelfreunde e.V.</em> (DE), confirmed TOR exit node</li>
+                <li>Targeting usernames: <code>root</code>, <code>admin</code>, <code>deploy</code>, <code>ubuntu</code></li>
+                <li>3 additional IPs from the same /24 subnet observed in last 24h</li>
+            </ul>
+
+            <h3>Recommended Actions</h3>
+            <blockquote>Block the primary IP, activate a detection rule for the pattern, and consider subnet-level blocking if additional IPs continue to appear.</blockquote>
+
+            <h3>Related Resources</h3>
+            <ul>
+                <li>Incident <a href="#" style="color:var(--accent);">#389</a> — 847 events, investigating</li>
+                <li>RuleSet <a href="#" style="color:var(--accent);">#42</a> — SSH brute force blocker (pending approval)</li>
+                <li>GeoIP report for <code>185.220.101.0/24</code></li>
+            </ul>
+
+<pre>Last 5 attempts:
+2024-01-15 14:32:07  root    185.220.101.45  FAILED
+2024-01-15 14:32:09  admin   185.220.101.45  FAILED
+2024-01-15 14:32:11  deploy  185.220.101.45  FAILED
+2024-01-15 14:32:14  root    185.220.101.45  FAILED
+2024-01-15 14:32:16  ubuntu  185.220.101.45  FAILED</pre>
+        </div>
+    </div>
+</div>
+
+<div class="portal panel-open" id="layout">
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-brand"><i class="bi bi-shield-lock me-2"></i>Admin</div>
+        <a href="#"><i class="bi bi-speedometer2"></i>Dashboard</a>
+        <a href="#"><i class="bi bi-people"></i>Users</a>
+        <a href="#"><i class="bi bi-exclamation-triangle"></i>Incidents</a>
+        <a href="#" class="active"><i class="bi bi-ticket-perforated"></i>Tickets</a>
+        <a href="#"><i class="bi bi-gear-wide-connected"></i>Rules</a>
+        <a href="#"><i class="bi bi-list-task"></i>Jobs</a>
+        <a href="#"><i class="bi bi-file-earmark-text"></i>Logs</a>
+    </nav>
+
+    <!-- Main content -->
+    <div class="main">
+        <div class="topbar">
+            <h5>Tickets</h5>
+            <div class="d-flex gap-2">
+                <input class="form-control form-control-sm" placeholder="Search..." style="width:180px; font-size:0.8rem; border-radius:6px;">
+                <button class="btn btn-primary btn-sm" style="font-size:0.78rem;"><i class="bi bi-plus me-1"></i>New Ticket</button>
+            </div>
+        </div>
+        <table class="tkt-table">
+            <thead>
+                <tr>
+                    <th style="width:55px">ID</th>
+                    <th>Title</th>
+                    <th style="width:80px">Status</th>
+                    <th style="width:40px">Pri</th>
+                    <th style="width:80px">Category</th>
+                    <th style="width:80px">Created</th>
+                    <th style="width:80px">Activity</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="selected" onclick="selectRow(this)">
+                    <td class="tkt-id">1042</td>
+                    <td class="tkt-title">SSH brute force from 185.220.101.45<span class="action-dot">Pending</span></td>
+                    <td><span class="pill pill-new">new</span></td>
+                    <td>8</td>
+                    <td><span class="cat-dot cat-security"></span>security</td>
+                    <td class="tkt-time">2h ago</td>
+                    <td class="tkt-time">10m ago</td>
+                </tr>
+                <tr onclick="selectRow(this)">
+                    <td class="tkt-id">1041</td>
+                    <td class="tkt-title">User migration batch #12 — verify</td>
+                    <td><span class="pill pill-open">open</span></td>
+                    <td>5</td>
+                    <td><span class="cat-dot cat-ticket"></span>ticket</td>
+                    <td class="tkt-time">5h ago</td>
+                    <td class="tkt-time">3h ago</td>
+                </tr>
+                <tr onclick="selectRow(this)">
+                    <td class="tkt-id">1040</td>
+                    <td class="tkt-title">Suspicious API key usage<span class="action-dot">Pending</span></td>
+                    <td><span class="pill pill-new">new</span></td>
+                    <td>7</td>
+                    <td><span class="cat-dot cat-security"></span>security</td>
+                    <td class="tkt-time">1d ago</td>
+                    <td class="tkt-time">22h ago</td>
+                </tr>
+                <tr onclick="selectRow(this)">
+                    <td class="tkt-id">1039</td>
+                    <td class="tkt-title">Deploy monitoring to staging</td>
+                    <td><span class="pill pill-resolved">resolved</span></td>
+                    <td>3</td>
+                    <td><span class="cat-dot cat-ticket"></span>ticket</td>
+                    <td class="tkt-time">2d ago</td>
+                    <td class="tkt-time">1d ago</td>
+                </tr>
+                <tr onclick="selectRow(this)">
+                    <td class="tkt-id">1038</td>
+                    <td class="tkt-title">Rate limit bypass via API v2 endpoint</td>
+                    <td><span class="pill pill-prog">in progress</span></td>
+                    <td>6</td>
+                    <td><span class="cat-dot cat-security"></span>security</td>
+                    <td class="tkt-time">3d ago</td>
+                    <td class="tkt-time">2d ago</td>
+                </tr>
+                <tr onclick="selectRow(this)">
+                    <td class="tkt-id">1037</td>
+                    <td class="tkt-title">Onboard new client: Acme Corp</td>
+                    <td><span class="pill pill-closed">closed</span></td>
+                    <td>5</td>
+                    <td><span class="cat-dot cat-group"></span>new_group</td>
+                    <td class="tkt-time">4d ago</td>
+                    <td class="tkt-time">4d ago</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Panel -->
+    <div id="panel">
+        <div class="panel-inner" style="position:relative;">
+            <div class="resize-handle"></div>
+
+            <!-- Header -->
+            <div class="ph">
+                <div class="ph-topbar">
+                    <span class="ph-id">#1042</span>
+                    <span class="pill pill-new ph-status" onclick="toggleDropdown(event, 'dd-status')" title="Change status">new <i class="bi bi-chevron-down" style="font-size:0.5rem;"></i></span>
+                    <div class="dropdown-mock" id="dd-status">
+                        <div class="dd-item active">new</div>
+                        <div class="dd-item">open</div>
+                        <div class="dd-item">in progress</div>
+                        <div class="dd-item">resolved</div>
+                        <div class="dd-item">closed</div>
+                    </div>
+                    <span class="ph-time"><i class="bi bi-clock"></i> 2h ago</span>
+                    <div class="ph-btns">
+                        <div class="ai-switch form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="aiToggle" checked>
+                            <label for="aiToggle">AI</label>
+                        </div>
+                        <button class="ph-btn" title="More actions"><i class="bi bi-three-dots"></i></button>
+                        <button class="ph-btn" onclick="togglePanel()" title="Close"><i class="bi bi-x-lg"></i></button>
+                    </div>
+                </div>
+                <div class="ph-title" onclick="openDesc()" title="View full description">
+                    SSH brute force from 185.220.101.45 — 847 failed attempts
+                    <i class="bi bi-arrow-up-right-square"></i>
+                </div>
+                <div class="ph-meta">
+                    <div class="ph-fields">
+                        <span class="ph-field" onclick="toggleDropdown(event, 'dd-pri')" title="Change priority">
+                            <i class="bi bi-flag-fill" style="color:var(--red);"></i>P8
+                            <i class="bi bi-chevron-down caret"></i>
+                            <div class="dropdown-mock" id="dd-pri">
+                                <div class="dd-item">P1 — Critical</div>
+                                <div class="dd-item">P3 — High</div>
+                                <div class="dd-item">P5 — Medium</div>
+                                <div class="dd-item active">P8 — Low</div>
+                                <div class="dd-item">P10 — Info</div>
+                            </div>
+                        </span>
+                        <span class="ph-sep">·</span>
+                        <span class="ph-field" onclick="toggleDropdown(event, 'dd-assign')" title="Assign">
+                            <i class="bi bi-person"></i>Unassigned
+                            <i class="bi bi-chevron-down caret"></i>
+                            <div class="dropdown-mock" id="dd-assign">
+                                <div class="dd-item">Ian S.</div>
+                                <div class="dd-item">Sarah K.</div>
+                                <div class="dd-item">Mike R.</div>
+                                <div class="dd-item active" style="color:var(--ink-faint);">Unassigned</div>
+                            </div>
+                        </span>
+                        <span class="ph-sep">·</span>
+                        <span class="ph-field" onclick="toggleDropdown(event, 'dd-cat')" title="Change category">
+                            <i class="bi bi-tag"></i>security
+                            <i class="bi bi-chevron-down caret"></i>
+                            <div class="dropdown-mock" id="dd-cat">
+                                <div class="dd-item">ticket</div>
+                                <div class="dd-item">bug</div>
+                                <div class="dd-item">feature</div>
+                                <div class="dd-item">incident</div>
+                                <div class="dd-item active">security</div>
+                                <div class="dd-item">fulfillment</div>
+                                <div class="dd-item">new_user</div>
+                                <div class="dd-item">new_group</div>
+                                <div class="dd-item">qa</div>
+                            </div>
+                        </span>
+                        <span class="ph-sep">·</span>
+                        <span class="ph-field" onclick="toggleDropdown(event, 'dd-group')" title="Change group">
+                            <i class="bi bi-people"></i>Security Ops
+                            <i class="bi bi-chevron-down caret"></i>
+                            <div class="dropdown-mock" id="dd-group">
+                                <div class="dd-item active">Security Ops</div>
+                                <div class="dd-item">DevOps</div>
+                                <div class="dd-item">Engineering</div>
+                                <div class="dd-item">Support</div>
+                                <div class="dd-item" style="color:var(--ink-faint);">None</div>
+                            </div>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Linked incident -->
+            <div class="linked">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <a href="#">Incident #389</a>
+                <span class="lpill">investigating</span>
+                <span>· 847 events</span>
+            </div>
+
+            <!-- Conversation -->
+            <div class="conv">
+
+                <!-- Note 1: bot origin note -->
+                <div class="n">
+                    <div class="n-av bot"><i class="bi bi-robot" style="font-size:0.62rem;"></i></div>
+                    <div class="n-body">
+                        <div class="n-head">
+                            <span class="n-who">LLM Agent</span>
+                            <span class="n-bot-tag">BOT</span>
+                            <span class="n-when">2h ago</span>
+                        </div>
+                        <div class="n-txt clamped" id="note-1">
+                            Auto-created from Incident #389. Detected SSH brute force:
+                            <strong>847 failed logins</strong> from <code>185.220.101.45</code>
+                            (TOR exit node) over 6 hours. Source is registered to Zwiebelfreunde e.V. (DE),
+                            confirmed TOR exit. Targeted usernames: <code>root</code>, <code>admin</code>,
+                            <code>deploy</code>, <code>ubuntu</code>. All attempts against the primary
+                            auth cluster on ports 22 and 2222. No successful logins detected.
+                        </div>
+                        <span class="n-more" onclick="toggleNote('note-1', this)">Show more</span>
+                    </div>
+                </div>
+
+                <div class="sep"></div>
+
+                <!-- Note 2: rule creation -->
+                <div class="n">
+                    <div class="n-av bot"><i class="bi bi-robot" style="font-size:0.62rem;"></i></div>
+                    <div class="n-body">
+                        <div class="n-head">
+                            <span class="n-who">LLM Agent</span>
+                            <span class="n-bot-tag">BOT</span>
+                            <span class="n-when">1h ago</span>
+                        </div>
+                        <div class="n-txt">Created a detection rule. Matches SSH failures exceeding 100 attempts / 30 min from any single IP.</div>
+                    </div>
+                </div>
+
+                <div class="sep"></div>
+
+                <!-- Note 3: user response -->
+                <div class="n n-you">
+                    <div class="n-av user">IS</div>
+                    <div class="n-body">
+                        <div class="n-head">
+                            <span class="n-who">Ian</span>
+                            <span class="n-when">45m ago</span>
+                        </div>
+                        <div class="n-txt">Good catch. Block the source IP too. What about the rest of that /24?</div>
+                    </div>
+                </div>
+
+                <div class="sep"></div>
+
+                <!-- Note 4: IP analysis -->
+                <div class="n">
+                    <div class="n-av bot"><i class="bi bi-robot" style="font-size:0.62rem;"></i></div>
+                    <div class="n-body">
+                        <div class="n-head">
+                            <span class="n-who">LLM Agent</span>
+                            <span class="n-bot-tag">BOT</span>
+                            <span class="n-when">40m ago</span>
+                        </div>
+                        <div class="n-txt clamped" id="note-4">
+                            3 other IPs from <code>185.220.101.0/24</code> flagged in 24h — all TOR
+                            exits. Recommending block on the primary IP.
+                            Cross-referenced with threat intel: <code>185.220.101.33</code>,
+                            <code>185.220.101.78</code>, and <code>185.220.101.194</code> are
+                            known exit nodes with prior abuse reports. All three showed
+                            similar brute-force patterns targeting SSH and SMTP services.
+                        </div>
+                        <span class="n-more" onclick="toggleNote('note-4', this)">Show more</span>
+                    </div>
+                </div>
+
+                <div class="sep"></div>
+
+                <!-- Note 5: rule update suggestion -->
+                <div class="n">
+                    <div class="n-av bot"><i class="bi bi-robot" style="font-size:0.62rem;"></i></div>
+                    <div class="n-body">
+                        <div class="n-head">
+                            <span class="n-who">LLM Agent</span>
+                            <span class="n-bot-tag">BOT</span>
+                            <span class="n-when">30m ago</span>
+                        </div>
+                        <div class="n-txt">
+                            "Login Rate Limiter" only covers <code>auth:web</code>. Updating to include <code>auth:ssh</code>.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sep"></div>
+
+                <!-- Note 6: escalation -->
+                <div class="n">
+                    <div class="n-av bot"><i class="bi bi-robot" style="font-size:0.62rem;"></i></div>
+                    <div class="n-body">
+                        <div class="n-head">
+                            <span class="n-who">LLM Agent</span>
+                            <span class="n-bot-tag">BOT</span>
+                            <span class="n-when">20m ago</span>
+                        </div>
+                        <div class="n-txt">High severity alert. Recommending escalation to on-call.</div>
+                    </div>
+                </div>
+
+                <div class="sep"></div>
+
+                <!-- ═══ Resolved actions — collapsed summary ═══ -->
+                <div class="actions-summary" id="actions-toggle" onclick="toggleActions()">
+                    <i class="bi bi-check-circle"></i>
+                    <span><span class="count">4</span> resolved actions</span>
+                    <span class="dots">
+                        <span class="sdot" style="background:var(--accent);"></span>
+                        <span class="sdot" style="background:var(--red);"></span>
+                        <span class="sdot" style="background:var(--green);"></span>
+                        <span class="sdot" style="background:var(--amber);"></span>
+                    </span>
+                </div>
+
+                <!-- Expanded resolved actions (hidden by default) -->
+                <div class="actions-expanded" id="actions-list">
+                    <div class="ac resolved">
+                        <div class="ac-top">
+                            <span class="ac-dot rule"></span>
+                            <span class="ac-label">Approve rule "SSH brute force blocker"?</span>
+                            <span class="ac-badge approved">Approved</span>
+                        </div>
+                        <div class="ac-detail">
+                            <span class="ac-ref" title="View RuleSet"><i class="bi bi-box-arrow-up-right"></i>RuleSet #42 — SSH brute force blocker</span>
+                        </div>
+                    </div>
+                    <div class="ac resolved">
+                        <div class="ac-top">
+                            <span class="ac-dot block"></span>
+                            <span class="ac-label">Block 185.220.101.45?</span>
+                            <span class="ac-badge approved">Approved</span>
+                        </div>
+                    </div>
+                    <div class="ac resolved">
+                        <div class="ac-top">
+                            <span class="ac-dot update"></span>
+                            <span class="ac-label">Update "Login Rate Limiter" rules?</span>
+                            <span class="ac-badge denied">Denied</span>
+                        </div>
+                        <div class="ac-detail">
+                            <span class="ac-ref" title="View RuleSet"><i class="bi bi-box-arrow-up-right"></i>RuleSet #17 — Login Rate Limiter</span>
+                        </div>
+                    </div>
+                    <div class="ac resolved">
+                        <div class="ac-top">
+                            <span class="ac-dot escalate"></span>
+                            <span class="ac-label">Escalate to on-call?</span>
+                            <span class="ac-badge approved">Approved</span>
+                        </div>
+                    </div>
+                    <span class="actions-collapse-btn" onclick="toggleActions()"><i class="bi bi-chevron-up me-1" style="font-size:0.6rem;"></i>Hide resolved actions</span>
+                </div>
+
+                <div class="sep"></div>
+
+                <!-- Most recent — fully expanded, with pending action -->
+                <div class="n">
+                    <div class="n-av bot"><i class="bi bi-robot" style="font-size:0.62rem;"></i></div>
+                    <div class="n-body">
+                        <div class="n-head">
+                            <span class="n-who">LLM Agent</span>
+                            <span class="n-bot-tag">BOT</span>
+                            <span class="n-when">10m ago</span>
+                        </div>
+                        <div class="n-txt">
+                            More attempts from another IP in the subnet. 12 IPs from
+                            <code>185.220.101.0/24</code> have now been flagged across 3
+                            incidents. Recommending a subnet-level block to cover the
+                            remaining exit nodes.
+                        </div>
+                    </div>
+                </div>
+                <div class="ac">
+                    <div class="ac-top">
+                        <span class="ac-dot block"></span>
+                        <span class="ac-label">Block 185.220.101.0/24?</span>
+                    </div>
+                    <div class="ac-detail">
+                        Subnet <code>185.220.101.0/24</code> · 12 flagged IPs · TOR Exit cluster · DE
+                        <br><span class="ac-ref" title="View Incident"><i class="bi bi-box-arrow-up-right"></i>Incident #389</span>
+                    </div>
+                    <div class="ac-foot">
+                        <button class="btn-approve">Approve</button>
+                        <button class="btn-deny">Deny</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Input -->
+            <div class="input-bar">
+                <div class="input-wrap">
+                    <textarea rows="1" placeholder="Add a note..."></textarea>
+                    <button class="send-btn"><i class="bi bi-arrow-up"></i></button>
+                </div>
+                <div class="input-tools">
+                    <button class="input-tool-btn" title="Attach file"><i class="bi bi-paperclip"></i></button>
+                    <button class="input-tool-btn" title="Mention"><i class="bi bi-at"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleTheme() {
+    const h = document.documentElement;
+    h.dataset.bsTheme = h.dataset.bsTheme === 'dark' ? 'light' : 'dark';
+}
+function togglePanel() {
+    document.getElementById('layout').classList.toggle('panel-open');
+}
+function selectRow(tr) {
+    document.getElementById('layout').classList.add('panel-open');
+    document.querySelectorAll('.tkt-table tbody tr').forEach(r => r.classList.remove('selected'));
+    tr.classList.add('selected');
+}
+function toggleDropdown(e, id) {
+    e.stopPropagation();
+    document.querySelectorAll('.dropdown-mock.show').forEach(d => {
+        if (d.id !== id) d.classList.remove('show');
+    });
+    document.getElementById(id).classList.toggle('show');
+}
+function toggleNote(id, btn) {
+    const el = document.getElementById(id);
+    const isClamped = el.classList.contains('clamped');
+    el.classList.toggle('clamped');
+    btn.textContent = isClamped ? 'Show less' : 'Show more';
+}
+function toggleActions() {
+    const list = document.getElementById('actions-list');
+    const toggle = document.getElementById('actions-toggle');
+    const showing = list.classList.contains('show');
+    list.classList.toggle('show');
+    toggle.style.display = showing ? '' : 'none';
+}
+function openDesc() {
+    document.getElementById('desc-overlay').classList.add('show');
+}
+function closeDesc() {
+    document.getElementById('desc-overlay').classList.remove('show');
+}
+document.addEventListener('click', () => {
+    document.querySelectorAll('.dropdown-mock.show').forEach(d => d.classList.remove('show'));
+});
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDesc();
+});
+</script>
+</body>
+</html>

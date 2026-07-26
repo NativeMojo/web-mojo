@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Stripe + Icon + Tint — Modal Mockup 10</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <style>
+        :root {
+            --c-bg: #f6f7f9;
+            --c-text: #161b22;
+            --c-muted: #5b6478;
+            --c-border: rgba(0, 0, 0, 0.08);
+
+            --mojo-accent-info:    #1a73e8;
+            --mojo-accent-success: #198754;
+            --mojo-accent-warning: #f0ad4e;
+            --mojo-accent-error:   #dc3545;
+        }
+        * { box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--c-bg); color: var(--c-text); margin: 0; padding: 4rem 2rem 6rem; line-height: 1.5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .page-eyebrow { font-family: ui-monospace, monospace; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.16em; color: var(--c-muted); text-transform: uppercase; margin-bottom: 0.5rem; }
+        .page-title { font-weight: 700; font-size: 2.5rem; letter-spacing: -0.02em; line-height: 1.1; margin: 0 0 0.75rem; }
+        .page-subtitle { color: var(--c-muted); max-width: 65ch; font-size: 1rem; margin: 0 0 2rem; }
+        .section-h { font-size: 0.875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--c-muted); margin: 3rem 0 1rem; }
+        .stage { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 1rem 0; }
+        .stage > .label { font-family: ui-monospace, monospace; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--c-muted); margin-bottom: 0.5rem; grid-column: span 2; display: flex; gap: 1rem; }
+        .stage > .label > span { flex: 1; }
+        .stage-light, .stage-dark { padding: 2rem; border-radius: 12px; }
+        .stage-light { background: #fff; border: 1px solid var(--c-border); }
+        .stage-dark { background: #14181f; border: 1px solid rgba(255, 255, 255, 0.08); }
+
+        .m { position: relative; background: var(--bs-modal-bg, #fff); border-radius: 0.5rem; border: 1px solid rgba(0, 0, 0, 0.175); margin-bottom: 1rem; overflow: hidden; }
+        .stage-dark .m { background: #1c2128; color: #e6edf3; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05), 0 24px 48px -12px rgba(0, 0, 0, 0.7); }
+        .m-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1rem 0.5rem; }
+        .m-title-wrap { display: flex; align-items: center; gap: 0.625rem; flex: 1; }
+        .m-title-icon { font-size: 1.25rem; flex-shrink: 0; }
+        .m-title { font-size: 1.125rem; font-weight: 600; margin: 0; line-height: 1.3; }
+        .m-close { width: 1em; height: 1em; padding: 0.25em; cursor: pointer; opacity: 0.6; border: 0; background: transparent; }
+        .stage-dark .m-close { filter: invert(1) grayscale(100%) brightness(200%); }
+        .m-body { padding: 0.5rem 1rem 1rem; color: var(--c-muted); }
+        .stage-dark .m-body { color: #8b96a7; }
+        .m-footer { display: flex; gap: 0.5rem; justify-content: flex-end; padding: 0.5rem 1rem 1rem; }
+        .m-footer .btn-primary { background: var(--mojo-accent-info); border-color: var(--mojo-accent-info); }
+
+        /* Stripe + icon + tint */
+        .m.has-stripe::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px; z-index: 1; }
+        .m.t-info::before    { background: var(--mojo-accent-info); }
+        .m.t-success::before { background: var(--mojo-accent-success); }
+        .m.t-warning::before { background: var(--mojo-accent-warning); }
+        .m.t-error::before   { background: var(--mojo-accent-error); }
+        .m.t-info    .m-title-icon { color: var(--mojo-accent-info); }
+        .m.t-success .m-title-icon { color: var(--mojo-accent-success); }
+        .m.t-warning .m-title-icon { color: var(--mojo-accent-warning); }
+        .m.t-error   .m-title-icon { color: var(--mojo-accent-error); }
+        /* Light: 5% tint top-to-bottom */
+        .m.t-info    { background: linear-gradient(180deg, color-mix(in srgb, var(--mojo-accent-info)    5%, #fff) 0%, #fff 100%); }
+        .m.t-success { background: linear-gradient(180deg, color-mix(in srgb, var(--mojo-accent-success) 5%, #fff) 0%, #fff 100%); }
+        .m.t-warning { background: linear-gradient(180deg, color-mix(in srgb, var(--mojo-accent-warning) 5%, #fff) 0%, #fff 100%); }
+        .m.t-error   { background: linear-gradient(180deg, color-mix(in srgb, var(--mojo-accent-error)   5%, #fff) 0%, #fff 100%); }
+        /* Dark: 10% tint */
+        .stage-dark .m.t-info    { background: linear-gradient(180deg, color-mix(in srgb, var(--mojo-accent-info)    10%, #1c2128) 0%, #1c2128 100%); }
+        .stage-dark .m.t-success { background: linear-gradient(180deg, color-mix(in srgb, var(--mojo-accent-success) 10%, #1c2128) 0%, #1c2128 100%); }
+        .stage-dark .m.t-warning { background: linear-gradient(180deg, color-mix(in srgb, var(--mojo-accent-warning) 10%, #1c2128) 0%, #1c2128 100%); }
+        .stage-dark .m.t-error   { background: linear-gradient(180deg, color-mix(in srgb, var(--mojo-accent-error)   10%, #1c2128) 0%, #1c2128 100%); }
+
+        .custom-header { display: flex; align-items: center; gap: 0.75rem; padding: 1rem; border-bottom: 1px solid var(--c-border); }
+        .stage-dark .custom-header { border-bottom-color: rgba(255, 255, 255, 0.06); }
+        .custom-avatar { width: 44px; height: 44px; border-radius: 50%; background: rgba(0, 0, 0, 0.1); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+        .stage-dark .custom-avatar { background: rgba(255, 255, 255, 0.08); }
+        .custom-name { font-weight: 600; }
+        .custom-email { font-size: 0.875rem; color: var(--c-muted); }
+        .stage-dark .custom-email { color: #8b96a7; }
+        .custom-body-content { padding: 1rem; font-size: 0.875rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-eyebrow">Mockup 10</div>
+        <h1 class="page-title">Stripe + Icon + Tint</h1>
+        <p class="page-subtitle">
+            Full Stripe / Linear / Notion idiom: 4px top stripe, <strong>outline</strong>
+            leading icon next to title, and a soft full-card tint (5% in light, 10% in dark).
+            Outline icons support the stripe rather than competing with it — three-tier
+            hierarchy: stripe (loud) → icon (supports) → button (completes). Default modals
+            are clean; only typed alerts get the tint, so custom body views never expose a
+            colored strip.
+        </p>
+
+        <div class="section-h">Default modal · Custom body view (no tint, no strip)</div>
+        <div class="stage">
+            <div class="label"><span>Light</span><span>Dark</span></div>
+            <div class="stage-light">
+                <div class="m">
+                    <div class="custom-header">
+                        <div class="custom-avatar"><i class="bi bi-person"></i></div>
+                        <div>
+                            <div class="custom-name">Alice Adams</div>
+                            <div class="custom-email">user1@example.com</div>
+                        </div>
+                        <button class="m-close ms-auto"><i class="bi bi-x-lg"></i></button>
+                    </div>
+                    <div class="custom-body-content">Profile · Personal · Security · Connected</div>
+                </div>
+            </div>
+            <div class="stage-dark">
+                <div class="m">
+                    <div class="custom-header">
+                        <div class="custom-avatar"><i class="bi bi-person"></i></div>
+                        <div>
+                            <div class="custom-name">Alice Adams</div>
+                            <div class="custom-email">user1@example.com</div>
+                        </div>
+                        <button class="m-close ms-auto"><i class="bi bi-x-lg"></i></button>
+                    </div>
+                    <div class="custom-body-content">Profile · Personal · Security · Connected</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-h">Default dialog · Confirm</div>
+        <div class="stage">
+            <div class="stage-light">
+                <div class="m">
+                    <div class="m-header"><div class="m-title-wrap"><h5 class="m-title">Delete record?</h5></div><button class="m-close"><i class="bi bi-x-lg"></i></button></div>
+                    <div class="m-body">This action cannot be undone.</div>
+                    <div class="m-footer"><button class="btn btn-secondary">Cancel</button><button class="btn btn-primary">Confirm</button></div>
+                </div>
+            </div>
+            <div class="stage-dark">
+                <div class="m">
+                    <div class="m-header"><div class="m-title-wrap"><h5 class="m-title">Delete record?</h5></div><button class="m-close"><i class="bi bi-x-lg"></i></button></div>
+                    <div class="m-body">This action cannot be undone.</div>
+                    <div class="m-footer"><button class="btn btn-secondary">Cancel</button><button class="btn btn-primary">Confirm</button></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-h">Typed alerts · 4px stripe + icon + 5% / 10% card tint</div>
+        <div class="stage">
+            <div class="stage-light">
+                <div class="m has-stripe t-info">
+                    <div class="m-header"><div class="m-title-wrap"><i class="bi bi-info-circle m-title-icon"></i><h5 class="m-title">New version available</h5></div><button class="m-close"><i class="bi bi-x-lg"></i></button></div>
+                    <div class="m-body">Reload to apply the latest update.</div>
+                    <div class="m-footer"><button class="btn btn-primary">OK</button></div>
+                </div>
+                <div class="m has-stripe t-success">
+                    <div class="m-header"><div class="m-title-wrap"><i class="bi bi-check-circle m-title-icon"></i><h5 class="m-title">Saved</h5></div><button class="m-close"><i class="bi bi-x-lg"></i></button></div>
+                    <div class="m-body">Your changes have been saved.</div>
+                    <div class="m-footer"><button class="btn btn-primary" style="background: var(--mojo-accent-success); border-color: var(--mojo-accent-success);">OK</button></div>
+                </div>
+                <div class="m has-stripe t-warning">
+                    <div class="m-header"><div class="m-title-wrap"><i class="bi bi-exclamation-triangle m-title-icon"></i><h5 class="m-title">Unsaved changes</h5></div><button class="m-close"><i class="bi bi-x-lg"></i></button></div>
+                    <div class="m-body">You have unsaved work that will be lost.</div>
+                    <div class="m-footer"><button class="btn btn-primary" style="background: var(--mojo-accent-warning); border-color: var(--mojo-accent-warning); color: #1a1a1a;">OK</button></div>
+                </div>
+                <div class="m has-stripe t-error">
+                    <div class="m-header"><div class="m-title-wrap"><i class="bi bi-x-circle m-title-icon"></i><h5 class="m-title">Connection lost</h5></div><button class="m-close"><i class="bi bi-x-lg"></i></button></div>
+                    <div class="m-body">Could not reach the server.</div>
+                    <div class="m-footer"><button class="btn btn-primary" style="background: var(--mojo-accent-error); border-color: var(--mojo-accent-error);">OK</button></div>
+                </div>
+            </div>
+            <div class="stage-dark">
+                <div class="m has-stripe t-info">
+                    <div class="m-header"><div class="m-title-wrap"><i class="bi bi-info-circle m-title-icon"></i><h5 class="m-title">New version available</h5></div><button class="m-close"><i class="bi bi-x-lg"></i></button></div>
+                    <div class="m-body">Reload to apply the latest update.</div>
+                    <div class="m-footer"><button class="btn btn-primary">OK</button></div>
+                </div>
+                <div class="m has-stripe t-success">
+                    <div class="m-header"><div class="m-title-wrap"><i class="bi bi-check-circle m-title-icon"></i><h5 class="m-title">Saved</h5></div><button class="m-close"><i class="bi bi-x-lg"></i></button></div>
+                    <div class="m-body">Your changes have been saved.</div>
+                    <div class="m-footer"><button class="btn btn-primary" style="background: var(--mojo-accent-success); border-color: var(--mojo-accent-success);">OK</button></div>
+                </div>
+                <div class="m has-stripe t-warning">
+                    <div class="m-header"><div class="m-title-wrap"><i class="bi bi-exclamation-triangle m-title-icon"></i><h5 class="m-title">Unsaved changes</h5></div><button class="m-close"><i class="bi bi-x-lg"></i></button></div>
+                    <div class="m-body">You have unsaved work that will be lost.</div>
+                    <div class="m-footer"><button class="btn btn-primary" style="background: var(--mojo-accent-warning); border-color: var(--mojo-accent-warning); color: #1a1a1a;">OK</button></div>
+                </div>
+                <div class="m has-stripe t-error">
+                    <div class="m-header"><div class="m-title-wrap"><i class="bi bi-x-circle m-title-icon"></i><h5 class="m-title">Connection lost</h5></div><button class="m-close"><i class="bi bi-x-lg"></i></button></div>
+                    <div class="m-body">Could not reach the server.</div>
+                    <div class="m-footer"><button class="btn btn-primary" style="background: var(--mojo-accent-error); border-color: var(--mojo-accent-error);">OK</button></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

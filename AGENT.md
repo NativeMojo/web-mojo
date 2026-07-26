@@ -31,6 +31,7 @@ with django-mojo (project 12).
 | `.claude/rules/*.md` | Conventions (core, git, build-baseline, views, api, testing, theming, docs) |
 | `.claude/skills/maestro-{task,scope,build}/SKILL.md` | The `/maestro-task`, `/maestro-scope`, `/maestro-build` mode instructions |
 | maestro board 11 | Work items — the source of truth for all planned/in-flight work |
+| `planning/mockups/` | HTML/UI sketches, one folder per component — the approval gate for UI-heavy items (the only surviving part of `planning/`) |
 | `memory.md` | Active decisions, gotchas, current work |
 | `docs/web-mojo/**` | Authoritative framework docs (index: `README.md`) |
 | `docs/agent/architecture.md` | Repo layout, source map, extension map |

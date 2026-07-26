@@ -1,0 +1,2166 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DetailView migration — mockups</title>
+
+<!-- Bootstrap 5.3 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<!-- Mockup-local styles (self-contained — file:// viewable).
+     The actual implementation references core.css / admin.css; this file
+     is a parallel snapshot for design exploration only. -->
+<link rel="stylesheet" href="mock.css">
+
+</head>
+<body>
+<div class="page">
+
+    <div class="page-eyebrow">web-mojo · admin portal · redesign mockup</div>
+    <h1 class="page-title">DetailView <span class="accent">migration</span> mockups</h1>
+    <p class="page-lede">
+        Three of the highest-impact admin record screens redrawn against the
+        new <code>DetailView</code> primitive. Bootstrap 5.3 base ·
+        <code>data-bs-theme="dark"</code> · component CSS lives in
+        <code>core.css</code> and <code>admin.css</code>, not inlined.
+    </p>
+
+    <div class="switcher" role="tablist">
+        <button class="is-active" data-target="incident">Incident</button>
+        <button data-target="job">Job</button>
+        <button data-target="user">User</button>
+        <button data-target="group">Group</button>
+        <button data-target="member">Member</button>
+        <button data-target="device">Device</button>
+        <button data-target="file">File</button>
+        <button data-target="shortlink">ShortLink</button>
+        <button data-target="geoip">GeoIP</button>
+        <button data-target="runner">Runner</button>
+    </div>
+
+
+    <!-- ─────────────────────────────────────────────────────────────
+         MOCKUP 1 — IncidentView
+         ─────────────────────────────────────────────────────────── -->
+    <div class="mockup is-active" data-mockup="incident">
+        <div class="detail-view-shell">
+
+            <!-- Header (uses .detail-header / .dh-* from core.css) -->
+            <div class="detail-header">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="dh-icon" style="color: var(--bs-danger); background: rgba(var(--bs-danger-rgb), 0.1); border: 1px solid rgba(var(--bs-danger-rgb), 0.25);">
+                        <i class="bi bi-shield-exclamation"></i>
+                    </div>
+                    <div class="dh-meta" style="min-width: 0; flex: 1;">
+                        <h2 class="dh-name">Brute-force login attempts on api.checkout</h2>
+                        <p class="dh-subtitle">
+                            Triggered by rule
+                            <a href="#">Auth · Repeated failed logins</a>
+                            · scope <code>auth.failed</code>
+                            · <code>#48217</code>
+                        </p>
+                        <div class="dh-chips">
+                            <span class="badge text-bg-danger"><i class="bi bi-shield-exclamation me-1"></i>P1 · Critical</span>
+                            <span class="badge text-bg-warning"><i class="bi bi-clock-history me-1"></i>Active · 2h 14m</span>
+                            <span class="badge text-bg-light">api-gateway-2</span>
+                            <span class="badge text-bg-light"><i class="bi bi-list-ul me-1"></i>47 events</span>
+                            <span class="badge text-bg-light"><i class="bi bi-globe2 me-1"></i>3 sources</span>
+                            <span class="badge text-bg-warning"><i class="bi bi-shield-fill-check me-1"></i>Protected</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="dh-actions d-flex align-items-center gap-1">
+                    <button class="btn btn-success btn-sm"><i class="bi bi-check2-circle me-1"></i>Resolve</button>
+                    <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-person me-1"></i>Assign</button>
+                    <span class="dh-group-sep" aria-hidden="true"></span>
+                    <button class="dh-action" title="More"><i class="bi bi-three-dots-vertical"></i></button>
+                    <button class="dh-action dh-close" title="Close"><i class="bi bi-x-lg"></i></button>
+                </div>
+            </div>
+
+            <!-- Body: rail + section (snv-layout from core.css) -->
+            <div class="detail-view-body">
+                <div class="snv-layout" style="width: 100%;">
+
+                    <nav class="snv-nav" style="width: 200px;">
+                        <a class="active" data-section="overview"><i class="bi bi-grid-1x2"></i> Overview</a>
+                        <a data-section="events"><i class="bi bi-list-ul"></i> Events <span class="snv-badge snv-badge-danger">47</span></a>
+
+                        <div class="snv-nav-label">Investigation</div>
+                        <a data-section="source"><i class="bi bi-globe2"></i> Source</a>
+                        <a data-section="request"><i class="bi bi-funnel"></i> Request</a>
+                        <a data-section="stack-trace"><i class="bi bi-code-square"></i> Stack Trace</a>
+
+                        <div class="snv-nav-label">Response</div>
+                        <a data-section="rule-engine"><i class="bi bi-tools"></i> Rule Engine</a>
+                        <a data-section="tickets"><i class="bi bi-ticket-detailed"></i> Tickets <span class="snv-badge snv-badge-warning">2</span></a>
+                        <a data-section="history"><i class="bi bi-chat-left-text"></i> History</a>
+
+                        <div class="snv-nav-label">Related</div>
+                        <a data-section="related"><i class="bi bi-diagram-2"></i> Related <span class="snv-badge snv-badge-muted">12</span></a>
+                        <a data-section="detail"><i class="bi bi-braces"></i> Detail</a>
+                    </nav>
+
+                    <div class="snv-content">
+
+                        <div class="snv-section snv-active" data-section-key="overview">
+                            <div class="section-eyebrow">Section · Overview</div>
+                            <h3 class="section-title">At a glance</h3>
+
+                            <!-- StatusPanel from admin.css -->
+                            <div class="detail-status-panel tone-danger">
+                                <div class="detail-status-headline">
+                                    <div class="detail-status-state"><span class="detail-status-dot"></span>Active · firing</div>
+                                    <div class="detail-status-line">In flight for 2h 14m</div>
+                                    <div class="detail-status-meta">
+                                        Last event <strong>4m</strong> ago ·
+                                        47 events from 3 source IPs ·
+                                        Handler chain ran 12 times
+                                    </div>
+                                </div>
+                                <div class="detail-status-actions">
+                                    <button class="btn btn-success btn-sm">Resolve incident</button>
+                                    <button class="btn btn-outline-secondary btn-sm">Assign to me</button>
+                                </div>
+                            </div>
+
+                            <!-- KPI strip — .metric-card from core.css -->
+                            <div class="detail-kpi-grid">
+                                <div class="metric-card metric-card-lg metric-card-tone-danger">
+                                    <div class="metric-card-label">Events</div>
+                                    <div class="metric-card-value">47 <span class="badge text-bg-danger ms-1">+12 / 1h</span></div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Sources</div>
+                                    <div class="metric-card-value">3 <span class="text-secondary fs-6 fw-normal">IPs</span></div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Last fired</div>
+                                    <div class="metric-card-value">4 <span class="text-secondary fs-6 fw-normal">min ago</span></div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Related</div>
+                                    <div class="metric-card-value">12 <span class="text-secondary fs-6 fw-normal">7d</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Two-card row -->
+                            <div class="detail-pair">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-title"><i class="bi bi-funnel"></i>What triggered this</div>
+                                        <ul class="list-unstyled mb-0 small">
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Rule</span><a href="#">Auth · Repeated failed logins</a></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Category</span><code>auth.failed</code></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Threshold</span><span>5 events / 60s</span></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Source IP</span><code>198.51.100.42</code></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Targeted user</span><a href="#">jamie@example.com</a></li>
+                                            <li class="d-flex justify-content-between py-1"><span class="text-secondary">Hostname</span><code>api-gateway-2</code></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-title"><i class="bi bi-tools"></i>What happened next</div>
+                                        <ol class="detail-timeline">
+                                            <li class="detail-timeline-item tone-danger">
+                                                <div>
+                                                    <div class="detail-timeline-headline">Handler chain fired</div>
+                                                    <div class="detail-timeline-detail"><code>block://?ttl=86400</code> → <code>ticket://?priority=8</code> → <code>llm://</code></div>
+                                                </div>
+                                                <span class="detail-timeline-when">2h 14m ago</span>
+                                            </li>
+                                            <li class="detail-timeline-item tone-warning">
+                                                <div>
+                                                    <div class="detail-timeline-headline">Source IP blocked</div>
+                                                    <div class="detail-timeline-detail">198.51.100.42 added to firewall · expires in 21h 46m</div>
+                                                </div>
+                                                <span class="detail-timeline-when">2h 14m ago</span>
+                                            </li>
+                                            <li class="detail-timeline-item tone-warning">
+                                                <div>
+                                                    <div class="detail-timeline-headline">Ticket created</div>
+                                                    <div class="detail-timeline-detail"><a href="#">#4821</a> · priority 8 · open · assigned to <a href="#">on-call</a></div>
+                                                </div>
+                                                <span class="detail-timeline-when">2h 14m ago</span>
+                                            </li>
+                                            <li class="detail-timeline-item tone-info">
+                                                <div>
+                                                    <div class="detail-timeline-headline">LLM triage completed</div>
+                                                    <div class="detail-timeline-detail">Verdict: <strong>credential-stuffing</strong> · confidence 0.92</div>
+                                                </div>
+                                                <span class="detail-timeline-when">2h 13m ago</span>
+                                            </li>
+                                            <li class="detail-timeline-item tone-info">
+                                                <div>
+                                                    <div class="detail-timeline-headline">Awaiting on-call ack</div>
+                                                    <div class="detail-timeline-detail">Auto-escalates in 45m if unacknowledged</div>
+                                                </div>
+                                                <span class="detail-timeline-when">just now</span>
+                                            </li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="note">
+                                <strong>Notes for the migration:</strong> the
+                                <code>.detail-status-panel</code> class is new in admin.css —
+                                shared with JobDetailsView and RunnerDetailsView. The right-hand
+                                "What happened next" card uses <code>.detail-timeline</code>,
+                                also new — reused by the History section and JobDetailsView's
+                                Events section.
+                            </p>
+                        </div>
+
+                        <!-- Fallback empty-state for sections not yet mocked -->
+                        <div class="snv-section" data-section-key="__placeholder__">
+                            <div class="empty-section">
+                                <div class="icon-large"><i class="bi bi-grid-3x3-gap"></i></div>
+                                <h4 data-empty-name>Section preview pending</h4>
+                                <p>Overview is the only section mocked for this view. The full
+                                   section list and per-section content lives in the migration plan.</p>
+                                <a class="btn btn-sm btn-outline-secondary" href="../../requests/detailview-migration.md"><i class="bi bi-file-earmark-text me-1"></i>View plan</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ─────────────────────────────────────────────────────────────
+         MOCKUP 2 — JobDetailsView
+         ─────────────────────────────────────────────────────────── -->
+    <div class="mockup" data-mockup="job">
+        <div class="detail-view-shell">
+
+            <div class="detail-header">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="dh-icon" style="color: var(--bs-warning); background: rgba(var(--bs-warning-rgb), 0.1); border: 1px solid rgba(var(--bs-warning-rgb), 0.25);">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                    <div class="dh-meta" style="min-width: 0; flex: 1;">
+                        <h2 class="dh-name"><code>billing.invoices.generate_monthly</code></h2>
+                        <p class="dh-subtitle">
+                            Failed on attempt <strong>3</strong> of 5 · last error
+                            <code class="text-danger">DBConnectionError: pool exhausted</code>
+                        </p>
+                        <div class="dh-chips">
+                            <span class="badge text-bg-danger"><i class="bi bi-x-circle me-1"></i>Failed</span>
+                            <span class="badge text-bg-info"><i class="bi bi-broadcast me-1"></i>billing</span>
+                            <span class="badge text-bg-light"><i class="bi bi-cpu me-1"></i>runner-7</span>
+                            <span class="badge text-bg-light">attempt 3/5</span>
+                            <span class="badge text-bg-light">duration 38s</span>
+                            <span class="badge text-bg-light">cancel-on-shutdown</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="dh-actions d-flex align-items-center gap-1">
+                    <button class="btn btn-primary btn-sm"><i class="bi bi-arrow-clockwise me-1"></i>Retry</button>
+                    <button class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle me-1"></i>Cancel</button>
+                    <span class="dh-group-sep" aria-hidden="true"></span>
+                    <button class="dh-action" title="More"><i class="bi bi-three-dots-vertical"></i></button>
+                    <button class="dh-action dh-close" title="Close"><i class="bi bi-x-lg"></i></button>
+                </div>
+            </div>
+
+            <div class="detail-view-body">
+                <div class="snv-layout" style="width: 100%;">
+
+                    <nav class="snv-nav" style="width: 200px;">
+                        <a class="active" data-section="overview"><i class="bi bi-grid-1x2"></i> Overview</a>
+                        <a data-section="payload"><i class="bi bi-braces"></i> Payload</a>
+
+                        <div class="snv-nav-label">Activity</div>
+                        <a data-section="events"><i class="bi bi-list-ul"></i> Events <span class="snv-badge snv-badge-muted">14</span></a>
+                        <a data-section="logs"><i class="bi bi-code-square"></i> Logs <span class="snv-badge snv-badge-danger">128</span></a>
+
+                        <div class="snv-nav-label">Related</div>
+                        <a data-section="retry-history"><i class="bi bi-arrow-clockwise"></i> Retry History <span class="snv-badge snv-badge-muted">2</span></a>
+                        <a data-section="similar"><i class="bi bi-files"></i> Similar <span class="snv-badge snv-badge-muted">87</span></a>
+                        <a data-section="detail"><i class="bi bi-braces"></i> Detail</a>
+                    </nav>
+
+                    <div class="snv-content">
+
+                        <div class="snv-section snv-active" data-section-key="overview">
+                            <div class="section-eyebrow">Section · Overview</div>
+                            <h3 class="section-title">Job execution</h3>
+
+                            <div class="detail-status-panel tone-danger">
+                                <div class="detail-status-headline">
+                                    <div class="detail-status-state"><span class="detail-status-dot"></span>Failed</div>
+                                    <div class="detail-status-line">Failed after 38s · 12m ago</div>
+                                    <div class="detail-status-meta">
+                                        Attempt <strong>3</strong> of <strong>5</strong> ·
+                                        next retry in <strong>2m 14s</strong> with backoff
+                                    </div>
+                                </div>
+                                <div class="detail-status-actions">
+                                    <button class="btn btn-primary btn-sm">Retry now</button>
+                                    <button class="btn btn-outline-secondary btn-sm">Cancel remaining</button>
+                                </div>
+                            </div>
+
+                            <div class="detail-kpi-grid">
+                                <div class="metric-card metric-card-lg metric-card-tone-warning">
+                                    <div class="metric-card-label">Attempt</div>
+                                    <div class="metric-card-value">3 <span class="text-secondary fs-6 fw-normal">/ 5</span></div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Runtime</div>
+                                    <div class="metric-card-value">38 <span class="text-secondary fs-6 fw-normal">s</span></div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Retries left</div>
+                                    <div class="metric-card-value">2</div>
+                                </div>
+                                <div class="metric-card metric-card-lg metric-card-tone-info">
+                                    <div class="metric-card-label">Next attempt</div>
+                                    <div class="metric-card-value">in 2m <span class="text-secondary fs-6 fw-normal">14s</span></div>
+                                </div>
+                            </div>
+
+                            <div class="detail-pair">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-title"><i class="bi bi-cpu"></i>Execution</div>
+                                        <ul class="list-unstyled mb-0 small">
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Function</span><code>billing.invoices.generate_monthly</code></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Channel</span><code>billing</code></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Runner</span><a href="#"><code>runner-7</code></a></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Started</span><code>02:00:38 UTC</code></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Finished</span><code>02:01:16 UTC</code></li>
+                                            <li class="d-flex justify-content-between py-1"><span class="text-secondary">Next attempt</span><code>02:03:30 UTC · 2m 14s</code></li>
+                                        </ul>
+                                        <div class="error-block">DBConnectionError: pool exhausted (max=20, in_use=20)
+  at billing.db._acquire_connection (db.py:142)
+  at billing.invoices.generate_monthly (invoices.py:78)
+  at jobs.runner._dispatch (runner.py:331)</div>
+                                    </div>
+                                </div>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-title"><i class="bi bi-list-ul"></i>Lifecycle</div>
+                                        <ol class="detail-timeline">
+                                            <li class="detail-timeline-item tone-info">
+                                                <div>
+                                                    <div class="detail-timeline-headline">Enqueued</div>
+                                                    <div class="detail-timeline-detail">queued by <a href="#">scheduler</a> on channel <code>billing</code></div>
+                                                </div>
+                                                <span class="detail-timeline-when">02:00:00</span>
+                                            </li>
+                                            <li class="detail-timeline-item tone-info">
+                                                <div>
+                                                    <div class="detail-timeline-headline">Started · attempt 1</div>
+                                                    <div class="detail-timeline-detail">picked up by <code>runner-3</code></div>
+                                                </div>
+                                                <span class="detail-timeline-when">02:00:01</span>
+                                            </li>
+                                            <li class="detail-timeline-item tone-danger">
+                                                <div>
+                                                    <div class="detail-timeline-headline">Failed · attempt 1</div>
+                                                    <div class="detail-timeline-detail"><code>DBConnectionError</code> after 32s</div>
+                                                </div>
+                                                <span class="detail-timeline-when">02:00:33</span>
+                                            </li>
+                                            <li class="detail-timeline-item tone-danger">
+                                                <div>
+                                                    <div class="detail-timeline-headline">Failed · attempt 2</div>
+                                                    <div class="detail-timeline-detail">same error after 14s — backoff doubled</div>
+                                                </div>
+                                                <span class="detail-timeline-when">02:00:50</span>
+                                            </li>
+                                            <li class="detail-timeline-item tone-danger">
+                                                <div>
+                                                    <div class="detail-timeline-headline">Failed · attempt 3</div>
+                                                    <div class="detail-timeline-detail">runner switched to <code>runner-7</code> · next retry in 2m 14s</div>
+                                                </div>
+                                                <span class="detail-timeline-when">02:01:16</span>
+                                            </li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="note">
+                                <strong>What changes vs. today:</strong> the status panel +
+                                lifecycle timeline replace the current Details section's flat
+                                field grid plus scattered status badges. Retry history becomes
+                                its own section because admins regularly ask "did it succeed
+                                on attempt 3?" Similar-jobs section gets a real count badge.
+                            </p>
+                        </div>
+
+                        <div class="snv-section" data-section-key="__placeholder__">
+                            <div class="empty-section">
+                                <div class="icon-large"><i class="bi bi-grid-3x3-gap"></i></div>
+                                <h4 data-empty-name>Section preview pending</h4>
+                                <p>Overview is the only section mocked for this view. The full
+                                   section list and per-section content lives in the migration plan.</p>
+                                <a class="btn btn-sm btn-outline-secondary" href="../../requests/detailview-migration.md"><i class="bi bi-file-earmark-text me-1"></i>View plan</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ─────────────────────────────────────────────────────────────
+         MOCKUP 3 — UserView
+         ─────────────────────────────────────────────────────────── -->
+    <div class="mockup" data-mockup="user">
+        <div class="detail-view-shell">
+
+            <div class="detail-header">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="detail-avatar">JS</div>
+                    <div class="dh-meta" style="min-width: 0; flex: 1;">
+                        <h2 class="dh-name">Jamie Suzuki <code class="ms-2 fs-6 text-secondary">user · 8412</code></h2>
+                        <p class="dh-subtitle">
+                            <a href="#">jamie@example.com</a> ·
+                            <code>+1 415 555 0114</code> ·
+                            last seen <strong>4h ago</strong> from San Francisco
+                        </p>
+                        <div class="dh-chips">
+                            <span class="badge text-bg-success">● Online</span>
+                            <span class="badge text-bg-info">staff</span>
+                            <span class="badge text-bg-light"><i class="bi bi-shield-check me-1"></i>Email verified</span>
+                            <span class="badge text-bg-light"><i class="bi bi-shield-check me-1"></i>Phone verified</span>
+                            <span class="badge text-bg-light">2FA enabled</span>
+                            <span class="badge text-bg-primary">SSO · Google</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="dh-actions d-flex align-items-center gap-1">
+                    <label class="dh-active-switch me-1" title="Toggle is_active">
+                        <input type="checkbox" checked>
+                        <span class="dh-track"></span>
+                        <span class="dh-track-label">Active</span>
+                    </label>
+                    <button class="btn btn-primary btn-sm"><i class="bi bi-envelope me-1"></i>Magic link</button>
+                    <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-key me-1"></i>Reset password</button>
+                    <span class="dh-group-sep" aria-hidden="true"></span>
+                    <button class="dh-action" title="More"><i class="bi bi-three-dots-vertical"></i></button>
+                    <button class="dh-action dh-close" title="Close"><i class="bi bi-x-lg"></i></button>
+                </div>
+            </div>
+
+            <div class="detail-view-body">
+                <div class="snv-layout" style="width: 100%;">
+
+                    <nav class="snv-nav" style="width: 200px;">
+                        <a class="active" data-section="overview"><i class="bi bi-grid-1x2"></i> Overview</a>
+                        <a data-section="profile"><i class="bi bi-person"></i> Profile</a>
+
+                        <div class="snv-nav-label">Access</div>
+                        <a data-section="groups"><i class="bi bi-people"></i> Groups <span class="snv-badge snv-badge-muted">4</span></a>
+                        <a data-section="permissions"><i class="bi bi-shield-lock"></i> Permissions</a>
+                        <a data-section="api-keys"><i class="bi bi-key"></i> API Keys <span class="snv-badge snv-badge-muted">2</span></a>
+
+                        <div class="snv-nav-label">Activity</div>
+                        <a data-section="devices"><i class="bi bi-laptop"></i> Devices <span class="snv-badge snv-badge-muted">5</span></a>
+                        <a data-section="locations"><i class="bi bi-geo-alt"></i> Locations</a>
+                        <a data-section="audit"><i class="bi bi-list-ul"></i> Audit <span class="snv-badge snv-badge-muted">142</span></a>
+
+                        <div class="snv-nav-label">Settings</div>
+                        <a data-section="notifications"><i class="bi bi-bell"></i> Notifications</a>
+                        <a data-section="detail"><i class="bi bi-braces"></i> Detail</a>
+                    </nav>
+
+                    <div class="snv-content">
+
+                        <!-- Overview -->
+                        <div class="snv-section snv-active" data-section-key="overview">
+                            <div class="section-eyebrow">Section · Overview</div>
+                            <h3 class="section-title">Account snapshot</h3>
+
+                            <div class="detail-kpi-grid">
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Devices</div>
+                                    <div class="metric-card-value">5</div>
+                                </div>
+                                <div class="metric-card metric-card-lg metric-card-tone-success">
+                                    <div class="metric-card-label">Active sessions</div>
+                                    <div class="metric-card-value">3</div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Last login</div>
+                                    <div class="metric-card-value">4 <span class="text-secondary fs-6 fw-normal">h ago</span></div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Groups</div>
+                                    <div class="metric-card-value">4</div>
+                                </div>
+                            </div>
+
+                            <div class="detail-pair">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-title"><i class="bi bi-person"></i>Identity</div>
+                                        <ul class="list-unstyled mb-0 small">
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Display name</span><span>Jamie Suzuki</span></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Email</span><a href="#">jamie@example.com</a></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Phone</span><code>+1 415 555 0114</code></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Account type</span><span>Staff</span></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Joined</span><code>2024-08-12</code></li>
+                                            <li class="d-flex justify-content-between py-1"><span class="text-secondary">Linked accounts</span><span class="badge text-bg-primary">Google</span></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-title"><i class="bi bi-list-ul"></i>Recent activity</div>
+                                        <ol class="detail-timeline">
+                                            <li class="detail-timeline-item tone-info">
+                                                <div>
+                                                    <div class="detail-timeline-headline">Logged in</div>
+                                                    <div class="detail-timeline-detail">macOS · Chrome 122 · San Francisco · <code>198.51.100.42</code></div>
+                                                </div>
+                                                <span class="detail-timeline-when">4h ago</span>
+                                            </li>
+                                            <li class="detail-timeline-item tone-success">
+                                                <div>
+                                                    <div class="detail-timeline-headline">Generated API key</div>
+                                                    <div class="detail-timeline-detail"><code>ak_8f12…</code> · scopes: read, write</div>
+                                                </div>
+                                                <span class="detail-timeline-when">2d ago</span>
+                                            </li>
+                                            <li class="detail-timeline-item">
+                                                <div>
+                                                    <div class="detail-timeline-headline">Joined group</div>
+                                                    <div class="detail-timeline-detail"><a href="#">Engineering · Backend</a> as member</div>
+                                                </div>
+                                                <span class="detail-timeline-when">3d ago</span>
+                                            </li>
+                                            <li class="detail-timeline-item tone-warning">
+                                                <div>
+                                                    <div class="detail-timeline-headline">Login from new device</div>
+                                                    <div class="detail-timeline-detail">iPhone 15 · Safari · approved by user</div>
+                                                </div>
+                                                <span class="detail-timeline-when">8d ago</span>
+                                            </li>
+                                            <li class="detail-timeline-item">
+                                                <div>
+                                                    <div class="detail-timeline-headline">Verified phone</div>
+                                                    <div class="detail-timeline-detail">+1 415 555 0114</div>
+                                                </div>
+                                                <span class="detail-timeline-when">14d ago</span>
+                                            </li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="note">
+                                <strong>What this collapses:</strong> Profile + Personal + OAuth
+                                merge into a single Profile section behind a pencil. Permissions
+                                + Adv Permissions merge into one with a "show advanced" segment.
+                                Devices + Push Devices merge into one Devices section with a
+                                kind column. Three Activity tabs (Events / Activity Log / Object
+                                Logs) collapse to one Audit section with a source filter. 12
+                                sections → 9.
+                            </p>
+                        </div>
+
+                        <!-- Profile -->
+                        <div class="snv-section" data-section-key="profile">
+                            <div class="section-eyebrow">Section · Profile</div>
+                            <h3 class="section-title">Identity &amp; account</h3>
+
+                            <div class="detail-field-card">
+                                <div class="detail-field-card-header">
+                                    <h4><i class="bi bi-person"></i>Personal</h4>
+                                    <button class="btn btn-sm btn-link link-secondary"><i class="bi bi-pencil me-1"></i>Edit</button>
+                                </div>
+                                <div class="detail-field-card-body">
+                                    <div class="detail-field-row">
+                                        <div class="detail-field-label">Display name</div>
+                                        <div class="detail-field-value">Jamie Suzuki</div>
+                                    </div>
+                                    <div class="detail-field-row">
+                                        <div class="detail-field-label">Email</div>
+                                        <div class="detail-field-value">
+                                            jamie@example.com
+                                            <span class="badge text-bg-success ms-1"><i class="bi bi-shield-check me-1"></i>verified</span>
+                                        </div>
+                                    </div>
+                                    <div class="detail-field-row">
+                                        <div class="detail-field-label">Phone</div>
+                                        <div class="detail-field-value">
+                                            <code>+1 415 555 0114</code>
+                                            <span class="badge text-bg-success ms-1"><i class="bi bi-shield-check me-1"></i>verified</span>
+                                        </div>
+                                    </div>
+                                    <div class="detail-field-row">
+                                        <div class="detail-field-label">Avatar</div>
+                                        <div class="detail-field-value d-flex align-items-center gap-2">
+                                            <span class="detail-avatar" style="width: 32px; height: 32px; font-size: 0.85rem; border-radius: 0.5rem;">JS</span>
+                                            <a href="#">Upload new</a>
+                                            <span class="text-secondary">·</span>
+                                            <a href="#" class="link-secondary">Clear</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="detail-field-card">
+                                <div class="detail-field-card-header">
+                                    <h4><i class="bi bi-grid-1x2"></i>Account</h4>
+                                    <button class="btn btn-sm btn-link link-secondary"><i class="bi bi-pencil me-1"></i>Edit</button>
+                                </div>
+                                <div class="detail-field-card-body">
+                                    <div class="detail-field-row">
+                                        <div class="detail-field-label">Account type</div>
+                                        <div class="detail-field-value">Staff <span class="text-secondary">·</span> <span class="text-secondary fw-normal">elevated session permissions</span></div>
+                                    </div>
+                                    <div class="detail-field-row">
+                                        <div class="detail-field-label">Status</div>
+                                        <div class="detail-field-value"><span class="badge text-bg-success">Active</span></div>
+                                    </div>
+                                    <div class="detail-field-row">
+                                        <div class="detail-field-label">Joined</div>
+                                        <div class="detail-field-value"><code>2024-08-12</code> · 287 days ago</div>
+                                    </div>
+                                    <div class="detail-field-row">
+                                        <div class="detail-field-label">Last seen</div>
+                                        <div class="detail-field-value">4h ago <span class="text-secondary fw-normal">— from San Francisco, US</span></div>
+                                    </div>
+                                    <div class="detail-field-row">
+                                        <div class="detail-field-label">Locale</div>
+                                        <div class="detail-field-value">en-US <span class="text-secondary">·</span> <code>America/Los_Angeles</code></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="detail-field-card">
+                                <div class="detail-field-card-header">
+                                    <h4><i class="bi bi-key"></i>Linked accounts</h4>
+                                    <button class="btn btn-sm btn-link link-secondary"><i class="bi bi-pencil me-1"></i>Manage</button>
+                                </div>
+                                <div class="detail-field-card-body">
+                                    <div class="detail-field-row">
+                                        <div class="detail-field-label">SSO providers</div>
+                                        <div class="detail-field-value">
+                                            <span class="badge text-bg-primary me-1"><i class="bi bi-google me-1"></i>Google · jamie@example.com</span>
+                                            <a href="#" class="small">+ Add provider</a>
+                                        </div>
+                                    </div>
+                                    <div class="detail-field-row">
+                                        <div class="detail-field-label">2-factor</div>
+                                        <div class="detail-field-value">
+                                            <span class="badge text-bg-success">Enabled · TOTP</span>
+                                            <a href="#" class="small ms-2">Manage</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="note">
+                                Three previous sections (Profile, Personal, OAuth) collapse into
+                                one. Each card opens its own focused mini-form via
+                                <code>Modal.modelForm</code> — same pattern as RuleSetView's
+                                per-step pencils.
+                            </p>
+                        </div>
+
+                        <!-- Permissions -->
+                        <div class="snv-section" data-section-key="permissions">
+                            <div class="section-eyebrow">Section · Permissions</div>
+                            <h3 class="section-title">What this user can do</h3>
+
+                            <div class="detail-toolbar">
+                                <input class="form-control form-control-sm" style="max-width: 280px;" placeholder="Filter permissions…">
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-sm btn-secondary">Common</button>
+                                    <button class="btn btn-sm btn-outline-secondary">Advanced</button>
+                                    <button class="btn btn-sm btn-outline-secondary">Effective</button>
+                                </div>
+                            </div>
+
+                            <div class="detail-perm-group">
+                                <div class="detail-perm-group-header">
+                                    <h5>Account</h5>
+                                    <span class="detail-perm-group-meta">2 / 3 granted</span>
+                                </div>
+                                <div class="detail-perm-row">
+                                    <div class="detail-perm-name">View users<span class="detail-perm-key">account.users.view</span></div>
+                                    <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" checked role="switch"></div>
+                                </div>
+                                <div class="detail-perm-row">
+                                    <div class="detail-perm-name">Edit users<span class="detail-perm-key">account.users.edit</span></div>
+                                    <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" checked role="switch"></div>
+                                </div>
+                                <div class="detail-perm-row">
+                                    <div class="detail-perm-name">Impersonate users<span class="detail-perm-key">account.users.impersonate</span></div>
+                                    <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch"></div>
+                                </div>
+                            </div>
+
+                            <div class="detail-perm-group">
+                                <div class="detail-perm-group-header">
+                                    <h5>Groups</h5>
+                                    <span class="detail-perm-group-meta">3 / 3 granted · inherited from <a href="#">Engineering · Backend</a></span>
+                                </div>
+                                <div class="detail-perm-row">
+                                    <div class="detail-perm-name">View groups<span class="detail-perm-key">account.groups.view</span></div>
+                                    <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" checked role="switch"></div>
+                                </div>
+                                <div class="detail-perm-row">
+                                    <div class="detail-perm-name">Manage members<span class="detail-perm-key">account.groups.manage_members</span></div>
+                                    <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" checked role="switch"></div>
+                                </div>
+                                <div class="detail-perm-row">
+                                    <div class="detail-perm-name">Invite users<span class="detail-perm-key">account.groups.invite</span></div>
+                                    <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" checked role="switch"></div>
+                                </div>
+                            </div>
+
+                            <div class="detail-perm-group">
+                                <div class="detail-perm-group-header">
+                                    <h5>API</h5>
+                                    <span class="detail-perm-group-meta">1 / 2 granted</span>
+                                </div>
+                                <div class="detail-perm-row">
+                                    <div class="detail-perm-name">Read API keys<span class="detail-perm-key">api.keys.view</span></div>
+                                    <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" checked role="switch"></div>
+                                </div>
+                                <div class="detail-perm-row">
+                                    <div class="detail-perm-name">Manage API keys<span class="detail-perm-key">api.keys.manage</span></div>
+                                    <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" role="switch"></div>
+                                </div>
+                            </div>
+
+                            <p class="note">
+                                Today's separate "Permissions" and "Adv Permissions" sections
+                                merge here. The <strong>Common / Advanced / Effective</strong>
+                                segment swaps the visible rows: Common is the curated set most
+                                admins want to grant; Advanced exposes everything (including
+                                dangerous flags); Effective shows the computed permissions
+                                including group inheritance.
+                            </p>
+                        </div>
+
+                        <!-- Devices -->
+                        <div class="snv-section" data-section-key="devices">
+                            <div class="section-eyebrow">Section · Devices · 5 active</div>
+                            <h3 class="section-title">Devices &amp; sessions</h3>
+
+                            <div class="detail-toolbar">
+                                <div class="d-flex gap-2 align-items-center">
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm btn-secondary">All</button>
+                                        <button class="btn btn-sm btn-outline-secondary">Browser</button>
+                                        <button class="btn btn-sm btn-outline-secondary">Push</button>
+                                    </div>
+                                    <span class="text-secondary small">5 active · 12 historical</span>
+                                </div>
+                                <div class="d-flex gap-1">
+                                    <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-clockwise me-1"></i>Refresh</button>
+                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-slash-circle me-1"></i>Revoke all</button>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <table class="table table-hover m-0 align-middle small">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-secondary text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.08em; width: 100px;">Kind</th>
+                                            <th class="text-secondary text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.08em;">Device</th>
+                                            <th class="text-secondary text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.08em; width: 120px;">Last seen</th>
+                                            <th class="text-secondary text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.08em; width: 180px;">Location · IP</th>
+                                            <th class="text-secondary text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.08em; width: 140px;">Signals</th>
+                                            <th style="width: 110px;"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><span class="kind-pill text-info"><i class="bi bi-laptop"></i>Browser</span></td>
+                                            <td>
+                                                <div>Chrome 122 · macOS Sonoma</div>
+                                                <code class="text-secondary small">duid · f8c2…7a91</code>
+                                            </td>
+                                            <td><code>4h ago</code></td>
+                                            <td>
+                                                <div>San Francisco, US</div>
+                                                <code class="text-secondary small">198.51.100.42</code>
+                                            </td>
+                                            <td><span class="badge text-bg-light">trusted</span></td>
+                                            <td class="text-end">
+                                                <button class="btn btn-sm btn-link link-secondary p-1">View</button>
+                                                <button class="btn btn-sm btn-link link-danger p-1">Revoke</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="kind-pill text-info"><i class="bi bi-laptop"></i>Browser</span></td>
+                                            <td>
+                                                <div>Safari 17 · iPadOS 17</div>
+                                                <code class="text-secondary small">duid · 3a91…0d44</code>
+                                            </td>
+                                            <td><code>2d ago</code></td>
+                                            <td>
+                                                <div>San Francisco, US</div>
+                                                <code class="text-secondary small">198.51.100.42</code>
+                                            </td>
+                                            <td><span class="badge text-bg-light">trusted</span></td>
+                                            <td class="text-end">
+                                                <button class="btn btn-sm btn-link link-secondary p-1">View</button>
+                                                <button class="btn btn-sm btn-link link-danger p-1">Revoke</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="kind-pill text-primary"><i class="bi bi-bell"></i>Push</span></td>
+                                            <td>
+                                                <div>iPhone 15 Pro · iOS 17</div>
+                                                <code class="text-secondary small">apns · expo / efb6…</code>
+                                            </td>
+                                            <td><code>4h ago</code></td>
+                                            <td>
+                                                <div>San Francisco, US</div>
+                                                <code class="text-secondary small">— mobile network —</code>
+                                            </td>
+                                            <td><span class="badge text-bg-light">trusted</span></td>
+                                            <td class="text-end">
+                                                <button class="btn btn-sm btn-link link-secondary p-1">View</button>
+                                                <button class="btn btn-sm btn-link link-danger p-1">Revoke</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="kind-pill text-info"><i class="bi bi-laptop"></i>Browser</span></td>
+                                            <td>
+                                                <div>Firefox 121 · Ubuntu 22.04</div>
+                                                <code class="text-secondary small">duid · 7c4e…b201</code>
+                                            </td>
+                                            <td><code>8d ago</code></td>
+                                            <td>
+                                                <div>London, UK</div>
+                                                <code class="text-secondary small">203.0.113.18</code>
+                                            </td>
+                                            <td>
+                                                <span class="badge text-bg-warning">VPN</span>
+                                                <span class="badge text-bg-warning">PROXY</span>
+                                            </td>
+                                            <td class="text-end">
+                                                <button class="btn btn-sm btn-link link-secondary p-1">View</button>
+                                                <button class="btn btn-sm btn-link link-danger p-1">Revoke</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="kind-pill text-info"><i class="bi bi-laptop"></i>Browser</span></td>
+                                            <td>
+                                                <div>Chrome 121 · Android 14</div>
+                                                <code class="text-secondary small">duid · 6f02…a4e9</code>
+                                            </td>
+                                            <td><code>14d ago</code></td>
+                                            <td>
+                                                <div>Mountain View, US</div>
+                                                <code class="text-secondary small">— mobile network —</code>
+                                            </td>
+                                            <td><span class="badge text-bg-light">trusted</span></td>
+                                            <td class="text-end">
+                                                <button class="btn btn-sm btn-link link-secondary p-1">View</button>
+                                                <button class="btn btn-sm btn-link link-danger p-1">Revoke</button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <p class="note">
+                                Browser sessions and push-notification devices share one table
+                                now — the <strong>kind</strong> column distinguishes them. Threat
+                                signals (VPN/Tor/Proxy) light up in the same Signals column
+                                rather than living in a separate sub-tab.
+                            </p>
+                        </div>
+
+                        <!-- Audit -->
+                        <div class="snv-section" data-section-key="audit">
+                            <div class="section-eyebrow">Section · Audit · 142 entries (30d)</div>
+                            <h3 class="section-title">What this account did</h3>
+
+                            <div class="detail-toolbar">
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-sm btn-secondary">All</button>
+                                    <button class="btn btn-sm btn-outline-secondary">Incidents</button>
+                                    <button class="btn btn-sm btn-outline-secondary">Activity</button>
+                                    <button class="btn btn-sm btn-outline-secondary">Object changes</button>
+                                </div>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-sm btn-outline-secondary">1d</button>
+                                    <button class="btn btn-sm btn-outline-secondary">7d</button>
+                                    <button class="btn btn-sm btn-secondary">30d</button>
+                                    <button class="btn btn-sm btn-outline-secondary">90d</button>
+                                </div>
+                            </div>
+
+                            <ul class="detail-audit-list">
+                                <li class="detail-audit-entry">
+                                    <div class="detail-audit-icon tone-info"><i class="bi bi-key"></i></div>
+                                    <div class="detail-audit-source">login</div>
+                                    <div>Signed in from <code>198.51.100.42</code> <span class="text-secondary">· macOS · Chrome 122 · San Francisco</span></div>
+                                    <div class="detail-audit-when">4h ago</div>
+                                </li>
+                                <li class="detail-audit-entry">
+                                    <div class="detail-audit-icon tone-success"><i class="bi bi-key"></i></div>
+                                    <div class="detail-audit-source">api</div>
+                                    <div>Generated API key <code>ak_8f12…</code> <span class="text-secondary">· scopes: read, write</span></div>
+                                    <div class="detail-audit-when">2d ago</div>
+                                </li>
+                                <li class="detail-audit-entry">
+                                    <div class="detail-audit-icon"><i class="bi bi-people"></i></div>
+                                    <div class="detail-audit-source">object</div>
+                                    <div>Joined group <a href="#">Engineering · Backend</a> <span class="text-secondary">· role: member · invited by Sam</span></div>
+                                    <div class="detail-audit-when">3d ago</div>
+                                </li>
+                                <li class="detail-audit-entry">
+                                    <div class="detail-audit-icon tone-danger"><i class="bi bi-shield-exclamation"></i></div>
+                                    <div class="detail-audit-source">incident</div>
+                                    <div>Targeted by incident <a href="#">#48217</a> <span class="text-secondary">· brute-force login attempts · P1</span></div>
+                                    <div class="detail-audit-when">2h 14m ago</div>
+                                </li>
+                                <li class="detail-audit-entry">
+                                    <div class="detail-audit-icon tone-warning"><i class="bi bi-laptop"></i></div>
+                                    <div class="detail-audit-source">login</div>
+                                    <div>Login from new device <span class="text-secondary">· iPhone 15 · Safari · approved</span></div>
+                                    <div class="detail-audit-when">8d ago</div>
+                                </li>
+                                <li class="detail-audit-entry">
+                                    <div class="detail-audit-icon"><i class="bi bi-pencil"></i></div>
+                                    <div class="detail-audit-source">object</div>
+                                    <div>Updated profile <span class="text-secondary">· phone_number, locale</span></div>
+                                    <div class="detail-audit-when">14d ago</div>
+                                </li>
+                                <li class="detail-audit-entry">
+                                    <div class="detail-audit-icon tone-success"><i class="bi bi-shield-check"></i></div>
+                                    <div class="detail-audit-source">login</div>
+                                    <div>Verified phone <code>+1 415 555 0114</code></div>
+                                    <div class="detail-audit-when">14d ago</div>
+                                </li>
+                                <li class="detail-audit-entry">
+                                    <div class="detail-audit-icon"><i class="bi bi-person-plus"></i></div>
+                                    <div class="detail-audit-source">object</div>
+                                    <div>Account created <span class="text-secondary">· via Google SSO · invited to org by Alex</span></div>
+                                    <div class="detail-audit-when">2024-08-12</div>
+                                </li>
+                            </ul>
+
+                            <p class="note">
+                                Three current sections (<strong>Events</strong> from incidents,
+                                <strong>Activity Log</strong> for sessions, and <strong>Object
+                                Logs</strong> for record changes) collapse into a single audit
+                                feed with a source filter. The icon + source label communicate
+                                where each entry came from.
+                            </p>
+                        </div>
+
+                        <!-- Fallback empty-state -->
+                        <div class="snv-section" data-section-key="__placeholder__">
+                            <div class="empty-section">
+                                <div class="icon-large"><i class="bi bi-grid-3x3-gap"></i></div>
+                                <h4 data-empty-name>Section preview pending</h4>
+                                <p>Mocked: Overview, Profile, Permissions, Devices, Audit. The
+                                   remaining sections (Groups, API Keys, Locations,
+                                   Notifications, Detail) follow the same patterns and live in
+                                   the migration plan.</p>
+                                <a class="btn btn-sm btn-outline-secondary" href="../../requests/detailview-migration.md"><i class="bi bi-file-earmark-text me-1"></i>View plan</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ─────────────────────────────────────────────────────────────
+         MOCKUP 4 — GeoIPView
+         ─────────────────────────────────────────────────────────── -->
+    <div class="mockup" data-mockup="geoip">
+        <div class="detail-view-shell">
+
+            <div class="detail-header">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="dh-icon" style="color: var(--bs-warning); background: rgba(var(--bs-warning-rgb), 0.1); border: 1px solid rgba(var(--bs-warning-rgb), 0.25);">
+                        <i class="bi bi-globe2"></i>
+                    </div>
+                    <div class="dh-meta" style="min-width: 0; flex: 1;">
+                        <h2 class="dh-name"><code>198.51.100.42</code></h2>
+                        <p class="dh-subtitle">
+                            San Francisco, California, US ·
+                            ASN <code>14618</code> (Amazon AWS) ·
+                            reverse <code>ec2-198-51-100-42.compute.amazonaws.com</code>
+                        </p>
+                        <div class="dh-chips">
+                            <span class="badge text-bg-light">🇺🇸 United States</span>
+                            <span class="badge text-bg-warning"><i class="bi bi-exclamation-triangle me-1"></i>Threat: medium</span>
+                            <span class="badge text-bg-light">Risk score 64 / 100</span>
+                            <span class="badge text-bg-warning">VPN</span>
+                            <span class="badge text-bg-warning">Datacenter</span>
+                            <span class="badge text-bg-light">Cloud</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="dh-actions d-flex align-items-center gap-1">
+                    <label class="dh-active-switch me-1" title="Block this IP">
+                        <input type="checkbox">
+                        <span class="dh-track"></span>
+                        <span class="dh-track-label">Allowed</span>
+                    </label>
+                    <button class="btn btn-outline-danger btn-sm"><i class="bi bi-slash-circle me-1"></i>Block</button>
+                    <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-clockwise me-1"></i>Refresh geo</button>
+                    <span class="dh-group-sep" aria-hidden="true"></span>
+                    <button class="dh-action" title="More"><i class="bi bi-three-dots-vertical"></i></button>
+                    <button class="dh-action dh-close" title="Close"><i class="bi bi-x-lg"></i></button>
+                </div>
+            </div>
+
+            <div class="detail-view-body">
+                <div class="snv-layout" style="width: 100%;">
+
+                    <nav class="snv-nav" style="width: 200px;">
+                        <a class="active" data-section="overview"><i class="bi bi-grid-1x2"></i> Overview</a>
+                        <a data-section="network"><i class="bi bi-diagram-3"></i> Network</a>
+                        <a data-section="risk"><i class="bi bi-shield-exclamation"></i> Risk &amp; Reputation</a>
+
+                        <div class="snv-nav-label">Enforcement</div>
+                        <a data-section="block"><i class="bi bi-slash-circle"></i> Block &amp; Whitelist</a>
+
+                        <div class="snv-nav-label">Activity</div>
+                        <a data-section="events"><i class="bi bi-list-ul"></i> Events <span class="snv-badge snv-badge-warning">23</span></a>
+                        <a data-section="logs"><i class="bi bi-code-square"></i> Logs <span class="snv-badge snv-badge-muted">412</span></a>
+
+                        <div class="snv-nav-label">Detail</div>
+                        <a data-section="metadata"><i class="bi bi-braces"></i> Metadata</a>
+                    </nav>
+
+                    <div class="snv-content">
+
+                        <div class="snv-section snv-active" data-section-key="overview">
+                            <div class="section-eyebrow">Section · Overview</div>
+                            <h3 class="section-title">IP at a glance</h3>
+
+                            <div class="detail-status-panel tone-warning">
+                                <div class="detail-status-headline">
+                                    <div class="detail-status-state"><span class="detail-status-dot"></span>Allowed · elevated risk</div>
+                                    <div class="detail-status-line">Datacenter IP with VPN signal · 23 incident events</div>
+                                    <div class="detail-status-meta">
+                                        Last seen <strong>4m ago</strong> · 412 requests in last 30d ·
+                                        most recent activity from this IP triggered <a href="#">incident #48217</a>
+                                    </div>
+                                </div>
+                                <div class="detail-status-actions">
+                                    <button class="btn btn-danger btn-sm">Block 24h</button>
+                                    <button class="btn btn-outline-secondary btn-sm">Whitelist</button>
+                                </div>
+                            </div>
+
+                            <div class="detail-kpi-grid">
+                                <div class="metric-card metric-card-lg metric-card-tone-warning">
+                                    <div class="metric-card-label">Threat score</div>
+                                    <div class="metric-card-value">64 <span class="text-secondary fs-6 fw-normal">/ 100</span></div>
+                                </div>
+                                <div class="metric-card metric-card-lg metric-card-tone-danger">
+                                    <div class="metric-card-label">Incident events</div>
+                                    <div class="metric-card-value">23 <span class="badge text-bg-warning ms-1">+5 / 24h</span></div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Last seen</div>
+                                    <div class="metric-card-value">4 <span class="text-secondary fs-6 fw-normal">min ago</span></div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Login attempts</div>
+                                    <div class="metric-card-value">147 <span class="text-secondary fs-6 fw-normal">30d</span></div>
+                                </div>
+                            </div>
+
+                            <div class="detail-pair">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-title"><i class="bi bi-geo-alt"></i>Location &amp; network</div>
+                                        <ul class="list-unstyled mb-3 small">
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Country</span><span>🇺🇸 United States <code class="text-secondary small">US</code></span></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Region · City</span><span>California · San Francisco</span></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Coordinates</span><code>37.7749, −122.4194</code></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">ASN</span><span><code>14618</code> · Amazon AWS</span></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">ISP</span><span>Amazon.com, Inc.</span></li>
+                                            <li class="d-flex justify-content-between py-1"><span class="text-secondary">Reverse DNS</span><code class="small">ec2-198-51-100-42.compute.amazonaws.com</code></li>
+                                        </ul>
+                                        <!-- Map placeholder (lazy-init in real view) -->
+                                        <div class="rounded border border-secondary border-opacity-25" style="height: 120px; background: linear-gradient(135deg, rgba(var(--bs-info-rgb), 0.08), rgba(var(--bs-success-rgb), 0.06)); position: relative; overflow: hidden;">
+                                            <div style="position: absolute; inset: 0; background-image: linear-gradient(transparent 11px, rgba(var(--bs-border-color-translucent), 0.4) 12px), linear-gradient(90deg, transparent 11px, rgba(var(--bs-border-color-translucent), 0.4) 12px); background-size: 12px 12px; opacity: 0.3;"></div>
+                                            <div style="position: absolute; left: 38%; top: 52%; width: 14px; height: 14px; background: var(--bs-danger); border-radius: 999px; box-shadow: 0 0 0 4px rgba(var(--bs-danger-rgb), 0.3);"></div>
+                                            <div class="position-absolute bottom-0 start-0 m-2 small text-secondary"><i class="bi bi-geo-alt me-1"></i>San Francisco, US</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-title"><i class="bi bi-shield-exclamation"></i>Threat signals</div>
+                                        <ul class="detail-audit-list" style="border: none; border-radius: 0; background: transparent;">
+                                            <li class="detail-audit-entry" style="padding: 0.5rem 0;">
+                                                <div class="detail-audit-icon tone-warning"><i class="bi bi-shield-shaded"></i></div>
+                                                <div class="detail-audit-source">vpn</div>
+                                                <div>Detected as <strong>VPN exit node</strong> <span class="text-secondary">· source: ipinfo.io</span></div>
+                                                <div class="detail-audit-when">live</div>
+                                            </li>
+                                            <li class="detail-audit-entry" style="padding: 0.5rem 0;">
+                                                <div class="detail-audit-icon tone-warning"><i class="bi bi-cloud-fill"></i></div>
+                                                <div class="detail-audit-source">cloud</div>
+                                                <div>Datacenter IP <span class="text-secondary">· AWS us-west-2</span></div>
+                                                <div class="detail-audit-when">live</div>
+                                            </li>
+                                            <li class="detail-audit-entry" style="padding: 0.5rem 0;">
+                                                <div class="detail-audit-icon tone-info"><i class="bi bi-clock-history"></i></div>
+                                                <div class="detail-audit-source">history</div>
+                                                <div>Repeat offender <span class="text-secondary">· 3 incidents in 30d</span></div>
+                                                <div class="detail-audit-when">30d</div>
+                                            </li>
+                                            <li class="detail-audit-entry" style="padding: 0.5rem 0;">
+                                                <div class="detail-audit-icon"><i class="bi bi-shield-check"></i></div>
+                                                <div class="detail-audit-source">tor</div>
+                                                <div>Not a Tor exit node <span class="text-secondary">· checked 2h ago</span></div>
+                                                <div class="detail-audit-when">2h ago</div>
+                                            </li>
+                                            <li class="detail-audit-entry" style="padding: 0.5rem 0;">
+                                                <div class="detail-audit-icon"><i class="bi bi-shield-check"></i></div>
+                                                <div class="detail-audit-source">proxy</div>
+                                                <div>Not a known open proxy</div>
+                                                <div class="detail-audit-when">live</div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="note">
+                                <strong>What changes vs. today:</strong> the standalone Map
+                                section folds into Overview (lazy-init). Threat flags become
+                                first-class signals in their own card instead of being scattered
+                                across Risk &amp; Reputation. Block/Whitelist actions surface
+                                directly in the StatusPanel — admins can act without leaving
+                                Overview.
+                            </p>
+                        </div>
+
+                        <div class="snv-section" data-section-key="__placeholder__">
+                            <div class="empty-section">
+                                <div class="icon-large"><i class="bi bi-grid-3x3-gap"></i></div>
+                                <h4 data-empty-name>Section preview pending</h4>
+                                <p>Overview is the only section mocked for this view. The full
+                                   section list and per-section content lives in the migration plan.</p>
+                                <a class="btn btn-sm btn-outline-secondary" href="../../requests/detailview-migration.md"><i class="bi bi-file-earmark-text me-1"></i>View plan</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ─────────────────────────────────────────────────────────────
+         MOCKUP 5 — RunnerDetailsView
+         ─────────────────────────────────────────────────────────── -->
+    <div class="mockup" data-mockup="runner">
+        <div class="detail-view-shell">
+
+            <div class="detail-header">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="dh-icon" style="color: var(--bs-success); background: rgba(var(--bs-success-rgb), 0.1); border: 1px solid rgba(var(--bs-success-rgb), 0.25); position: relative;">
+                        <i class="bi bi-cpu"></i>
+                        <span style="position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; background: var(--bs-success); border-radius: 999px; box-shadow: 0 0 8px var(--bs-success); animation: snv-pulse 2s infinite;"></span>
+                    </div>
+                    <div class="dh-meta" style="min-width: 0; flex: 1;">
+                        <h2 class="dh-name"><code>runner-7</code></h2>
+                        <p class="dh-subtitle">
+                            Up 3d 14h · processed <strong>12,403</strong> jobs · 0.4 % failure ·
+                            heartbeat 0.3s ago
+                        </p>
+                        <div class="dh-chips">
+                            <span class="badge text-bg-success"><i class="bi bi-broadcast me-1"></i>Healthy</span>
+                            <span class="badge text-bg-light">v0.4.7</span>
+                            <span class="badge text-bg-info">channels: web · jobs · billing</span>
+                            <span class="badge text-bg-light"><i class="bi bi-hourglass-split me-1"></i>3 active</span>
+                            <span class="badge text-bg-light">linux · x86_64</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="dh-actions d-flex align-items-center gap-1">
+                    <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-broadcast-pin me-1"></i>Ping</button>
+                    <button class="btn btn-outline-warning btn-sm"><i class="bi bi-power me-1"></i>Shutdown</button>
+                    <span class="dh-group-sep" aria-hidden="true"></span>
+                    <button class="dh-action" title="More"><i class="bi bi-three-dots-vertical"></i></button>
+                    <button class="dh-action dh-close" title="Close"><i class="bi bi-x-lg"></i></button>
+                </div>
+            </div>
+
+            <div class="detail-view-body">
+                <div class="snv-layout" style="width: 100%;">
+
+                    <nav class="snv-nav" style="width: 200px;">
+                        <a class="active" data-section="overview"><i class="bi bi-grid-1x2"></i> Overview</a>
+                        <a data-section="system"><i class="bi bi-cpu"></i> System</a>
+                        <a data-section="channels"><i class="bi bi-broadcast"></i> Channels <span class="snv-badge snv-badge-muted">3</span></a>
+                        <a data-section="jobs"><i class="bi bi-hourglass-split"></i> Active Jobs <span class="snv-badge snv-badge-muted">3</span></a>
+
+                        <div class="snv-nav-label">History</div>
+                        <a data-section="job-history"><i class="bi bi-clock-history"></i> Job History</a>
+                        <a data-section="logs"><i class="bi bi-code-square"></i> Logs</a>
+
+                        <div class="snv-nav-label">Control</div>
+                        <a data-section="actions"><i class="bi bi-power"></i> Control</a>
+                    </nav>
+
+                    <div class="snv-content">
+
+                        <div class="snv-section snv-active" data-section-key="overview">
+                            <div class="section-eyebrow">Section · Overview</div>
+                            <h3 class="section-title">Runner status</h3>
+
+                            <div class="detail-status-panel tone-success">
+                                <div class="detail-status-headline">
+                                    <div class="detail-status-state"><span class="detail-status-dot"></span>Healthy</div>
+                                    <div class="detail-status-line">Up 3d 14h · 0.3s since last heartbeat</div>
+                                    <div class="detail-status-meta">
+                                        Processing 3 jobs · drained 12,403 lifetime ·
+                                        last failure <strong>4h ago</strong> on
+                                        <a href="#"><code>billing.invoices.generate_monthly</code></a>
+                                    </div>
+                                </div>
+                                <div class="detail-status-actions">
+                                    <button class="btn btn-outline-secondary btn-sm">Drain mode</button>
+                                    <button class="btn btn-outline-warning btn-sm">Shutdown</button>
+                                </div>
+                            </div>
+
+                            <div class="detail-kpi-grid">
+                                <div class="metric-card metric-card-lg metric-card-tone-success">
+                                    <div class="metric-card-label">Jobs processed</div>
+                                    <div class="metric-card-value">12,403</div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Failed</div>
+                                    <div class="metric-card-value">53 <span class="text-secondary fs-6 fw-normal">0.4 %</span></div>
+                                </div>
+                                <div class="metric-card metric-card-lg metric-card-tone-success">
+                                    <div class="metric-card-label">Success rate</div>
+                                    <div class="metric-card-value">99.6 <span class="text-secondary fs-6 fw-normal">%</span></div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Uptime</div>
+                                    <div class="metric-card-value">3d <span class="text-secondary fs-6 fw-normal">14h 22m</span></div>
+                                </div>
+                            </div>
+
+                            <div class="detail-pair">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-title"><i class="bi bi-cpu"></i>System resources</div>
+                                        <div class="small mb-3">
+                                            <div class="d-flex justify-content-between mb-1"><span class="text-secondary">CPU</span><span>37 % <span class="text-secondary">· 4 cores</span></span></div>
+                                            <div class="progress" role="progressbar" style="height: 6px;"><div class="progress-bar bg-success" style="width: 37%"></div></div>
+                                        </div>
+                                        <div class="small mb-3">
+                                            <div class="d-flex justify-content-between mb-1"><span class="text-secondary">Memory</span><span>2.1 GB <span class="text-secondary">/ 8 GB</span></span></div>
+                                            <div class="progress" role="progressbar" style="height: 6px;"><div class="progress-bar bg-info" style="width: 26%"></div></div>
+                                        </div>
+                                        <div class="small mb-3">
+                                            <div class="d-flex justify-content-between mb-1"><span class="text-secondary">Disk</span><span>74 % <span class="text-secondary">· /var/lib/jobs</span></span></div>
+                                            <div class="progress" role="progressbar" style="height: 6px;"><div class="progress-bar bg-warning" style="width: 74%"></div></div>
+                                        </div>
+                                        <div class="small mb-2">
+                                            <div class="d-flex justify-content-between mb-1"><span class="text-secondary">Heartbeat (last 5m)</span><span class="text-success">stable</span></div>
+                                            <!-- Simple inline sparkline -->
+                                            <svg viewBox="0 0 200 24" preserveAspectRatio="none" style="width: 100%; height: 24px;">
+                                                <polyline fill="none" stroke="var(--bs-success)" stroke-width="1.5"
+                                                    points="0,14 10,12 20,13 30,11 40,12 50,10 60,12 70,13 80,11 90,12 100,10 110,11 120,12 130,11 140,10 150,12 160,11 170,13 180,12 190,11 200,12">
+                                                </polyline>
+                                            </svg>
+                                        </div>
+                                        <ul class="list-unstyled mb-0 small">
+                                            <li class="d-flex justify-content-between border-top border-opacity-25 pt-2"><span class="text-secondary">OS</span><span>Linux 6.5.0 · Ubuntu 22.04</span></li>
+                                            <li class="d-flex justify-content-between border-top border-opacity-25 pt-1"><span class="text-secondary">PID</span><code>4127</code></li>
+                                            <li class="d-flex justify-content-between border-top border-opacity-25 pt-1"><span class="text-secondary">Started</span><code>2026-05-04 19:22 UTC</code></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-title"><i class="bi bi-hourglass-split"></i>Active jobs · 3</div>
+                                        <ol class="detail-timeline">
+                                            <li class="detail-timeline-item tone-info">
+                                                <div>
+                                                    <div class="detail-timeline-headline"><code>billing.invoices.send</code></div>
+                                                    <div class="detail-timeline-detail">attempt 1 · running 12s · channel <code>billing</code></div>
+                                                </div>
+                                                <span class="detail-timeline-when">12s</span>
+                                            </li>
+                                            <li class="detail-timeline-item tone-info">
+                                                <div>
+                                                    <div class="detail-timeline-headline"><code>web.notify.push</code></div>
+                                                    <div class="detail-timeline-detail">attempt 1 · running 4s · channel <code>web</code></div>
+                                                </div>
+                                                <span class="detail-timeline-when">4s</span>
+                                            </li>
+                                            <li class="detail-timeline-item tone-info">
+                                                <div>
+                                                    <div class="detail-timeline-headline"><code>jobs.cleanup.tmp</code></div>
+                                                    <div class="detail-timeline-detail">attempt 1 · running 1m 14s · channel <code>jobs</code></div>
+                                                </div>
+                                                <span class="detail-timeline-when">1m 14s</span>
+                                            </li>
+                                        </ol>
+                                        <div class="small text-secondary mt-2">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            Up to 8 concurrent jobs per channel. Click into
+                                            <a href="#">Active Jobs</a> for the full table with
+                                            cancel actions.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="note">
+                                <strong>What changes vs. today:</strong> migrates off TabView
+                                onto SideNav (consistent with the rest of admin). Heartbeat
+                                sparkline + StatusPanel land in Overview so admins see
+                                "is it healthy?" immediately without clicking. Logs and Job
+                                History split into separate sections — they answer different
+                                questions.
+                            </p>
+                        </div>
+
+                        <div class="snv-section" data-section-key="__placeholder__">
+                            <div class="empty-section">
+                                <div class="icon-large"><i class="bi bi-grid-3x3-gap"></i></div>
+                                <h4 data-empty-name>Section preview pending</h4>
+                                <p>Overview is the only section mocked for this view. The full
+                                   section list and per-section content lives in the migration plan.</p>
+                                <a class="btn btn-sm btn-outline-secondary" href="../../requests/detailview-migration.md"><i class="bi bi-file-earmark-text me-1"></i>View plan</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ─────────────────────────────────────────────────────────────
+         MOCKUP 6 — GroupView
+         ─────────────────────────────────────────────────────────── -->
+    <div class="mockup" data-mockup="group">
+        <div class="detail-view-shell">
+
+            <div class="detail-header">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="dh-icon" style="color: var(--bs-primary); background: rgba(var(--bs-primary-rgb), 0.1); border: 1px solid rgba(var(--bs-primary-rgb), 0.25);">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                    <div class="dh-meta" style="min-width: 0; flex: 1;">
+                        <h2 class="dh-name">Engineering · Backend</h2>
+                        <p class="dh-subtitle">
+                            <a href="#">Engineering</a> ·
+                            <strong>Backend</strong>
+                            · 12 members · 3 sub-groups
+                        </p>
+                        <div class="dh-chips">
+                            <span class="badge text-bg-primary">team</span>
+                            <span class="badge text-bg-light"><i class="bi bi-people me-1"></i>12 members</span>
+                            <span class="badge text-bg-light"><i class="bi bi-diagram-3 me-1"></i>3 sub-groups</span>
+                            <span class="badge text-bg-light">America/Los_Angeles</span>
+                            <span class="badge text-bg-light">EOD 18:00</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="dh-actions d-flex align-items-center gap-1">
+                    <label class="dh-active-switch me-1" title="Toggle is_active">
+                        <input type="checkbox" checked>
+                        <span class="dh-track"></span>
+                        <span class="dh-track-label">Active</span>
+                    </label>
+                    <button class="btn btn-primary btn-sm"><i class="bi bi-person-plus me-1"></i>Invite</button>
+                    <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil me-1"></i>Edit</button>
+                    <span class="dh-group-sep" aria-hidden="true"></span>
+                    <button class="dh-action" title="More"><i class="bi bi-three-dots-vertical"></i></button>
+                    <button class="dh-action dh-close" title="Close"><i class="bi bi-x-lg"></i></button>
+                </div>
+            </div>
+
+            <div class="detail-view-body">
+                <div class="snv-layout" style="width: 100%;">
+
+                    <nav class="snv-nav" style="width: 200px;">
+                        <a class="active" data-section="overview"><i class="bi bi-grid-1x2"></i> Overview</a>
+                        <a data-section="identity"><i class="bi bi-card-text"></i> Identity</a>
+
+                        <div class="snv-nav-label">Membership</div>
+                        <a data-section="members"><i class="bi bi-people"></i> Members <span class="snv-badge snv-badge-muted">12</span></a>
+                        <a data-section="subgroups"><i class="bi bi-diagram-3"></i> Sub-Groups <span class="snv-badge snv-badge-muted">3</span></a>
+
+                        <div class="snv-nav-label">Access</div>
+                        <a data-section="api-keys"><i class="bi bi-key"></i> API Keys <span class="snv-badge snv-badge-muted">5</span></a>
+                        <a data-section="permissions"><i class="bi bi-shield-lock"></i> Permissions</a>
+
+                        <div class="snv-nav-label">Activity</div>
+                        <a data-section="events"><i class="bi bi-list-ul"></i> Events</a>
+                        <a data-section="audit"><i class="bi bi-clock-history"></i> Audit <span class="snv-badge snv-badge-muted">87</span></a>
+
+                        <div class="snv-nav-label">Detail</div>
+                        <a data-section="metadata"><i class="bi bi-braces"></i> Metadata</a>
+                    </nav>
+
+                    <div class="snv-content">
+
+                        <div class="snv-section snv-active" data-section-key="overview">
+                            <div class="section-eyebrow">Section · Overview</div>
+                            <h3 class="section-title">Group at a glance</h3>
+
+                            <div class="detail-kpi-grid">
+                                <div class="metric-card metric-card-lg metric-card-tone-primary">
+                                    <div class="metric-card-label">Members</div>
+                                    <div class="metric-card-value">12</div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Sub-groups</div>
+                                    <div class="metric-card-value">3</div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">API Keys</div>
+                                    <div class="metric-card-value">5</div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Last activity</div>
+                                    <div class="metric-card-value">8 <span class="text-secondary fs-6 fw-normal">min ago</span></div>
+                                </div>
+                            </div>
+
+                            <div class="detail-pair">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-title"><i class="bi bi-card-text"></i>Identity</div>
+                                        <ul class="list-unstyled mb-0 small">
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Name</span><span>Engineering · Backend</span></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Kind</span><span class="badge text-bg-primary">team</span></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Parent</span><a href="#">Engineering</a></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Timezone</span><code>America/Los_Angeles</code></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">EOD hour</span><span>18:00</span></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Domain</span><code>backend.example.com</code></li>
+                                            <li class="d-flex justify-content-between py-1"><span class="text-secondary">Created</span><code>2024-03-14</code></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-title"><i class="bi bi-diagram-3"></i>Hierarchy</div>
+                                        <div class="small font-monospace text-secondary mb-2" style="line-height: 1.7;">
+                                            <a href="#" class="link-secondary">Engineering</a> · 47 total<br>
+                                            └─ <strong class="text-body">Backend</strong> · 12 members · 3 sub-groups
+                                            <div class="ms-4 mt-1">
+                                                ├─ <a href="#">Payments-API</a> <span class="text-secondary">· 4</span><br>
+                                                ├─ <a href="#">Payments-Web</a> <span class="text-secondary">· 5</span><br>
+                                                └─ <a href="#">Payments-Ops</a> <span class="text-secondary">· 3</span>
+                                            </div>
+                                        </div>
+                                        <div class="border-top border-opacity-25 pt-2 mt-2 small">
+                                            <div class="d-flex justify-content-between mb-1"><span class="text-secondary">Active members</span><span>11 <span class="text-secondary">/ 12</span></span></div>
+                                            <div class="d-flex justify-content-between"><span class="text-secondary">With API keys</span><span>3 <span class="text-secondary">/ 12</span></span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="note">
+                                <strong>Notes for the migration:</strong> the current Details
+                                section's hand-rolled rows fold into the standard Identity
+                                card pattern. Hierarchy mini-tree on the right surfaces
+                                "where does this group sit?" without leaving Overview.
+                            </p>
+                        </div>
+
+                        <div class="snv-section" data-section-key="__placeholder__">
+                            <div class="empty-section">
+                                <div class="icon-large"><i class="bi bi-grid-3x3-gap"></i></div>
+                                <h4 data-empty-name>Section preview pending</h4>
+                                <p>Overview is the only section mocked for this view. The full
+                                   section list and per-section content lives in the migration plan.</p>
+                                <a class="btn btn-sm btn-outline-secondary" href="../../requests/detailview-migration.md"><i class="bi bi-file-earmark-text me-1"></i>View plan</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ─────────────────────────────────────────────────────────────
+         MOCKUP 7 — MemberView
+         ─────────────────────────────────────────────────────────── -->
+    <div class="mockup" data-mockup="member">
+        <div class="detail-view-shell">
+
+            <div class="detail-header">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="detail-avatar">JS</div>
+                    <div class="dh-meta" style="min-width: 0; flex: 1;">
+                        <h2 class="dh-name">Jamie Suzuki <span class="text-secondary fw-normal" style="font-size: 0.85rem;">in</span> Engineering · Backend</h2>
+                        <p class="dh-subtitle">
+                            <a href="#">jamie@example.com</a> ·
+                            <strong>Member</strong> ·
+                            joined 3d ago by <a href="#">Sam</a>
+                        </p>
+                        <div class="dh-chips">
+                            <span class="badge text-bg-primary">member</span>
+                            <span class="badge text-bg-light">team</span>
+                            <span class="badge text-bg-success">active</span>
+                            <span class="badge text-bg-light">8 perms granted</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="dh-actions d-flex align-items-center gap-1">
+                    <label class="dh-active-switch me-1" title="Toggle active">
+                        <input type="checkbox" checked>
+                        <span class="dh-track"></span>
+                        <span class="dh-track-label">Active</span>
+                    </label>
+                    <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil me-1"></i>Edit role</button>
+                    <button class="btn btn-outline-danger btn-sm"><i class="bi bi-person-dash me-1"></i>Remove</button>
+                    <span class="dh-group-sep" aria-hidden="true"></span>
+                    <button class="dh-action" title="More"><i class="bi bi-three-dots-vertical"></i></button>
+                    <button class="dh-action dh-close" title="Close"><i class="bi bi-x-lg"></i></button>
+                </div>
+            </div>
+
+            <div class="detail-view-body">
+                <div class="snv-layout" style="width: 100%;">
+
+                    <nav class="snv-nav" style="width: 200px;">
+                        <a class="active" data-section="overview"><i class="bi bi-grid-1x2"></i> Overview</a>
+                        <a data-section="permissions"><i class="bi bi-shield-lock"></i> Permissions</a>
+
+                        <div class="snv-nav-label">Activity</div>
+                        <a data-section="audit"><i class="bi bi-clock-history"></i> Audit <span class="snv-badge snv-badge-muted">23</span></a>
+                    </nav>
+
+                    <div class="snv-content">
+
+                        <div class="snv-section snv-active" data-section-key="overview">
+                            <div class="section-eyebrow">Section · Overview</div>
+                            <h3 class="section-title">Membership at a glance</h3>
+
+                            <div class="detail-kpi-grid">
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Role</div>
+                                    <div class="metric-card-value">Member</div>
+                                </div>
+                                <div class="metric-card metric-card-lg metric-card-tone-success">
+                                    <div class="metric-card-label">Status</div>
+                                    <div class="metric-card-value">Active</div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Joined</div>
+                                    <div class="metric-card-value">3 <span class="text-secondary fs-6 fw-normal">d ago</span></div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Perms granted</div>
+                                    <div class="metric-card-value">8</div>
+                                </div>
+                            </div>
+
+                            <div class="detail-pair">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-title"><i class="bi bi-link-45deg"></i>This membership</div>
+                                        <ul class="list-unstyled mb-0 small">
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">User</span><a href="#">Jamie Suzuki</a></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Email</span><a href="#">jamie@example.com</a></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Group</span><a href="#">Engineering · Backend</a></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Role</span><span class="badge text-bg-primary">member</span></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Joined</span><code>2026-05-05 · 3d ago</code></li>
+                                            <li class="d-flex justify-content-between py-1"><span class="text-secondary">Invited by</span><a href="#">Sam Chen</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-title"><i class="bi bi-list-ul"></i>Recent activity in this group</div>
+                                        <ol class="detail-timeline">
+                                            <li class="detail-timeline-item tone-info">
+                                                <div>
+                                                    <div class="detail-timeline-headline">Active in group</div>
+                                                    <div class="detail-timeline-detail">last action 4h ago — viewed RuleSet #74</div>
+                                                </div>
+                                                <span class="detail-timeline-when">4h ago</span>
+                                            </li>
+                                            <li class="detail-timeline-item tone-success">
+                                                <div>
+                                                    <div class="detail-timeline-headline">Permission granted</div>
+                                                    <div class="detail-timeline-detail"><code>account.users.edit</code> by <a href="#">Alex</a></div>
+                                                </div>
+                                                <span class="detail-timeline-when">1d ago</span>
+                                            </li>
+                                            <li class="detail-timeline-item">
+                                                <div>
+                                                    <div class="detail-timeline-headline">Joined group</div>
+                                                    <div class="detail-timeline-detail">role: member · invited by <a href="#">Sam</a></div>
+                                                </div>
+                                                <span class="detail-timeline-when">3d ago</span>
+                                            </li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="note">
+                                <strong>Notes for the migration:</strong> Member is the simplest
+                                DetailView in the family — three sections is fine. The header
+                                title doubles as cross-record navigation: clicking the user name
+                                opens UserView, clicking the group opens GroupView.
+                            </p>
+                        </div>
+
+                        <div class="snv-section" data-section-key="__placeholder__">
+                            <div class="empty-section">
+                                <div class="icon-large"><i class="bi bi-grid-3x3-gap"></i></div>
+                                <h4 data-empty-name>Section preview pending</h4>
+                                <p>Overview is the only section mocked for this view. The full
+                                   section list lives in the migration plan.</p>
+                                <a class="btn btn-sm btn-outline-secondary" href="../../requests/detailview-migration.md"><i class="bi bi-file-earmark-text me-1"></i>View plan</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ─────────────────────────────────────────────────────────────
+         MOCKUP 8 — DeviceView
+         ─────────────────────────────────────────────────────────── -->
+    <div class="mockup" data-mockup="device">
+        <div class="detail-view-shell">
+
+            <div class="detail-header">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="dh-icon" style="color: var(--bs-info); background: rgba(var(--bs-info-rgb), 0.1); border: 1px solid rgba(var(--bs-info-rgb), 0.25);">
+                        <i class="bi bi-laptop"></i>
+                    </div>
+                    <div class="dh-meta" style="min-width: 0; flex: 1;">
+                        <h2 class="dh-name">Chrome 122 on macOS Sonoma</h2>
+                        <p class="dh-subtitle">
+                            Last seen <strong>4h ago</strong> from
+                            <code>198.51.100.42</code> · San Francisco, US ·
+                            owner <a href="#">Jamie Suzuki</a>
+                        </p>
+                        <div class="dh-chips">
+                            <span class="badge text-bg-info">browser</span>
+                            <span class="badge text-bg-light"><code>duid · f8c2…7a91</code></span>
+                            <span class="badge text-bg-light">12 sessions</span>
+                            <span class="badge text-bg-light">3 locations</span>
+                            <span class="badge text-bg-success">trusted</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="dh-actions d-flex align-items-center gap-1">
+                    <label class="dh-active-switch me-1" title="Trusted device">
+                        <input type="checkbox" checked>
+                        <span class="dh-track"></span>
+                        <span class="dh-track-label">Trusted</span>
+                    </label>
+                    <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-person me-1"></i>View user</button>
+                    <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Forget</button>
+                    <span class="dh-group-sep" aria-hidden="true"></span>
+                    <button class="dh-action" title="More"><i class="bi bi-three-dots-vertical"></i></button>
+                    <button class="dh-action dh-close" title="Close"><i class="bi bi-x-lg"></i></button>
+                </div>
+            </div>
+
+            <div class="detail-view-body">
+                <div class="snv-layout" style="width: 100%;">
+
+                    <nav class="snv-nav" style="width: 200px;">
+                        <a class="active" data-section="overview"><i class="bi bi-grid-1x2"></i> Overview</a>
+                        <a data-section="hardware"><i class="bi bi-cpu"></i> Hardware</a>
+
+                        <div class="snv-nav-label">Activity</div>
+                        <a data-section="locations"><i class="bi bi-geo-alt"></i> Locations <span class="snv-badge snv-badge-muted">3</span></a>
+                        <a data-section="sessions"><i class="bi bi-clock-history"></i> Sessions <span class="snv-badge snv-badge-muted">12</span></a>
+
+                        <div class="snv-nav-label">Detail</div>
+                        <a data-section="metadata"><i class="bi bi-braces"></i> Metadata</a>
+                    </nav>
+
+                    <div class="snv-content">
+
+                        <div class="snv-section snv-active" data-section-key="overview">
+                            <div class="section-eyebrow">Section · Overview</div>
+                            <h3 class="section-title">Device snapshot</h3>
+
+                            <div class="detail-kpi-grid">
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Sessions</div>
+                                    <div class="metric-card-value">12</div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Locations</div>
+                                    <div class="metric-card-value">3</div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Days active</div>
+                                    <div class="metric-card-value">42</div>
+                                </div>
+                                <div class="metric-card metric-card-lg metric-card-tone-success">
+                                    <div class="metric-card-label">Last login</div>
+                                    <div class="metric-card-value">4 <span class="text-secondary fs-6 fw-normal">h ago</span></div>
+                                </div>
+                            </div>
+
+                            <div class="detail-pair">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-title"><i class="bi bi-cpu"></i>Hardware &amp; environment</div>
+                                        <ul class="list-unstyled mb-0 small">
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Browser</span><span>Chrome 122 · Blink</span></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">OS</span><span>macOS Sonoma 14.4</span></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Screen</span><span>2560 × 1440 · 2× retina</span></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Color depth</span><span>24-bit</span></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Locale</span><code>en-US</code></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Timezone</span><code>America/Los_Angeles</code></li>
+                                            <li class="d-flex justify-content-between py-1"><span class="text-secondary">First seen</span><code>2026-03-26 · 42d ago</code></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-title"><i class="bi bi-shield-check"></i>Threat signals</div>
+                                        <ul class="detail-audit-list" style="border: none; border-radius: 0; background: transparent;">
+                                            <li class="detail-audit-entry" style="padding: 0.4rem 0;">
+                                                <div class="detail-audit-icon tone-success"><i class="bi bi-shield-check"></i></div>
+                                                <div class="detail-audit-source">trust</div>
+                                                <div>Marked <strong>trusted</strong> by user 3d ago</div>
+                                                <div class="detail-audit-when">3d ago</div>
+                                            </li>
+                                            <li class="detail-audit-entry" style="padding: 0.4rem 0;">
+                                                <div class="detail-audit-icon"><i class="bi bi-shield-check"></i></div>
+                                                <div class="detail-audit-source">vpn</div>
+                                                <div>No VPN detected on any session</div>
+                                                <div class="detail-audit-when">live</div>
+                                            </li>
+                                            <li class="detail-audit-entry" style="padding: 0.4rem 0;">
+                                                <div class="detail-audit-icon"><i class="bi bi-shield-check"></i></div>
+                                                <div class="detail-audit-source">tor</div>
+                                                <div>Never seen from a Tor exit</div>
+                                                <div class="detail-audit-when">42d</div>
+                                            </li>
+                                            <li class="detail-audit-entry" style="padding: 0.4rem 0;">
+                                                <div class="detail-audit-icon tone-info"><i class="bi bi-geo-alt"></i></div>
+                                                <div class="detail-audit-source">geo</div>
+                                                <div>3 distinct locations · all in US</div>
+                                                <div class="detail-audit-when">live</div>
+                                            </li>
+                                            <li class="detail-audit-entry" style="padding: 0.4rem 0;">
+                                                <div class="detail-audit-icon"><i class="bi bi-fingerprint"></i></div>
+                                                <div class="detail-audit-source">duid</div>
+                                                <div><code>f8c2…7a91</code> · 1 user</div>
+                                                <div class="detail-audit-when">42d</div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="note">
+                                <strong>Notes for the migration:</strong> grows from today's
+                                2 sections to 5. The Threat signals card uses the
+                                <code>.detail-audit-list</code> primitive — same pattern as
+                                UserView's Audit feed. Hardware section (linked above) gets
+                                the full <code>device_info</code> dump.
+                            </p>
+                        </div>
+
+                        <div class="snv-section" data-section-key="__placeholder__">
+                            <div class="empty-section">
+                                <div class="icon-large"><i class="bi bi-grid-3x3-gap"></i></div>
+                                <h4 data-empty-name>Section preview pending</h4>
+                                <p>Overview is the only section mocked for this view. The full
+                                   section list lives in the migration plan.</p>
+                                <a class="btn btn-sm btn-outline-secondary" href="../../requests/detailview-migration.md"><i class="bi bi-file-earmark-text me-1"></i>View plan</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ─────────────────────────────────────────────────────────────
+         MOCKUP 9 — FileView
+         ─────────────────────────────────────────────────────────── -->
+    <div class="mockup" data-mockup="file">
+        <div class="detail-view-shell">
+
+            <div class="detail-header">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="dh-icon" style="color: var(--bs-danger); background: rgba(var(--bs-danger-rgb), 0.1); border: 1px solid rgba(var(--bs-danger-rgb), 0.25);">
+                        <i class="bi bi-file-earmark-pdf"></i>
+                    </div>
+                    <div class="dh-meta" style="min-width: 0; flex: 1;">
+                        <h2 class="dh-name">annual-report-2026.pdf</h2>
+                        <p class="dh-subtitle">
+                            <strong>2.4 MB</strong> · 32 pages ·
+                            uploaded <strong>2d ago</strong> by <a href="#">Jamie Suzuki</a>
+                        </p>
+                        <div class="dh-chips">
+                            <span class="badge text-bg-info">document</span>
+                            <span class="badge text-bg-light"><code>application/pdf</code></span>
+                            <span class="badge text-bg-warning"><i class="bi bi-eye-slash me-1"></i>Private</span>
+                            <span class="badge text-bg-light">3 renditions</span>
+                            <span class="badge text-bg-light">2 shares</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="dh-actions d-flex align-items-center gap-1">
+                    <label class="dh-active-switch me-1" title="Public visibility">
+                        <input type="checkbox">
+                        <span class="dh-track"></span>
+                        <span class="dh-track-label">Private</span>
+                    </label>
+                    <button class="btn btn-primary btn-sm"><i class="bi bi-download me-1"></i>Download</button>
+                    <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-share me-1"></i>Share</button>
+                    <span class="dh-group-sep" aria-hidden="true"></span>
+                    <button class="dh-action" title="More"><i class="bi bi-three-dots-vertical"></i></button>
+                    <button class="dh-action dh-close" title="Close"><i class="bi bi-x-lg"></i></button>
+                </div>
+            </div>
+
+            <div class="detail-view-body">
+                <div class="snv-layout" style="width: 100%;">
+
+                    <nav class="snv-nav" style="width: 200px;">
+                        <a class="active" data-section="preview"><i class="bi bi-eye"></i> Preview</a>
+                        <a data-section="details"><i class="bi bi-card-text"></i> Details</a>
+                        <a data-section="renditions"><i class="bi bi-images"></i> Renditions <span class="snv-badge snv-badge-muted">3</span></a>
+
+                        <div class="snv-nav-label">Sharing</div>
+                        <a data-section="shares"><i class="bi bi-link-45deg"></i> Shares <span class="snv-badge snv-badge-muted">2</span></a>
+                        <a data-section="access-log"><i class="bi bi-eye"></i> Access Log <span class="snv-badge snv-badge-warning">14</span></a>
+
+                        <div class="snv-nav-label">Detail</div>
+                        <a data-section="metadata"><i class="bi bi-braces"></i> Metadata</a>
+                    </nav>
+
+                    <div class="snv-content">
+
+                        <div class="snv-section snv-active" data-section-key="preview">
+                            <div class="section-eyebrow">Section · Preview</div>
+                            <h3 class="section-title">annual-report-2026.pdf</h3>
+
+                            <div class="detail-pair" style="grid-template-columns: 2fr 1fr;">
+                                <!-- Preview pane -->
+                                <div class="card">
+                                    <div class="card-body p-2">
+                                        <div style="height: 360px; background: linear-gradient(180deg, #f6f6f3, #e8e8e2); border: 1px solid var(--bs-border-color); border-radius: 0.4rem; position: relative; overflow: hidden;">
+                                            <!-- Mock PDF page content -->
+                                            <div style="position: absolute; left: 1.5rem; right: 1.5rem; top: 1.25rem;">
+                                                <div style="height: 18px; background: #2a2a28; width: 55%; border-radius: 2px; margin-bottom: 8px;"></div>
+                                                <div style="height: 7px; background: #555; width: 40%; border-radius: 1px; margin-bottom: 18px;"></div>
+                                                <div style="height: 5px; background: #999; width: 92%; border-radius: 1px; margin-bottom: 5px;"></div>
+                                                <div style="height: 5px; background: #999; width: 86%; border-radius: 1px; margin-bottom: 5px;"></div>
+                                                <div style="height: 5px; background: #999; width: 94%; border-radius: 1px; margin-bottom: 5px;"></div>
+                                                <div style="height: 5px; background: #999; width: 70%; border-radius: 1px; margin-bottom: 14px;"></div>
+                                                <div style="height: 110px; background: linear-gradient(135deg, #1d70b8, #5eead4); border-radius: 4px; margin-bottom: 14px;"></div>
+                                                <div style="height: 5px; background: #999; width: 92%; border-radius: 1px; margin-bottom: 5px;"></div>
+                                                <div style="height: 5px; background: #999; width: 80%; border-radius: 1px;"></div>
+                                            </div>
+                                            <div style="position: absolute; bottom: 0.6rem; right: 0.7rem; background: var(--bs-tertiary-bg); border: 1px solid var(--bs-border-color); padding: 0.15rem 0.45rem; border-radius: 999px; font-size: 0.6rem; color: var(--bs-secondary-color);">page 1 of 32</div>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mt-2 px-1">
+                                            <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></button>
+                                            <span class="small text-secondary">page 1 of 32 · use arrows to navigate</span>
+                                            <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-right"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Properties -->
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-title"><i class="bi bi-card-text"></i>Properties</div>
+                                        <ul class="list-unstyled mb-0 small">
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Size</span><code>2.4 MB</code></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Pages</span><code>32</code></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Type</span><code>application/pdf</code></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Uploaded</span><code>2d ago</code></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">By</span><a href="#">Jamie Suzuki</a></li>
+                                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">Visibility</span><span class="badge text-bg-warning">Private</span></li>
+                                            <li class="d-flex justify-content-between py-1"><span class="text-secondary">Downloads</span><strong>14</strong></li>
+                                        </ul>
+                                        <div class="border-top border-opacity-25 mt-2 pt-2 small">
+                                            <div class="text-secondary mb-1">Renditions · 3</div>
+                                            <div class="d-flex gap-1">
+                                                <span class="badge text-bg-light">thumb 200×</span>
+                                                <span class="badge text-bg-light">page-1 1200×</span>
+                                                <span class="badge text-bg-light">ocr.txt</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="note">
+                                <strong>Notes for the migration:</strong> Preview is the
+                                default section. Adds a NEW <strong>Access Log</strong>
+                                section (badge counts surfaced in the rail) — admins
+                                investigating sensitive files want "who downloaded this and
+                                when" without leaving the modal.
+                            </p>
+                        </div>
+
+                        <div class="snv-section" data-section-key="__placeholder__">
+                            <div class="empty-section">
+                                <div class="icon-large"><i class="bi bi-grid-3x3-gap"></i></div>
+                                <h4 data-empty-name>Section preview pending</h4>
+                                <p>Preview is the only section mocked for this view. The full
+                                   section list lives in the migration plan.</p>
+                                <a class="btn btn-sm btn-outline-secondary" href="../../requests/detailview-migration.md"><i class="bi bi-file-earmark-text me-1"></i>View plan</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ─────────────────────────────────────────────────────────────
+         MOCKUP 10 — ShortLinkView
+         ─────────────────────────────────────────────────────────── -->
+    <div class="mockup" data-mockup="shortlink">
+        <div class="detail-view-shell">
+
+            <div class="detail-header">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="dh-icon" style="color: var(--bs-primary); background: rgba(var(--bs-primary-rgb), 0.1); border: 1px solid rgba(var(--bs-primary-rgb), 0.25);">
+                        <i class="bi bi-link-45deg"></i>
+                    </div>
+                    <div class="dh-meta" style="min-width: 0; flex: 1;">
+                        <h2 class="dh-name">
+                            <code style="font-size: 0.92rem;">go.mojo.dev/launch-2026</code>
+                            <button class="btn btn-sm btn-link link-secondary p-0 ms-1" title="Copy"><i class="bi bi-clipboard"></i></button>
+                        </h2>
+                        <p class="dh-subtitle">
+                            → <a href="#">https://blog.example.com/posts/2026-launch-announcement?utm_source=newsletter</a>
+                        </p>
+                        <div class="dh-chips">
+                            <span class="badge text-bg-primary">newsletter</span>
+                            <span class="badge text-bg-success">2,847 hits</span>
+                            <span class="badge text-bg-info"><i class="bi bi-graph-up me-1"></i>tracked</span>
+                            <span class="badge text-bg-warning">expires in 23d</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="dh-actions d-flex align-items-center gap-1">
+                    <label class="dh-active-switch me-1" title="Toggle is_active">
+                        <input type="checkbox" checked>
+                        <span class="dh-track"></span>
+                        <span class="dh-track-label">Active</span>
+                    </label>
+                    <button class="btn btn-primary btn-sm"><i class="bi bi-clipboard me-1"></i>Copy link</button>
+                    <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-box-arrow-up-right me-1"></i>Open</button>
+                    <span class="dh-group-sep" aria-hidden="true"></span>
+                    <button class="dh-action" title="More"><i class="bi bi-three-dots-vertical"></i></button>
+                    <button class="dh-action dh-close" title="Close"><i class="bi bi-x-lg"></i></button>
+                </div>
+            </div>
+
+            <div class="detail-view-body">
+                <div class="snv-layout" style="width: 100%;">
+
+                    <nav class="snv-nav" style="width: 200px;">
+                        <a class="active" data-section="overview"><i class="bi bi-grid-1x2"></i> Overview</a>
+                        <a data-section="config"><i class="bi bi-sliders"></i> Configuration</a>
+
+                        <div class="snv-nav-label">Activity</div>
+                        <a data-section="clicks"><i class="bi bi-cursor"></i> Click History <span class="snv-badge snv-badge-muted">2,847</span></a>
+                        <a data-section="metrics"><i class="bi bi-graph-up"></i> Metrics</a>
+
+                        <div class="snv-nav-label">Detail</div>
+                        <a data-section="og"><i class="bi bi-share"></i> OG / Social</a>
+                        <a data-section="metadata"><i class="bi bi-braces"></i> Metadata</a>
+                    </nav>
+
+                    <div class="snv-content">
+
+                        <div class="snv-section snv-active" data-section-key="overview">
+                            <div class="section-eyebrow">Section · Overview</div>
+                            <h3 class="section-title">Link performance</h3>
+
+                            <div class="detail-kpi-grid">
+                                <div class="metric-card metric-card-lg metric-card-tone-success">
+                                    <div class="metric-card-label">Hits · 30d</div>
+                                    <div class="metric-card-value">2,847 <span class="badge text-bg-success ms-1">+412 / 7d</span></div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Hits · 7d</div>
+                                    <div class="metric-card-value">412</div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Today</div>
+                                    <div class="metric-card-value">38</div>
+                                </div>
+                                <div class="metric-card metric-card-lg">
+                                    <div class="metric-card-label">Top country</div>
+                                    <div class="metric-card-value">🇺🇸 US <span class="text-secondary fs-6 fw-normal">62 %</span></div>
+                                </div>
+                            </div>
+
+                            <div class="detail-pair">
+                                <!-- Slack/iMessage preview card mock -->
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-title"><i class="bi bi-chat-square-text"></i>Slack / iMessage preview</div>
+                                        <div class="border rounded p-2" style="background: var(--bs-secondary-bg);">
+                                            <div class="d-flex gap-2">
+                                                <div style="flex: 0 0 80px; height: 80px; border-radius: 0.4rem; background: linear-gradient(135deg, var(--bs-primary), var(--bs-info)); display: grid; place-items: center; color: white; font-weight: 600;">
+                                                    <i class="bi bi-rocket-takeoff" style="font-size: 1.6rem;"></i>
+                                                </div>
+                                                <div style="min-width: 0; flex: 1;">
+                                                    <div class="text-secondary" style="font-size: 0.65rem;">blog.example.com</div>
+                                                    <div class="fw-semibold" style="font-size: 0.82rem; line-height: 1.3;">2026 Launch — what's new and what's next</div>
+                                                    <div class="text-secondary text-truncate" style="font-size: 0.72rem;">A walkthrough of the year's biggest features, the team behind them, and the roadmap for…</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="text-secondary small mt-2">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            Pulled from <code>og:title</code>, <code>og:description</code>, <code>og:image</code> on the destination page.
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Sparkline / metrics summary -->
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-title"><i class="bi bi-graph-up"></i>Hits · last 30 days</div>
+                                        <svg viewBox="0 0 320 80" preserveAspectRatio="none" style="width: 100%; height: 80px;">
+                                            <defs>
+                                                <linearGradient id="sl-grad" x1="0" x2="0" y1="0" y2="1">
+                                                    <stop offset="0" stop-color="var(--bs-success)" stop-opacity="0.3"/>
+                                                    <stop offset="1" stop-color="var(--bs-success)" stop-opacity="0"/>
+                                                </linearGradient>
+                                            </defs>
+                                            <polyline fill="none" stroke="var(--bs-success)" stroke-width="1.5" points="0,60 12,55 24,52 36,58 48,48 60,42 72,46 84,38 96,40 108,32 120,35 132,28 144,30 156,22 168,26 180,18 192,20 204,15 216,22 228,12 240,18 252,10 264,14 276,8 288,12 300,6 312,10 320,4"></polyline>
+                                            <polygon fill="url(#sl-grad)" points="0,60 12,55 24,52 36,58 48,48 60,42 72,46 84,38 96,40 108,32 120,35 132,28 144,30 156,22 168,26 180,18 192,20 204,15 216,22 228,12 240,18 252,10 264,14 276,8 288,12 300,6 312,10 320,4 320,80 0,80"></polygon>
+                                        </svg>
+                                        <ul class="list-unstyled mb-0 small mt-2">
+                                            <li class="d-flex justify-content-between border-top border-opacity-25 py-1"><span class="text-secondary">Top referer</span><a href="#">newsletter.example.com</a></li>
+                                            <li class="d-flex justify-content-between border-top border-opacity-25 py-1"><span class="text-secondary">Top country</span><span>🇺🇸 US <span class="text-secondary">62 %</span></span></li>
+                                            <li class="d-flex justify-content-between border-top border-opacity-25 py-1"><span class="text-secondary">Bot traffic</span><span>4.2 % <span class="text-secondary">· filtered</span></span></li>
+                                            <li class="d-flex justify-content-between border-top border-opacity-25 py-1"><span class="text-secondary">Avg / day</span><span>95</span></li>
+                                            <li class="d-flex justify-content-between py-1"><span class="text-secondary">Expires</span><code>2026-05-31</code></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="note">
+                                <strong>Notes for the migration:</strong> Today's "Metadata"
+                                section splits into <strong>OG / Social</strong> (curated
+                                <code>og:*</code> / <code>twitter:*</code>) and
+                                <strong>Metadata</strong> (raw JSON). Click History gets a
+                                tabular-nums hit count badge in the rail.
+                            </p>
+                        </div>
+
+                        <div class="snv-section" data-section-key="__placeholder__">
+                            <div class="empty-section">
+                                <div class="icon-large"><i class="bi bi-grid-3x3-gap"></i></div>
+                                <h4 data-empty-name>Section preview pending</h4>
+                                <p>Overview is the only section mocked for this view. The full
+                                   section list lives in the migration plan.</p>
+                                <a class="btn btn-sm btn-outline-secondary" href="../../requests/detailview-migration.md"><i class="bi bi-file-earmark-text me-1"></i>View plan</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <p class="footer-note">
+        Mockup · Bootstrap 5.3 · <code>data-bs-theme="dark"</code> ·
+        component CSS in <code>core.css</code> + <code>admin.css</code> ·
+        data is illustrative
+    </p>
+
+</div>
+
+<script>
+    // Switcher between mockups
+    document.querySelectorAll('.switcher button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const target = btn.dataset.target;
+            document.querySelectorAll('.switcher button').forEach(b => b.classList.toggle('is-active', b === btn));
+            document.querySelectorAll('.mockup').forEach(m => {
+                m.classList.toggle('is-active', m.dataset.mockup === target);
+            });
+        });
+    });
+
+    // Rail navigation within each mockup
+    document.querySelectorAll('.mockup').forEach(mockup => {
+        const rail = mockup.querySelector('.snv-nav');
+        if (!rail) return;
+        rail.addEventListener('click', (e) => {
+            const link = e.target.closest('a[data-section]');
+            if (!link) return;
+            e.preventDefault();
+            const key = link.dataset.section;
+
+            mockup.querySelectorAll('.snv-nav a').forEach(a => a.classList.toggle('active', a === link));
+
+            const sections = mockup.querySelectorAll('.snv-section[data-section-key]');
+            let matched = false;
+            sections.forEach(s => {
+                if (s.dataset.sectionKey === key) {
+                    s.classList.add('snv-active');
+                    matched = true;
+                } else {
+                    s.classList.remove('snv-active');
+                }
+            });
+            if (!matched) {
+                const fallback = mockup.querySelector('.snv-section[data-section-key="__placeholder__"]');
+                if (fallback) {
+                    fallback.classList.add('snv-active');
+                    const labelText = Array.from(link.childNodes)
+                        .filter(n => n.nodeType === Node.TEXT_NODE)
+                        .map(n => n.textContent.trim())
+                        .filter(Boolean)
+                        .join(' ');
+                    const nameEl = fallback.querySelector('[data-empty-name]');
+                    if (nameEl) nameEl.textContent = labelText
+                        ? `${labelText} · preview pending`
+                        : 'Section preview pending';
+                }
+            }
+
+            const content = mockup.querySelector('.snv-content');
+            if (content) content.scrollTo?.({ top: 0, behavior: 'instant' });
+        });
+    });
+</script>
+
+</body>
+</html>

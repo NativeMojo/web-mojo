@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dark Theme — Modal Mockup 06</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+        rel="stylesheet"
+    />
+    <style>
+        :root {
+            /* Brighter accents read better against dark surfaces */
+            --c-info: #60a5fa;
+            --c-success: #4ade80;
+            --c-warning: #fbbf24;
+            --c-error: #f87171;
+
+            --c-text: #e6edf3;
+            --c-muted: #8b949e;
+            --c-border: rgba(255, 255, 255, 0.08);
+            --c-border-strong: rgba(255, 255, 255, 0.14);
+            --c-bg: #0a0d12;
+            --c-surface: #14181f;
+            --c-surface-elevated: #1a1f28;
+            --c-input-bg: rgba(255, 255, 255, 0.025);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+            background:
+                radial-gradient(ellipse 1200px 600px at 50% -10%, rgba(96, 165, 250, 0.06) 0%, transparent 50%),
+                var(--c-bg);
+            color: var(--c-text);
+            margin: 0;
+            padding: 4rem 2rem 8rem;
+            min-height: 100vh;
+            font-size: 15px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Page header */
+        .page-header { max-width: 1100px; margin: 0 auto 3rem; }
+        .page-eyebrow {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            color: var(--c-muted);
+            margin-bottom: 1rem;
+        }
+        .page-title {
+            font-weight: 800;
+            font-size: 2.75rem;
+            letter-spacing: -0.035em;
+            line-height: 1.05;
+            margin: 0 0 1rem;
+            color: var(--c-text);
+        }
+        .page-subtitle { color: var(--c-muted); max-width: 65ch; font-size: 1rem; }
+
+        .section-divider {
+            max-width: 1100px;
+            margin: 3.5rem auto 1.75rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .section-label {
+            font-family: "JetBrains Mono", monospace;
+            font-weight: 700;
+            font-size: 0.75rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--c-muted);
+            margin: 0;
+        }
+        .section-rule { flex: 1; height: 1px; background: var(--c-border); }
+        .verdict {
+            max-width: 1100px;
+            margin: 1rem auto 0;
+            font-size: 0.875rem;
+            color: var(--c-muted);
+            font-style: italic;
+            padding-left: 0.5rem;
+            border-left: 2px solid var(--c-border);
+        }
+
+        /* Grids */
+        .alerts-grid {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.75rem;
+        }
+        .single-row { max-width: 480px; margin: 0 auto; }
+        .compare-row {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+        .compare-label {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--c-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        /* ---------- Modal card ---------- */
+        .modal-card {
+            background: var(--card-bg, var(--c-surface));
+            border: 1px solid var(--c-border);
+            border-radius: 14px;
+            box-shadow:
+                0 1px 0 rgba(0, 0, 0, 0.3),
+                0 24px 60px -16px rgba(0, 0, 0, 0.6);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Type variants — accent + tinted card bg
+           Dark mode uses 10–14% mix because dark surfaces "absorb" color more than white. */
+        .modal-card.info {
+            --accent: var(--c-info);
+            --card-bg: color-mix(in srgb, var(--c-info) 10%, var(--c-surface));
+        }
+        .modal-card.success {
+            --accent: var(--c-success);
+            --card-bg: color-mix(in srgb, var(--c-success) 10%, var(--c-surface));
+        }
+        .modal-card.warning {
+            --accent: var(--c-warning);
+            --card-bg: color-mix(in srgb, var(--c-warning) 10%, var(--c-surface));
+        }
+        .modal-card.error {
+            --accent: var(--c-error);
+            --card-bg: color-mix(in srgb, var(--c-error) 10%, var(--c-surface));
+        }
+        .modal-card.neutral { --card-bg: var(--c-surface); }
+
+        /* Hero band */
+        .hero-band {
+            height: 6px;
+            background: var(--accent);
+            border-radius: 14px 14px 0 0;
+        }
+        .modal-card.neutral .hero-band { display: none; }
+
+        .modal-content {
+            padding: 1.5rem 1.75rem 1.25rem;
+        }
+
+        .meta-eyebrow {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 0.65rem;
+        }
+        .modal-card.neutral .meta-eyebrow { color: var(--c-muted); }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.25;
+            margin: 0 0 0.5rem;
+            color: var(--c-text);
+            padding-right: 2.5rem;
+        }
+
+        .modal-body {
+            font-size: 0.9375rem;
+            color: var(--c-muted);
+            line-height: 1.55;
+            margin-bottom: 1.5rem;
+            min-height: 2.75em;
+        }
+
+        .modal-footer-row {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .close-x {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--c-muted);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.15s ease, color 0.15s ease;
+            font-size: 0.75rem;
+            z-index: 2;
+        }
+        .close-x:hover { background: rgba(255, 255, 255, 0.08); color: var(--c-text); }
+
+        /* Buttons */
+        .btn-accent {
+            background: var(--accent);
+            color: #0a0d12;
+            border: none;
+            border-radius: 8px;
+            padding: 0.55rem 1.1rem;
+            font-weight: 700;
+            font-size: 0.875rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: filter 0.15s ease;
+        }
+        .btn-accent:hover { filter: brightness(1.1); }
+        .btn-ghost {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--c-text);
+            border: 1px solid var(--c-border-strong);
+            border-radius: 8px;
+            padding: 0.55rem 1rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        .btn-ghost:hover { background: rgba(255, 255, 255, 0.08); }
+
+        /* Form */
+        .form-section { padding-top: 0.25rem; }
+        .form-label {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 0.5rem;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--c-text);
+            margin-bottom: 0.4rem;
+        }
+        .form-label .req { color: var(--c-error); margin-left: 0.15rem; }
+        .form-label .hint {
+            font-weight: 500;
+            color: var(--c-muted);
+            font-size: 0.75rem;
+        }
+        .form-input,
+        .form-select,
+        .form-textarea {
+            display: block;
+            width: 100%;
+            padding: 0.65rem 0.9rem;
+            border: 1px solid var(--c-border-strong);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9375rem;
+            color: var(--c-text);
+            background: var(--c-input-bg);
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .form-input::placeholder,
+        .form-textarea::placeholder { color: rgba(139, 148, 158, 0.6); }
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .form-select {
+            -webkit-appearance: none; appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'><path d='M3 4.5L6 7.5L9 4.5' stroke='%238b949e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 0.85rem center;
+            padding-right: 2rem;
+        }
+        .form-textarea { resize: vertical; min-height: 5rem; }
+        .form-field { margin-bottom: 1rem; }
+        .form-field-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .form-divider {
+            height: 1px;
+            background: var(--c-border);
+            margin: 1.25rem -1.75rem;
+        }
+        .form-section-label {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--c-muted);
+            margin: 0 0 0.85rem;
+        }
+        .form-toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--c-border);
+            border-radius: 10px;
+            padding: 0.85rem 1rem;
+            margin-bottom: 1rem;
+        }
+        .form-toggle-meta { flex: 1; min-width: 0; }
+        .form-toggle-meta strong { font-size: 0.875rem; font-weight: 600; display: block; color: var(--c-text); }
+        .form-toggle-meta span { font-size: 0.8125rem; color: var(--c-muted); display: block; margin-top: 0.15rem; }
+        .toggle-switch {
+            width: 38px; height: 22px; border-radius: 999px;
+            background: var(--accent);
+            position: relative; flex-shrink: 0;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.3);
+        }
+        .toggle-switch::after {
+            content: "";
+            position: absolute; top: 2px; right: 2px;
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
+    </style>
+</head>
+<body>
+    <header class="page-header">
+        <div class="page-eyebrow">// mockup 06 / dark theme</div>
+        <h1 class="page-title">Dark Theme.</h1>
+        <p class="page-subtitle">
+            Same merged direction as Mockup 05, ported to dark. Brighter accent
+            tones (lighter blue / green / amber / red) read better against the
+            dark surface. Tint bumped from 5% → 10% because dark backgrounds
+            absorb color — the same percentage that felt subtle on white would
+            be invisible here. Accent buttons use a dark text color (against
+            the bright accent fill) for AAA contrast. Inputs are dark-on-dark
+            with a stronger border so they don't disappear into the tinted card.
+        </p>
+    </header>
+
+    <div class="section-divider">
+        <h2 class="section-label">// typed alerts (dark)</h2>
+        <div class="section-rule"></div>
+    </div>
+    <p class="verdict">
+        The band stays the type signal. The tint is now visible (10% vs 5% in
+        light mode) — without the bump, all four cards would look identical.
+        Eyebrow exactly matches the band color.
+    </p>
+
+    <div class="alerts-grid">
+        <div class="modal-card info">
+            <div class="hero-band"></div>
+            <div class="modal-content">
+                <button class="close-x" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+                <div class="meta-eyebrow">Information</div>
+                <h3 class="modal-title">A new version is available</h3>
+                <p class="modal-body">
+                    Reload the page to pick up the latest changes. Your work is saved automatically.
+                </p>
+                <div class="modal-footer-row">
+                    <button class="btn-ghost">Later</button>
+                    <button class="btn-accent">Reload</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-card success">
+            <div class="hero-band"></div>
+            <div class="modal-content">
+                <button class="close-x" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+                <div class="meta-eyebrow">Saved</div>
+                <h3 class="modal-title">Your changes are live</h3>
+                <p class="modal-body">
+                    The user profile has been updated and synced across the team.
+                </p>
+                <div class="modal-footer-row">
+                    <button class="btn-accent">OK</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-card warning">
+            <div class="hero-band"></div>
+            <div class="modal-content">
+                <button class="close-x" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+                <div class="meta-eyebrow">Warning</div>
+                <h3 class="modal-title">This will affect 24 records</h3>
+                <p class="modal-body">
+                    Bulk operations cannot be undone individually. Please confirm before continuing.
+                </p>
+                <div class="modal-footer-row">
+                    <button class="btn-ghost">Cancel</button>
+                    <button class="btn-accent">Continue</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-card error">
+            <div class="hero-band"></div>
+            <div class="modal-content">
+                <button class="close-x" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+                <div class="meta-eyebrow">Error</div>
+                <h3 class="modal-title">The operation failed</h3>
+                <p class="modal-body">
+                    We weren't able to reach the server. Check your connection and try again.
+                </p>
+                <div class="modal-footer-row">
+                    <button class="btn-ghost">Dismiss</button>
+                    <button class="btn-accent">Retry</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-divider">
+        <h2 class="section-label">// confirm — destructive</h2>
+        <div class="section-rule"></div>
+    </div>
+
+    <div class="single-row">
+        <div class="modal-card error">
+            <div class="hero-band"></div>
+            <div class="modal-content">
+                <button class="close-x" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+                <div class="meta-eyebrow">Confirm delete</div>
+                <h3 class="modal-title">Delete "Quarterly Report"?</h3>
+                <p class="modal-body">
+                    This will permanently remove the document and all of its revisions.
+                    This action cannot be undone.
+                </p>
+                <div class="modal-footer-row">
+                    <button class="btn-ghost">Cancel</button>
+                    <button class="btn-accent">Delete report</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-divider">
+        <h2 class="section-label">// short form — change password (info-tinted)</h2>
+        <div class="section-rule"></div>
+    </div>
+
+    <div class="single-row">
+        <div class="modal-card info">
+            <div class="hero-band"></div>
+            <div class="modal-content">
+                <button class="close-x" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+                <div class="meta-eyebrow">Account / security</div>
+                <h3 class="modal-title">Change your password</h3>
+                <p class="modal-body">
+                    Pick something at least 8 characters long. Other devices will be signed out.
+                </p>
+
+                <div class="form-field">
+                    <label class="form-label">
+                        <span>New password<span class="req">*</span></span>
+                        <span class="hint">required</span>
+                    </label>
+                    <input type="password" class="form-input" placeholder="At least 8 characters" />
+                </div>
+                <div class="form-field">
+                    <label class="form-label">
+                        <span>Confirm new password<span class="req">*</span></span>
+                        <span class="hint">required</span>
+                    </label>
+                    <input type="password" class="form-input" placeholder="Re-enter to confirm" />
+                </div>
+
+                <div class="form-divider"></div>
+                <div class="modal-footer-row">
+                    <button class="btn-ghost">Cancel</button>
+                    <button class="btn-accent">Change password</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-divider">
+        <h2 class="section-label">// LONG form — tinted vs neutral (dark)</h2>
+        <div class="section-rule"></div>
+    </div>
+    <p class="verdict">
+        Same A/B as Mockup 05 but in dark. The tinted variant on the left
+        carries more weight in dark mode than in light — the blue tint is
+        genuinely visible across the whole card. The neutral version on the
+        right feels noticeably more "focused / business" — better fit for
+        a long settings form. Same recommendation: <strong>tint+band for
+        typed alerts and confirms; neutral chrome for showForm /
+        showModelView / Modal.show.</strong>
+    </p>
+
+    <div class="compare-row">
+        <!-- LEFT: TINTED -->
+        <div>
+            <div class="compare-label">// info-tinted bg</div>
+            <div class="modal-card info">
+                <div class="hero-band"></div>
+                <div class="modal-content">
+                    <button class="close-x" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+                    <div class="meta-eyebrow">Edit user / Jane Cooper</div>
+                    <h3 class="modal-title">Edit profile</h3>
+                    <p class="modal-body">
+                        Update display details, role, and security preferences. Changes take effect immediately.
+                    </p>
+
+                    <div class="form-section">
+                        <h4 class="form-section-label">// identity</h4>
+                        <div class="form-field-grid">
+                            <div class="form-field">
+                                <label class="form-label"><span>First name<span class="req">*</span></span></label>
+                                <input type="text" class="form-input" value="Jane" />
+                            </div>
+                            <div class="form-field">
+                                <label class="form-label"><span>Last name<span class="req">*</span></span></label>
+                                <input type="text" class="form-input" value="Cooper" />
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label"><span>Email<span class="req">*</span></span></label>
+                            <input type="email" class="form-input" value="jane.cooper@example.com" />
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label"><span>Bio</span><span class="hint">optional</span></label>
+                            <textarea class="form-textarea" placeholder="Tell us about yourself…">Product designer focused on developer tooling.</textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-divider"></div>
+
+                    <div class="form-section">
+                        <h4 class="form-section-label">// access</h4>
+                        <div class="form-field">
+                            <label class="form-label"><span>Role<span class="req">*</span></span></label>
+                            <select class="form-select">
+                                <option>Administrator</option>
+                                <option>Editor</option>
+                                <option selected>Member</option>
+                                <option>Viewer</option>
+                            </select>
+                        </div>
+                        <div class="form-toggle-row">
+                            <div class="form-toggle-meta">
+                                <strong>Two-factor authentication</strong>
+                                <span>Require a 6-digit code at sign-in.</span>
+                            </div>
+                            <div class="toggle-switch"></div>
+                        </div>
+                        <div class="form-toggle-row">
+                            <div class="form-toggle-meta">
+                                <strong>Email digest</strong>
+                                <span>Weekly summary of activity in your spaces.</span>
+                            </div>
+                            <div class="toggle-switch"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-divider"></div>
+                    <div class="modal-footer-row">
+                        <button class="btn-ghost">Cancel</button>
+                        <button class="btn-accent">Save changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: NEUTRAL -->
+        <div>
+            <div class="compare-label">// neutral (no band, no tint)</div>
+            <div class="modal-card neutral" style="--accent: var(--c-info);">
+                <div class="hero-band"></div>
+                <div class="modal-content">
+                    <button class="close-x" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+                    <div class="meta-eyebrow">Edit user / Jane Cooper</div>
+                    <h3 class="modal-title">Edit profile</h3>
+                    <p class="modal-body">
+                        Update display details, role, and security preferences. Changes take effect immediately.
+                    </p>
+
+                    <div class="form-section">
+                        <h4 class="form-section-label">// identity</h4>
+                        <div class="form-field-grid">
+                            <div class="form-field">
+                                <label class="form-label"><span>First name<span class="req">*</span></span></label>
+                                <input type="text" class="form-input" value="Jane" />
+                            </div>
+                            <div class="form-field">
+                                <label class="form-label"><span>Last name<span class="req">*</span></span></label>
+                                <input type="text" class="form-input" value="Cooper" />
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label"><span>Email<span class="req">*</span></span></label>
+                            <input type="email" class="form-input" value="jane.cooper@example.com" />
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label"><span>Bio</span><span class="hint">optional</span></label>
+                            <textarea class="form-textarea" placeholder="Tell us about yourself…">Product designer focused on developer tooling.</textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-divider"></div>
+
+                    <div class="form-section">
+                        <h4 class="form-section-label">// access</h4>
+                        <div class="form-field">
+                            <label class="form-label"><span>Role<span class="req">*</span></span></label>
+                            <select class="form-select">
+                                <option>Administrator</option>
+                                <option>Editor</option>
+                                <option selected>Member</option>
+                                <option>Viewer</option>
+                            </select>
+                        </div>
+                        <div class="form-toggle-row">
+                            <div class="form-toggle-meta">
+                                <strong>Two-factor authentication</strong>
+                                <span>Require a 6-digit code at sign-in.</span>
+                            </div>
+                            <div class="toggle-switch"></div>
+                        </div>
+                        <div class="form-toggle-row">
+                            <div class="form-toggle-meta">
+                                <strong>Email digest</strong>
+                                <span>Weekly summary of activity in your spaces.</span>
+                            </div>
+                            <div class="toggle-switch"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-divider"></div>
+                    <div class="modal-footer-row">
+                        <button class="btn-ghost">Cancel</button>
+                        <button class="btn-accent">Save changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-divider">
+        <h2 class="section-label">// dark theme — the rules I'd ship</h2>
+        <div class="section-rule"></div>
+    </div>
+    <p class="verdict">
+        <strong>Brighter accent palette in dark</strong> — `#60a5fa` not `#2563eb`,
+        etc. The Bootstrap defaults read too dark on a dark surface.
+        <strong>Bump the tint percentage</strong> — 5% on white ≈ 10% on dark.
+        <strong>Accent button text goes dark</strong> on the bright accent fill
+        for AAA contrast (white-on-light-blue fails).
+        <strong>Inputs stay dark-on-dark</strong> with a stronger border so
+        they don't disappear into the tinted card surface. Triggered by
+        `prefers-color-scheme: dark` in the production CSS, with the same
+        rules for `data-bs-theme="dark"`.
+    </p>
+</body>
+</html>

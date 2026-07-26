@@ -43,6 +43,10 @@ Workflow scaffolding (imposed by this workflow):
 - Scratch copies live in `planning/.cache/<id>.md` (gitignored); build-start
   snapshots in `planning/built/<id>.md`. These are maestro working files —
   the board remains the source of truth.
+- `planning/mockups/{component}/` is **deliberately retained** — it survived the
+  board migration. UI-heavy items still get a mockup approved (both themes)
+  before the build starts; put it in a per-component subdir there, never a new
+  root dir. Everything else under `planning/` is gone; don't recreate it.
 
 Project rules (verified in the codebase — see `.claude/rules/` for detail):
 - The primary data object for a view is `this.model` — never `this.runner`,
