@@ -91,6 +91,16 @@ class TablePage extends Page {
       // Row stripe — same forwarding pattern.
       rowStripe: options.rowStripe,
 
+      // Custom toolbar buttons. ListView has supported `toolbarButtons` all
+      // along, but TablePage never forwarded it, so passing it to a TablePage
+      // silently did nothing and the only way to get a custom action button was
+      // to reach into `page.tableView` after construction — which does not work
+      // either, because the action bar is painted once and later renders do not
+      // repaint it. Forwarded here so the documented option behaves the same on
+      // a TablePage as it does on a bare TableView.
+      toolbarButtons: options.toolbarButtons,
+      toolbarRight: options.toolbarRight,
+
       // Filter presets (WM-032) — same forwarding pattern.
       filterPresets: options.filterPresets,
 

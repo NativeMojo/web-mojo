@@ -84,53 +84,58 @@ class DomainTablePage extends TablePage {
             emptyMessage: 'No domains are managed yet. Buy one, register a domain you already hold, '
                 + 'or adopt an existing hosted zone.',
 
-            tableOptions: { striped: true, bordered: false, hover: true, responsive: false }
+            tableOptions: { striped: true, bordered: false, hover: true, responsive: false },
+
+            // Forwarded through TablePage's whitelist. The purchase kill switch
+            // is checked in the handler rather than here: it explains itself
+            // before any request, and that is also the only behaviour available
+            // on a backend too old to expose the config probe.
+            toolbarButtons: [
+                {
+                    label: 'Buy a domain', icon: 'bi bi-cart-plus', action: 'buy-domain',
+                    variant: 'primary', permissions: MANAGE_PERMS
+                },
+                {
+                    label: 'Register existing', icon: 'bi bi-box-arrow-in-down',
+                    action: 'register-existing', permissions: MANAGE_PERMS
+                }
+            ]
         });
 
         this.caps = {};
+    }
+
+    /**
+     * Adopt is appended here rather than in the constructor because it gates on
+     * `is_superuser`, which needs the app, and removed here rather than gated
+     * with `permissions` because the backend checks the LITERAL attribute —
+     * `hasPermission('admin')` is broader and would offer a button that 403s.
+     * super.onInit() creates the TableView, and this still runs before the
+     * first render, which is the only point the action bar is painted.
+     */
+    async onInit() {
+        await super.onInit();
+        if (!this.getApp()?.activeUser?.get?.('is_superuser')) return;
+        this.tableView?.toolbarButtons?.push({
+            label: 'Adopt hosted zone', icon: 'bi bi-diagram-2', action: 'adopt-zone'
+        });
     }
 
     async onEnter() {
         await super.onEnter();
         // Fire-and-forget: showPage renders only after onEnter returns, so
         // awaiting here would blank the page until the API answers (WM-023).
-        registrar.capabilities().then(caps => {
-            this.caps = caps;
-            this.applyToolbar();
-        }).catch(() => {});
-    }
-
-    /** Toolbar depends on capabilities, so it is applied once they land. */
-    applyToolbar() {
-        const app = this.getApp();
-        const isSuperuser = !!app?.activeUser?.get?.('is_superuser');
-        const buttons = [];
-
-        // Pre-gated rather than explained after two clicks: the config probe
-        // tells us up front whether purchasing is switched on at all.
-        if (this.caps.purchase_enabled !== false) {
-            buttons.push({
-                label: 'Buy a domain', icon: 'bi bi-cart-plus', action: 'buy-domain',
-                variant: 'primary', permissions: MANAGE_PERMS
-            });
-        }
-        buttons.push({
-            label: 'Register existing', icon: 'bi bi-box-arrow-in-down', action: 'register-existing',
-            permissions: MANAGE_PERMS
-        });
-        if (isSuperuser) {
-            buttons.push({
-                label: 'Adopt hosted zone', icon: 'bi bi-diagram-2', action: 'adopt-zone'
-            });
-        }
-
-        if (!this.tableView) return;
-        this.tableView.toolbarButtons = buttons;
-        if (this.tableView.isMounted?.()) this.tableView.render();
+        registrar.capabilities().then(caps => { this.caps = caps; }).catch(() => {});
     }
 
     async onActionBuyDomain() {
         const app = this.getApp();
+        if (this.caps.purchase_enabled === false) {
+            Modal.showError('Domain purchasing is turned off on this deployment '
+                + '(DNSMAN_PURCHASE_ENABLED). You can still bring domains you already own under '
+                + 'management with "Register existing".');
+            return true;
+        }
         if (this.caps.registrant_contact_configured === false) {
             Modal.showError('Domain purchasing needs a registrant contact configured on the server '
                 + 'before a quote can be taken.');

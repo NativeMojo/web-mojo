@@ -77,7 +77,17 @@ class CertificateTablePage extends TablePage {
 
             emptyMessage: 'No certificates issued yet.',
 
-            tableOptions: { striped: true, bordered: false, hover: true, responsive: false }
+            tableOptions: { striped: true, bordered: false, hover: true, responsive: false },
+
+            // The ACME state is checked in the handler rather than disabling the
+            // button here: the action bar is painted once, before the config
+            // request resolves, so a capability-derived `disabled` would never
+            // reach the DOM.
+            toolbarButtons: [{
+                label: 'Request certificate', icon: 'bi bi-patch-plus',
+                action: 'request-certificate', variant: 'primary',
+                permissions: MANAGE_PERMS
+            }]
         };
         super(page);
         this.caps = {};
@@ -101,26 +111,9 @@ class CertificateTablePage extends TablePage {
         registrar.capabilities().then(caps => {
             this.caps = caps;
             this.installDaysColumn();
-            this.applyToolbar();
             this.showAcmeBanner();
             if (this.tableView?.isMounted?.()) this.tableView.render();
         }).catch(() => {});
-    }
-
-    applyToolbar() {
-        if (!this.tableView) return;
-        const acmeReady = !this.caps.acme || this.caps.acme.configured !== false;
-        this.tableView.toolbarButtons = [{
-            label: 'Request certificate',
-            icon: 'bi bi-patch-plus',
-            action: 'request-certificate',
-            variant: 'primary',
-            permissions: MANAGE_PERMS,
-            // A request against an unconfigured ACME fails for a reason the
-            // operator cannot see from the UI, so do not offer the control.
-            disabled: !acmeReady,
-            title: acmeReady ? undefined : 'ACME is not configured on this deployment'
-        }];
     }
 
     /**

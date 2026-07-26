@@ -30,8 +30,8 @@ class DnsRecordsPage extends Page {
                         <div class="ms-auto d-flex align-items-center gap-2">
                             <label class="text-secondary small mb-0">Domain</label>
                             <select class="form-select form-select-sm" style="min-width:16rem"
-                                    data-action="domain-changed">
-                                {{^domains.length}}<option value="">Loading…</option>{{/domains.length}}
+                                    data-action="domain-changed"{{#noDomains|bool}} disabled{{/noDomains|bool}}>
+                                {{#placeholder}}<option value="">{{placeholder}}</option>{{/placeholder}}
                                 {{{domainOptions}}}
                             </select>
                         </div>
@@ -43,7 +43,9 @@ class DnsRecordsPage extends Page {
                             <p class="small mb-0">Add a domain from the Domains page before editing records.</p>
                         </div></div>
                     {{/noDomains|bool}}
-                    <div data-container="records"></div>
+                    <!-- Always present, hidden rather than removed: the records
+                         view mounts into it once a domain is chosen. -->
+                    <div data-container="records"{{#noDomains|bool}} class="d-none"{{/noDomains|bool}}></div>
                 </div>
             `
         });
@@ -51,6 +53,14 @@ class DnsRecordsPage extends Page {
         this.domains = [];
         this.selectedId = null;
         this.noDomains = false;
+        this.loaded = false;
+        this.recordsAttached = false;
+    }
+
+    /** Distinguish "still loading" from "resolved, and there are none". */
+    get placeholder() {
+        if (this.domains.length) return '';
+        return this.loaded ? 'No active domains' : 'Loading\u2026';
     }
 
     /** Trusted HTML: every value is escaped individually. */
@@ -62,8 +72,12 @@ class DnsRecordsPage extends Page {
     }
 
     async onInit() {
+        // Deliberately NOT added as a child here. The page re-renders when the
+        // domain list resolves, which rebuilds the container element; a child
+        // adopted before that races the rebuild and logs "Container not found".
+        // views.md covers this case: a child attached after the parent has
+        // rendered is mounted explicitly by the caller instead.
         this.recordsView = new DnsRecordsView({ containerId: 'records' });
-        this.addChild(this.recordsView);
     }
 
     async onEnter() {
@@ -101,6 +115,7 @@ class DnsRecordsPage extends Page {
     }
 
     async applyDomains({ domains, requestedId }) {
+        this.loaded = true;
         this.domains = domains;
         this.noDomains = domains.length === 0;
 
@@ -115,6 +130,13 @@ class DnsRecordsPage extends Page {
     async selectDomain(model) {
         if (!model) return;
         this.recordsView.model = model instanceof Domain ? model : new Domain(model);
+        if (!this.recordsAttached) {
+            // `this.children` is a dict keyed by id, so attach state is tracked
+            // with an explicit flag rather than a membership test.
+            this.recordsAttached = true;
+            this.addChild(this.recordsView);
+            await this.recordsView.render();
+        }
         await this.recordsView.refresh();
     }
 

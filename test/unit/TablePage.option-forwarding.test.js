@@ -152,6 +152,33 @@ module.exports = async function (testContext) {
       expect(page.tableViewConfig.persistState).toBeUndefined();
       expect(page.tableViewConfig.persistKey).toBeUndefined();
       expect(page.tableViewConfig.columnChooser).toBeUndefined();
+      expect(page.tableViewConfig.toolbarButtons).toBeUndefined();
+      expect(page.tableViewConfig.toolbarRight).toBeUndefined();
+    });
+
+    // ListView has always supported `toolbarButtons`, but TablePage did not
+    // forward it, so passing it to a TablePage silently did nothing — and
+    // assigning to `page.tableView.toolbarButtons` after construction does not
+    // work either, because the action bar is painted once and later renders do
+    // not repaint it. Forwarded so the documented option behaves the same on a
+    // TablePage as on a bare TableView (#394).
+    it('forwards `toolbarButtons`', () => {
+      const buttons = [{ label: 'Buy a domain', action: 'buy-domain', permissions: ['manage_dns'] }];
+      const page = fixturePage({ toolbarButtons: buttons });
+      expect(page.tableViewConfig.toolbarButtons).toBe(buttons);
+    });
+
+    it('forwards `toolbarButtons` with their permission gates intact', () => {
+      const page = fixturePage({
+        toolbarButtons: [{ label: 'Adopt', action: 'adopt', permissions: ['manage_dns', 'security'] }]
+      });
+      expect(page.tableViewConfig.toolbarButtons[0].permissions).toEqual(['manage_dns', 'security']);
+    });
+
+    it('forwards `toolbarRight`', () => {
+      const view = { fake: 'view' };
+      const page = fixturePage({ toolbarRight: view });
+      expect(page.tableViewConfig.toolbarRight).toBe(view);
     });
   });
 };
