@@ -680,6 +680,13 @@ class TestRunner {
                         }
                         return expectObj;
                     },
+                    toMatch: (expected) => {
+                        const regex = expected instanceof RegExp ? expected : new RegExp(expected);
+                        if (typeof actual === 'string' && regex.test(actual)) {
+                            throw new Error(`Expected "${actual}" not to match ${expected}`);
+                        }
+                        return expectObj;
+                    },
                     toThrow: () => {
                         let threw = false;
                         try {

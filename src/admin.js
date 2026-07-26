@@ -77,6 +77,26 @@ export { default as ShortLinkTablePage } from '@ext/admin/shortlinks/ShortLinkTa
 export { default as ShortLinkClickTablePage } from '@ext/admin/shortlinks/ShortLinkClickTablePage.js';
 export { default as ShortLinkView } from '@ext/admin/shortlinks/ShortLinkView.js';
 
+// DNS management (dnsman) — needs django-mojo >= v1.2.55 for the TLD grid and
+// the capability probe; older backends degrade with an explanatory note.
+export { default as DomainTablePage } from '@ext/admin/dns/DomainTablePage.js';
+export { default as DomainView } from '@ext/admin/dns/DomainView.js';
+export { default as DnsRecordsPage } from '@ext/admin/dns/DnsRecordsPage.js';
+export { default as DnsRecordsView } from '@ext/admin/dns/DnsRecordsView.js';
+export { default as DnsRecordEditor } from '@ext/admin/dns/DnsRecordEditor.js';
+export { default as DnsCredentialTablePage } from '@ext/admin/dns/DnsCredentialTablePage.js';
+export { default as DnsCredentialView } from '@ext/admin/dns/DnsCredentialView.js';
+export { default as CertificateTablePage } from '@ext/admin/dns/CertificateTablePage.js';
+export { default as CertificateView } from '@ext/admin/dns/CertificateView.js';
+export { default as DomainPurchaseTablePage } from '@ext/admin/dns/DomainPurchaseTablePage.js';
+// Pure record validation/mapping — exported so a consuming portal can reuse the
+// same rules rather than re-deriving them (the geofenceData precedent).
+export {
+    RECORD_SPECS, parseRecordValue, formatRecordValue, autofixRecordValue,
+    validateRecordSet, recordWarnings, diffRecordValues, availabilityState,
+    certExpiryTone, isManagementOnly
+} from '@ext/admin/dns/dnsData.js';
+
 // Admin Views
 export { default as DeviceView } from '@ext/admin/account/devices/DeviceView.js';
 export { default as GeoIPView } from '@ext/admin/account/devices/GeoIPView.js';
@@ -206,6 +226,12 @@ import S3BucketTablePageClass from '@ext/admin/storage/S3BucketTablePage.js';
 import ShortLinkTablePageClass from '@ext/admin/shortlinks/ShortLinkTablePage.js';
 import ShortLinkClickTablePageClass from '@ext/admin/shortlinks/ShortLinkClickTablePage.js';
 
+import DomainTablePageClass from '@ext/admin/dns/DomainTablePage.js';
+import DnsRecordsPageClass from '@ext/admin/dns/DnsRecordsPage.js';
+import DnsCredentialTablePageClass from '@ext/admin/dns/DnsCredentialTablePage.js';
+import CertificateTablePageClass from '@ext/admin/dns/CertificateTablePage.js';
+import DomainPurchaseTablePageClass from '@ext/admin/dns/DomainPurchaseTablePage.js';
+
 import AssistantSkillTablePageClass from '@ext/admin/assistant/AssistantSkillTablePage.js';
 import AssistantConversationTablePageClass from '@ext/admin/assistant/AssistantConversationTablePage.js';
 import AssistantMemoryPageClass from '@ext/admin/assistant/AssistantMemoryPage.js';
@@ -236,6 +262,13 @@ export function registerSystemPages(app, addToMenu = true) {
     app.registerPage('system/files', FileTablePageClass, {permissions: ["manage_files"]});
     app.registerPage('system/shortlinks/links', ShortLinkTablePageClass, {permissions: ["manage_shortlinks"]});
     app.registerPage('system/shortlinks/clicks', ShortLinkClickTablePageClass, {permissions: ["manage_shortlinks"]});
+    // DNS (dnsman). `security` reaches both grants via CATEGORY_GRANULAR_MAP,
+    // mirroring the backend's VIEW_PERMS/SAVE_PERMS on every dnsman model.
+    app.registerPage('system/dns/domains', DomainTablePageClass, {permissions: ["view_dns", "manage_dns"]});
+    app.registerPage('system/dns/records', DnsRecordsPageClass, {permissions: ["view_dns", "manage_dns"]});
+    app.registerPage('system/dns/certificates', CertificateTablePageClass, {permissions: ["view_dns", "manage_dns"]});
+    app.registerPage('system/dns/credentials', DnsCredentialTablePageClass, {permissions: ["view_dns", "manage_dns"]});
+    app.registerPage('system/dns/purchases', DomainPurchaseTablePageClass, {permissions: ["view_dns", "manage_dns"]});
     app.registerPage('system/incidents', IncidentTablePageClass, {permissions: ["view_security"]});
     app.registerPage('system/events', EventTablePageClass, {permissions: ["view_security"]});
     app.registerPage('system/logs', LogTablePageClass, {permissions: ["view_logs"]});
@@ -431,6 +464,21 @@ export function registerSystemPages(app, addToMenu = true) {
                         { text: 'S3 Buckets', route: '?page=system/s3buckets', icon: 'bi-bucket', permissions: ["manage_aws"] },
                         { text: 'Storage Backends', route: '?page=system/filemanagers', icon: 'bi-hdd-stack', permissions: ["view_fileman", "manage_files"] },
                         { text: 'Files', route: '?page=system/files', icon: 'bi-file-earmark', permissions: ["manage_files"] },
+                    ]
+                },
+
+                // ── DNS ──
+                {
+                    text: 'DNS',
+                    route: null,
+                    icon: 'bi-globe2',
+                    permissions: ["view_dns", "manage_dns"],
+                    children: [
+                        { text: 'Domains', route: '?page=system/dns/domains', icon: 'bi-globe', permissions: ["view_dns", "manage_dns"] },
+                        { text: 'DNS Records', route: '?page=system/dns/records', icon: 'bi-list-columns', permissions: ["view_dns", "manage_dns"] },
+                        { text: 'Certificates', route: '?page=system/dns/certificates', icon: 'bi-patch-check', permissions: ["view_dns", "manage_dns"] },
+                        { text: 'Credentials', route: '?page=system/dns/credentials', icon: 'bi-key', permissions: ["view_dns", "manage_dns"] },
+                        { text: 'Purchases', route: '?page=system/dns/purchases', icon: 'bi-receipt', permissions: ["view_dns", "manage_dns"] },
                     ]
                 },
 
