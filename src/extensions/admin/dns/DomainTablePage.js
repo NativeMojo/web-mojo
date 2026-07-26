@@ -21,6 +21,7 @@ import {
 } from '@ext/admin/models/Dns.js';
 import { providerLabel } from './dnsData.js';
 import DomainView from './DomainView.js';
+import DomainPurchaseWizard from './DomainPurchaseWizard.js';
 
 const escapeHtml = MOJOUtils.escapeHtml;
 const MANAGE_PERMS = ['manage_dns', 'security'];
@@ -105,7 +106,14 @@ class DomainTablePage extends TablePage {
         const isSuperuser = !!app?.activeUser?.get?.('is_superuser');
         const buttons = [];
 
-        // `Buy a domain` is added in the buy-wizard commit.
+        // Pre-gated rather than explained after two clicks: the config probe
+        // tells us up front whether purchasing is switched on at all.
+        if (this.caps.purchase_enabled !== false) {
+            buttons.push({
+                label: 'Buy a domain', icon: 'bi bi-cart-plus', action: 'buy-domain',
+                variant: 'primary', permissions: MANAGE_PERMS
+            });
+        }
         buttons.push({
             label: 'Register existing', icon: 'bi bi-box-arrow-in-down', action: 'register-existing',
             permissions: MANAGE_PERMS
@@ -119,6 +127,22 @@ class DomainTablePage extends TablePage {
         if (!this.tableView) return;
         this.tableView.toolbarButtons = buttons;
         if (this.tableView.isMounted?.()) this.tableView.render();
+    }
+
+    async onActionBuyDomain() {
+        const app = this.getApp();
+        if (this.caps.registrant_contact_configured === false) {
+            Modal.showError('Domain purchasing needs a registrant contact configured on the server '
+                + 'before a quote can be taken.');
+            return true;
+        }
+        const wizard = new DomainPurchaseWizard({
+            caps: this.caps,
+            group: app?.getActiveGroupId?.() || app?.activeGroup?.id
+        });
+        wizard.on('purchased', () => this.collection?.fetch());
+        await Modal.show(wizard, { title: false, size: 'lg', buttons: [] });
+        return true;
     }
 
     async onActionRegisterExisting() {
