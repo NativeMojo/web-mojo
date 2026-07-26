@@ -167,6 +167,30 @@
   .surface.on{display:block}
   .wstep{display:none}
   .wstep.on{display:block}
+
+  /* structured record editor */
+  .vrow{display:flex;gap:8px;align-items:flex-start;margin-bottom:7px}
+  .vrow .grip{color:var(--muted);padding-top:8px;font-size:12px;flex:none;width:14px;text-align:center}
+  .vrow .del{flex:none;padding:6px 8px}
+  .vfields{flex:1;display:flex;gap:8px;min-width:0}
+  .vfields .f{display:flex;flex-direction:column;min-width:0}
+  .vfields .f.grow{flex:1}
+  .vfields .f label{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:650;margin-bottom:3px}
+  .vfields .f .inp{padding:6px 9px}
+  .err{border-color:var(--bad)!important}
+  .errmsg{display:flex;gap:7px;align-items:flex-start;font-size:12.5px;color:var(--bad);margin-top:5px}
+  .errmsg svg{width:14px;height:14px;flex:none;margin-top:2px}
+  .errmsg .fix{margin-left:6px;border:1px solid var(--bad);background:transparent;color:var(--bad);border-radius:6px;padding:1px 7px;font:inherit;font-size:11.5px;cursor:pointer;white-space:nowrap}
+  .fixed{border:1px solid var(--noteBd);background:var(--noteBg);border-radius:8px;padding:8px 11px;font-size:12.5px;color:var(--note);margin-bottom:12px}
+  .fixed ul{margin:5px 0 0;padding-left:17px}
+  .fixed li{margin:2px 0}
+  .diff{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:10px 0}
+  .diff .dl{display:flex;gap:9px;padding:6px 11px;border-bottom:1px solid var(--border2);font-family:var(--mono);font-size:12px;align-items:center}
+  .diff .dl:last-child{border-bottom:0}
+  .diff .dl .s{flex:none;width:13px;font-weight:700}
+  .diff .dl.rm{background:color-mix(in srgb,var(--bad) 9%,transparent);color:var(--bad)}
+  .diff .dl.ad{background:color-mix(in srgb,var(--ok) 10%,transparent);color:var(--ok)}
+  .diff .dl.eq{color:var(--muted)}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -209,7 +233,7 @@
     <div class="seg" role="tablist" aria-label="Surface">
       <button data-s="domains" aria-selected="true">Domains</button>
       <button data-s="detail" aria-selected="false">DomainView</button>
-      <button data-s="records" aria-selected="false">Record states</button>
+      <button data-s="records" aria-selected="false">Record editor</button>
       <button data-s="creds" aria-selected="false">Credentials</button>
       <button data-s="certs" aria-selected="false">Certificates</button>
       <button data-s="ledger" aria-selected="false">Purchases</button>
@@ -404,7 +428,7 @@
   <!-- ═══════════════════════ RECORD STATES ═══════════════════════ -->
   <div class="surface" id="s-records">
    <main class="main">
-    <p class="eyebrow">Record editor — non-happy states</p>
+    <p class="eyebrow">Record editor — hardening (D9) and non-happy states</p>
     <div class="grid2">
       <div class="card">
         <div class="cardhd"><h3>Domain not active</h3></div>
@@ -438,17 +462,79 @@
       </div>
 
       <div class="card">
-        <div class="cardhd"><h3>Add / edit record</h3></div>
+        <div class="cardhd"><h3>Editor — MX (structured fields)</h3></div>
         <div style="padding:14px">
-          <div class="fld"><label>Type</label><select class="inp"><option>TXT</option><option>A</option><option>AAAA</option><option>CNAME</option><option>MX</option><option>SRV</option><option>CAA</option><option>NS</option></select></div>
-          <div class="fld"><label>Name</label><input class="inp mono" value="_acme-challenge"><div class="help">Relative (<code>www</code>), <code>@</code> for the apex, or a full FQDN — all normalize to the same record.</div></div>
-          <div class="fld"><label>Values — one per line</label><textarea class="inp mono">gX9k2QaKt7Lz1
-7Lm4pZt8Nx2Qv</textarea>
-            <div class="help" style="color:var(--warn)"><b>Saving replaces every value</b> for this name and type. To add one value, keep the existing lines and append.</div>
+          <div class="fld"><label>Type</label><select class="inp"><option>MX</option><option>A</option><option>AAAA</option><option>CNAME</option><option>TXT</option><option>SRV</option><option>CAA</option><option>NS</option></select>
+            <div class="help">Built from the server's <code>allowed_record_types</code> when item 412's probe is present.</div></div>
+          <div class="fld"><label>Name</label><input class="inp mono" value="@"><div class="help">Relative (<code>www</code>), <code>@</code> for the apex, or a full FQDN — all normalize to the same record.</div></div>
+          <div class="fld"><label>Mail servers</label>
+            <div class="vrow"><span class="grip">⠿</span>
+              <div class="vfields">
+                <div class="f" style="width:90px"><label>Priority</label><input class="inp" value="10"></div>
+                <div class="f grow"><label>Target</label><input class="inp mono" value="inbound-smtp.us-west-2.amazonaws.com"></div>
+              </div>
+              <button class="btn del ghost">✕</button></div>
+            <div class="vrow"><span class="grip">⠿</span>
+              <div class="vfields">
+                <div class="f" style="width:90px"><label>Priority</label><input class="inp" value="20"></div>
+                <div class="f grow"><label>Target</label><input class="inp mono" value="backup-smtp.example.net"></div>
+              </div>
+              <button class="btn del ghost">✕</button></div>
+            <button class="btn" style="margin-top:3px"><svg><use href="#i-plus"/></svg> Add value</button>
           </div>
-          <div class="fld" style="width:120px"><label>TTL</label><input class="inp" value="60"></div>
+          <div class="fld" style="width:120px"><label>TTL</label><input class="inp" value="600"></div>
         </div>
-        <div class="note" style="margin:0 14px 14px">Upsert semantics are the whole-set replace the backend implements — a value-list editor is the only honest UI for it. Type list mirrors <code>DNSMAN_ALLOWED_RECORD_TYPES</code>, which is server-configurable, so a rejection must still render cleanly.</div>
+        <div class="note" style="margin:0 14px 14px"><b>You cannot get the field count wrong when the form has the right fields.</b> MX is (priority, target); SRV is four; CAA is (flags, tag, value). Driven by <code>RECORD_SPECS</code> in <code>dnsData.js</code>; existing records load through <code>parseRecordValue</code>, so nobody hand-edits <code>"10 inbound-smtp…"</code> as a string.</div>
+      </div>
+
+      <div class="card">
+        <div class="cardhd"><h3>Autofix on paste</h3></div>
+        <div style="padding:14px">
+          <div class="fixed"><b>Cleaned up 3 things in what you pasted:</b>
+            <ul>
+              <li>Removed <code>https://</code> and the trailing path from the target</li>
+              <li>Replaced curly quotes with plain quotes</li>
+              <li>Dropped 1 duplicate value</li>
+            </ul>
+          </div>
+          <div class="fld"><label>Target</label><input class="inp mono" value="mail.example.com"><div class="help">Was <code>https://mail.example.com/inbox</code></div></div>
+        </div>
+        <div class="note" style="margin:0 14px 14px"><b>Never a silent autofix.</b> Every change is listed. The highest-value one isn't shown here: a pasted <code>"v=spf1 …"</code> with quotes gets its quotes stripped — Route53 re-quotes and 255-chunks TXT itself, so double-quoting breaks SPF/DKIM and ACME <b>with no error anywhere</b>. The backend docstring names this as a silent-breakage class.</div>
+      </div>
+
+      <div class="card">
+        <div class="cardhd"><h3>Blocking errors — with a fix, not a lecture</h3></div>
+        <div style="padding:14px">
+          <div class="fld"><label>Type</label><select class="inp err"><option>A</option></select></div>
+          <div class="fld"><label>Address</label><input class="inp mono err" value="2606:4700:4700::1111">
+            <div class="errmsg"><svg><use href="#i-warn"/></svg><span>That's an IPv6 address — an <code>A</code> record holds IPv4.<button class="fix">Change type to AAAA</button></span></div>
+          </div>
+          <div style="border-top:1px solid var(--border2);margin:14px 0"></div>
+          <div class="fld"><label>Name</label><input class="inp mono err" value="@">
+            <div class="errmsg"><svg><use href="#i-warn"/></svg><span>A <code>CNAME</code> can't sit at the apex — it would collide with the zone's own <code>SOA</code> and <code>NS</code> records.</span></div>
+          </div>
+          <div class="fld"><label>Name</label><input class="inp mono err" value="www">
+            <div class="errmsg"><svg><use href="#i-warn"/></svg><span><code>www</code> already has an <code>A</code> record. A <code>CNAME</code> can't coexist with another record at the same name.</span></div>
+          </div>
+        </div>
+        <div class="note" style="margin:0 14px 14px">Collision checks run against the <b>already-loaded zone</b> — no extra request. The backend enforces structure (zone containment, apex NS/SOA, label charset) but never checks that an <code>A</code> holds IPv4 or that a <code>CNAME</code> is unique at its name; those gaps are what this layer closes. The server stays the authority and its rejections are shown verbatim.</div>
+      </div>
+
+      <div class="card">
+        <div class="cardhd"><h3>Diff before save — the whole-set-replace guard</h3></div>
+        <div style="padding:14px">
+          <p style="font-size:13px;margin:0 0 4px"><b>This replaces every value on <code class="mono">TXT _acme-challenge</code>.</b></p>
+          <p style="font-size:12.5px;color:var(--muted);margin:0">Both providers rewrite the entire record set on save — 2 values will be removed.</p>
+          <div class="diff">
+            <div class="dl eq"><span class="s">=</span> gX9k2QaKt7Lz1</div>
+            <div class="dl rm"><span class="s">−</span> 7Lm4pZt8Nx2Qv</div>
+            <div class="dl rm"><span class="s">−</span> Bq3xR9wLm5Yc2</div>
+            <div class="dl ad"><span class="s">+</span> Nn8vT4kPz1Wd6</div>
+          </div>
+          <div class="note" style="margin:10px 0 0"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-warn"/></svg> This is a <b>live</b> <code>_acme-challenge</code> record. Removing values can fail a certificate issuance that's currently in flight.</div>
+        </div>
+        <div class="foot"><div class="spacer"></div><button class="btn">Cancel</button><button class="btn primary">Replace 3 values with 2</button></div>
+        <div class="note" style="margin:14px">The single highest-value control on the surface. A user editing one value of a three-value set would otherwise silently destroy the other two, and neither provider would complain. Only shown when <code>diffRecordValues()</code> reports removals.</div>
       </div>
     </div>
    </main>
@@ -608,18 +694,47 @@
     </div>
 
     <div class="wstep on" id="w-1">
-     <div class="modal sm">
-      <div class="dh"><span class="dicon"><svg><use href="#i-globe"/></svg></span><div><h2>Buy a domain</h2><div class="sub">Search availability and live registry pricing.</div></div></div>
+     <div class="modal">
+      <div class="dh"><span class="dicon"><svg><use href="#i-globe"/></svg></span><div><h2>Buy a domain</h2><div class="sub">Availability and live registry pricing across TLDs.</div></div></div>
       <div class="steps"><span class="s on"><span class="n">1</span> Search</span><span class="s"><span class="n">2</span> Quote</span><span class="s"><span class="n">3</span> Confirm</span><span class="s"><span class="n">4</span> Register</span></div>
       <div class="wbody">
-        <div class="fld"><label>Domain name</label><input class="inp mono" value="nativemojo.dev"></div>
-        <div class="res">
-          <div class="top"><span class="nm">nativemojo.dev</span><span class="b ok"><span class="dot"></span> Available</span><div class="spacer" style="flex:1"></div><span class="price">$14.00</span></div>
-          <div class="why">USD · WHOIS privacy supported for <code>.dev</code>.</div>
-        </div>
+        <div class="fld"><label>Name</label><input class="inp mono" value="nativemojo.com"><div class="help">A TLD is optional. Either way you get the full comparison — typing one just pins it to the top.</div></div>
+
+        <p class="eyebrow" style="margin-top:16px">What you asked for</p>
+        <table>
+          <thead><tr><th>Domain</th><th>Availability</th><th class="num">Price / yr</th><th>Privacy</th><th></th></tr></thead>
+          <tbody>
+            <tr><td class="mono">nativemojo.com</td><td><span class="b bad">Already registered</span><div style="font-size:12px;color:var(--muted);margin-top:2px">Hold this one already? Use <b>Register existing</b>.</div></td><td class="num">—</td><td>—</td><td style="text-align:right"><button class="btn" disabled>Select</button></td></tr>
+          </tbody>
+        </table>
+
+        <p class="eyebrow" style="margin-top:18px">Other TLDs</p>
+        <table>
+          <thead><tr><th>Domain</th><th>Availability</th><th class="num">Price / yr</th><th>Privacy</th><th></th></tr></thead>
+          <tbody>
+            <tr><td class="mono">nativemojo.dev</td><td><span class="b ok"><span class="dot"></span> Available</span></td><td class="num">$14.00</td><td><span class="b ok">Yes</span></td><td style="text-align:right"><button class="btn primary">Select</button></td></tr>
+            <tr><td class="mono">nativemojo.io</td><td><span class="b ok"><span class="dot"></span> Available</span></td><td class="num">$39.00</td><td><span class="b ok">Yes</span></td><td style="text-align:right"><button class="btn">Select</button></td></tr>
+            <tr><td class="mono">nativemojo.app</td><td><span class="b warn"><span class="spin"></span> Registry hasn't answered</span><div style="font-size:12px;color:var(--muted);margin-top:2px">Try again in a moment.</div></td><td class="num">—</td><td>—</td><td style="text-align:right"><button class="btn">Retry</button></td></tr>
+            <tr><td class="mono">nativemojo.zip</td><td><span class="b mut">Not sold here</span></td><td class="num">—</td><td>—</td><td style="text-align:right"><button class="btn" disabled>Select</button></td></tr>
+          </tbody>
+        </table>
+
+        <p class="eyebrow" style="margin-top:18px">Similar names <span class="b mut" style="text-transform:none;letter-spacing:0">needs item 412</span></p>
+        <table>
+          <thead><tr><th>Domain</th><th>Availability</th><th class="num">Price / yr</th><th></th></tr></thead>
+          <tbody>
+            <tr><td class="mono">getnativemojo.com</td><td><span class="b ok"><span class="dot"></span> Available</span></td><td class="num">$12.00</td><td style="text-align:right"><button class="btn">Select</button></td></tr>
+            <tr><td class="mono">nativemojoapp.com</td><td><span class="b ok"><span class="dot"></span> Available</span></td><td class="num">$12.00</td><td style="text-align:right"><button class="btn">Select</button></td></tr>
+            <tr><td class="mono">nativemojohq.com</td><td><span class="b ok"><span class="dot"></span> Available</span></td><td class="num">$12.00</td><td style="text-align:right"><button class="btn">Select</button></td></tr>
+          </tbody>
+        </table>
       </div>
-      <div class="foot"><div class="spacer"></div><button class="btn">Cancel</button><button class="btn primary">Continue →</button></div>
+      <div class="foot"><div class="spacer"></div><button class="btn">Cancel</button><button class="btn primary">Continue with nativemojo.dev →</button></div>
      </div>
+     <div class="note"><b>A typed TLD never collapses the grid.</b> <code>nativemojo.com</code> and <code>nativemojo</code> return the same three sections — the full name just pins an exact-match row on top. Answering a full-name search with one "already registered" row is the dead end this feature exists to remove: <code>.com</code> is the likeliest name to be taken, so the alternatives must be on screen at the moment the bad news is. The exact name resolves <b>first</b> and renders as soon as it lands, so a precise check is never slower than a single-name search.</div>
+     <div class="note"><b>Data source is capability-detected (D10).</b> With django-mojo item <b>412</b>: one batch <code>registrar/search</code> for the TLD grid and one <code>registrar/suggest</code> for the similar-names block, with per-TLD pricing served from the backend cache. Without it: client fan-out over a 5-TLD default at concurrency 3, rows filling in as they resolve, and the similar-names block omitted entirely — AWS <code>GetDomainSuggestions</code> has no client-side equivalent.</div>
+     <div class="note"><b>Why not just fan out from the browser?</b> <code>check_availability()</code> makes <b>two</b> AWS calls per name — <code>check_domain_availability</code> plus an <i>uncached</i> <code>list_prices(tld)</code>. An 8-row grid is 16 AWS calls, half of them re-fetching static pricing. And <code>CheckDomainAvailability</code> is the call that degrades to <code>PENDING</code> under load, so fanning out manufactures more of the <code>null</code> state than it resolves.</div>
+     <div class="note"><b>A row that errors, times out or is throttled is <code>unknown</code> — never <code>taken</code>.</b> Partial results render as they land rather than blocking on the slowest row.</div>
     </div>
 
     <div class="wstep" id="w-1b">
