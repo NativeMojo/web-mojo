@@ -9,6 +9,9 @@ This file is loaded automatically by Claude Code. Keep it under 150 lines.
    - Filing new work (bug/feature/chore) → `/maestro-task`  (creates a board item at `stage=inbox`)
    - Triaging / planning an item → `/maestro-scope`
    - Implementing a planned item  → `/maestro-build`
+   - Small single-session change, too small to track → `/maestro-vibe`
+     (no workspec/stage flips; files one born-done history item at close-out)
+   - Batch-running several filed items with one approval gate → `/maestro-auto`
    - (`/memory` shows project memory state.)
 4. Read the item from the board — `get_board_item(<id>)` via the maestro MCP.
    The board is resolved from `.claude/maestro.json`.

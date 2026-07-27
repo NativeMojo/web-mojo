@@ -6,7 +6,7 @@ description: >-
   stage=inbox) is the work record, not a local file.
 user-invocable: true
 argument-hint: <feature/bug description>
-maestro-skill-version: 1
+maestro-skill-version: 3
 ---
 
 # Maestro Task — File Work onto the Board
@@ -25,6 +25,12 @@ workspace sees it live.
    confirm auth, then `list_workspaces()` and `list_boards(workspace)`, ask
    the user which board is this repo's work queue, and offer to write
    `.claude/maestro.json` so future sessions skip this step.
+   - `list_workspaces()` returning `[]` is **normal for a new account, not an
+     error**. The personal workspace `whoami()` reports holds the key and
+     credits and cannot hold a board. Say so, then offer
+     `create_workspace(name)` — it makes them admin and comes with a default
+     MoSCoW board. Ask first; never create one unprompted. (Names are claimed
+     globally, so a taken name fails — suggest a distinctive one.)
 3. If maestro is unreachable or unauthenticated: **stop with an explicit
    notice** and offer the repo's local intake skill (e.g. `/request`) if one
    exists. Never fall back silently.
@@ -38,11 +44,24 @@ workspace sees it live.
    work. Reference docs by slug in the workspec ("Apply rules: ...") instead
    of pasting their content.
 2. Parse the task description from the arguments (or ask what they want).
-3. Explore the codebase — what exists, what changes, constraints. Ask
+3. **Size check — ask before filing.** Not every request belongs on the
+   board. If the description reads like a small, single-session change (a
+   typo, a one-file fix, a small bug, a config tweak — the kind of thing
+   that's faster to just do than to write a workspec for), stop and ask the
+   user: "This looks small enough to vibe-code directly — want me to run
+   `/maestro-vibe` on it now instead of filing a board item?" Proceed
+   straight to filing without asking only when the task is clearly
+   multi-session/cross-cutting, or the user has already indicated (by
+   invoking this skill with that intent, or in the conversation) that they
+   specifically want it tracked. When in doubt, ask — a cluttered board of
+   silly small items is worse than one extra question. If the user opts to
+   vibe it, switch to the `maestro-vibe` skill and do not create a board
+   item.
+4. Explore the codebase — what exists, what changes, constraints. Ask
    clarifying questions until scope is unambiguous: contract/shape of the
    change, permissions, edge cases, what's explicitly out of scope.
-4. Compose the workspec markdown (template below).
-5. Create the item:
+5. Compose the workspec markdown (template below).
+6. Create the item:
    `create_board_item(board, title, values={"stage": "inbox", "moscow": "<must|should|could — ask or infer, default should>"}, description=<workspec>)`
    (use the board's actual priority column/options from the schema).
 6. Print the item id and the portal link
