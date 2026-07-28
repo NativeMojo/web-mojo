@@ -118,3 +118,16 @@ A completed migration swept the remaining `new Dialog(...)` callers in `src/` ov
 - **[WebApp](../core/WebApp.md)** — `app.modal` exposes the Modal API on every view.
 - **[View](../core/View.md)** — Base View class that `ModalView` extends.
 - **[ToastService](../services/ToastService.md)** — Non-blocking alternative for lightweight notifications.
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste references in the examples portal:
+
+- [`examples/portal/examples/components/Dialog/DialogExample.js`](../../../examples/portal/examples/components/Dialog/DialogExample.js) — alert / confirm / prompt / showBusy / showDialog — promise-based modal helpers.
+- [`examples/portal/examples/components/Dialog/DialogContextMenuExample.js`](../../../examples/portal/examples/components/Dialog/DialogContextMenuExample.js) — Header dropdown menu with permission-gated items.
+- [`examples/portal/examples/components/Dialog/DialogCustomBodyExample.js`](../../../examples/portal/examples/components/Dialog/DialogCustomBodyExample.js) — Mount any View as the dialog body; read its state when the dialog closes.
+- [`examples/portal/examples/components/Dialog/DialogFormExample.js`](../../../examples/portal/examples/components/Dialog/DialogFormExample.js) — showForm and showModelForm — host a FormView inside a Dialog.
+
+<!-- examples:cross-link end -->

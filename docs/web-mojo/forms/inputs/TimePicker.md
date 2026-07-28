@@ -141,3 +141,13 @@ clipping containers like modals and overflow:hidden tables.
 - [DatePicker](./DatePicker.md) — single-value date picker (day / month / year)
 - [DateRangePicker](./DateRangePicker.md) — date ranges
 - [DateTimePicker](./DateTimePicker.md) — combined date + time + timezone
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/forms/inputs/TimePicker/TimePickerExample.js`](../../../../examples/portal/examples/forms/inputs/TimePicker/TimePickerExample.js) — HH:MM stepper picker with optional 12h/24h format and IANA timezone.
+
+<!-- examples:cross-link end -->

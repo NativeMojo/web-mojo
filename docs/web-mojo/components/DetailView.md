@@ -389,3 +389,13 @@ The same options apply as the nested `header: {...}` config in `DetailView`.
 - **Function templates re-evaluate on every render.** `DetailHeaderView`'s template reads model state at render time, so subclasses can call `headerView.render()` to refresh after a save without dealing with a cached HTML string.
 - **Action dispatch is by `data-action` convention.** All header-config `actions[]` entries and `contextMenu.items[]` entries fire through the standard MOJO event delegate, dispatched on the closest View with a matching `onAction<KebabCase>` handler — typically the `DetailView` subclass.
 - **Section views are arbitrary.** Each section in `sections` is whatever `View` subclass you write. `DetailView` doesn't impose any shape on them.
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/components/DetailView/DetailViewExample.js`](../../../examples/portal/examples/components/DetailView/DetailViewExample.js) — Standard record-viewer layout: flat header (icon, title, chips, active toggle, actions, X close) + SideNavView. Pair with Modal.detail() inside a Modal.
+
+<!-- examples:cross-link end -->

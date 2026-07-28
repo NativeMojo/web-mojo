@@ -1,6 +1,6 @@
 {
   "generatedAt": "static",
-  "pageCount": 99,
+  "pageCount": 104,
   "pages": [
     {
       "name": "ActiveGroup",
@@ -703,7 +703,55 @@
       "sourcePath": "examples/portal/examples/components/TableView/TableViewBatchActionsExample.js",
       "section": "Components",
       "icon": "bi-table",
+      "order": 35,
+      "topic": "components",
+      "group": "Lists & Tables"
+    },
+    {
+      "name": "TableView",
+      "area": "components",
+      "route": "components/table-view/columns",
+      "title": "TableView — column configuration",
+      "summary": "Object-form `visibility`, a function `formatter(value, ctx)`, a Mustache `column.template`, per-column `class`, and the `tableOptions` display bundle.",
+      "docs": "docs/web-mojo/components/TableView.md",
+      "tags": [
+        "table",
+        "collection",
+        "sort",
+        "filter",
+        "pagination",
+        "batch-actions"
+      ],
+      "page": "TableViewColumnsExample.js",
+      "modulePath": "./examples/components/TableView/TableViewColumnsExample.js",
+      "sourcePath": "examples/portal/examples/components/TableView/TableViewColumnsExample.js",
+      "section": "Components",
+      "icon": "bi-table",
       "order": 31,
+      "topic": "components",
+      "group": "Lists & Tables"
+    },
+    {
+      "name": "TableView",
+      "area": "components",
+      "route": "components/table-view/context-menu",
+      "title": "TableView — context menus",
+      "summary": "Per-row kebab menu: string vs callback `action`, `divider`, `danger`, `disabled`, per-row `visible(model)`, fail-closed `permissions`, and the `rowContextMenu` alias.",
+      "docs": "docs/web-mojo/components/TableView.md",
+      "tags": [
+        "table",
+        "collection",
+        "sort",
+        "filter",
+        "pagination",
+        "batch-actions"
+      ],
+      "page": "TableViewContextMenuExample.js",
+      "modulePath": "./examples/components/TableView/TableViewContextMenuExample.js",
+      "sourcePath": "examples/portal/examples/components/TableView/TableViewContextMenuExample.js",
+      "section": "Components",
+      "icon": "bi-table",
+      "order": 33,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -727,7 +775,7 @@
       "sourcePath": "examples/portal/examples/components/TableView/TableViewCustomRowExample.js",
       "section": "Components",
       "icon": "bi-table",
-      "order": 32,
+      "order": 36,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -751,7 +799,7 @@
       "sourcePath": "examples/portal/examples/components/TableView/TableViewDayRangeFilterExample.js",
       "section": "Components",
       "icon": "bi-table",
-      "order": 34,
+      "order": 38,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -775,7 +823,7 @@
       "sourcePath": "examples/portal/examples/components/TableView/TableViewFeedbackStatesExample.js",
       "section": "Components",
       "icon": "bi-table",
-      "order": 38,
+      "order": 43,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -799,7 +847,55 @@
       "sourcePath": "examples/portal/examples/components/TableView/TableViewFilterPresetsExample.js",
       "section": "Components",
       "icon": "bi-table",
-      "order": 36,
+      "order": 41,
+      "topic": "components",
+      "group": "Lists & Tables"
+    },
+    {
+      "name": "TableView",
+      "area": "components",
+      "route": "components/table-view/grouped",
+      "title": "TableView — grouped rows",
+      "summary": "`groupBy` as a full-width `<tr><th colspan=N>` header, the `groupByField`/`groupByRecency`/`groupByBoolean` helpers, and the four `groupHeaderStyle` treatments.",
+      "docs": "docs/web-mojo/components/TableView.md",
+      "tags": [
+        "table",
+        "collection",
+        "sort",
+        "filter",
+        "pagination",
+        "batch-actions"
+      ],
+      "page": "TableViewGroupedExample.js",
+      "modulePath": "./examples/components/TableView/TableViewGroupedExample.js",
+      "sourcePath": "examples/portal/examples/components/TableView/TableViewGroupedExample.js",
+      "section": "Components",
+      "icon": "bi-table",
+      "order": 40,
+      "topic": "components",
+      "group": "Lists & Tables"
+    },
+    {
+      "name": "TableView",
+      "area": "components",
+      "route": "components/table-view/inline-edit",
+      "title": "TableView — inline cell editing",
+      "summary": "`column.editable` + all four `editableOptions.type` editors, `autoSave: false`, and a live log of all four `cell:*` events including the rejected-save branch.",
+      "docs": "docs/web-mojo/components/TableView.md",
+      "tags": [
+        "table",
+        "collection",
+        "sort",
+        "filter",
+        "pagination",
+        "batch-actions"
+      ],
+      "page": "TableViewInlineEditExample.js",
+      "modulePath": "./examples/components/TableView/TableViewInlineEditExample.js",
+      "sourcePath": "examples/portal/examples/components/TableView/TableViewInlineEditExample.js",
+      "section": "Components",
+      "icon": "bi-table",
+      "order": 34,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -823,7 +919,7 @@
       "sourcePath": "examples/portal/examples/components/TableView/TableViewLiveWatchExample.js",
       "section": "Components",
       "icon": "bi-table",
-      "order": 40,
+      "order": 45,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -847,7 +943,7 @@
       "sourcePath": "examples/portal/examples/components/TableView/TableViewPowerToolsExample.js",
       "section": "Components",
       "icon": "bi-table",
-      "order": 41,
+      "order": 46,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -871,7 +967,7 @@
       "sourcePath": "examples/portal/examples/components/TableView/TableViewRowExpandExample.js",
       "section": "Components",
       "icon": "bi-table",
-      "order": 39,
+      "order": 44,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -895,7 +991,7 @@
       "sourcePath": "examples/portal/examples/components/TableView/TableViewRowStripeExample.js",
       "section": "Components",
       "icon": "bi-table",
-      "order": 35,
+      "order": 39,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -919,7 +1015,7 @@
       "sourcePath": "examples/portal/examples/components/TableView/TableViewServerExample.js",
       "section": "Components",
       "icon": "bi-table",
-      "order": 33,
+      "order": 37,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -943,7 +1039,31 @@
       "sourcePath": "examples/portal/examples/components/TableView/TableViewStatStripExample.js",
       "section": "Components",
       "icon": "bi-table",
-      "order": 37,
+      "order": 42,
+      "topic": "components",
+      "group": "Lists & Tables"
+    },
+    {
+      "name": "TableView",
+      "area": "components",
+      "route": "components/table-view/toolbar",
+      "title": "TableView — toolbar",
+      "summary": "`toolbarButtons` in both `handler:` and `action:` forms (one permission-gated), a `toolbarRight` View, live `setTitle()`/`setEyebrow()`, and the `showRefresh`/`showFullscreen` chrome gates.",
+      "docs": "docs/web-mojo/components/TableView.md",
+      "tags": [
+        "table",
+        "collection",
+        "sort",
+        "filter",
+        "pagination",
+        "batch-actions"
+      ],
+      "page": "TableViewToolbarExample.js",
+      "modulePath": "./examples/components/TableView/TableViewToolbarExample.js",
+      "sourcePath": "examples/portal/examples/components/TableView/TableViewToolbarExample.js",
+      "section": "Components",
+      "icon": "bi-table",
+      "order": 32,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -2592,6 +2712,34 @@
               "docs": "docs/web-mojo/components/TableView.md"
             },
             {
+              "route": "components/table-view/columns",
+              "title": "TableView — column configuration",
+              "summary": "Object-form `visibility`, a function `formatter(value, ctx)`, a Mustache `column.template`, per-column `class`, and the `tableOptions` display bundle.",
+              "icon": "bi-table",
+              "docs": "docs/web-mojo/components/TableView.md"
+            },
+            {
+              "route": "components/table-view/toolbar",
+              "title": "TableView — toolbar",
+              "summary": "`toolbarButtons` in both `handler:` and `action:` forms (one permission-gated), a `toolbarRight` View, live `setTitle()`/`setEyebrow()`, and the `showRefresh`/`showFullscreen` chrome gates.",
+              "icon": "bi-table",
+              "docs": "docs/web-mojo/components/TableView.md"
+            },
+            {
+              "route": "components/table-view/context-menu",
+              "title": "TableView — context menus",
+              "summary": "Per-row kebab menu: string vs callback `action`, `divider`, `danger`, `disabled`, per-row `visible(model)`, fail-closed `permissions`, and the `rowContextMenu` alias.",
+              "icon": "bi-table",
+              "docs": "docs/web-mojo/components/TableView.md"
+            },
+            {
+              "route": "components/table-view/inline-edit",
+              "title": "TableView — inline cell editing",
+              "summary": "`column.editable` + all four `editableOptions.type` editors, `autoSave: false`, and a live log of all four `cell:*` events including the rejected-save branch.",
+              "icon": "bi-table",
+              "docs": "docs/web-mojo/components/TableView.md"
+            },
+            {
               "route": "components/table-view/batch-actions",
               "title": "TableView — batch actions",
               "summary": "Multi-select rows + bulk actions wired to the in-memory Collection.",
@@ -2623,6 +2771,13 @@
               "route": "components/table-view/row-stripe",
               "title": "TableView row stripe",
               "summary": "Severity-coded 4px left-edge stripe per row, inherited from ListView — same callback, same six tokens.",
+              "icon": "bi-table",
+              "docs": "docs/web-mojo/components/TableView.md"
+            },
+            {
+              "route": "components/table-view/grouped",
+              "title": "TableView — grouped rows",
+              "summary": "`groupBy` as a full-width `<tr><th colspan=N>` header, the `groupByField`/`groupByRecency`/`groupByBoolean` helpers, and the four `groupHeaderStyle` treatments.",
               "icon": "bi-table",
               "docs": "docs/web-mojo/components/TableView.md"
             },
@@ -3390,6 +3545,34 @@
           "docs": "docs/web-mojo/components/TableView.md"
         },
         {
+          "route": "components/table-view/columns",
+          "title": "TableView — column configuration",
+          "summary": "Object-form `visibility`, a function `formatter(value, ctx)`, a Mustache `column.template`, per-column `class`, and the `tableOptions` display bundle.",
+          "icon": "bi-table",
+          "docs": "docs/web-mojo/components/TableView.md"
+        },
+        {
+          "route": "components/table-view/toolbar",
+          "title": "TableView — toolbar",
+          "summary": "`toolbarButtons` in both `handler:` and `action:` forms (one permission-gated), a `toolbarRight` View, live `setTitle()`/`setEyebrow()`, and the `showRefresh`/`showFullscreen` chrome gates.",
+          "icon": "bi-table",
+          "docs": "docs/web-mojo/components/TableView.md"
+        },
+        {
+          "route": "components/table-view/context-menu",
+          "title": "TableView — context menus",
+          "summary": "Per-row kebab menu: string vs callback `action`, `divider`, `danger`, `disabled`, per-row `visible(model)`, fail-closed `permissions`, and the `rowContextMenu` alias.",
+          "icon": "bi-table",
+          "docs": "docs/web-mojo/components/TableView.md"
+        },
+        {
+          "route": "components/table-view/inline-edit",
+          "title": "TableView — inline cell editing",
+          "summary": "`column.editable` + all four `editableOptions.type` editors, `autoSave: false`, and a live log of all four `cell:*` events including the rejected-save branch.",
+          "icon": "bi-table",
+          "docs": "docs/web-mojo/components/TableView.md"
+        },
+        {
           "route": "components/table-view/batch-actions",
           "title": "TableView — batch actions",
           "summary": "Multi-select rows + bulk actions wired to the in-memory Collection.",
@@ -3425,6 +3608,20 @@
           "docs": "docs/web-mojo/components/TableView.md"
         },
         {
+          "route": "components/data-view",
+          "title": "DataView",
+          "summary": "Structured key/value display with field types for email, URL, boolean, dates, and JSON.",
+          "icon": "bi-card-list",
+          "docs": "docs/web-mojo/components/DataView.md"
+        },
+        {
+          "route": "components/table-view/grouped",
+          "title": "TableView — grouped rows",
+          "summary": "`groupBy` as a full-width `<tr><th colspan=N>` header, the `groupByField`/`groupByRecency`/`groupByBoolean` helpers, and the four `groupHeaderStyle` treatments.",
+          "icon": "bi-table",
+          "docs": "docs/web-mojo/components/TableView.md"
+        },
+        {
           "route": "components/table-view/filter-presets",
           "title": "TableView — filter presets",
           "summary": "`filterPresets` renders named one-click queries as a toolbar segment (≤4 inline); mutually exclusive, derived active state, `'@me'` token.",
@@ -3451,13 +3648,6 @@
           "summary": "`rowExpand` chevron column opens a full-width string-template detail row; `rowExpandMultiple` toggles single vs many open.",
           "icon": "bi-table",
           "docs": "docs/web-mojo/components/TableView.md"
-        },
-        {
-          "route": "components/data-view",
-          "title": "DataView",
-          "summary": "Structured key/value display with field types for email, URL, boolean, dates, and JSON.",
-          "icon": "bi-card-list",
-          "docs": "docs/web-mojo/components/DataView.md"
         },
         {
           "route": "components/table-view/live-watch",

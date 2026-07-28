@@ -1055,3 +1055,14 @@ In **collapsed** state, Bootstrap tooltips are automatically initialised on all 
 - **[Page](../pages/Page.md)**
 - **[Events](../core/Events.md)**
 - **[Built-in Models](../models/BuiltinModels.md)**
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste references in the examples portal:
+
+- [`examples/portal/examples/components/ActiveGroup/ActiveGroupExample.js`](../../../examples/portal/examples/components/ActiveGroup/ActiveGroupExample.js) — app.activeGroup, group:changed events, and sidebar menus filtered by groupKind.
+- [`examples/portal/examples/components/SidebarTopNav/SidebarTopNavExample.js`](../../../examples/portal/examples/components/SidebarTopNav/SidebarTopNavExample.js) — Portal navigation chrome — sidebar menus and topbar configured via PortalApp.
+
+<!-- examples:cross-link end -->

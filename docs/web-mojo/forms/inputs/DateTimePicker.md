@@ -146,3 +146,13 @@ All styling uses Bootstrap 5.3 surface tokens. Renders correctly under both
 - [DatePicker](./DatePicker.md) — single-value date picker (day / month / year)
 - [DateRangePicker](./DateRangePicker.md) — date ranges
 - [TimePicker](./TimePicker.md) — standalone time picker
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/forms/inputs/DateTimePicker/DateTimePickerExample.js`](../../../../examples/portal/examples/forms/inputs/DateTimePicker/DateTimePickerExample.js) — Combined date + time picker with optional timezone in one popover.
+
+<!-- examples:cross-link end -->

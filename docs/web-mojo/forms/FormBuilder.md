@@ -518,3 +518,13 @@ document.getElementById('form-container').innerHTML = html;
 - [BasicTypes.md](./BasicTypes.md) - Basic field types reference
 - **Interactive playground** — the examples portal includes a live FormBuilder JSON playground (`forms/form-builder`) where you can paste any `fields:` array and see the rendered form update in real time.
 - [Validation.md](./Validation.md) - Form validation
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/forms/FormBuilder/FormBuilderExample.js`](../../../examples/portal/examples/forms/FormBuilder/FormBuilderExample.js) — Edit a fields config as JSON, see a live FormView render. Same syntax FormView and FormBuilder both accept.
+
+<!-- examples:cross-link end -->

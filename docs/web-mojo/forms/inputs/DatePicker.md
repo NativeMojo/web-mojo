@@ -425,8 +425,9 @@ Unlike native `<input type="date">`, DatePicker provides identical UX everywhere
 
 <!-- examples:cross-link begin -->
 
-Runnable, copy-paste reference in the examples portal:
+Runnable, copy-paste references in the examples portal:
 
 - [`examples/portal/examples/forms/inputs/DatePicker/DatePickerExample.js`](../../../../examples/portal/examples/forms/inputs/DatePicker/DatePickerExample.js) — Calendar date picker with min/max, inline mode, and custom formats.
+- [`examples/portal/examples/forms/inputs/DateTimeSuite/DateTimeSuiteExample.js`](../../../../examples/portal/examples/forms/inputs/DateTimeSuite/DateTimeSuiteExample.js) — Landing page for all four date/time pickers — one preview each, Show config / Show form data buttons, links to dedicated example pages.
 
 <!-- examples:cross-link end -->
