@@ -304,6 +304,45 @@ module.exports = async function (testContext) {
 
       await tv.destroy();
     });
+
+    // #297 — models mode exists precisely so the visible rows survive a
+    // refresh: an open detail row must still be open (and still rendered)
+    // after a tick that changed the row's data.
+    it('models-mode tick leaves an open detail row open and flashes the changed row', async () => {
+      const collection = seeded(3);
+      collection.endpoint = '/api/thing';
+      collection.restEnabled = true;
+      collection.lastFetchTime = Date.now();
+      collection.rest = {
+        GET: jest.fn(async (_url, params) => {
+          const wanted = String(params.id__in).split(',');
+          const rows = [{ id: 1, name: 'Row 1', level: 99 }, { id: 2, name: 'Row 2', level: 2 }];
+          return { success: true, data: { status: 'ok', data: rows.filter((r) => wanted.includes(String(r.id))) } };
+        })
+      };
+
+      const tv = new TableView({
+        collection,
+        columns: COLUMNS,
+        autoRefresh: { every: 10, mode: 'models' },
+        rowExpand: (m) => `detail ${m.get('name')}`
+      });
+      await tv.render(true, host);
+
+      await clickChevron(tv, 1);
+      expect(tv.expandedRows.has(1)).toBe(true);
+
+      tv._autoRefreshTick();
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(tv.expandedRows.has(1)).toBe(true);
+      expect(tv.element.querySelector('tr.mojo-detail-row')).not.toBeNull();
+      // Row 1's level changed → flash; row 2 came back identical → no flash.
+      expect(tv.itemViews.get(1).element.classList.contains('mojo-row-flash')).toBe(true);
+      expect(tv.itemViews.get(2).element.classList.contains('mojo-row-flash')).toBe(false);
+
+      await tv.destroy();
+    });
   });
 
   // --------------------------------------------------------------
@@ -368,6 +407,7 @@ module.exports = async function (testContext) {
       // so a raw string check would false-positive.)
       expect(html).not.toContain('mojo-detail-panel');
       expect(html).not.toContain('.preset-segment .btn');
+      expect(html).not.toContain('mojo-row-flash'); // #297 flash CSS is gated too
 
       // LOADING-STATE change: skeleton is now the DEFAULT loading visual, so its
       // style block ships by default (it did not before). Only the loading

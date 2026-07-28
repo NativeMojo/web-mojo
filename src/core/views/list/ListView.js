@@ -80,6 +80,13 @@ class ListView extends View {
   static ROW_STRIPE_TOKENS = ['danger', 'warning', 'success', 'info', 'primary', 'secondary'];
 
   /**
+   * How long the `.mojo-row-flash` class stays on a changed row. Slightly
+   * longer than the 1.2s CSS animation so the fade always finishes before the
+   * class is stripped.
+   */
+  static ROW_FLASH_MS = 1400;
+
+  /**
    * Track Model classes already warned about a minified `.name` so the
    * console doesn't spam — one warning per offending class per session.
    * @private
@@ -285,15 +292,33 @@ class ListView extends View {
     // focus the timer fires an immediate refetch then resumes normal cadence.
     // Absent → `_autoRefreshMs === 0`, so no timer and no listeners are ever
     // created (byte-identical behavior for pages that don't opt in).
+    //
+    // The object form `{ every, mode, indicator, flash }` selects the refresh
+    // MODE. `mode: 'collection'` (the default, and what a bare number means)
+    // is the full refetch above. `mode: 'models'` instead refreshes only the
+    // rows already on screen via one batched `id__in` request merged in place —
+    // no membership change, no pagination shift, no skeleton flash — and gives
+    // rows whose data actually changed a brief highlight (`flash`, on by
+    // default in models mode only). `every` is in **seconds**, like the bare
+    // number; there is no `interval` alias (every `*Interval` in this repo is
+    // milliseconds, so the name would lie).
     // See `docs/web-mojo/components/ListView.md` (Auto-refresh).
     this._autoRefreshMs = this._normalizeAutoRefresh(options.autoRefresh);
+    this._autoRefreshMode = this._normalizeAutoRefreshMode(options.autoRefresh);
+    this._autoRefreshFlash = this._normalizeAutoRefreshFlash(options.autoRefresh, this._autoRefreshMode);
     this._autoRefreshTimer = null;
     this._autoRefreshPaused = false;
     this._autoRefreshHandlers = null;
+    this._autoRefreshAbort = null;
+    this._autoRefreshInFlight = false;
+    this._rowFlashTimers = new Map();
     // A quiet toolbar indicator (muted `bi-arrow-repeat`) is shown whenever
     // auto-refresh is active; pass `autoRefreshIndicator: false` to hide it.
+    // The object form's `indicator` key wins when it's a boolean.
     // Off when auto-refresh is off, so it never adds toolbar markup by itself.
-    this.autoRefreshIndicator = options.autoRefreshIndicator !== false;
+    this.autoRefreshIndicator = typeof options.autoRefresh?.indicator === 'boolean'
+      ? options.autoRefresh.indicator
+      : options.autoRefreshIndicator !== false;
     this._autoRefreshPulseTimer = null;
 
     // -------- WM-035 view persistence — opt-in per-table saved view --------
@@ -459,6 +484,7 @@ class ListView extends View {
   _defaultBareTemplate() {
     return `
       ${this._hasFeedbackFeature() ? this._buildFeedbackStyles() : ''}
+      ${this._rowFlashEnabled() ? this._buildRowFlashStyles() : ''}
       <div class="list-view-container">
         {{#loading}}
           ${this._loadingContent(`<div class="list-loading">
@@ -499,6 +525,7 @@ class ListView extends View {
     return `
       <div class="list-view-wrapper">
         ${this._hasFeedbackFeature() ? this._buildFeedbackStyles() : ''}
+        ${this._rowFlashEnabled() ? this._buildRowFlashStyles() : ''}
         ${toolbar}
         <div class="list-view-container">
           {{#loading}}
@@ -2257,6 +2284,101 @@ class ListView extends View {
   }
 
   // ============================================================
+  // Row change flash — per-row feedback for `autoRefresh: { mode: 'models' }`
+  // ============================================================
+
+  /**
+   * True when changed rows should flash. Requires auto-refresh to be on, so a
+   * list that never refreshes carries none of this CSS.
+   * @private
+   */
+  _rowFlashEnabled() {
+    return this._autoRefreshMs > 0 && this._autoRefreshFlash === true;
+  }
+
+  /**
+   * One-time `<style>` block for the changed-row flash. Emitted only when
+   * `_rowFlashEnabled()`.
+   *
+   * The tint animates **`background-image`**, not `background-color` and not
+   * `box-shadow`:
+   *   - Bootstrap paints table cells with `background-color` plus an
+   *     `inset 0 0 0 9999px` box-shadow for striped/hover, so a plain
+   *     `background-color` on the `<tr>` never shows through;
+   *   - `box-shadow` is already owned by the `rowStripe` severity bar
+   *     (`inset 4px 0 0` on `td:first-child`), and keyframes sit in the
+   *     animation cascade origin — which outranks normal author declarations —
+   *     so animating it would erase the severity bar for the whole flash.
+   * A `background-image` gradient paints under the inset shadow, so both
+   * features coexist. The element-level rule covers the non-table ListView case
+   * (whose stripes use `border-left`, unaffected either way).
+   *
+   * `prefers-reduced-motion` drops the animation entirely — no feedback rather
+   * than motion, the same trade the auto-refresh indicator already makes.
+   * @private
+   */
+  _buildRowFlashStyles() {
+    return `
+      <style>
+        .mojo-row-flash,
+        .mojo-row-flash > td,
+        .mojo-row-flash > th { animation: mojo-row-flash-fade 1.2s ease-out; }
+        @keyframes mojo-row-flash-fade {
+          0%   { background-image: linear-gradient(rgba(var(--bs-primary-rgb), 0.18), rgba(var(--bs-primary-rgb), 0.18)); }
+          100% { background-image: linear-gradient(rgba(var(--bs-primary-rgb), 0), rgba(var(--bs-primary-rgb), 0)); }
+        }
+        [data-bs-theme="dark"] .mojo-row-flash,
+        [data-bs-theme="dark"] .mojo-row-flash > td,
+        [data-bs-theme="dark"] .mojo-row-flash > th { animation-name: mojo-row-flash-fade-dark; }
+        @keyframes mojo-row-flash-fade-dark {
+          0%   { background-image: linear-gradient(rgba(var(--bs-primary-rgb), 0.30), rgba(var(--bs-primary-rgb), 0.30)); }
+          100% { background-image: linear-gradient(rgba(var(--bs-primary-rgb), 0), rgba(var(--bs-primary-rgb), 0)); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .mojo-row-flash,
+          .mojo-row-flash > td,
+          .mojo-row-flash > th { animation: none; }
+        }
+      </style>
+    `;
+  }
+
+  /**
+   * Flash one row by id. Removing the class and forcing a reflow before
+   * re-adding it restarts the animation, so a row that changes again inside
+   * its own flash window re-fires instead of sitting still. The removal timer
+   * is tracked per id (re-armed on repeat) and cleared by `_stopAutoRefresh`.
+   * @private
+   */
+  _flashRow(id) {
+    if (!this._rowFlashEnabled()) return;
+    const itemView = this.itemViews.get(id);
+    const el = itemView && itemView.element;
+    if (!el) return;
+
+    el.classList.remove('mojo-row-flash');
+    void el.offsetWidth; // force reflow so the animation restarts
+    el.classList.add('mojo-row-flash');
+
+    const existing = this._rowFlashTimers.get(id);
+    if (existing) clearTimeout(existing);
+    this._rowFlashTimers.set(id, setTimeout(() => {
+      el.classList.remove('mojo-row-flash');
+      this._rowFlashTimers.delete(id);
+    }, ListView.ROW_FLASH_MS));
+  }
+
+  /**
+   * Flash every row reported as changed by `Collection.refreshModels()`.
+   * @param {Map<*, string[]>} changed - model id → changed attribute names.
+   * @private
+   */
+  _flashChangedRows(changed) {
+    if (!this._rowFlashEnabled() || !changed || changed.size === 0) return;
+    changed.forEach((_keys, id) => this._flashRow(id));
+  }
+
+  // ============================================================
   // Model lifecycle (view / edit / delete / add)
   //
   // Inherited by TableView. Generic across list and table — none of
@@ -3214,15 +3336,49 @@ class ListView extends View {
   // ============================================================
 
   /**
+   * True for the object form of `autoRefresh:` (`{ every, mode, … }`) — a
+   * plain object, not an array / null / Date / function.
+   * @private
+   */
+  _isAutoRefreshConfig(raw) {
+    return !!raw && typeof raw === 'object' && !Array.isArray(raw);
+  }
+
+  /**
    * Normalize the `autoRefresh:` option into an interval in milliseconds.
-   * Accepts a positive number of seconds, clamped to a 5s floor to prevent
-   * hammering the API. Anything else (absent / non-number / ≤0) → 0, which
-   * disables the feature entirely (no timer, no listeners).
+   * Accepts a positive number of seconds — or the object form's `every` key,
+   * same unit — clamped to a 5s floor to prevent hammering the API. Anything
+   * else (absent / non-number / ≤0) → 0, which disables the feature entirely
+   * (no timer, no listeners).
    * @private
    */
   _normalizeAutoRefresh(raw) {
-    if (typeof raw !== 'number' || !isFinite(raw) || raw <= 0) return 0;
-    return Math.max(5, raw) * 1000;
+    const secs = this._isAutoRefreshConfig(raw) ? raw.every : raw;
+    if (typeof secs !== 'number' || !isFinite(secs) || secs <= 0) return 0;
+    return Math.max(5, secs) * 1000;
+  }
+
+  /**
+   * Which refresh strategy a tick uses. `'models'` only when explicitly
+   * requested via the object form; everything else (including the bare number)
+   * is the historical `'collection'` full refetch.
+   * @private
+   */
+  _normalizeAutoRefreshMode(raw) {
+    return (this._isAutoRefreshConfig(raw) && raw.mode === 'models') ? 'models' : 'collection';
+  }
+
+  /**
+   * Whether changed rows get the highlight flash. Defaults ON for models mode
+   * (a brand-new mode, so there's no prior behavior to preserve) and OFF for
+   * collection mode — where a refetch resets the collection and rebuilds every
+   * item view, so there is no surviving row element to flash anyway. An
+   * explicit boolean `flash` always wins.
+   * @private
+   */
+  _normalizeAutoRefreshFlash(raw, mode) {
+    if (this._isAutoRefreshConfig(raw) && typeof raw.flash === 'boolean') return raw.flash;
+    return mode === 'models';
   }
 
   /**
@@ -3253,6 +3409,17 @@ class ListView extends View {
     if (this._autoRefreshPulseTimer) {
       clearTimeout(this._autoRefreshPulseTimer);
       this._autoRefreshPulseTimer = null;
+    }
+    // Abort an in-flight models refresh and drop every pending flash timer so
+    // nothing fires against a detached (or reused) element.
+    if (this._autoRefreshAbort) {
+      try { this._autoRefreshAbort.abort(); } catch { /* already aborted */ }
+      this._autoRefreshAbort = null;
+    }
+    this._autoRefreshInFlight = false;
+    if (this._rowFlashTimers) {
+      this._rowFlashTimers.forEach((timer) => clearTimeout(timer));
+      this._rowFlashTimers.clear();
     }
     this._unbindAutoRefreshListeners();
     this._autoRefreshPaused = false;
@@ -3326,10 +3493,57 @@ class ListView extends View {
     if (!this.isMounted()) { this._stopAutoRefresh(); return; }
     if (this._autoRefreshShouldSkip()) return;
     if (!this.collection || !this.collection.restEnabled) return;
+    // Mode branch sits AFTER the guards so every pause condition and the
+    // self-terminating detached-tick guarantee apply to both modes.
+    if (this._autoRefreshMode === 'models') return this._autoRefreshTickModels();
     Promise.resolve(this.collection.fetch())
       .then(() => this._pulseAutoRefreshIndicator())
       .catch((err) => {
         console.warn('ListView autoRefresh: fetch failed', err);
+      });
+  }
+
+  /**
+   * `mode: 'models'` tick — refresh only the rows already on screen.
+   *
+   * One batched `collection.refreshModels(ids)` request under the current
+   * params, merged into the existing model instances. Membership, order,
+   * pagination and `meta` are untouched, and nothing flips `loading`, so the
+   * list never blinks to its skeleton. Rows whose data actually changed
+   * re-render through the ordinary model-`change` path and (unless
+   * `flash: false`) get a brief highlight.
+   *
+   * Overlapping ticks are dropped by an in-flight flag (Rest's 30s default
+   * timeout means a hung request self-heals). A response that lands after the
+   * user changed a filter/sort is discarded: `refreshModels` runs on this
+   * view's own AbortController, so `collection.fetch()` cannot cancel it, and
+   * merging old-filter values into freshly fetched models would both corrupt
+   * the rows and fire a spurious flash.
+   * @private
+   */
+  _autoRefreshTickModels() {
+    if (this._autoRefreshInFlight) return;
+    const ids = this.collection.models.map((model) => model.id);
+    if (ids.length === 0) return;
+
+    this._autoRefreshInFlight = true;
+    const fetchStamp = this.collection.lastFetchTime;
+    const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    this._autoRefreshAbort = controller;
+
+    Promise.resolve(this.collection.refreshModels(ids, { signal: controller?.signal }))
+      .then((result) => {
+        // Stale-response guard — a full fetch completed while we were away.
+        if (this.collection.lastFetchTime !== fetchStamp) return;
+        this._pulseAutoRefreshIndicator();
+        if (result && result.changed) this._flashChangedRows(result.changed);
+      })
+      .catch((err) => {
+        console.warn('ListView autoRefresh: models refresh failed', err);
+      })
+      .finally(() => {
+        this._autoRefreshInFlight = false;
+        if (this._autoRefreshAbort === controller) this._autoRefreshAbort = null;
       });
   }
 

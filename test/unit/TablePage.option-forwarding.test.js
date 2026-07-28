@@ -122,6 +122,11 @@ module.exports = async function (testContext) {
 
     it('forwards `autoRefresh`', () => {
       expect(fixturePage({ autoRefresh: 30 }).tableViewConfig.autoRefresh).toBe(30);
+      // #297 — the object form rides the SAME key and must pass through by
+      // reference: TablePage neither normalizes nor clones it, so `mode`,
+      // `flash` and `indicator` reach ListView untouched.
+      const cfg = { every: 30, mode: 'models', flash: false, indicator: false };
+      expect(fixturePage({ autoRefresh: cfg }).tableViewConfig.autoRefresh).toBe(cfg);
     });
 
     it('forwards `persistState` + `persistKey`', () => {

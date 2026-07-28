@@ -77,6 +77,17 @@ module.exports = async function (testContext) {
       expect(new TableView({ collection: seeded(1), columns: COLUMNS, autoRefresh: -5 })._autoRefreshMs).toBe(0);
       expect(new TableView({ collection: seeded(1), columns: COLUMNS, autoRefresh: 'x' })._autoRefreshMs).toBe(0);
     });
+
+    // #297 — the object form is accepted alongside the bare number and means
+    // the same thing when only `every` is given (collection mode, no flash).
+    it('the object form `{ every: n }` normalizes identically to the bare number', () => {
+      const bare = new TableView({ collection: seeded(1), columns: COLUMNS, autoRefresh: 30 });
+      const obj = new TableView({ collection: seeded(1), columns: COLUMNS, autoRefresh: { every: 30 } });
+      expect(obj._autoRefreshMs).toBe(bare._autoRefreshMs);
+      expect(obj._autoRefreshMode).toBe(bare._autoRefreshMode);
+      expect(obj._autoRefreshMode).toBe('collection');
+      expect(obj._autoRefreshFlash).toBe(false);
+    });
   });
 
   // --------------------------------------------------------------

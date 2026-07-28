@@ -812,6 +812,7 @@ class TableView extends ListView {
         ${this.isRowExpandEnabled() ? this._buildRowExpandStyles() : ''}
         ${this.columnChooser ? this._buildColumnChooserStyles() : ''}
         ${this._hasFeedbackFeature() ? this._buildFeedbackStyles() : ''}
+        ${this._rowFlashEnabled() ? this._buildRowFlashStyles() : ''}
         ${this.buildToolbarTemplate()}
         ${batchPanelTop}
         <div class="table-container"${fontSize}>
