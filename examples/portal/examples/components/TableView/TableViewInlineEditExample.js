@@ -35,22 +35,30 @@ const SEED_STAFF = [
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i;
 
 /**
- * In-memory Model. A real one would PUT to the server; the only thing that
- * matters to TableView is that `save()` RESOLVES on success and REJECTS on
- * failure — a rejection is what produces `cell:save:error`.
+ * In-memory Model standing in for a REST-backed one. It answers in the same
+ * shape the real `Model.save()` does, which is the point worth copying: a
+ * failed save is reported by RESOLVING with `success: false` (or by leaving
+ * `model.errors` populated), not by throwing. TableRow inspects the resolved
+ * response as well as catching rejections, so either reaches
+ * `cell:save:error`.
  */
 class FakeStaffModel extends Model {
     async save(data) {
         await new Promise((r) => { setTimeout(r, 250); });
 
         if ('email' in data && !EMAIL_RE.test(String(data.email))) {
-            throw new Error(`"${data.email}" is not a valid email address`);
+            // Exactly what a server-side validation failure looks like coming
+            // back through Model.save(): resolved, success:true at the
+            // transport level, rejected in the body.
+            this.errors = { status: false, error: `"${data.email}" is not a valid email address` };
+            return { success: true, data: this.errors };
         }
 
+        this.errors = {};
         // `skipRender` keeps the automatic row rerender from firing: the cell
         // is repainted in place by TableRow once this resolves.
         this.set(data, null, { skipRender: true });
-        return { success: true, data: this.attributes };
+        return { success: true, data: { status: true, data: this.attributes } };
     }
 }
 
@@ -90,13 +98,12 @@ class TableViewInlineEditExample extends Page {
                     editableOptions: { type: 'text', inputType: 'email', placeholder: 'name@example.com' },
                 },
                 {
-                    // NOTE: no `badge:`-style formatter here. When a cell exits
-                    // edit mode TableRow re-renders it as
-                    // `escapeHtml(dataFormatter.pipe(newValue, formatter))`, so a
-                    // formatter that returns HTML shows up as literal markup
-                    // until the next full render. Plain-text formatters (like
-                    // `yesno` below) are fine on editable columns.
+                    // HTML formatters work on editable columns: the post-save
+                    // repaint goes through the same branch logic as the initial
+                    // render, so this badge survives an inline edit instead of
+                    // showing as literal markup.
                     key: 'role', label: 'Role', editable: true,
+                    formatter: 'badge:admin=danger,member=primary,viewer=secondary',
                     editableOptions: { type: 'select', options: ROLES },
                 },
                 {

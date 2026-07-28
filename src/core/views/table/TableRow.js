@@ -805,7 +805,13 @@ class TableRow extends ListViewItem {
     // Save to model and backend
     try {
       if (this.model.save) {
-        await this.model.save({ [columnKey]: newValue });
+        // `Model.save()` never rejects — it resolves `{success:false}` for
+        // transport errors and stores a `{status:false}` body in
+        // `model.errors` — so the resolved value has to be inspected too, or
+        // a server-rejected edit exits edit mode looking like a success.
+        const resp = await this.model.save({ [columnKey]: newValue });
+        const failure = this.resolveCellSaveFailure(resp);
+        if (failure) throw failure;
       } else {
         // Fallback for models without save method
         this.model[columnKey] = newValue;
@@ -856,6 +862,45 @@ class TableRow extends ListViewItem {
   }
 
   /**
+   * Decide whether a RESOLVED `model.save()` response was actually a failure.
+   *
+   * `Model.save()` resolves in every failure mode, so a rejection is only one
+   * of three: (a) it catches transport errors and returns
+   * `{success:false, error, status}`; (b) on a `{status:false}` body it stores
+   * the body in `this.errors` and still returns `success:true`; (c) on
+   * `success:false` it stores `response.errors`. It sets `errors = {}` on a
+   * clean save.
+   *
+   * The verdict is therefore delegated to the model rather than re-derived
+   * here: a non-empty `model.errors` is the model's own "this failed" signal,
+   * so TableRow stays consistent with Model instead of duplicating the
+   * `data.status` convention in a second place — and a stubbed
+   * `{success: true}` with no `data` (a common test/fake shape) is correctly
+   * still a success.
+   *
+   * @param {object} resp The resolved response from `model.save()`.
+   * @returns {Error|null} An error to take the failure path with, or null.
+   */
+  resolveCellSaveFailure(resp) {
+    if (resp && resp.success === false) {
+      const err = new Error(resp.error || 'Cell save failed');
+      err.response = resp;
+      err.errors = this.model?.errors;
+      return err;
+    }
+
+    const errors = this.model?.errors;
+    if (errors && typeof errors === 'object' && Object.keys(errors).length > 0) {
+      const err = new Error(errors.error || errors.message || 'Cell save rejected by the server');
+      err.response = resp;
+      err.errors = errors;
+      return err;
+    }
+
+    return null;
+  }
+
+  /**
    * Exit edit mode and restore content
    */
   exitEditMode(editorContainer, columnKey, newValue = null, originalContent = null) {
@@ -864,15 +909,9 @@ class TableRow extends ListViewItem {
 
     if (contentSpan) {
       if (newValue !== null) {
-        // Update display with new value (with proper formatting if needed)
         const column = this.columns.find(col => col.key === columnKey);
-        let displayValue = newValue;
-
-        if (column && column.formatter && typeof column.formatter === 'string') {
-          displayValue = dataFormatter.pipe(newValue, column.formatter);
-        }
-
-        contentSpan.innerHTML = this.escapeHtml(displayValue);
+        const html = this.renderCellContent(column, newValue);
+        if (html !== null) contentSpan.innerHTML = html;
       } else if (originalContent) {
         // Restore original content on cancel
         contentSpan.innerHTML = originalContent;
@@ -884,6 +923,64 @@ class TableRow extends ListViewItem {
     // Remove editor
     editorContainer.remove();
     this.editingCells.delete(columnKey);
+  }
+
+  /**
+   * The HTML a cell should show for `value` — the post-edit counterpart of
+   * `buildCellTemplate()`, kept branch-for-branch identical to it so the same
+   * value never paints differently depending on which path drew it.
+   *
+   * On escaping: this deliberately does NOT escape, because
+   * `buildCellTemplate()` doesn't either — a string formatter renders through
+   * `{{{model.key|fmt}}}`, a function formatter through `innerHTML =
+   * formatter(...)` (see `onAfterRender`), and a bare value through
+   * `{{{model.key}}}`. All triple-brace, all unescaped. The escaping that used
+   * to live here protected nothing: the same value is emitted unescaped by the
+   * very next full render of the row — which, for a REST-backed model, lands
+   * moments later, since `Model.save()` calls `set()` on success and that
+   * re-renders the row. All it actually did was show HTML formatters
+   * (`badge:` and friends) as literal markup after an inline save.
+   *
+   * That TableRow emits raw model values unescaped at all is a real and
+   * separate question — it is a framework-wide surface, filed on its own.
+   * This method neither widens nor narrows it.
+   *
+   * @param {object} column The column config, or undefined if not found.
+   * @param {*} value The newly-saved value.
+   * @returns {string|null} HTML to write, or null to leave the cell alone.
+   */
+  renderCellContent(column, value) {
+    if (!column) return value == null ? '' : String(value);
+
+    // Match buildCellTemplate's alias handling.
+    const formatter = column.formatter || column.format;
+
+    if (typeof formatter === 'string') {
+      return dataFormatter.pipe(value, formatter);
+    }
+
+    if (typeof formatter === 'function') {
+      try {
+        return formatter(value, {
+          value,
+          row: this.model,  // deprecated, kept for parity with onAfterRender
+          model: this.model,
+          column,
+          table: this.tableView,
+          index: this.index
+        });
+      } catch (error) {
+        console.error(`Error formatting cell for column ${column.key}:`, error);
+        return null;  // leave the cell as-is, same as the initial-render path
+      }
+    }
+
+    // `column.template` is a Mustache fragment needing the full model context.
+    // Rendering it here would be a second, divergent template path, so leave
+    // the cell alone and let the model-change re-render restore it.
+    if (column.template) return null;
+
+    return value == null ? '' : String(value);
   }
 
   /**

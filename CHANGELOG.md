@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Core · Inline cell editing — a rejected save no longer looks like a successful one, and HTML formatters survive an edit (#495)
+
+Two user-visible correctness bugs in `column.editable`, both found by driving the editors in a browser during the #298 audit.
+
+- **A server-rejected inline edit exited edit mode as though it had saved.** `TableRow.saveCellEdit` only treated a **rejection** as failure, but `Model.save()` never rejects: it catches transport errors and resolves `{ success: false }`, and stores a `{ status: false }` body in `model.errors` while still resolving `success: true`. So a validation failure left the user looking at their new value, apparently persisted, with `cell:save:error` never firing. The resolved response is now inspected too — a save counts as failed if it rejects, resolves `success: false`, or leaves `model.errors` non-empty. The verdict is delegated to the model rather than re-derived, so `TableRow` stays consistent with `Model` instead of duplicating the `data.status` convention; the model's error payload rides along on the emitted error as `error.errors`. This was the more serious of the two: silent data loss.
+- **HTML formatters now survive an inline save.** The post-save repaint escaped its output, so a column with `formatter: 'badge:…'` rendered correct markup on first paint and *literal escaped markup* after an edit. The escaping was protecting nothing — every branch of the initial render is already unescaped (`{{{model.key|fmt}}}` for a string formatter, `innerHTML = formatter(...)` for a function formatter, `{{{model.key}}}` for a bare value), so the same value is emitted unescaped by the very next full render, which for a REST-backed model lands moments later. All it did was make one paint path disagree with the other. The repaint now mirrors `buildCellTemplate` branch-for-branch through one shared `renderCellContent()`, so the two cannot drift again. `column.template` columns are the one exception — a template needs the full model context, so the cell is left for the model-change re-render rather than growing a second divergent template path.
+- Neither change widens the HTML surface by a byte. That `TableRow` emits raw model values unescaped at all is a real framework-wide question, filed separately — this only stops one path from *pretending* to narrow it.
+- The inline-edit example drops the `Model` subclass that threw (added only to route around the second bug) and now fails the way a real server does, and its Role column gets its `badge:` formatter back.
+- Tests: new `TableRow.cellRepaint.test.js` (5) plus 4 added to `TableView.cellEvents.test.js`; 7 of the 9 fail on the pre-fix code.
+
 ### Core · `searchPlacement: 'dropdown'` implemented, and the option can no longer delete your search box (#494)
 
 `searchPlacement: 'dropdown'` had been documented on `ListView`, `TableView` and `TablePage` for a long time with **no renderer behind it**. The gate was `searchable && searchPlacement === 'toolbar'`, so setting `'dropdown'` did not move the search input — it removed it, silently.

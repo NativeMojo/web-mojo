@@ -586,10 +586,13 @@ Bootstrap's `form-switch` styling.
    newValue })` is awaited; on success the cell exits edit mode showing the new
    value (re-run through a string `formatter`, if any) and `cell:save` fires
    with `{ row, model, column, oldValue, newValue }`.
-3. **Failure** — if `model.save()` rejects, the row **stays in edit mode**, the
-   editor gets a `.saving-error` class for 3 s, and `cell:save:error` fires with
+3. **Failure** — if the save fails, the row **stays in edit mode**, the editor
+   gets a `.saving-error` class for 3 s, and `cell:save:error` fires with
    `{ row, model, column, oldValue, newValue, error }`. Nothing is rolled back
-   on the model, so the user can correct the value and retry.
+   on the model, so the user can correct the value and retry. A save counts as
+   failed if `model.save()` rejects, resolves `success: false`, or leaves
+   `model.errors` non-empty — the stock `Model.save()` reports failures by
+   resolving, not throwing.
 4. **Cancel** — ✕, or **Escape** in a text-ish input, restores the original
    markup and fires `cell:cancel` with `{ row, model, column }`.
 
@@ -620,15 +623,19 @@ the ✓ button instead. Text and textarea editors are never auto-saved.
   never discard an open editor.
 - Models without a `save()` method fall back to assigning the value directly on
   the model object — useful for local-only tables.
-- **Don't put an HTML-producing formatter on an editable column.** On exit the
-  cell is repainted as `escapeHtml(dataFormatter.pipe(newValue, formatter))`,
-  so a `badge:`-style formatter renders as literal markup until the next full
-  render. Plain-text formatters (`yesno`, `currency`, `date`, …) are fine.
-- `cell:save:error` requires `model.save()` to **reject**. The stock `Model.save()`
-  never does — it catches transport errors and returns `{ success: false }`, and
-  a `{ status: false }` body is stored in `model.errors` — so a server-side
-  validation failure currently exits edit mode as though it succeeded. Override
-  `save()` (or use a Model subclass that throws) if you need the error branch.
+- **HTML-producing formatters work on editable columns.** The post-save repaint
+  runs the same branch logic as the initial render — a string formatter through
+  `dataFormatter.pipe`, a function formatter through its own return value — so a
+  `badge:`-style formatter survives an inline edit. The one exception is
+  `column.template`: a template needs the full model context, so the cell is
+  left as-is and the model-change re-render restores it a moment later.
+- **A failed save is detected whether `save()` rejects or resolves.** The stock
+  `Model.save()` never rejects — it catches transport errors and returns
+  `{ success: false }`, and stores a `{ status: false }` body in `model.errors`
+  while still resolving — so the resolved response is inspected too. A save
+  counts as failed when it rejects, when `success === false`, or when it leaves
+  `model.errors` non-empty. The model's own error payload is attached to the
+  emitted error as `error.errors`, so a listener can render per-field messages.
 - Editable columns get a `.editable-cell` class on the `<td>` and wrap their
   content in `<span class="cell-content">`, which is what the editor swaps out.
   A `column.action` is ignored on an editable column (the cell needs
@@ -1996,7 +2003,7 @@ forwarded verbatim by the TableView, so listen on whichever is convenient.
 |-------|---------|-------------|
 | `cell:edit` | `{ row, model, column, originalValue }` | Editor opened on a cell |
 | `cell:save` | `{ row, model, column, oldValue, newValue }` | `model.save()` resolved; cell exited edit mode |
-| `cell:save:error` | `{ row, model, column, oldValue, newValue, error }` | `model.save()` rejected; the editor stays open and flashes `.saving-error` |
+| `cell:save:error` | `{ row, model, column, oldValue, newValue, error }` | The save failed — rejected, resolved `success: false`, or left `model.errors` non-empty. The editor stays open and flashes `.saving-error`; `error.errors` carries the model's error payload |
 | `cell:cancel` | `{ row, model, column }` | Editor dismissed without saving |
 
 See [Inline cell editing](#inline-cell-editing) for the full flow.
