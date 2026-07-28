@@ -104,6 +104,9 @@ class TablePage extends Page {
       // Filter presets (WM-032) — same forwarding pattern.
       filterPresets: options.filterPresets,
 
+      // Live stat strip (WM-037) — same forwarding pattern.
+      stats: options.stats,
+
       // Expandable detail rows (WM-036) — same forwarding pattern.
       rowExpand: options.rowExpand,
       rowExpandMultiple: options.rowExpandMultiple,

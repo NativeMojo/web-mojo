@@ -42,6 +42,11 @@ module.exports = async function (testContext) {
     { key: 'auth', label: 'Auth', params: { name__icontains: 'auth' } }
   ];
 
+  const STATS = [
+    { key: 'errors', label: 'Errors', params: { level__gte: 4 }, critical: true },
+    { key: 'named', label: 'Named', params: { name__icontains: 'row' } }
+  ];
+
   const EMPTY_STATE = {
     icon: 'key',
     title: 'No records yet',
@@ -165,6 +170,7 @@ module.exports = async function (testContext) {
           collection,
           columns: COLUMNS,
           filterPresets: PRESETS,
+          stats: STATS,
           emptyState: EMPTY_STATE,
           loadingStyle: 'skeleton',
           showResultCount: true,
@@ -184,11 +190,17 @@ module.exports = async function (testContext) {
       expect(tv.element.querySelectorAll('.preset-segment').length).toBe(1);
       expect(tv.element.querySelectorAll('.result-count-summary').length).toBe(1);
       expect(tv.element.querySelectorAll('thead th.col-expand').length).toBe(1);
+      expect(tv.element.querySelectorAll('.mojo-stat-strip').length).toBe(1);
 
       // --- Style blocks emitted exactly once (opt-in features share the wrapper) ---
-      // feedback styles (WM-033), rowExpand styles (WM-036), preset styles (WM-032)
+      // feedback styles (WM-033), rowExpand styles (WM-036), preset styles (WM-032),
+      // stat strip (WM-037)
       expect(countOccurrences(html, '@keyframes mojo-skeleton-shimmer')).toBe(1);
       expect(countOccurrences(html, 'border-left: 3px solid var(--bs-primary)')).toBe(1);
+      expect(countOccurrences(html, '.mojo-stat-strip {')).toBe(1);
+      // Still exactly ONE — the preset segment owns the only `scrollbar-width`
+      // declaration in ListView; the stat strip deliberately styles its rail
+      // without one (WM-037 amendment) so this sentinel stays unique.
       expect(countOccurrences(html, 'scrollbar-width: thin')).toBe(1);
 
       // --- autoRefresh normalized + timer started on mount (composes) ---
@@ -243,6 +255,53 @@ module.exports = async function (testContext) {
       // Repainting the preset segment alone must not wipe the count summary.
       tv.renderFilterPresets();
       expect(tv.element.querySelector('.result-count-summary')).not.toBeNull();
+    });
+  });
+
+  // --------------------------------------------------------------
+  // Scenario 3b — stat strip + preset segment (WM-037 × WM-032)
+  // --------------------------------------------------------------
+  describe('interactions — stat strip and preset segment coexist', () => {
+    it('separate containers; a stat click can legitimately light a preset too', async () => {
+      const collection = restEmpty();
+      collection.endpoint = '/api/thing';
+      collection.reset([{ id: 1, name: 'A', level: 2 }]);
+      collection.rest = {
+        GET: jest.fn(async () => ({
+          success: true,
+          status: 200,
+          data: { count: 9, stats: { errors: 4, named: 1 }, took_ms: 2 }
+        }))
+      };
+
+      const tv = new TableView({
+        collection,
+        columns: COLUMNS,
+        filterPresets: PRESETS,
+        stats: STATS
+      });
+      tv._statsDebounceMs = 5;
+      await tv.render(true, host);
+      await new Promise((resolve) => setTimeout(resolve, 40));
+
+      expect(tv.element.querySelector('.preset-segment')).not.toBeNull();
+      expect(tv.element.querySelector('.mojo-stat-strip')).not.toBeNull();
+      expect(tv.element.querySelector('[data-stat-key="errors"] .mojo-stat-block__count').textContent.trim())
+        .toBe('4');
+
+      // The `errors` stat and the `errors` preset carry the SAME params, so a
+      // stat click lights both. Derived state reporting the truth, not a bug.
+      await tv.applyStat('errors');
+      expect(tv.getActiveStat()?.key).toBe('errors');
+      expect(tv.getActivePreset()?.key).toBe('errors');
+
+      // Neither repaint clobbers the other — they own different containers.
+      tv.renderFilterPresets();
+      expect(tv.element.querySelector('.mojo-stat-block.is-active')).not.toBeNull();
+      tv.renderStatStrip();
+      expect(tv.element.querySelector('.preset-segment button.btn-primary[data-preset-key="errors"]')).not.toBeNull();
+
+      await tv.destroy();
     });
   });
 
@@ -396,6 +455,8 @@ module.exports = async function (testContext) {
       // render never shows them regardless of loadingStyle.)
       expect(tv.element.querySelector('.preset-segment')).toBeNull();
       expect(tv.element.querySelector('.col-expand')).toBeNull();
+      expect(tv.element.querySelector('.mojo-stat-strip')).toBeNull();
+      expect(tv.element.querySelector('[data-container="stat-strip"]')).toBeNull();
       expect(tv.element.querySelector('.result-count-summary')).toBeNull();
       expect(tv.element.querySelector('.table-empty-state')).toBeNull();
       expect(tv.element.querySelector('.mojo-skeleton-row')).toBeNull();
@@ -408,6 +469,7 @@ module.exports = async function (testContext) {
       expect(html).not.toContain('mojo-detail-panel');
       expect(html).not.toContain('.preset-segment .btn');
       expect(html).not.toContain('mojo-row-flash'); // #297 flash CSS is gated too
+      expect(html).not.toContain('mojo-stat-block'); // #300 stat strip CSS is gated too
 
       // LOADING-STATE change: skeleton is now the DEFAULT loading visual, so its
       // style block ships by default (it did not before). Only the loading
@@ -423,6 +485,7 @@ module.exports = async function (testContext) {
       expect(tv.showResultCount).toBe(false);
       expect(tv.isRowExpandEnabled()).toBe(false);
       expect(tv.filterPresets).toEqual([]);
+      expect(tv.stats).toEqual([]);
     });
   });
 };

@@ -100,6 +100,14 @@ module.exports = async function (testContext) {
       expect(page.tableViewConfig.filterPresets).toBe(presets);
     });
 
+    it('forwards `stats` (WM-037 live stat strip)', () => {
+      const stats = [{ key: 'open', label: 'Open', params: { status: 'open' }, critical: true }];
+      const page = fixturePage({ stats });
+      // By reference — TablePage neither normalizes nor clones it, so `params`
+      // and `critical` reach ListView's normalizer untouched.
+      expect(page.tableViewConfig.stats).toBe(stats);
+    });
+
     it('forwards `rowExpand` + `rowExpandMultiple`', () => {
       const fn = (model) => `<div>${model.get('id')}</div>`;
       const page = fixturePage({ rowExpand: fn, rowExpandMultiple: true });
@@ -148,6 +156,7 @@ module.exports = async function (testContext) {
       expect(page.tableViewConfig.groupHeaderStyle).toBeUndefined();
       expect(page.tableViewConfig.rowStripe).toBeUndefined();
       expect(page.tableViewConfig.filterPresets).toBeUndefined();
+      expect(page.tableViewConfig.stats).toBeUndefined();
       expect(page.tableViewConfig.rowExpand).toBeUndefined();
       expect(page.tableViewConfig.rowExpandMultiple).toBeUndefined();
       expect(page.tableViewConfig.emptyState).toBeUndefined();

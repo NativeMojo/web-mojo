@@ -87,6 +87,14 @@ class ListView extends View {
   static ROW_FLASH_MS = 1400;
 
   /**
+   * Hard client-side cap on the number of `stats:` bundles sent in one
+   * aggregation request. Matches the backend's `MOJO_REST_AGG_STATS_CAP`
+   * default (12) — over-cap is a 400 there, so we drop (with a warning)
+   * before the wire rather than degrade the whole strip.
+   */
+  static STATS_MAX_BUNDLES = 12;
+
+  /**
    * Track Model classes already warned about a minified `.name` so the
    * console doesn't spam — one warning per offending class per session.
    * @private
@@ -165,6 +173,26 @@ class ListView extends View {
     // whole feature is inert (byte-identical rendering & behavior).
     // See `docs/web-mojo/components/ListView.md` (Filter presets).
     this.filterPresets = this._normalizeFilterPresets(options.filterPresets);
+
+    // Live stat strip (WM-037): opt-in `stats:` array of
+    // `{ key, label, params, critical?, description? }` rendered as an inset
+    // grouped track above the toolbar. Each block shows a LIVE count computed
+    // by the server under the table's current filters (one batched
+    // `_mode=count&_stats=…` request against the same list endpoint), and
+    // clicking one applies its param bundle through the same rails as a
+    // filter preset (mutual exclusion + toggle-off + derived active state).
+    // Absent / empty → zero markup, zero requests, byte-identical render.
+    // See `docs/web-mojo/components/TableView.md` (Live stat strip).
+    this.stats = this._normalizeStats(options.stats);
+    this._statCounts = {};        // { [stat.key]: number | null }
+    this._statTotal = null;       // response's top-level `count` (the "All" chip)
+    this._statsSupported = true;  // latched off when the server has no aggregation
+    this._statsTimer = null;
+    this._statsAbort = null;
+    this._statsGeneration = 0;    // monotonic — the real stale-response guard
+    this._statsWarned = false;    // one console.warn per instance, max
+    this._statsSig = null;        // memo: last issued [baseParams, bundleMap]
+    this._statsDebounceMs = 250;
 
     // Export configuration (gated by `showAdd` / `showExport` toolbar
     // options, which default to off on ListView). exportSource is 'remote'
@@ -374,6 +402,15 @@ class ListView extends View {
       this.on('params-changed', () => this._savePersistedState());
     }
 
+    // Live stat strip — recount whenever the query context changes. The
+    // SUBSCRIPTION belongs here (pre-mount is fine, nothing fires yet); the
+    // first/seed count is scheduled from `onAfterMount()`, because `onInit`
+    // runs before the element is connected and the tick's `isMounted()` guard
+    // would self-terminate the seed on a slow or lazy mount.
+    if (this.stats.length > 0) {
+      this.on('params-changed', () => this._scheduleStatsRefresh());
+    }
+
     if (this.dayRangeFilter) {
       this._seedDayRangeParams();
       this.dayRangeControl = new SegmentControl({
@@ -397,10 +434,16 @@ class ListView extends View {
     // children). No-op when `autoRefresh` wasn't set, and idempotent so a
     // re-entry never stacks a second interval.
     this._startAutoRefresh();
+    // Seed the stat counts now the element is connected — `onInit` runs
+    // pre-mount, so a timer started there could self-terminate before the
+    // view ever reaches the DOM and latch the strip at em-dashes. Firing here
+    // also gives a cached page a free recount on every re-entry.
+    if (this.stats.length > 0) this._scheduleStatsRefresh();
   }
 
   async onBeforeUnmount() {
     await super.onBeforeUnmount();
+    this._stopStatsRefresh();
     // Tear the timer + listeners down when a standalone view unmounts. (For
     // a TableView hosted inside a cached Page this hook doesn't fire on the
     // child — the parent only unbinds child events — so `_autoRefreshTick`
@@ -467,6 +510,7 @@ class ListView extends View {
     if (this._isToolbarEnabled()) {
       this.updateFilterPills();
       this.renderFilterPresets();
+      this.renderStatStrip();
       this.setupSearchClearListener();
     }
   }
@@ -567,6 +611,7 @@ class ListView extends View {
       this.toolbarRight ||
       this.dayRangeFilter ||
       (this.filterPresets && this.filterPresets.length > 0) ||
+      (this.stats && this.stats.length > 0) ||
       (this.toolbarButtons && this.toolbarButtons.length > 0) ||
       this._autoRefreshIndicatorEnabled() ||
       this.options.showAdd ||
@@ -619,6 +664,15 @@ class ListView extends View {
     const indicatorSlot = showIndicator ? this._buildAutoRefreshIndicatorSlot() : '';
     const indicatorStyle = showIndicator ? this._buildAutoRefreshIndicatorStyle() : '';
 
+    // Live stat strip (WM-037) — its own container above the action bar,
+    // filled at render time by `renderStatStrip()`. Both the slot and the
+    // style block are gated, and `_buildStatStripStyle()` is PURE: `super()`
+    // means this method runs twice while a TableView is constructed and the
+    // first result is thrown away.
+    const hasStats = this.stats && this.stats.length > 0;
+    const statStripSlot = hasStats ? `<div data-container="stat-strip" class="mojo-stat-strip-slot mb-3"></div>` : '';
+    const statStripStyle = hasStats ? this._buildStatStripStyle() : '';
+
     const rightGroup = `
       <div class="d-flex align-items-center gap-2 flex-wrap ${titleBlock ? 'ms-auto' : ''}">
         ${this.buildActionButtonsTemplate()}
@@ -633,6 +687,8 @@ class ListView extends View {
     `;
 
     return `
+      ${statStripStyle}
+      ${statStripSlot}
       <div class="table-action-buttons mb-3">
         ${presetStyle}
         ${indicatorStyle}
@@ -1512,14 +1568,26 @@ class ListView extends View {
    * @returns {object|null}
    */
   getActivePreset() {
-    if (!this.filterPresets || this.filterPresets.length === 0) return null;
+    return this._getActiveBundle(this.filterPresets);
+  }
+
+  /**
+   * Most-specific-match-wins resolution over any list of param bundles
+   * (`filterPresets` or `stats` — both carry `{ key, params }`). Shared so a
+   * stat chip derives its active state by exactly the same rule as a preset.
+   * @param {Array<object>} list
+   * @returns {object|null}
+   * @private
+   */
+  _getActiveBundle(list) {
+    if (!list || list.length === 0) return null;
     let best = null;
     let bestCount = -1;
-    for (const preset of this.filterPresets) {
-      if (!this._presetMatches(preset)) continue;
-      const count = Object.keys(this._resolvePresetParams(preset)).length;
-      if (count > bestCount) {   // strict `>` → ties keep the earlier preset
-        best = preset;
+    for (const bundle of list) {
+      if (!this._presetMatches(bundle)) continue;
+      const count = Object.keys(this._resolvePresetParams(bundle)).length;
+      if (count > bestCount) {   // strict `>` → ties keep the earlier bundle
+        best = bundle;
         bestCount = count;
       }
     }
@@ -1660,6 +1728,519 @@ class ListView extends View {
         }
         [data-bs-theme="dark"] .preset-scroll::-webkit-scrollbar-thumb {
           background: rgba(255, 255, 255, 0.12);
+        }
+      </style>
+    `;
+  }
+
+  // ============================================================
+  // Live stat strip (WM-037)
+  //
+  // `stats: [{ key, label, params, critical?, description? }]` renders an
+  // inset grouped track above the toolbar. Each block carries a live count
+  // computed SERVER-SIDE under the table's current filters, and clicking one
+  // applies its param bundle through the same rails as a filter preset
+  // (mutual exclusion, toggle-off, derived active state, `'@me'` resolution).
+  //
+  // Wire contract (django-mojo DM-051): one batched GET against the list
+  // endpoint with the current filter params plus `_mode=count` and
+  // `_stats=<json {key: params}>`. The response body is FLAT —
+  // `resp.data.{count, stats, took_ms}` — with NO `.data.data` nesting; that
+  // path returns `JsonResponse(body)` rather than `response.success(data)`,
+  // so `.claude/rules/api.md`'s "commonly at resp.data.data" does not apply.
+  // ============================================================
+
+  /**
+   * Normalize the `stats:` option into a clean array of
+   * `{ key, label, params, critical, description }`. Drops entries without a
+   * `key`; warns on (and drops) duplicate keys, entries past
+   * `STATS_MAX_BUNDLES`, and a second `critical` flag. Returns `[]` when the
+   * option is absent / empty so the whole feature stays inert.
+   * @private
+   */
+  _normalizeStats(raw) {
+    if (!Array.isArray(raw) || raw.length === 0) return [];
+    const seen = new Set();
+    const stats = [];
+    let criticalTaken = false;
+    raw.forEach((s) => {
+      if (!s || !s.key) return;
+      if (seen.has(s.key)) {
+        console.warn(`ListView: duplicate stats key '${s.key}' — ignoring the later one.`);
+        return;
+      }
+      if (stats.length >= ListView.STATS_MAX_BUNDLES) {
+        console.warn(`ListView: stats is capped at ${ListView.STATS_MAX_BUNDLES} bundles — dropping '${s.key}'.`);
+        return;
+      }
+      seen.add(s.key);
+      let critical = s.critical === true;
+      if (critical && criticalTaken) {
+        console.warn(`ListView: only one stats entry may be 'critical' — dropping the flag on '${s.key}'.`);
+        critical = false;
+      }
+      if (critical) criticalTaken = true;
+      stats.push({
+        key: s.key,
+        label: s.label || s.key,
+        params: (s.params && typeof s.params === 'object') ? s.params : {},
+        critical,
+        description: s.description || null
+      });
+    });
+    return stats;
+  }
+
+  /** @private */
+  _getStat(key) {
+    return this.stats.find((s) => s.key === key) || null;
+  }
+
+  /**
+   * The currently-active stat, or null. Derived by the same
+   * most-specific-match rule as `getActivePreset()`. A stat with an empty
+   * bundle (the "All" chip) can never match — it paints active precisely
+   * when this returns null.
+   * @returns {object|null}
+   */
+  getActiveStat() {
+    return this._getActiveBundle(this.stats);
+  }
+
+  /**
+   * Delete every param key a bundle owns from a plain params object,
+   * mirroring BOTH branches of `setFilter()` — the daterange branch
+   * (`dr_start` / `dr_end` / `dr_field`) and the plain-key branch
+   * (`key` / `field` / `field__in`).
+   *
+   * This has to agree with `setFilter` exactly: `_clearPresetParams()` goes
+   * *through* `setFilter`, so a bundle keyed on a registered daterange filter
+   * clears the `dr_*` triple on click. If the base params for the count
+   * request dropped only the plain triple, the chip's count and the
+   * post-click table count would disagree for exactly that case.
+   * @private
+   */
+  _deleteBundleKeys(target, bundle) {
+    const resolved = this._resolvePresetParams(bundle);
+    Object.keys(resolved).forEach((key) => {
+      const filterConfig = this.getFilterConfig(key);
+      if (filterConfig && filterConfig.type === 'daterange') {
+        delete target[filterConfig.startName || 'dr_start'];
+        delete target[filterConfig.endName || 'dr_end'];
+        delete target[filterConfig.fieldName || 'dr_field'];
+      } else {
+        const { field } = parseFilterKey(key);
+        delete target[key];
+        delete target[field];
+        delete target[`${field}__in`];
+      }
+    });
+  }
+
+  /**
+   * Params every bundle's count is computed under: the collection's raw
+   * params minus paging/sort, minus the ACTIVE stat's own keys.
+   *
+   * The exclusion is what makes "a chip's count equals the row count you get
+   * after clicking it" true. The server ANDs each bundle onto the base query,
+   * but the UI applies bundles with mutual exclusion — clicking `high` first
+   * clears `open`. Leaving `status=open` in the base would advertise
+   * `open AND high` for a click that yields `high` alone.
+   *
+   * Raw `collection.params` on purpose, not `getActiveFilters()` — the latter
+   * synthesizes a `{key: {start, end}}` object for dateranges, which is not a
+   * wire param.
+   * @private
+   */
+  _statsBaseParams() {
+    const params = { ...(this.collection?.params || {}) };
+    delete params.start;
+    delete params.size;
+    delete params.sort;
+    const active = this.getActiveStat();
+    if (active) this._deleteBundleKeys(params, active);
+    return params;
+  }
+
+  /**
+   * `{ [stat.key]: resolvedParams }` — the `_stats` payload. Built through
+   * `_resolvePresetParams` so `'@me'` behaves identically in a count and in
+   * the click that applies the same bundle.
+   * @private
+   */
+  _buildStatsBundleMap() {
+    const map = {};
+    this.stats.forEach((stat) => { map[stat.key] = this._resolvePresetParams(stat); });
+    return map;
+  }
+
+  /**
+   * Debounced recount. Collapses a burst of `params-changed` events into one
+   * request. The timer self-terminates when the view is no longer mounted
+   * (cached-page `unmount()` never reaches a child's `onBeforeUnmount`).
+   * @param {{force?: boolean}} [options] `force` bypasses the signature memo —
+   *   used by auto-refresh, which wants a recount on unchanged params.
+   * @private
+   */
+  _scheduleStatsRefresh(options = {}) {
+    if (!this.stats || this.stats.length === 0) return;
+    if (!this._statsSupported) return;
+    if (this._statsTimer) clearTimeout(this._statsTimer);
+    this._statsTimer = setTimeout(() => {
+      this._statsTimer = null;
+      if (!this.isMounted()) { this._stopStatsRefresh(); return; }
+      this._fetchStatCounts(options);
+    }, this._statsDebounceMs);
+  }
+
+  /** Cancel any pending recount and abort an in-flight one. @private */
+  _stopStatsRefresh() {
+    if (this._statsTimer) {
+      clearTimeout(this._statsTimer);
+      this._statsTimer = null;
+    }
+    if (this._statsAbort) {
+      try { this._statsAbort.abort(); } catch { /* already aborted */ }
+      this._statsAbort = null;
+    }
+  }
+
+  /**
+   * Issue one batched count request and paint the result.
+   *
+   * Superseded responses are dropped by a monotonic generation counter — the
+   * `AbortController` is best-effort only (`Rest` merges the external signal
+   * with its timeout signal via `AbortSignal.any`, and falls back to the
+   * TIMEOUT signal where that isn't implemented).
+   * @private
+   */
+  async _fetchStatCounts(options = {}) {
+    if (!this.stats || this.stats.length === 0) return;
+    if (!this._statsSupported) return;
+    const collection = this.collection;
+    if (!collection || !collection.restEnabled || !collection.rest) return;
+
+    const base = this._statsBaseParams();
+    const bundles = this._buildStatsBundleMap();
+    const signature = JSON.stringify([base, bundles]);
+
+    // Signature memo: `params-changed` also fires for page / page-size / sort
+    // changes, and those mutate only the keys `_statsBaseParams()` strips —
+    // the request would be byte-identical while costing the server one COUNT
+    // per bundle. Checked BEFORE the generation bump so a memo hit can never
+    // invalidate an in-flight seed request.
+    if (!options.force && signature === this._statsSig) {
+      this.renderStatStrip();
+      return;
+    }
+
+    const generation = ++this._statsGeneration;
+    if (this._statsAbort) {
+      try { this._statsAbort.abort(); } catch { /* already aborted */ }
+    }
+    const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    this._statsAbort = controller;
+    this._statsSig = signature;
+
+    let response;
+    try {
+      response = await collection.rest.GET(collection.buildUrl(), {
+        ...base,
+        size: 1,           // insurance on a pre-aggregation server; inert on a current one
+        _mode: 'count',
+        _stats: JSON.stringify(bundles)
+      }, { signal: controller?.signal });
+    } catch (err) {
+      if (this._statsAbort === controller) this._statsAbort = null;
+      if (generation !== this._statsGeneration) return;   // superseded / aborted
+      this._degradeStats({ warn: err });
+      return;
+    }
+    if (this._statsAbort === controller) this._statsAbort = null;
+    if (generation !== this._statsGeneration) return;      // superseded
+
+    const body = response ? response.data : null;
+
+    // No aggregation route at all — latch off, silently.
+    if (response && response.status === 404) {
+      this._statsSupported = false;
+      this._degradeStats();
+      return;
+    }
+    if (!response || response.success === false) {
+      this._degradeStats({ warn: response });
+      return;
+    }
+    // A pre-aggregation server does NOT error on `_mode` / `_stats` — unknown
+    // filter keys are silently dropped, so it answers 200 with an ordinary
+    // list page and no `stats` key. Without this latch every filter change
+    // would pull a full row page forever.
+    if (!body || typeof body !== 'object' || !body.stats || typeof body.stats !== 'object') {
+      this._statsSupported = false;
+      this._degradeStats();
+      return;
+    }
+
+    this._statCounts = { ...body.stats };
+    this._statTotal = typeof body.count === 'number' ? body.count : null;
+    this.renderStatStrip();
+  }
+
+  /**
+   * Drop the counts back to "unknown" and repaint. `warn` (when given) logs
+   * at most once per view instance — a failing endpoint must not spam the
+   * console once per filter change.
+   * @private
+   */
+  _degradeStats({ warn } = {}) {
+    this._statCounts = {};
+    this._statTotal = null;
+    if (warn !== undefined) {
+      this._statsSig = null;   // a transient failure may retry on the next change
+      if (!this._statsWarned) {
+        this._statsWarned = true;
+        console.warn('ListView stats: live count request failed — showing em-dashes.', warn);
+      }
+    }
+    this.renderStatStrip();
+  }
+
+  /**
+   * Count to display for one stat: a number, or null for "unknown" (renders
+   * as an em-dash). `0` is information and renders as `0`.
+   * @private
+   */
+  _statCountFor(stat) {
+    const isAllChip = Object.keys(this._resolvePresetParams(stat)).length === 0;
+    if (isAllChip && typeof this._statTotal === 'number') return this._statTotal;
+    const value = this._statCounts ? this._statCounts[stat.key] : undefined;
+    return typeof value === 'number' ? value : null;
+  }
+
+  /**
+   * Apply a stat's bundle by key. An empty bundle is the "All" chip and
+   * clears instead; re-clicking the active stat toggles it off. Otherwise the
+   * previously-active stat's params are dropped first (mutual exclusion).
+   * @param {string} key
+   * @returns {Promise<boolean>} false when the key is unknown.
+   */
+  async applyStat(key) {
+    const stat = this._getStat(key);
+    if (!stat) return false;
+
+    const resolved = this._resolvePresetParams(stat);
+
+    // The "All" chip — an empty bundle means "no stat scoping".
+    if (Object.keys(resolved).length === 0) {
+      await this.clearStat();
+      return true;
+    }
+
+    const active = this.getActiveStat();
+    if (active && active.key === stat.key) {
+      await this.clearStat();
+      return true;
+    }
+
+    if (active) this._clearPresetParams(active);
+    Object.keys(resolved).forEach((k) => this.setFilter(k, resolved[k]));
+
+    await this.applyFilters();       // start = 0 + fetch + pills + params-changed
+    this.renderStatStrip();          // repaint derived active state
+    this.emit('stat:change', { key: stat.key, params: resolved });
+    return true;
+  }
+
+  /**
+   * Clear the active stat's params. No-op when nothing is active, but still
+   * repaints and emits `stat:change` with null.
+   * @returns {Promise<void>}
+   */
+  async clearStat() {
+    const active = this.getActiveStat();
+    if (active) {
+      this._clearPresetParams(active);
+      await this.applyFilters();
+    }
+    this.renderStatStrip();
+    this.emit('stat:change', null);
+  }
+
+  /** Toolbar action — apply/toggle a stat from its block. */
+  async onActionApplyStat(event, element) {
+    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+    const key = element?.getAttribute('data-stat-key');
+    if (!key) return;
+    await this.applyStat(key);
+  }
+
+  /**
+   * Fill the `stat-strip` container with the current counts + derived active
+   * state. Repaints ONLY its own container (the composition contract every
+   * toolbar sub-feature follows) and no-ops when stats aren't configured or
+   * the container isn't in the DOM yet.
+   */
+  renderStatStrip() {
+    if (!this.stats || this.stats.length === 0) return;
+    const container = this.element?.querySelector('[data-container="stat-strip"]');
+    if (!container) return;
+    container.innerHTML = this._buildStatStrip();
+  }
+
+  /**
+   * Variant B (approved): an inset grouped track; the active stat is a raised
+   * NEUTRAL pill, never a colored fill. A degraded block is a `<div>`, not a
+   * `<button>` — inert without needing a disabled handler.
+   * @private
+   */
+  _buildStatStrip() {
+    const active = this.getActiveStat();
+    const activeKey = active ? active.key : null;
+
+    const blocks = this.stats.map((stat) => {
+      const count = this._statCountFor(stat);
+      const degraded = count === null;
+      const isAllChip = Object.keys(this._resolvePresetParams(stat)).length === 0;
+      const isActive = isAllChip ? activeKey === null : stat.key === activeKey;
+      const titleAttr = stat.description ? ` title="${this.escapeHtml(stat.description)}"` : '';
+      // The entire color budget: one 6px dot on the single critical stat, and
+      // only while it actually has something in it.
+      const dot = (stat.critical && typeof count === 'number' && count > 0)
+        ? '<span class="mojo-stat-dot"></span>'
+        : '';
+      const value = degraded ? '&mdash;' : this.escapeHtml(String(count));
+      const label = `<span class="mojo-stat-block__label">${dot}${this.escapeHtml(stat.label)}</span>`;
+      const countHtml = `<span class="mojo-stat-block__count">${value}</span>`;
+
+      if (degraded) {
+        return `<div class="mojo-stat-block mojo-stat-block--degraded"
+                     data-stat-key="${this.escapeHtml(stat.key)}"
+                     aria-disabled="true"
+                     title="Live count unavailable">${countHtml}${label}</div>`;
+      }
+      return `<button type="button"
+                      class="mojo-stat-block${isActive ? ' is-active' : ''}"
+                      data-action="apply-stat"
+                      data-stat-key="${this.escapeHtml(stat.key)}"
+                      aria-pressed="${isActive ? 'true' : 'false'}"${titleAttr}>${countHtml}${label}</button>`;
+    }).join('');
+
+    return `<div class="mojo-stat-strip" role="group" aria-label="Stat filters">${blocks}</div>`;
+  }
+
+  /**
+   * Inline `<style>` for the stat strip. Token-based so both themes track
+   * automatically; the few literals (hover tints, the active pill's shadow,
+   * the dark dot) carry explicit `[data-bs-theme="dark"]` companions, all
+   * clustered at the end per `.claude/rules/theming.md`.
+   *
+   * NOTE: deliberately no `scrollbar-width` declaration — the preset segment
+   * owns the single `scrollbar-width: thin` in this file and a composition
+   * test pins that count. The rail styles its scrollbar with
+   * `scrollbar-color` + the `::-webkit-scrollbar` rules instead.
+   *
+   * Pure: `super()` runs `buildToolbarTemplate()` twice while a TableView is
+   * being constructed and discards the first result.
+   * @private
+   */
+  _buildStatStripStyle() {
+    return `
+      <style>
+        .mojo-stat-strip {
+          display: flex;
+          align-items: stretch;
+          overflow-x: auto;
+          white-space: nowrap;
+          gap: 0.25rem;
+          padding: 0.375rem;
+          background: var(--bs-tertiary-bg);
+          border: 1px solid var(--bs-border-color-translucent);
+          border-radius: 0.875rem;
+          scrollbar-color: var(--bs-border-color) transparent;
+        }
+        .mojo-stat-strip::-webkit-scrollbar { height: 6px; }
+        .mojo-stat-strip::-webkit-scrollbar-thumb {
+          background: var(--bs-border-color);
+          border-radius: 3px;
+        }
+
+        .mojo-stat-block {
+          flex: 0 0 auto;
+          display: inline-flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.125rem;
+          padding: 0.5rem 1.375rem;
+          background: transparent;
+          border: 0;
+          border-radius: 0.5rem;
+          color: var(--bs-body-color);
+          text-align: left;
+          cursor: pointer;
+          user-select: none;
+          transition: background-color .18s ease, box-shadow .18s ease, color .18s ease;
+        }
+        .mojo-stat-block:focus-visible {
+          outline: 2px solid var(--bs-primary);
+          outline-offset: -2px;
+        }
+
+        /* Typography carries the hierarchy — no boxes, borders or fills. */
+        .mojo-stat-block__count {
+          font-size: 1.4375rem;
+          font-weight: 600;
+          line-height: 1.15;
+          letter-spacing: -0.02em;
+          font-variant-numeric: tabular-nums;
+          color: var(--bs-emphasis-color);
+        }
+        .mojo-stat-block__label {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.375rem;
+          font-size: 0.8125rem;
+          font-weight: 400;
+          line-height: 1.2;
+          color: var(--bs-secondary-color);
+        }
+
+        /* The whole color budget: one status dot on the critical stat. */
+        .mojo-stat-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: var(--bs-danger);
+          flex: 0 0 auto;
+        }
+
+        /* Active = a raised NEUTRAL pill lifting off the rail, never color. */
+        .mojo-stat-strip .mojo-stat-block:hover:not(.is-active):not(.mojo-stat-block--degraded) {
+          background: rgba(0, 0, 0, 0.035);
+        }
+        .mojo-stat-strip .mojo-stat-block.is-active {
+          background: var(--bs-body-bg);
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.10), 0 0 0 0.5px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Count unavailable → muted em-dash, non-interactive. */
+        .mojo-stat-block--degraded { cursor: default; opacity: 0.6; }
+        .mojo-stat-block--degraded .mojo-stat-block__count {
+          color: var(--bs-secondary-color);
+          font-weight: 500;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .mojo-stat-block { transition: none; }
+        }
+
+        /* ---- dark theme ---- */
+        [data-bs-theme="dark"] .mojo-stat-dot { background: #ff6b7d; }
+        [data-bs-theme="dark"] .mojo-stat-strip .mojo-stat-block:hover:not(.is-active):not(.mojo-stat-block--degraded) {
+          background: rgba(255, 255, 255, 0.03);
+        }
+        [data-bs-theme="dark"] .mojo-stat-strip .mojo-stat-block.is-active {
+          background: var(--bs-secondary-bg);
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.55), inset 0 0 0 0.5px rgba(255, 255, 255, 0.05);
         }
       </style>
     `;
@@ -3502,7 +4083,12 @@ class ListView extends View {
     // self-terminating detached-tick guarantee apply to both modes.
     if (this._autoRefreshMode === 'models') return this._autoRefreshTickModels();
     Promise.resolve(this.collection.fetch())
-      .then(() => this._pulseAutoRefreshIndicator())
+      .then(() => {
+        this._pulseAutoRefreshIndicator();
+        // Counts track the rows: a watched table's stats must move with the
+        // data even though the params didn't change — hence memo-bypassed.
+        this._scheduleStatsRefresh({ force: true });
+      })
       .catch((err) => {
         console.warn('ListView autoRefresh: fetch failed', err);
       });
@@ -3542,6 +4128,9 @@ class ListView extends View {
         if (this.collection.lastFetchTime !== fetchStamp) return;
         this._pulseAutoRefreshIndicator();
         if (result && result.changed) this._flashChangedRows(result.changed);
+        // Same reasoning as the collection branch — a models tick changes row
+        // data, so the counts above the table have to follow it.
+        this._scheduleStatsRefresh({ force: true });
       })
       .catch((err) => {
         console.warn('ListView autoRefresh: models refresh failed', err);
@@ -3747,6 +4336,7 @@ class ListView extends View {
 
   async destroy() {
     this._stopAutoRefresh();
+    this._stopStatsRefresh();
     if (this.collection) {
       this.collection.off('add', this._onModelsAdded, this);
       this.collection.off('remove', this._onModelsRemoved, this);
