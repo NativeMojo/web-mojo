@@ -257,24 +257,12 @@ class TablePage extends Page {
       }
     });
 
-    // // Listen for table events (these also emit params-changed, but keep for backwards compatibility)
-    // this.tableView.on('table:search', ({ searchTerm }) => {
-    //   // params-changed will handle URL sync
-    // });
-
-    // this.tableView.on('table:sort', ({ field }) => {
-    //   // params-changed will handle URL sync
-    // });
-
-    // this.tableView.on('table:page', ({ page }) => {
-    //   // params-changed will handle URL sync
-    // });
-
-    // Filter:edit handling lives entirely on ListView/TableView itself
-    // (it owns the edit-modal flow). We do NOT listen for `filter:edit`
-    // here anymore — doing so opened a second racing Modal.form. Filter
-    // changes still arrive via the `params-changed` event, which drives
-    // the URL sync below.
+    // `params-changed` above is the ONLY signal needed for URL sync — search,
+    // sort, page, page-size and filter changes all emit it. (There are no
+    // `table:search` / `table:page` / `table:pagesize` events; the toolbar
+    // machinery lives on ListView and emits `list:search` / `list:page` /
+    // `list:pagesize`. Likewise no `filter:edit` — ListView owns the pill-edit
+    // modal end-to-end, and listening here once opened a second racing dialog.)
 
     // Row action events
     this.tableView.on('row:view', async ({ model }) => {
@@ -726,9 +714,7 @@ class TablePage extends Page {
 
     if (this.tableView) {
       this.tableView.off('params-changed');
-      this.tableView.off('table:search');
       this.tableView.off('table:sort');
-      this.tableView.off('table:page');
       this.tableView.off('row:view');
       this.tableView.off('row:edit');
       this.tableView.off('row:delete');

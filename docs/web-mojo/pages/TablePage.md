@@ -626,7 +626,8 @@ If no custom handlers are provided, TableView handles these actions with its bui
 
 ## Table Events
 
-TablePage listens to table-level events:
+Most work is done through the handler options, which TablePage forwards to its
+TableView:
 
 ```javascript
 const page = new TablePage({
@@ -646,27 +647,49 @@ const page = new TablePage({
 });
 ```
 
+For anything the handler options don't cover, listen on `page.tableView`
+directly. TablePage itself subscribes to exactly two things: `params-changed`
+(to drive URL sync) and the three `row:view` / `row:edit` / `row:delete` events
+(to run `onItemView` / `onItemEdit` / `onItemDelete`).
+
+```javascript
+page.tableView.on('list:search', ({ searchTerm }) => { … });
+page.tableView.on('cell:save',   ({ model, column, newValue }) => { … });
+page.tableView.on('params-changed', () => { … });
+```
+
+> **The toolbar events are `list:*`, not `table:*`.** Search, pagination and
+> page size live on ListView, so they emit `list:search`, `list:page` and
+> `list:pagesize` even on a TableView. There is no `table:search`,
+> `table:page`, `table:pagesize` or `filter:edit` event — earlier revisions of
+> these docs listed them, but nothing ever emitted them. The full, verified
+> table is in [TableView → Events](../components/TableView.md#events).
+
 ---
 
 ## Filter Events
 
-Filter edits are handled through a dialog flow managed by TablePage:
+Filter edits are handled through a dialog flow owned by TableView:
 
 ```javascript
-// TablePage automatically handles this internally.
-// When a user clicks a filter pill to edit:
+// Handled internally. When a user clicks a filter pill to edit:
 // 1. A form dialog opens with the filter's current value
 // 2. On submit, the filter is updated on the collection
 // 3. The collection re-fetches
 // 4. The URL is updated
 ```
 
-This is handled automatically — you generally don't need to listen to filter events directly. If you need custom filter handling, you can access the TableView instance:
+You generally don't need to listen for this at all. When you do — e.g. to log
+which filters people use — listen for `params-changed` (fired after the new
+value is applied), or for the specific pill events:
 
 ```javascript
-page.tableView.on('filter:edit', ({ key }) => {
-  console.log('Editing filter:', key);
+page.tableView.on('params-changed', () => {
+  console.log('active filters:', page.tableView.getActiveFilters());
 });
+
+page.tableView.on('filter:remove', ({ key }) => console.log('removed', key));
+page.tableView.on('filters:clear', () => console.log('cleared all'));
 ```
 
 ---

@@ -26,11 +26,18 @@
  *   - 'list:page' - Emitted when pagination page changed
  *   - 'list:pagesize' - Emitted when pagination page size changed
  *   - 'list:show-more' - Emitted when "Show more" button clicked
- *   - 'filter:edit' - Emitted when a filter pill is clicked to edit
+ *   - 'list:add' - Emitted when the Add button is clicked
+ *   - 'list:export' - Emitted when an export format is chosen
  *   - 'filter:remove' - Emitted when a filter pill is removed
  *   - 'filters:clear' - Emitted when "Clear All" is clicked
  *   - 'params-changed' - Emitted whenever sort/page/filter/search changes
  *   - 'preset:change' - Emitted when a filter preset is applied ({ key, params }) or cleared (null)
+ *   - 'stat:change' - Emitted when a stat block is applied ({ key, params }) or cleared (null)
+ *   - 'range:change' - Emitted when the day-range picker changes
+ *   - 'row:click' / 'row:view' / 'row:edit' / 'row:delete' - Row lifecycle
+ *
+ * (There is deliberately no `filter:edit` event — ListView owns the pill-edit
+ * dialog end-to-end; see the NOTE in `onActionEditFilter`.)
  *
  * @example
  * // Plain list, unchanged from prior behavior.

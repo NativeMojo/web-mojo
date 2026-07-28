@@ -26,6 +26,7 @@ TableView extends [ListView](./ListView.md) to render collections as full-featur
 - [Column Visibility (Responsive)](#column-visibility-responsive)
 - [Cell Alignment](#cell-alignment)
 - [Column Formatters](#column-formatters)
+- [Inline cell editing](#inline-cell-editing)
 - [Column Filters](#column-filters)
 - [Footer Totals](#footer-totals)
 
@@ -273,6 +274,8 @@ await table.mount('#users-table');
 | `paginated` | `boolean` | `true` | Show pagination controls |
 | `showAdd` | `boolean` | `true` | Show the Add button |
 | `showExport` | `boolean` | `true` | Show the Export button |
+| `showRefresh` | `boolean` | `true` | Show the refresh button |
+| `showFullscreen` | `boolean` | `true` | Show the fullscreen toggle. Also hidden automatically when the browser reports no Fullscreen API |
 | `columnChooser` | `boolean` | `false` | Show the icon-only "Columns" show/hide dropdown ([details](#column-chooser-columnchooser)) |
 | `persistState` | `boolean` | `false` | Persist sort/size/day-range/filters (+ hidden columns) to `localStorage` ([details](#view-persistence-persiststate)) |
 | `persistKey` | `string` | *route+endpoint* | Explicit storage identity for `persistState` |
@@ -286,7 +289,11 @@ await table.mount('#users-table');
 | `searchPlacement` | `string` | `'toolbar'` | Where to place search: `'toolbar'` or `'dropdown'` |
 | `searchPlaceholder` | `string` | `'Search...'` | Placeholder text for the search input |
 | `emptyMessage` | `string` | `'No data available'` | Message shown when no data |
-| `toolbarButtons` | `Array<object>` | `[]` | Custom toolbar button definitions |
+| `toolbarButtons` | `Array<object>` | `[]` | Custom toolbar button definitions ([details](#custom-toolbar-buttons)) |
+| `toolbarRight` | `View` | `null` | A View mounted into the toolbar's right-hand slot |
+| `title` | `string` | `null` | Heading rendered on the toolbar's left. Also settable live via `setTitle()` |
+| `eyebrow` | `string` | `null` | Small uppercase line above `title`. Also settable live via `setEyebrow()` |
+| `rowAction` | `string` | `'row-click'` | The `data-action` put on every non-editable cell that has no `column.action`. Set to `null` to make cells inert |
 
 ### Selection & Batch
 
@@ -296,6 +303,14 @@ await table.mount('#users-table');
 | `selectable` | `boolean` | `false` | Shorthand: sets `selectionMode` to `'multiple'` if true |
 | `batchActions` | `Array<object>` | `null` | Batch action definitions |
 | `batchBarLocation` | `string` | `'bottom'` | `'top'` or `'bottom'` |
+| `batchPanelTitle` | `string` | `'Rows'` / `'items'` | Label in the batch bar (`'Rows'` at the bottom, `'… items selected'` at the top) |
+| `persistSelection` | `boolean` | `false` | Keep the selection across a page change (TableView clears it by default) |
+
+> **The checkbox column needs `batchActions` too.** `isSelectable()` is
+> `batchActions.length > 0 && selectionMode === 'multiple'`, so
+> `selectable: true` **on its own renders no checkboxes** — the row-select
+> column only appears once there is at least one batch action to run on the
+> selection. Pass both.
 
 ### Expandable Rows
 
@@ -352,7 +367,7 @@ await table.mount('#users-table');
 | `tableOptions.responsive` | `boolean` | `false` | Bootstrap responsive wrapper |
 | `tableOptions.size` | `string` | `null` | `'sm'` or `'lg'` for Bootstrap table sizes |
 | `tableOptions.background` | `string` | `null` | Bootstrap table background variant (e.g., `'dark'`, `'light'`) |
-| `tableOptions.fontSize` | `string` | `null` | Font size: `'sm'`, `'xs'`, or any CSS value |
+| `tableOptions.fontSize` | `string` | `null` | Font size: `'sm'` (0.9rem), `'xs'` (0.8rem), or any CSS length. A top-level `fontSize` option is used as the fallback when `tableOptions.fontSize` is unset |
 
 ### Inherited from ListView
 
@@ -379,8 +394,23 @@ Each column is an object with the following properties:
 | `visibility` | `string` / `object` | `null` | Responsive visibility (see below) |
 | `filter` | `object` | `null` | Filter configuration for this column |
 | `footer_total` | `boolean` | `false` | Show sum total in the footer |
-| `formatter` | `string` | `null` | DataFormatter name (alternative to pipe in `key`) |
+| `formatter` | `string` / `function` | `null` | DataFormatter name (alternative to pipe in `key`), or `(value, ctx) => html` |
 | `align` | `string` | `null` | Cell alignment: `'left'`, `'center'`, or `'right'`. Applied to header, body, and footer cells in lockstep. Defaults to left. |
+| `template` | `string` | `null` | Mustache snippet rendered in place of the raw value. Fields resolve against `model.*` — e.g. `'<a href="/u/{{model.id}}">{{model.name}}</a>'`. Ignored when `formatter` is set. |
+| `class` / `className` | `string` | `''` | Extra CSS class(es) on every body `<td>` of this column |
+| `action` | `string` | `null` | `data-action` placed on the cell — clicking it calls `onAction<Kebab>` on the row. Overrides the row-level `rowAction`; ignored on `editable` columns (they use `edit-cell`) |
+| `editable` | `boolean` | `false` | Enable inline editing on this column ([details](#inline-cell-editing)) |
+| `editableOptions` | `object` | `{}` | Editor shape for an `editable` column ([details](#inline-cell-editing)) |
+| `autoSave` | `boolean` | `true` | `editable` + `select`/`switch`/`checkbox` editors save on `change`. Set `false` to require the ✓ button |
+| `hideable` | `boolean` | `true` | `false` locks the column visible in the [column chooser](#column-chooser-columnchooser) |
+
+**Accepted aliases.** `name` is read when `key` is absent, `title` when `label`
+is absent, and `format` when `formatter` is absent. Prefer the canonical names;
+the aliases exist for parity with `DataView` configs.
+
+**`width` is not supported.** Setting `width` on a column has no effect —
+nothing in TableView or TableRow reads it. Size columns with CSS instead (a
+`class` on the column plus a rule, or a `<colgroup>` in a custom row class).
 
 ### Examples
 
@@ -486,6 +516,114 @@ Formatters transform the raw model value for display. You can specify them in tw
 ```
 
 Both use the MOJO DataFormatter. See [Templates](../core/Templates.md) for available formatters.
+
+### Function Formatter
+
+A `formatter` may also be a function returning **HTML** (it is assigned to the
+cell's `innerHTML` after render, so escape anything user-supplied yourself):
+
+```javascript
+{
+  key: 'status',
+  label: 'Status',
+  formatter: (value, ctx) => `<span class="badge text-bg-${value === 'up' ? 'success' : 'danger'}">${value}</span>`
+}
+```
+
+The context object is `{ value, model, column, table, index }` — `table` is the
+TableView instance, `index` the row's position in the current page. (`ctx.row`
+is a deprecated alias for `ctx.model`.) Duplicate `key`s are formatted
+independently, so the same field can be rendered three different ways in three
+columns.
+
+---
+
+## Inline cell editing
+
+Set `editable: true` on a column and its cells become click-to-edit. No
+extra wiring is required — the editor opens in place, saves through
+`model.save({ [key]: value })`, and updates the cell.
+
+```javascript
+columns: [
+  { key: 'name', label: 'Name', editable: true,
+    editableOptions: { type: 'text', placeholder: 'Full name' } },
+
+  { key: 'email', label: 'Email', editable: true,
+    editableOptions: { type: 'text', inputType: 'email' } },
+
+  { key: 'notes', label: 'Notes', editable: true,
+    editableOptions: { type: 'textarea', rows: 3 } },
+
+  { key: 'role', label: 'Role', editable: true,
+    editableOptions: { type: 'select', options: ['admin', 'member', 'viewer'] } },
+
+  { key: 'is_active', label: 'Active', editable: true, autoSave: false,
+    editableOptions: { type: 'switch' } }
+]
+```
+
+### `editableOptions`
+
+| Option | Type | Default | Applies to | Description |
+|--------|------|---------|-----------|-------------|
+| `type` | `string` | `'text'` | — | `'text'`, `'textarea'`, `'select'`, `'switch'`, or `'checkbox'`. Anything else falls back to `'text'` |
+| `placeholder` | `string` | `''` | text, textarea | Input placeholder |
+| `inputType` | `string` | `'text'` | text | Native `<input type>` — e.g. `'email'`, `'number'`, `'date'` |
+| `rows` | `number` | `2` | textarea | Textarea height |
+| `options` | `Array<string \| {value, label}>` | `[]` | select | Dropdown choices |
+
+`'switch'` and `'checkbox'` render the same checkbox; `'switch'` adds
+Bootstrap's `form-switch` styling.
+
+### The flow
+
+1. **Enter** — clicking an editable cell hides its `.cell-content` span and
+   appends a `.cell-editor` with the input plus ✓ / ✕ buttons. `cell:edit`
+   fires with `{ row, model, column, originalValue }`.
+2. **Save** — ✓, or **Enter** in a `text` / `email` / `number` input, or a
+   `change` on a select/checkbox (see auto-save below). `model.save({ [key]:
+   newValue })` is awaited; on success the cell exits edit mode showing the new
+   value (re-run through a string `formatter`, if any) and `cell:save` fires
+   with `{ row, model, column, oldValue, newValue }`.
+3. **Failure** — if `model.save()` rejects, the row **stays in edit mode**, the
+   editor gets a `.saving-error` class for 3 s, and `cell:save:error` fires with
+   `{ row, model, column, oldValue, newValue, error }`. Nothing is rolled back
+   on the model, so the user can correct the value and retry.
+4. **Cancel** — ✕, or **Escape** in a text-ish input, restores the original
+   markup and fires `cell:cancel` with `{ row, model, column }`.
+
+All four events are emitted on the `TableRow` **and** forwarded by the
+TableView, so a single table-level listener sees every row:
+
+```javascript
+table.on('cell:save', ({ model, column, newValue }) => {
+  app.toast.success(`${column} → ${newValue}`);
+});
+
+table.on('cell:save:error', ({ column, error }) => {
+  app.toast.error(`Could not save ${column}: ${error.message}`);
+});
+```
+
+### Auto-save
+
+Select and checkbox/switch editors save on `change` — one click, no ✓ needed.
+Set `autoSave: false` **on the column** (not in `editableOptions`) to require
+the ✓ button instead. Text and textarea editors are never auto-saved.
+
+### Notes
+
+- Editing is per cell. Several cells across the table can be open at once;
+  clicking the same cell twice does not re-open a second editor.
+- `autoRefresh` pauses while any cell is being edited, so a silent refetch can
+  never discard an open editor.
+- Models without a `save()` method fall back to assigning the value directly on
+  the model object — useful for local-only tables.
+- Editable columns get a `.editable-cell` class on the `<td>` and wrap their
+  content in `<span class="cell-content">`, which is what the editor swaps out.
+  A `column.action` is ignored on an editable column (the cell needs
+  `data-action="edit-cell"`).
 
 ---
 
@@ -1423,6 +1561,11 @@ table.on('batch:action', async ({ action, items, event }) => {
 
 When items are selected, a batch actions panel appears showing the count and action buttons. A "Select All" checkbox appears in the header row.
 
+**Both options are required for the checkbox column to render at all.**
+`selectable: true` with no `batchActions` silently renders an ordinary table —
+there is no selection column, because there would be nothing to do with a
+selection. See `isSelectable()` under [Selection & Batch](#selection--batch).
+
 ---
 
 ## Batch Bar Location
@@ -1764,57 +1907,92 @@ await table.destroy();
 
 ## Events
 
-TableView emits the following events (in addition to ListView events):
+TableView emits the following events (in addition to ListView events).
+
+> **The toolbar events are named `list:*`, not `table:*`.** The search input,
+> pagination, page-size selector, Add button and Export menu all live on
+> ListView, so they emit `list:search`, `list:page`, `list:pagesize`,
+> `list:show-more`, `list:sort`, `list:add` and `list:export` — on a TableView
+> too. TableView adds only `table:add` / `table:export` / `table:sort` (extra
+> aliases fired *alongside* the `list:*` ones) and the fullscreen pair. There
+> are **no** `table:search`, `table:page` or `table:pagesize` events, and no
+> `filter:edit` event — earlier revisions of this page listed all four, but
+> nothing ever emitted them. For URL sync / "something changed" listeners, use
+> `params-changed`, which every one of them fires.
 
 ### Row Events
 
+Each is emitted on the `TableRow` **and** on the TableView.
+
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `row:click` | `{ model, event }` | A row is clicked |
-| `row:view` | `{ model, event }` | View action triggered on a row |
-| `row:edit` | `{ model, event }` | Edit action triggered on a row |
-| `row:delete` | `{ model, event }` | Delete action triggered on a row |
+| `row:click` | `{ row, model, column, event }` | A row is clicked. `column` is the clicked cell's key |
+| `row:view` | `{ row, model, event }` | View action triggered on a row |
+| `row:edit` | `{ row, model, event }` | Edit action triggered on a row |
+| `row:delete` | `{ row, model, event }` | Delete action triggered on a row |
+| `row:expand:toggle` | `{ model, expanded }` | A detail row was opened or closed (`rowExpand` only) |
 
 ### Table Events
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `table:add` | `{ event }` | Add button clicked |
-| `table:export` | `{ format, source, event }` | Export triggered |
-| `table:search` | `{ searchTerm }` | Search applied |
-| `table:sort` | `{ field, event }` | Sort changed |
-| `table:page` | `{ page, event }` | Page changed |
-| `table:pagesize` | `{ size, event }` | Page size changed |
-| `params-changed` | — | Any collection parameter changed (sort, page, filter, search) |
+| `table:add` | `{ event }` | Add button clicked (fires with `list:add`) |
+| `table:export` | `{ format, source, event }` | Export triggered (fires with `list:export`) |
+| `table:sort` | `{ field, event }` | Column-header sort changed |
+| `table:fullscreen:enter` | — | Entered fullscreen |
+| `table:fullscreen:exit` | — | Left fullscreen (including via the browser's own Escape) |
+| `columns:change` | `{ hidden }` | Column chooser toggled a column. `hidden` is the array of hidden column keys |
+| `columns:reset` | — | Column chooser "Reset to defaults" clicked |
+| `params-changed` | — | Any collection parameter changed (sort, page, page size, filter, search, preset, stat, day range) |
 
 ### Batch Events
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `batch:action` | `{ action, items, event }` | A batch action button clicked |
+| `batch:action` | `{ action, items, event }` | A batch action button clicked. `items` are the selected row views |
 
 ### Cell Events
 
+Inline editing (`column.editable`). Each is emitted on the `TableRow` and
+forwarded verbatim by the TableView, so listen on whichever is convenient.
+`column` is the column **key** — not a `field`/`value` pair.
+
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `cell:edit` | `{ model, field, value }` | Inline cell editing started |
-| `cell:save` | `{ model, field, value }` | Inline cell edit saved |
-| `cell:cancel` | `{ model, field }` | Inline cell edit cancelled |
+| `cell:edit` | `{ row, model, column, originalValue }` | Editor opened on a cell |
+| `cell:save` | `{ row, model, column, oldValue, newValue }` | `model.save()` resolved; cell exited edit mode |
+| `cell:save:error` | `{ row, model, column, oldValue, newValue, error }` | `model.save()` rejected; the editor stays open and flashes `.saving-error` |
+| `cell:cancel` | `{ row, model, column }` | Editor dismissed without saving |
+
+See [Inline cell editing](#inline-cell-editing) for the full flow.
 
 ### Filter Events
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `filter:edit` | `{ key }` | A filter is being edited |
+| `filter:remove` | `{ key, field }` | An active-filter pill was removed |
+| `filters:clear` | — | "Clear All" was clicked |
+| `preset:change` | `{ key, params }` or `null` | A filter preset was applied, or cleared (`null`) |
+| `stat:change` | `{ key, params }` or `null` | A stat block was applied, or cleared (`null`) |
+| `range:change` | `{ field, value, previous, params }` | Day-range picker value changed (`dayRangeFilter` only) |
+
+Editing a pill opens a dialog that ListView owns end to end; it emits
+`params-changed` when the new value is applied.
 
 ### Inherited from ListView
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `selection:change` | `{ selected, item, model }` | Selection state changed |
+| `list:search` | `{ searchTerm }` | Search applied (empty string when cleared) |
+| `list:page` | `{ page, event }` | Page changed |
+| `list:pagesize` | `{ size }` | Page-size selector changed |
+| `list:show-more` | `{ response }` | "Show more" fetched the next chunk (`paginationMode: 'more'`) |
+| `list:sort` | `{ sort }` | Toolbar sort dropdown changed |
+| `list:add` | `{ event }` | Add button clicked |
+| `list:export` | `{ format, source, event }` | Export format chosen |
+| `selection:change` | `{ selected, item, model }` | Selection state changed. `selected` is an array of model ids |
 | `list:empty` | — | Collection became empty |
 | `list:loaded` | `{ count }` | Collection loaded items |
-| `range:change` | `{ field, value, previous, params }` | Day-range picker value changed (only when `dayRangeFilter` is set) |
 
 ---
 
@@ -2005,6 +2183,21 @@ class DashboardView extends View {
 ### Batch actions panel doesn't show
 
 - Ensure `selectionMode` is `'multiple'` and `batchActions` is a non-empty array.
+
+### Row checkboxes don't appear even with `selectable: true`
+
+- `selectable` alone is not enough: `isSelectable()` also requires a non-empty
+  `batchActions` array. Add one and the column appears.
+
+### A `table:search` / `table:page` / `filter:edit` listener never fires
+
+- Those events do not exist. Use `list:search` / `list:page` / `list:pagesize`,
+  or `params-changed` for "anything changed". See [Events](#events).
+
+### A column's `width` is ignored
+
+- `width` is not a supported column property. Use CSS — see
+  [Column Configuration](#column-configuration).
 
 ---
 

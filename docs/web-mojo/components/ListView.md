@@ -961,6 +961,10 @@ ListView ships the same model lifecycle that TableView does — view dialogs, ed
 | `clickable` | `boolean` | true when `onItemClick` is set or `clickAction !== 'none'` | Adds the `.clickable` class to each item (`cursor: pointer` + hover treatment). |
 | `itemView` | `Class` | `null` | View class to instantiate inside the view dialog. Falls back to `Model.VIEW_CLASS`, then to a generic `Modal.data` dialog. |
 | `addForm` | `Array` or `object` | `null` | Form-field config (or `{ title, fields }`) used by the Add button + dialog. Falls back to `Model.ADD_FORM`. |
+| `addFormDefaults` | `object` | `null` | Extra fields merged into the Add dialog's result **after** submit and before `model.save()` — e.g. `{ kind: 'note' }` for a fixed type the user shouldn't pick. Applied last, so it wins over whatever the form returned. |
+| `addRequiresActiveGroup` | `boolean` | `false` | Stamp `group: app.activeGroup.id` onto the new record before saving. Throws if there is no active group — only set it on group-scoped pages. |
+| `addRequiresActiveUser` | `boolean` | `false` | Stamp `user: app.activeUser.id` onto the new record before saving. |
+| `formFields` | `Array` | `[]` | Fallback field list for the Add dialog when neither `addForm` nor `Model.ADD_FORM` resolves. The dialog then renders a plain `FormView` instead of `Modal.form`. |
 | `editForm` | `Array` or `object` | `null` | Form-field config used by the Edit dialog (and by row-click when `clickAction: 'edit'`). Falls back to `Model.EDIT_FORM`, then to `addForm`. |
 | `deleteTemplate` | `string` | `null` | Mustache template for the delete confirmation message. Falls back to `Model.DELETE_TEMPLATE`. |
 | `formDialogConfig` | `object` | `{}` | Extra options merged into every form dialog (e.g. `{ size: 'lg', centered: true }`). Merged after `Model.FORM_DIALOG_CONFIG`. |
@@ -1437,7 +1441,11 @@ await listView.destroy();
 
 ## Events
 
-ListView emits the following events:
+ListView emits the following events. Every one of them is also emitted by
+`TableView`, which adds its own on top — see
+[TableView → Events](./TableView.md#events).
+
+### Item & selection
 
 | Event | Payload | Description |
 |-------|---------|-------------|
@@ -1445,8 +1453,51 @@ ListView emits the following events:
 | `item:select` | `{ item, model, index, data }` | An item is selected |
 | `item:deselect` | `{ item, model, index, data }` | An item is deselected |
 | `selection:change` | `{ selected, item, model }` | Selection state changes. `selected` is an array of model IDs |
+
+### List lifecycle
+
+| Event | Payload | Description |
+|-------|---------|-------------|
 | `list:empty` | — | Collection becomes empty |
 | `list:loaded` | `{ count }` | Collection is populated with items |
+
+### Row lifecycle
+
+Emitted on the item view **and** on the ListView.
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `row:click` | `{ item, model, index, action, data }` | The row's outer element was clicked (fires even for `clickAction: 'none'`) |
+| `row:view` | `{ model, event, … }` | A `data-action="view"` control was activated |
+| `row:edit` | `{ model, event, … }` | A `data-action="edit"` control was activated |
+| `row:delete` | `{ model, event, … }` | A `data-action="delete"` control was activated |
+
+### Toolbar & pagination
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `list:search` | `{ searchTerm }` | Search applied. `searchTerm` is `''` when cleared |
+| `list:sort` | `{ sort }` | Sort dropdown changed. `sort` is the raw param (`'-created'`) |
+| `list:page` | `{ page, event }` | Page changed (`paginationMode: 'pages'`) |
+| `list:pagesize` | `{ size }` | Page-size selector changed |
+| `list:show-more` | `{ response }` | "Show more" fetched the next chunk (`paginationMode: 'more'`) |
+| `list:add` | `{ event }` | Add button clicked (before the dialog opens) |
+| `list:export` | `{ format, source, event }` | An export format was chosen |
+
+### Filters
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `filter:remove` | `{ key, field }` | An active-filter pill was removed |
+| `filters:clear` | — | "Clear All" was clicked |
+| `preset:change` | `{ key, params }` or `null` | A [filter preset](#filter-presets) was applied, or cleared (`null`) |
+| `stat:change` | `{ key, params }` or `null` | A [stat block](./TableView.md#live-stat-strip-stats) was applied, or cleared (`null`) |
+| `range:change` | `{ field, value, previous, params }` | The [day-range picker](#day-range-filter) changed |
+| `params-changed` | — | Umbrella signal: **any** of sort / page / page size / search / filter / preset / stat / day range changed. Use this for URL sync rather than listening to each one |
+
+> There is deliberately **no `filter:edit` event**. ListView owns the pill-edit
+> dialog end to end; emitting one used to let a second listener open a racing
+> modal. Listen for `params-changed` after the edit is applied.
 
 ### Listening to Events
 
