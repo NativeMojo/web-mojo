@@ -286,7 +286,7 @@ await table.mount('#users-table');
 |--------|------|---------|-------------|
 | `addButtonLabel` | `string` | `'Add'` | Label text for the add button |
 | `addButtonIcon` | `string` | `'bi bi-plus-circle'` | Icon class for the add button |
-| `searchPlacement` | `string` | `'toolbar'` | Where to place search. Only `'toolbar'` is implemented — **any other value, including the historically documented `'dropdown'`, renders no search input at all** |
+| `searchPlacement` | `string` | `'toolbar'` | Where to put the search input: `'toolbar'` (inline) or `'dropdown'` (icon-only magnifier). Any other value falls back to `'toolbar'` and warns |
 | `searchPlaceholder` | `string` | `'Search...'` | Placeholder text for the search input |
 | `emptyMessage` | `string` | `'No data available'` | Message shown when no data |
 | `toolbarButtons` | `Array<object>` | `[]` | Custom toolbar button definitions ([details](#custom-toolbar-buttons)) |
@@ -1212,11 +1212,37 @@ const table = new TableView({
   columns: [...],
   searchable: true,
   searchPlaceholder: 'Search users...',
-  searchPlacement: 'toolbar' // the only implemented value
+  searchPlacement: 'toolbar' // 'toolbar' | 'dropdown'
 });
 ```
 
 Search is debounced — it triggers on input change. Clearing the search field (or clicking the X) removes the `search` parameter and re-fetches.
+
+### Search placement
+
+| Value | Renders |
+|---|---|
+| `'toolbar'` (default) | The search input inline in the toolbar, up to 400px wide. |
+| `'dropdown'` | An icon-only magnifier button that opens a menu containing the same input. Useful when the toolbar is already crowded with filters, presets, a stat strip, or batch actions. |
+
+Both placements use the same input, the same `apply-search` / `clear-search`
+handlers, and the same `[data-filter="search"]` hook — so `updateSearchInputs()`,
+the clear-on-empty listener, and the active-filter pills behave identically.
+
+Two details worth knowing about `'dropdown'`:
+
+- **The collapsed toggle shows an active state.** When a search term is applied
+  the magnifier button gets Bootstrap's `.active` class, because a collapsed
+  control would otherwise hide the fact that results are filtered.
+- **The menu stays open while you type.** The toggle carries
+  `data-bs-auto-close="outside"`; without it Bootstrap would close the menu on
+  the first click inside and the input would be unusable.
+
+An unrecognized value (a typo like `'Toolbar'`, or anything else) resolves to
+`'toolbar'` and emits one `console.warn`. This is deliberately fail-safe: an
+earlier version gated on `searchPlacement === 'toolbar'`, so any other value —
+including `'dropdown'`, which was documented for a long time without a renderer —
+silently removed the search input with no signal at all.
 
 ---
 

@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Core · `searchPlacement: 'dropdown'` implemented, and the option can no longer delete your search box (#494)
+
+`searchPlacement: 'dropdown'` had been documented on `ListView`, `TableView` and `TablePage` for a long time with **no renderer behind it**. The gate was `searchable && searchPlacement === 'toolbar'`, so setting `'dropdown'` did not move the search input — it removed it, silently.
+
+- **`'dropdown'` now renders.** An icon-only magnifier button opens a menu containing the same search input, wired to the same `apply-search` / `clear-search` handlers and the same `[data-filter="search"]` hook — so `updateSearchInputs()`, the clear-on-empty listener, and the active-filter pills all reach it unchanged. Intended for toolbars already carrying buttons, filters, presets or a stat strip.
+- **The collapsed toggle shows an active state.** With a search term applied the magnifier takes Bootstrap's `.active` class; a collapsed control that hid an applied filter would be the same trap `hideActivePillNames` exists to avoid.
+- **The menu stays open while you type** — `data-bs-auto-close="outside"` on the toggle. Without it Bootstrap closes the menu on the first click inside and the input is unusable.
+- **The real defect was wider than the one value, and is fixed at the root.** The old gate was fail-*closed*: any unrecognized value — a typo like `'Toolbar'` just as much as `'dropdown'` — removed search with no console signal. Resolution now happens once in the constructor and is fail-**safe**: `'dropdown'` and `'toolbar'` pass through, anything else falls back to `'toolbar'` and emits one warning naming the valid values. Search can no longer vanish because of a bad option value.
+- `TableView` no longer re-derives `searchPlacement` after `super()` — that assignment overwrote the normalized value and bypassed the warning. `'toolbar'` output is unchanged.
+- Tests: new `ListView.searchPlacement.test.js` (+13, eight of which fail on the pre-fix code). Example: the `components/table-view/toolbar` route now demonstrates the dropdown placement.
+
 ### Docs · ListView/TableView capability audit — four documented events deleted, five example routes added (#298)
 
 A systematic pass over every public option of `ListView` / `TableView` / `TableRow` / `TablePage`, cross-referenced against the examples registry and the component docs. The gap matrix lives on the board item; what shipped:
@@ -12,7 +23,7 @@ A systematic pass over every public option of `ListView` / `TableView` / `TableR
 - **New "Inline cell editing" section** — the whole `column.editable` surface had no documentation and no example. All five editor types, the enter/save/fail/cancel flow, auto-save semantics, and the two live caveats (an HTML-producing formatter is escaped on the post-save repaint; `cell:save:error` needs `model.save()` to *reject*, which the stock `Model.save()` never does).
 - **`selectable: true` alone renders no checkboxes.** `isSelectable()` is `batchActions.length > 0 && selectionMode === 'multiple'`, so a table with no batch actions silently has no selection column. Documented, and the row-stripe example — which set `selectable: true` with no `batchActions` and had therefore never shown the checkbox column it describes — now passes both.
 - **`column.width` is inert** — nothing in TableView or TableRow reads it, yet eight example files passed it. Documented as unsupported (implementing per-column widths is a behavior change deserving its own item) and stripped from every example.
-- **`searchPlacement: 'dropdown'` is not implemented.** `ListView` renders the search input only for `'toolbar'`; any other value silently removes search entirely. Documented as such in all three doc pages; implement-or-drop filed as a follow-up.
+- **`searchPlacement: 'dropdown'` was not implemented** — `ListView` rendered the search input only for `'toolbar'`, and any other value silently removed search entirely. Found here, **resolved in the same release** (#494, below).
 - **Five new example routes** under `components/table-view/`: `inline-edit`, `context-menu`, `toolbar`, `columns`, `grouped` — covering the features that had zero runnable reference (inline editing, context menus, `toolbarButtons`/`toolbarRight`, object-form `visibility` + function formatters + `column.template`, and `groupBy` on a table with the `groupByField`/`groupByRecency`/`groupByBoolean` helpers). All seven new routes in this release were verified live in both themes; the `examples-*` build suites check *registration*, never that a page mounts.
 - **Pipeline:** `examples/portal/scripts/cross-link-docs.js` was referenced by no npm script, leaving the marker-delimited `## Examples` blocks stale across ~10 docs — now chained into `examples:registry`. `scripts/test-examples-smoke.js` was CJS in a `"type": "module"` package and died on `require is not defined` at every invocation — converted to ESM.
 

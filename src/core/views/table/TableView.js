@@ -146,8 +146,9 @@ class TableView extends ListView {
       ...options.tableOptions
     };
 
-    // Search configuration
-    this.searchPlacement = options.searchPlacement || 'toolbar';
+    // Search configuration. `searchPlacement` is resolved by ListView's
+    // constructor (`_normalizeSearchPlacement`) — do NOT re-assign it here or
+    // TableView would bypass the fail-safe fallback and its warning.
     this.searchPlaceholder = options.searchPlaceholder || 'Search...';
 
     // Initialize column configuration BEFORE building template

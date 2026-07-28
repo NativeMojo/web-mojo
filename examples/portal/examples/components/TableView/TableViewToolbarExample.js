@@ -18,10 +18,12 @@ import { Page, View, TableView, Collection } from 'web-mojo';
  *   3. `toolbarRight` — any View mounted into the toolbar's right slot.
  *   4. `title` / `eyebrow`, and the live `setTitle()` / `setEyebrow()` setters.
  *   5. `showRefresh: false`, `showFullscreen: false` — trimming the chrome.
- *   6. `searchPlaceholder` — the toolbar search input. (`searchPlacement:
- *      'dropdown'` is documented but NOT implemented — ListView only renders
- *      the input for the 'toolbar' value, so 'dropdown' hides search entirely.
- *      Use the default.)
+ *   6. `searchPlaceholder` + `searchPlacement: 'dropdown'` — search collapsed
+ *      behind an icon-only magnifier, which is what you want once the toolbar
+ *      is carrying buttons, a right slot and a title. The menu keeps itself
+ *      open while you type, and the magnifier picks up an active state while a
+ *      search term is applied. Switch to `'toolbar'` (the default) for the
+ *      inline input.
  */
 const ENVS = ['prod', 'staging', 'dev'];
 
@@ -99,10 +101,11 @@ class TableViewToolbarExample extends Page {
             showRefresh: false,
             showFullscreen: false,
 
-            // 6 — search stays in the toolbar. Do NOT pass
-            // `searchPlacement: 'dropdown'` — it is documented but unimplemented
-            // and silently removes the search input.
+            // 6 — this toolbar is already busy, so collapse search behind the
+            // magnifier. Drop `searchPlacement` (or set 'toolbar') for the
+            // inline input instead.
             searchable: true,
+            searchPlacement: 'dropdown',
             searchPlaceholder: 'Find a job…',
 
             filterable: false,

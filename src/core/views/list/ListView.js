@@ -141,7 +141,7 @@ class ListView extends View {
     this.paginationMode = mode;
 
     // Search
-    this.searchPlacement = options.searchPlacement || 'toolbar'; // 'toolbar' | 'dropdown'
+    this.searchPlacement = this._normalizeSearchPlacement(options.searchPlacement);
     this.searchPlaceholder = options.searchPlaceholder || 'Search...';
 
     // Sort dropdown — list-style alternative to TableView's column-header sort.
@@ -687,6 +687,7 @@ class ListView extends View {
         ${sortDropdown}
         ${this.filterable ? this.buildFilterDropdownTemplate() : ''}
         ${this.searchable && this.searchPlacement === 'toolbar' ? this.buildSearchTemplate() : ''}
+        ${this.searchable && this.searchPlacement === 'dropdown' ? this.buildSearchDropdownTemplate() : ''}
         ${presetInlineSlot}
         ${dayRangeSlot}
         ${rightSlot}
@@ -842,27 +843,95 @@ class ListView extends View {
     return buttons.join('');
   }
 
+  /**
+   * Resolve the `searchPlacement` option to one of the two implemented values.
+   *
+   * Deliberately FAIL-SAFE: anything unrecognized falls back to `'toolbar'`
+   * with a warning, rather than rendering no search at all. The previous gate
+   * was `searchPlacement === 'toolbar'`, so any other value — a typo like
+   * `'Toolbar'`, or the long-documented-but-never-implemented `'dropdown'` —
+   * silently removed the search input with no console signal.
+   *
+   * @private
+   * @param {string} [raw] Caller-supplied placement.
+   * @returns {'toolbar'|'dropdown'}
+   */
+  _normalizeSearchPlacement(raw) {
+    if (raw === undefined || raw === null || raw === '') return 'toolbar';
+    if (raw === 'toolbar' || raw === 'dropdown') return raw;
+    console.warn(
+      `ListView: unknown searchPlacement ${JSON.stringify(raw)} — falling back to 'toolbar'. `
+      + "Valid values are 'toolbar' and 'dropdown'."
+    );
+    return 'toolbar';
+  }
+
+  /**
+   * The search `input-group` itself, shared by both placements so the two
+   * render paths cannot drift. `{{searchValue}}` is a live Mustache context
+   * value (set in `prepareRenderContext`), not a build-time read — the
+   * template is built once and re-rendered per fetch.
+   * @private
+   */
+  _buildSearchInputGroup() {
+    return `
+      <div class="input-group input-group-sm">
+        <span class="input-group-text">
+          <i class="bi bi-search"></i>
+        </span>
+        <input type="search"
+               class="form-control"
+               placeholder="${this.escapeHtml(this.searchPlaceholder)}"
+               data-filter="search"
+               data-change-action="apply-search"
+               value="{{searchValue}}"
+               aria-label="Search">
+        {{#searchValue}}
+          <button class="btn btn-outline-secondary" type="button"
+                  data-action="clear-search"
+                  title="Clear search">
+            <i class="bi bi-x"></i>
+          </button>
+        {{/searchValue}}
+      </div>
+    `;
+  }
+
   buildSearchTemplate() {
     return `
       <div class="flex-grow-1" style="max-width: 400px;">
-        <div class="input-group input-group-sm">
-          <span class="input-group-text">
-            <i class="bi bi-search"></i>
-          </span>
-          <input type="search"
-                 class="form-control"
-                 placeholder="${this.escapeHtml(this.searchPlaceholder)}"
-                 data-filter="search"
-                 data-change-action="apply-search"
-                 value="{{searchValue}}"
-                 aria-label="Search">
-          {{#searchValue}}
-            <button class="btn btn-outline-secondary" type="button"
-                    data-action="clear-search"
-                    title="Clear search">
-              <i class="bi bi-x"></i>
-            </button>
-          {{/searchValue}}
+        ${this._buildSearchInputGroup()}
+      </div>
+    `;
+  }
+
+  /**
+   * `searchPlacement: 'dropdown'` — collapse search behind an icon-only
+   * magnifier for dense toolbars. Same input, same delegated handlers
+   * (`apply-search` / `clear-search`), same `[data-filter="search"]` hook, so
+   * `updateSearchInputs()` and `setupSearchClearListener()` reach it unchanged.
+   *
+   * Two details that are load-bearing:
+   * - `data-bs-auto-close="outside"` — without it Bootstrap closes the menu on
+   *   the first click inside, making the input unusable. Same pattern as
+   *   `MultiSelectDropdown`.
+   * - `{{#searchValue}}active{{/searchValue}}` on the toggle — a collapsed
+   *   control would otherwise hide an applied search entirely.
+   */
+  buildSearchDropdownTemplate() {
+    return `
+      <div class="dropdown">
+        <button class="btn btn-sm btn-outline-secondary {{#searchValue}}active{{/searchValue}}"
+                type="button"
+                data-bs-toggle="dropdown"
+                data-bs-auto-close="outside"
+                aria-expanded="false"
+                aria-label="Search"
+                title="Search">
+          <i class="bi bi-search"></i>
+        </button>
+        <div class="dropdown-menu dropdown-menu-end p-2" style="min-width: 260px;">
+          ${this._buildSearchInputGroup()}
         </div>
       </div>
     `;

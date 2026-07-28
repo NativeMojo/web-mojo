@@ -925,7 +925,7 @@ ListView ships an opt-in toolbar that mirrors what `TableView` has. Every flag b
 |--------|------|---------|-------------|
 | `searchable` | `boolean` | `false` | Render a search input that drives `collection.params.search`. |
 | `searchPlaceholder` | `string` | `'Search...'` | Placeholder text for the search input. |
-| `searchPlacement` | `string` | `'toolbar'` | Only `'toolbar'` is implemented. The historically documented `'dropdown'` value has no renderer — setting it silently removes the search input. |
+| `searchPlacement` | `string` | `'toolbar'` | `'toolbar'` renders the search input inline; `'dropdown'` collapses it behind an icon-only magnifier for dense toolbars. Any other value falls back to `'toolbar'` with a `console.warn` — search is never silently removed. |
 | `filterable` | `boolean` | `false` | Render the "Add Filter" dropdown + active-pill bar. Requires `filters: [...]` (or column filters when subclassed). |
 | `filters` | `Array<object>` | `[]` | Filter definitions: `{ name, label, type, options? }`. Same shape as TableView's `filters` (a.k.a. additional filters). |
 | `hideActivePills` | `boolean` | `false` | Hide the active-filter pills bar. |
