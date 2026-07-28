@@ -52,6 +52,12 @@
             "summary": "`filterPresets` renders named one-click queries as a toolbar segment (≤4 inline); mutually exclusive, derived active state, `'@me'` token."
         },
         {
+            "page": "TableViewStatStripExample.js",
+            "route": "components/table-view/stat-strip",
+            "title": "TableView — stat strip",
+            "summary": "`stats` renders live server-computed counts above the toolbar; each block is also a one-click filter with derived active state."
+        },
+        {
             "page": "TableViewFeedbackStatesExample.js",
             "route": "components/table-view/feedback-states",
             "title": "TableView — feedback states",

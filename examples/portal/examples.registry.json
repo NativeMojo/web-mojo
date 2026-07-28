@@ -1,6 +1,6 @@
 {
   "generatedAt": "static",
-  "pageCount": 98,
+  "pageCount": 99,
   "pages": [
     {
       "name": "ActiveGroup",
@@ -775,7 +775,7 @@
       "sourcePath": "examples/portal/examples/components/TableView/TableViewFeedbackStatesExample.js",
       "section": "Components",
       "icon": "bi-table",
-      "order": 37,
+      "order": 38,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -823,7 +823,7 @@
       "sourcePath": "examples/portal/examples/components/TableView/TableViewLiveWatchExample.js",
       "section": "Components",
       "icon": "bi-table",
-      "order": 39,
+      "order": 40,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -847,7 +847,7 @@
       "sourcePath": "examples/portal/examples/components/TableView/TableViewPowerToolsExample.js",
       "section": "Components",
       "icon": "bi-table",
-      "order": 40,
+      "order": 41,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -871,7 +871,7 @@
       "sourcePath": "examples/portal/examples/components/TableView/TableViewRowExpandExample.js",
       "section": "Components",
       "icon": "bi-table",
-      "order": 38,
+      "order": 39,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -920,6 +920,30 @@
       "section": "Components",
       "icon": "bi-table",
       "order": 33,
+      "topic": "components",
+      "group": "Lists & Tables"
+    },
+    {
+      "name": "TableView",
+      "area": "components",
+      "route": "components/table-view/stat-strip",
+      "title": "TableView — stat strip",
+      "summary": "`stats` renders live server-computed counts above the toolbar; each block is also a one-click filter with derived active state.",
+      "docs": "docs/web-mojo/components/TableView.md",
+      "tags": [
+        "table",
+        "collection",
+        "sort",
+        "filter",
+        "pagination",
+        "batch-actions"
+      ],
+      "page": "TableViewStatStripExample.js",
+      "modulePath": "./examples/components/TableView/TableViewStatStripExample.js",
+      "sourcePath": "examples/portal/examples/components/TableView/TableViewStatStripExample.js",
+      "section": "Components",
+      "icon": "bi-table",
+      "order": 37,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -2610,6 +2634,13 @@
               "docs": "docs/web-mojo/components/TableView.md"
             },
             {
+              "route": "components/table-view/stat-strip",
+              "title": "TableView — stat strip",
+              "summary": "`stats` renders live server-computed counts above the toolbar; each block is also a one-click filter with derived active state.",
+              "icon": "bi-table",
+              "docs": "docs/web-mojo/components/TableView.md"
+            },
+            {
               "route": "components/table-view/feedback-states",
               "title": "TableView — feedback states",
               "summary": "`emptyState` (configured + filtered-empty branches), `loadingStyle: 'skeleton'`, and `showResultCount` — the loading/empty/summary chrome.",
@@ -3401,6 +3432,13 @@
           "docs": "docs/web-mojo/components/TableView.md"
         },
         {
+          "route": "components/table-view/stat-strip",
+          "title": "TableView — stat strip",
+          "summary": "`stats` renders live server-computed counts above the toolbar; each block is also a one-click filter with derived active state.",
+          "icon": "bi-table",
+          "docs": "docs/web-mojo/components/TableView.md"
+        },
+        {
           "route": "components/table-view/feedback-states",
           "title": "TableView — feedback states",
           "summary": "`emptyState` (configured + filtered-empty branches), `loadingStyle: 'skeleton'`, and `showResultCount` — the loading/empty/summary chrome.",
@@ -3415,18 +3453,18 @@
           "docs": "docs/web-mojo/components/TableView.md"
         },
         {
-          "route": "components/table-view/live-watch",
-          "title": "TableView — live watch",
-          "summary": "`autoRefresh: { every, mode: 'models' }` refreshes only the visible rows via one batched `id__in` request and flashes the ones that changed.",
-          "icon": "bi-table",
-          "docs": "docs/web-mojo/components/TableView.md"
-        },
-        {
           "route": "components/data-view",
           "title": "DataView",
           "summary": "Structured key/value display with field types for email, URL, boolean, dates, and JSON.",
           "icon": "bi-card-list",
           "docs": "docs/web-mojo/components/DataView.md"
+        },
+        {
+          "route": "components/table-view/live-watch",
+          "title": "TableView — live watch",
+          "summary": "`autoRefresh: { every, mode: 'models' }` refreshes only the visible rows via one batched `id__in` request and flashes the ones that changed.",
+          "icon": "bi-table",
+          "docs": "docs/web-mojo/components/TableView.md"
         },
         {
           "route": "components/table-view/power-tools",

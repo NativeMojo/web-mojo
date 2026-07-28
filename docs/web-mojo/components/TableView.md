@@ -791,6 +791,138 @@ TableView via its option whitelist.
 
 ---
 
+## Live stat strip (`stats`)
+
+`stats:` renders a row of KPI blocks above the toolbar — *"Open 12 · High 3 ·
+Stale 5"* — where each number is a **live count computed by the server under
+the table's current filters**, and each block is also a one-click filter. It is
+a filter preset with a number attached: the count tells you whether the query
+is worth running before you run it.
+
+Inherited by `TableView` from `ListView` and forwarded by `TablePage` —
+configure it the same way on any of the three.
+
+```javascript
+new TableView({
+  collection: incidents,               // a REST-backed Collection
+  columns: [...],
+  stats: [
+    { key: 'all',   label: 'All',            params: {} },                  // the "All" chip
+    { key: 'open',  label: 'Open',           params: { status: 'open' } },
+    { key: 'high',  label: 'High priority',  params: { priority: 'high' }, critical: true },
+    { key: 'stale', label: 'Stale > 24h',    params: { age__gte: 24 }, description: 'Untouched for a day' }
+  ]
+});
+```
+
+| Field | Required | Meaning |
+|---|---|---|
+| `key` | yes | Stable identifier. Also the key in the wire payload and the response map. Duplicates warn and are dropped. |
+| `label` | no | Block copy (sentence case). Defaults to `key`. |
+| `params` | no | The filter bundle. Same shape and semantics as a `filterPresets` entry, including the `'@me'` token. `{}` means "no scoping" — see the All chip below. |
+| `critical` | no | At most **one** per strip. Adds a small danger dot when that count is `> 0`. A second `critical` warns and is dropped. |
+| `description` | no | `title` tooltip. |
+
+### The wire contract
+
+Counts come from **one batched request per recount**, against the same list
+endpoint the collection already uses:
+
+```
+GET /api/incidents?<current filters>&size=1&_mode=count&_stats={"open":{"status":"open"},…}
+```
+
+The response body is **flat**:
+
+```json
+{ "count": 40, "stats": { "open": 12, "high": 3, "stale": 5 }, "took_ms": 3 }
+```
+
+Read as `resp.data.count` / `resp.data.stats` — this endpoint returns the body
+directly rather than wrapping it, so there is **no `resp.data.data` nesting**
+here even though most mojo list responses have it.
+
+At most **12 bundles** are sent (`ListView.STATS_MAX_BUNDLES`, matching the
+backend's `MOJO_REST_AGG_STATS_CAP`); extras warn and are dropped client-side
+rather than 400ing the whole request. Requires django-mojo with list-endpoint
+stat aggregation.
+
+**Base params exclude the active stat's own keys.** This is what makes "the
+number on the chip is the number of rows you get after clicking it" true. The
+server ANDs each bundle onto the base query, but the UI applies bundles with
+mutual exclusion — clicking *High* first clears *Open*. If `status=open` stayed
+in the base, *High* would advertise `open AND high` for a click that yields
+`high` alone.
+
+### Click semantics
+
+- **One click applies the bundle** via `setFilter()` + `applyFilters()`, exactly
+  like a filter preset. The params show up as ordinary, removable filter pills.
+- **Mutual exclusion + toggle-off.** A new stat clears the previous one's
+  params; re-clicking the active stat clears it.
+- **Derived active state.** A stat is active when every one of its resolved
+  params matches the current filters (most-specific match wins). Edit or remove
+  a pill and the block de-highlights on its own — there is no stored flag.
+- **The "All" chip.** A stat with `params: {}` is the clear-everything chip: it
+  paints active precisely when no other stat is, clicking it calls
+  `clearStat()`, and its number is the response's top-level `count`.
+- **`stats` + `filterPresets` together** are independent bundle sets. If a stat
+  and a preset carry the same params, clicking the stat lights the preset too —
+  both are derived from the same filters, so that is the truth, not a bug.
+
+### When counts refresh
+
+On mount, on every `params-changed` (debounced 250 ms), and on each auto-refresh
+tick. `params-changed` also fires for page / page-size / sort changes, which
+cannot move a count — those are suppressed by a signature memo, so paging
+through a 12-chip table costs zero extra server COUNTs. Superseded responses are
+dropped by a generation counter, so a slow early response can never overwrite a
+newer one.
+
+### Degradation
+
+A block whose count is unknown renders a muted em-dash and is **inert** (a
+`<div>`, not a `<button>`). `0` is information and renders as `0`.
+
+| Case | What you see | Retries? |
+|---|---|---|
+| Server has no aggregation support (HTTP 200, no `stats` key) | every block em-dashed | no — latched off, silently |
+| HTTP 404 | every block em-dashed | no — latched off, silently |
+| One bundle returned `null` | only that block em-dashed | yes, next recount |
+| Other HTTP / network error | every block em-dashed for that cycle | yes; one `console.warn` per view, max |
+| Collection isn't REST-backed | label-only em-dashes, **no request** | n/a |
+
+The "no `stats` key" latch matters: an older server does **not** reject `_mode`
+/ `_stats` — unknown query params are silently dropped, so it answers with an
+ordinary list page. Without the latch every filter change would pull a full page
+of rows forever.
+
+### API surface
+
+```js
+table.applyStat('high');   // apply, or toggle off if already active. false for an unknown key.
+table.clearStat();         // clear the active stat's params.
+table.getActiveStat();     // the active stat's config object, or null (null = the All chip is lit).
+table.renderStatStrip();   // repaint the strip (counts + derived active state) in place.
+
+table.on('stat:change', (payload) => {
+  // payload = { key, params } on apply, or null on clear.
+});
+```
+
+### Design
+
+Near-monochrome by intent: the numeral carries the hierarchy (tabular figures
+over a quiet sentence-case label), the active block is a **raised neutral pill**
+rather than a colored fill, and the entire color budget is one small danger dot
+on the single `critical` stat — suppressed when its count is `0`, so an
+all-clear board shows no color at all. Both themes ship from day one.
+
+When `stats` is **not** set, no markup, styles, or requests are emitted — the
+table is byte-identical to before.
+
+---
+
 ## Built-in Actions
 
 The `actions` option defines which action buttons appear in each row:

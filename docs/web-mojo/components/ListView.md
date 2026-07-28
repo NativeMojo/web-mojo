@@ -232,6 +232,8 @@ listView.on('preset:change', (payload) => {
 
 **Edge cases.** A preset param that collides with the day-range field (`created__gte`) is last-writer-wins — the more recent of a preset click or a day-range change owns the param. Duplicate `key`s log a dev warning and only the first is kept. No `filterPresets` (or an empty array) → zero rendering and behavior change (fully opt-in).
 
+**Presets with a live count.** The `stats:` option is the same idea with a number attached: an inset track of KPI blocks above the toolbar whose counts are computed server-side under the table's *current* filters, and which apply their bundle on click through these same rails (same `'@me'` resolution, same mutual exclusion, same derived active state). Use `filterPresets` when the named query is enough, `stats` when knowing *how many* before clicking is the point. The two are independent and can be configured together. See **[TableView.md → Live stat strip (`stats`)](TableView.md#live-stat-strip-stats)**.
+
 ---
 
 ## Pagination & Show More

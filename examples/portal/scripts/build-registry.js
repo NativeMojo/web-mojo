@@ -147,6 +147,7 @@ const TOPIC_TAXONOMY = [
                     'components/table-view/day-range-filter',
                     'components/table-view/row-stripe',
                     'components/table-view/filter-presets',
+                    'components/table-view/stat-strip',
                     'components/table-view/feedback-states',
                     'components/table-view/row-expand',
                     'components/table-view/live-watch',

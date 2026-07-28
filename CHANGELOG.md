@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Core · `stats:` live stat strip on ListView/TableView — clickable KPI chips bound to the collection's filters (#300)
+
+A row of KPI blocks above the toolbar — *"Open 12 · High 3 · Stale 5"* — where each number is a **live count computed by the server under the table's current filters**, and each block is also a one-click filter. A filter preset with a number attached: the count tells you whether a query is worth running before you run it.
+
+- **`stats: [{ key, label, params, critical?, description? }]`**, opt-in on `ListView`, inherited by `TableView`, forwarded by `TablePage`. Absent → zero markup, zero styles, zero requests, byte-identical render.
+- **One batched request per recount** against the collection's own list endpoint (`&_mode=count&_stats={…}`), capped at 12 bundles (`ListView.STATS_MAX_BUNDLES`). The response body is **flat** — `resp.data.{count, stats, took_ms}`, with no `resp.data.data` nesting, because that path returns the body directly instead of wrapping it. Requires django-mojo with list-endpoint stat aggregation.
+- **The number on a chip equals the row count you get after clicking it.** The base params for the counts exclude the *active* stat's own keys — the server ANDs each bundle onto the base query while the UI applies bundles with mutual exclusion, so leaving the active bundle in the base would advertise `open AND high` for a click that yields `high` alone. The exclusion mirrors **both** branches of `setFilter()`, including the `dr_start`/`dr_end`/`dr_field` triple, so a bundle keyed on a registered daterange filter agrees with what the click actually clears.
+- **Clicks ride the WM-032 preset rails** — `setFilter` + `applyFilters`, mutual exclusion, toggle-off, `'@me'` resolution, and *derived* active state (edit a pill and the block de-highlights itself). A `params: {}` entry is the **"All" chip**: active exactly when no other stat is, clearing on click, counted from the response's top-level `count`. API: `applyStat(key)` / `clearStat()` / `getActiveStat()` / `renderStatStrip()` + a `stat:change` event.
+- **Recounts are debounced (250 ms) and memoized.** `params-changed` also fires for page / page-size / sort — changes to exactly the keys the count request strips — so paging ten pages of a 12-chip table would have cost 130 needless server COUNTs. A signature memo suppresses them; auto-refresh ticks (both `collection` and `models` mode) bypass it, because those *do* want a recount on unchanged params. Superseded responses are dropped by a generation counter.
+- **Degrades quietly, and latches when it should.** An unknown count is a muted em-dash on an inert block (`0` is information and renders as `0`); one `null` bundle degrades only its own block. A server without aggregation support does not error — unknown query params are silently dropped, so it answers HTTP 200 with an ordinary list page and no `stats` key. That case (and a 404) latches the feature off for the view's lifetime; without it every filter change would pull a full page of rows forever. Transient HTTP errors keep retrying and log at most one warning per view.
+- **Design:** near-monochrome inset track; the numeral carries the hierarchy (tabular figures over a quiet sentence-case label), the active block is a raised **neutral** pill rather than a colored fill, and the whole color budget is one small danger dot on the single `critical` stat — suppressed at count 0, so an all-clear board shows no color. Light + dark from day one.
+- Example: `components/table-view/stat-strip`. Tests: new `ListView.stats.test.js` (+37), plus additive cases in `ListView.interactions.test.js` and `TablePage.option-forwarding.test.js`.
+
 ### Core · `autoRefresh` gains a `models` mode — in-place row refresh + changed-row flash (#297)
 
 `autoRefresh` was a full `collection.fetch()` on a timer: right for a feed where new records appearing matters, disruptive when you only want to watch the rows in front of you change state. It now takes an object form that picks the strategy — `autoRefresh: { every: 15, mode: 'models' }`.
@@ -40,7 +53,7 @@ All strictly opt-in — tables that pass none of the new options render byte-ide
 
 Cross-feature composition is covered by a dedicated interaction suite (preset→zero-rows renders the filtered empty state; all-on renders each feature's markup once; all-off is byte-identical; refresh ticks prune vanished expanded rows; skeletons mirror expand/selection cells).
 
-*(Trailing from the same epic: `stats:` live stat strip (WM-037) — blocked on django-mojo aggregation support.)*
+*(The seventh feature from the same epic, `stats:` (WM-037), shipped separately below.)*
 
 ### Core · View.render() coalesces mid-flight render requests (fixes stuck loading visuals)
 
