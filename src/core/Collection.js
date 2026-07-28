@@ -328,6 +328,152 @@ class Collection {
   }
 
   /**
+   * Refresh the models ALREADY in this collection, in place.
+   *
+   * Issues one batched `id__in=<ids>` GET per chunk under the collection's
+   * current `params` (so server-side filters / sort / graph still apply) and
+   * merges each returned row into the *existing* model instance. Membership
+   * never changes: no `add()`, no `remove()`, no `reset()`, no `parse()`, and
+   * `meta` / `params` / `lastFetchTime` / `loading` are all left untouched.
+   *
+   * Deliberately NOT built on `fetch()`, which would (a) abort an in-flight
+   * user request whose param key differs, (b) emit `fetch:start` — flipping a
+   * bound ListView to its loading skeleton — and (c) `add()` genuinely-new ids,
+   * churning membership. This is the data seam behind
+   * `autoRefresh: { mode: 'models' }`; offline / fake collections can override
+   * it the same way they override `fetch()`.
+   *
+   * Ids missing from the response (filtered out server-side, deleted, or hidden
+   * by a default filter) are reported in `missing` and left untouched — their
+   * rows keep showing the last known values until a full refresh.
+   *
+   * @param {Array<string|number>} ids - Ids to refresh (typically the current
+   *   `collection.models.map(m => m.id)`). `null`/`undefined`, empty-string and
+   *   comma-bearing ids are skipped (a comma would corrupt the `id__in` split).
+   * @param {object} [options]
+   * @param {number} [options.chunkSize=200] - Max ids per request.
+   * @param {AbortSignal} [options.signal] - Caller's abort signal.
+   * @returns {Promise<{changed: Map<*, string[]>, missing: string[], ok: boolean}>}
+   *   `changed` maps model id → the attribute names that actually differed;
+   *   `missing` lists requested ids the server didn't return; `ok` is false for
+   *   the no-op cases (REST disabled, no endpoint, no usable ids).
+   */
+  async refreshModels(ids, { chunkSize = 200, signal } = {}) {
+    const result = { changed: new Map(), missing: [], ok: false };
+
+    if (!this.restEnabled || !this.endpoint) return result;
+
+    const wanted = [];
+    const seen = new Set();
+    for (const raw of (Array.isArray(ids) ? ids : [])) {
+      if (raw === null || raw === undefined) continue;
+      const key = String(raw);
+      if (key === '' || key.includes(',')) continue;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      wanted.push(key);
+    }
+    if (wanted.length === 0) return result;
+
+    const size = (typeof chunkSize === 'number' && isFinite(chunkSize) && chunkSize > 0)
+      ? Math.floor(chunkSize)
+      : 200;
+    const chunks = [];
+    for (let i = 0; i < wanted.length; i += size) {
+      chunks.push(wanted.slice(i, i + size));
+    }
+
+    const url = this.buildUrl();
+    const requestOptions = signal ? { signal } : {};
+    const responses = await Promise.all(chunks.map((chunk) => this.rest.GET(url, {
+      ...this.params,
+      // `start`/`size` MUST be overridden: after a "Show more" the model count
+      // exceeds params.size, which would silently truncate the batch.
+      start: 0,
+      size: chunk.length,
+      id__in: chunk.join(',')
+    }, requestOptions)));
+
+    const returned = new Set();
+    for (const response of responses) {
+      for (const row of Collection._refreshRows(response)) {
+        if (!row || typeof row !== 'object') continue;
+        const model = this.get(row.id);
+        if (!model) continue;
+        returned.add(String(row.id));
+        const changedKeys = this._pickChanged(model, row);
+        if (changedKeys.length === 0) continue;
+        const patch = {};
+        for (const key of changedKeys) patch[key] = row[key];
+        model.set(patch);
+        result.changed.set(model.id, changedKeys);
+      }
+    }
+
+    result.missing = wanted.filter((id) => !returned.has(id));
+    result.ok = true;
+    return result;
+  }
+
+  /**
+   * Pull the row array out of a refresh response WITHOUT going through
+   * `parse()` — parse() rewrites `this.meta`, which would corrupt the
+   * "Showing N of M" summary and pagination for a batch that only covers the
+   * visible rows.
+   * @private
+   */
+  static _refreshRows(response) {
+    if (!response) return [];
+    if (Array.isArray(response.data?.data)) return response.data.data;
+    if (Array.isArray(response.data)) return response.data;
+    return [];
+  }
+
+  /**
+   * Which of `row`'s keys genuinely differ from the model's current values.
+   *
+   * `Model._setNestedAttribute` compares with `!==`, so every object/array
+   * field would count as "changed" on identity alone — flashing the whole table
+   * on every tick. Object-valued fields are therefore compared by a key-sorted
+   * serialization (a model touched by an inline edit or an earlier merge can
+   * legitimately diverge in key order and would otherwise never settle).
+   *
+   * Reads `model.attributes[key]` rather than `model.get(key)` — `get()` splits
+   * keys on `.` and `|`, so a server field containing either would be misread.
+   * @private
+   */
+  _pickChanged(model, row) {
+    const changed = [];
+    if (!model || !row) return changed;
+    const attributes = model.attributes || {};
+    for (const key of Object.keys(row)) {
+      const next = row[key];
+      const current = attributes[key];
+      if (current === next) continue;
+      const bothObjects = current !== null && next !== null
+        && typeof current === 'object' && typeof next === 'object';
+      if (bothObjects && Collection._stableStringify(current) === Collection._stableStringify(next)) {
+        continue;
+      }
+      changed.push(key);
+    }
+    return changed;
+  }
+
+  /**
+   * Key-sorted JSON serialization, so `{a:1,b:2}` and `{b:2,a:1}` compare equal.
+   * @private
+   */
+  static _stableStringify(value) {
+    if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'undefined';
+    if (Array.isArray(value)) {
+      return `[${value.map((entry) => Collection._stableStringify(entry)).join(',')}]`;
+    }
+    const keys = Object.keys(value).sort();
+    return `{${keys.map((key) => `${JSON.stringify(key)}:${Collection._stableStringify(value[key])}`).join(',')}}`;
+  }
+
+  /**
    * Fetch a single model by ID
    * @param {string|number} id - Model ID to fetch
    * @param {object} options - Additional fetch options
