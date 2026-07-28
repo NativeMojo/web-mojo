@@ -149,6 +149,7 @@ const TOPIC_TAXONOMY = [
                     'components/table-view/filter-presets',
                     'components/table-view/feedback-states',
                     'components/table-view/row-expand',
+                    'components/table-view/live-watch',
                     'components/table-view/power-tools',
                     'components/data-view',
                     'components/detail-view',

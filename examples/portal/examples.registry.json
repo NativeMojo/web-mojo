@@ -1,6 +1,6 @@
 {
   "generatedAt": "static",
-  "pageCount": 97,
+  "pageCount": 98,
   "pages": [
     {
       "name": "ActiveGroup",
@@ -806,6 +806,30 @@
     {
       "name": "TableView",
       "area": "components",
+      "route": "components/table-view/live-watch",
+      "title": "TableView — live watch",
+      "summary": "`autoRefresh: { every, mode: 'models' }` refreshes only the visible rows via one batched `id__in` request and flashes the ones that changed.",
+      "docs": "docs/web-mojo/components/TableView.md",
+      "tags": [
+        "table",
+        "collection",
+        "sort",
+        "filter",
+        "pagination",
+        "batch-actions"
+      ],
+      "page": "TableViewLiveWatchExample.js",
+      "modulePath": "./examples/components/TableView/TableViewLiveWatchExample.js",
+      "sourcePath": "examples/portal/examples/components/TableView/TableViewLiveWatchExample.js",
+      "section": "Components",
+      "icon": "bi-table",
+      "order": 39,
+      "topic": "components",
+      "group": "Lists & Tables"
+    },
+    {
+      "name": "TableView",
+      "area": "components",
       "route": "components/table-view/power-tools",
       "title": "TableView — power tools",
       "summary": "`persistState` + `persistKey` + `columnChooser` (with `hideable: false`) + `autoRefresh: 30` on one wide table; reset via `clearPersistedState()`.",
@@ -823,7 +847,7 @@
       "sourcePath": "examples/portal/examples/components/TableView/TableViewPowerToolsExample.js",
       "section": "Components",
       "icon": "bi-table",
-      "order": 39,
+      "order": 40,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -2600,6 +2624,13 @@
               "docs": "docs/web-mojo/components/TableView.md"
             },
             {
+              "route": "components/table-view/live-watch",
+              "title": "TableView — live watch",
+              "summary": "`autoRefresh: { every, mode: 'models' }` refreshes only the visible rows via one batched `id__in` request and flashes the ones that changed.",
+              "icon": "bi-table",
+              "docs": "docs/web-mojo/components/TableView.md"
+            },
+            {
               "route": "components/table-view/power-tools",
               "title": "TableView — power tools",
               "summary": "`persistState` + `persistKey` + `columnChooser` (with `hideable: false`) + `autoRefresh: 30` on one wide table; reset via `clearPersistedState()`.",
@@ -3384,9 +3415,9 @@
           "docs": "docs/web-mojo/components/TableView.md"
         },
         {
-          "route": "components/table-view/power-tools",
-          "title": "TableView — power tools",
-          "summary": "`persistState` + `persistKey` + `columnChooser` (with `hideable: false`) + `autoRefresh: 30` on one wide table; reset via `clearPersistedState()`.",
+          "route": "components/table-view/live-watch",
+          "title": "TableView — live watch",
+          "summary": "`autoRefresh: { every, mode: 'models' }` refreshes only the visible rows via one batched `id__in` request and flashes the ones that changed.",
           "icon": "bi-table",
           "docs": "docs/web-mojo/components/TableView.md"
         },
@@ -3396,6 +3427,13 @@
           "summary": "Structured key/value display with field types for email, URL, boolean, dates, and JSON.",
           "icon": "bi-card-list",
           "docs": "docs/web-mojo/components/DataView.md"
+        },
+        {
+          "route": "components/table-view/power-tools",
+          "title": "TableView — power tools",
+          "summary": "`persistState` + `persistKey` + `columnChooser` (with `hideable: false`) + `autoRefresh: 30` on one wide table; reset via `clearPersistedState()`.",
+          "icon": "bi-table",
+          "docs": "docs/web-mojo/components/TableView.md"
         },
         {
           "route": "components/file-view",

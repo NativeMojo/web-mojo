@@ -442,6 +442,38 @@ await collection.fetchMore({ pageDelta: 2 });
 
 ---
 
+### refreshModels(ids, options)
+
+Refresh the models **already in** the collection, in place. Issues one batched `id__in=<ids>` request per chunk under the collection's current `params`, and merges each returned row into the *existing* model instance. Membership never changes.
+
+Backs [`ListView`'s `autoRefresh: { mode: 'models' }`](../components/ListView.md#auto-refresh).
+
+```javascript
+const { changed, missing, ok } = await collection.refreshModels(
+  collection.models.map((m) => m.id)
+);
+// changed → Map<id, ['status', 'progress']>   (only genuinely different keys)
+// missing → ['42']                            (server didn't return this id)
+```
+
+**Parameters:**
+- `ids` (array) — Ids to refresh. `null`/`undefined`, empty-string and comma-bearing ids are skipped (a comma would corrupt the `id__in` split); duplicates are collapsed.
+- `options.chunkSize` (number, default `200`) — Max ids per request; chunks run in parallel.
+- `options.signal` (AbortSignal) — Caller's abort signal.
+
+**Returns:** `{ changed: Map<id, string[]>, missing: string[], ok: boolean }`. `ok` is `false` for the no-op cases (REST disabled, no endpoint, no usable ids).
+
+**Guarantees:**
+- No `add()` / `remove()` / `reset()`, and no `fetch:start` / `fetch:end` — bound views never flip to their loading visual and never rebuild their rows.
+- `meta`, `params`, `lastFetchTime` and model order are untouched. `parse()` is deliberately never called (it rewrites `meta`, which drives "Showing N of M" and pagination).
+- `start`/`size` are overridden per chunk, so a collection grown past `params.size` by `fetchMore()` is still fully covered.
+- Ids missing from the response are left untouched and reported in `missing` — they keep their last known values rather than disappearing.
+- Change detection diffs before setting: an object/array field that re-serializes identically (key order aside) is **not** reported as changed.
+
+**Why not `fetch()`:** `fetch()` would abort an in-flight request whose param key differs, emit `fetch:start` (flipping a bound `ListView` to its skeleton), and `add()` genuinely-new ids — all three defeat the purpose. Offline / fake collections that override `fetch()` should override `refreshModels()` too.
+
+---
+
 ### fetchOne(id, options)
 
 Fetch a single model by ID.

@@ -363,7 +363,7 @@ await table.mount('#users-table');
 | `collectionParams` | `object` | `undefined` | Parameters merged into the collection |
 | `itemClass` | `Class` | `TableRow` | Custom row class (must extend TableRow or ListViewItem) |
 | `dayRangeFilter` | `boolean \| object` | `false` | Mounts a `1d / 7d / 30d / 90d` SegmentControl in the toolbar and writes `${field}__gte` to `collection.params` on every change (auto-refetches). `true` → defaults `{ field: 'created', value: '7d' }`. Object form merges over those defaults. Emits `range:change` `{ field, value, previous, params }`. See [Day-range filter](./ListView.md#day-range-filter). |
-| `autoRefresh` | `number` | `0` (off) | Silent interval refetch in seconds (5s minimum). Pauses while the tab is hidden/blurred or a selection is active; on TableView it **also** pauses during an inline cell edit or an open row context menu. See [Auto-refresh](./ListView.md#auto-refresh). |
+| `autoRefresh` | `number \| object` | `0` (off) | Silent interval refresh in seconds (5s minimum). Pauses while the tab is hidden/blurred or a selection is active; on TableView it **also** pauses during an inline cell edit or an open row context menu. Object form `{ every, mode, indicator, flash }` selects the mode: `'collection'` (default — full refetch, discovers new rows) or `'models'` (one batched `id__in` request merged into the visible rows in place, with a flash on the rows that changed). See [Auto-refresh](./ListView.md#auto-refresh). |
 
 ---
 

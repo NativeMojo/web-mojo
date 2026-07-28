@@ -672,33 +672,75 @@ new TableView({ collection, columns, showResultCount: true });
 ## Auto-refresh
 
 Monitoring-flavored screens (incident / log / event tables) go stale until a
-manual reload. Set `autoRefresh: <seconds>` and ListView silently refetches the
-collection on an interval — no reset of filters, sort, or paging, and no scroll
-jump. TableView inherits it unchanged.
+manual reload. Set `autoRefresh` and ListView silently refreshes on an interval —
+no reset of filters, sort, or paging, and no scroll jump. TableView inherits it
+unchanged.
+
+There are two modes, and they answer different questions.
 
 ```javascript
+// mode: 'collection' (default) — "what's on this page now?"
 new TableView({
   collection: new IncidentCollection(),
   columns,
-  autoRefresh: 30,   // refetch every 30s
+  autoRefresh: 30,   // refetch the whole page every 30s
   selectable: true
+});
+
+// mode: 'models' — "what changed in the rows I'm watching?"
+new TableView({
+  collection: new IncidentCollection(),
+  columns,
+  autoRefresh: { every: 15, mode: 'models' }
 });
 ```
 
+| | `mode: 'collection'` (default) | `mode: 'models'` |
+|---|---|---|
+| Request | `collection.fetch()` with current params | one batched `id__in=<visible ids>` per tick |
+| Discovers new rows | **yes** | no — membership never changes |
+| Row order | re-derived from the server | untouched; never re-sorted mid-watch |
+| During the request | the list shows its loading visual | nothing changes |
+| Row identity | every row view is rebuilt | existing rows update in place |
+| Changed-row flash | not available | on by default |
+
+Use **collection** mode for a feed where new records appearing matters. Use
+**models** mode to watch a fixed set of rows change state (job progress,
+incident status, deploy health) without membership churn or pagination shift.
+
+### Option shape
+
+`autoRefresh` accepts either a bare number of seconds (unchanged, always
+collection mode) or the object form:
+
+```javascript
+autoRefresh: {
+  every: 15,          // seconds — same unit as the bare number; 5s floor
+  mode: 'models',     // 'collection' (default) | 'models'
+  indicator: true,    // same meaning as autoRefreshIndicator
+  flash: true         // highlight changed rows (models mode default)
+}
+```
+
+The key is `every`, **not** `interval` — every `*Interval` in this codebase is
+in milliseconds, so `interval: 30` would read as 30 ms and `interval: 30000`
+would silently become an 8-hour cadence.
+
 ### Behavior
 
-- **Silent refetch.** Each tick calls `collection.fetch()` with the current
-  `collection.params` intact. Collection's own dedup/cancel machinery handles an
-  overlap with an in-flight request, so no extra guard is needed.
+- **Silent refresh.** Neither mode touches `collection.params`, so filters, sort
+  and paging survive every tick. In collection mode Collection's own
+  dedup/cancel machinery handles an overlap with an in-flight request.
 - **Minimum interval.** The value is a number of **seconds**, clamped to a **5s
   floor** to prevent hammering the API (`autoRefresh: 2` behaves as `5`).
-- **Smart pause (checked at tick time — it skips, it does not stop):**
+- **Smart pause (checked at tick time — it skips, it does not stop):** applies
+  to **both** modes.
   - the browser tab is hidden or the window is blurred;
   - a selection is active (batch-action mode) — a refresh that reset the
     checkboxes mid-selection is worse than staleness;
   - (TableView only) an inline cell edit is open, or a row context menu /
     dropdown is open.
-- **Resume.** Regaining focus / visibility fires an **immediate** refetch, then
+- **Resume.** Regaining focus / visibility fires an **immediate** refresh, then
   the timer continues at its normal cadence.
 - **Quiet indicator.** While auto-refresh is active a compact, muted
   `bi-arrow-repeat` icon (no button chrome, no label, `--bs-secondary-color`)
@@ -707,27 +749,75 @@ new TableView({
   assistive tech. Each **successful** tick gives it a brief spin
   (`prefers-reduced-motion` suppresses the animation). Setting `autoRefresh`
   enables the toolbar so the indicator always has a home; pass
-  `autoRefreshIndicator: false` to hide it while keeping the refresh running.
+  `autoRefreshIndicator: false` (or `indicator: false` on the object form) to
+  hide it while keeping the refresh running.
 - **Lifecycle.** The timer starts when the view mounts and is torn down on
-  unmount / destroy. On a cached `Page` re-entry the view re-mounts and the
-  timer resumes; the implementation guarantees a single interval per view
-  instance (no accumulation across revisits), and a tick that finds its view
-  detached self-terminates so nothing leaks.
-- **Opt-out is free.** With `autoRefresh` absent (or `≤0` / non-number) no timer
-  and no focus/visibility listeners are created — byte-identical to before.
+  unmount / destroy (which also aborts an in-flight models request and drops any
+  pending flash). On a cached `Page` re-entry the view re-mounts and the timer
+  resumes; the implementation guarantees a single interval per view instance (no
+  accumulation across revisits), and a tick that finds its view detached
+  self-terminates so nothing leaks.
+- **Opt-out is free.** With `autoRefresh` absent (or `≤0` / non-number, in
+  either form) no timer and no focus/visibility listeners are created —
+  byte-identical to before.
+
+### `mode: 'models'` semantics
+
+Each tick calls [`collection.refreshModels(ids)`](./../core/Collection.md) with
+the ids currently in the collection. That issues one `id__in` request (chunked
+at 200 ids) carrying the collection's current params, and merges each returned
+row into the **existing** model instance.
+
+- **Filters ride along.** The request keeps the active filters/sort, so "left
+  untouched" below means "the server says this row no longer matches", not "the
+  server never heard of it".
+- **Ids the response omits are left untouched.** A row filtered out server-side,
+  deleted, or hidden by a default filter keeps showing its last known values
+  until a collection refresh or a user action. It is *not* removed.
+- **Order is never re-derived mid-watch.** A row whose sort key changed stays
+  where it is until the next full fetch.
+- **No membership change.** No `add` / `remove` / `reset` is emitted, so the
+  list is never rebuilt and `meta` (the "Showing N of M" line), `params` and
+  pagination are untouched. Rows update through the ordinary model-`change`
+  path, so only the changed rows re-render.
+- **Overlap and staleness are guarded.** A tick is skipped while a previous one
+  is still in flight, and a response that lands after a full fetch changed the
+  query context is discarded rather than merged.
+- Requires a REST-backed collection with an endpoint; otherwise the tick is a
+  no-op. Offline / fake collections can override `refreshModels()` the same way
+  they override `fetch()`.
+
+### Changed-row flash
+
+In models mode, rows whose merged data actually differed get a brief
+`.mojo-row-flash` highlight (a ~1.2s primary-tinted fade). Only genuinely
+changed fields count — an object field that re-serializes identically is not a
+change, so a steady row never flashes.
+
+- Defaults **on** for `mode: 'models'`; pass `flash: false` to opt out. It has no
+  effect in collection mode: a refetch resets the collection and rebuilds every
+  row view, so no row element survives for the highlight to land on.
+- Theme-correct in both themes (the dark variant uses a stronger tint), and the
+  CSS ships only when the flash is enabled.
+- Under `prefers-reduced-motion: reduce` the animation is disabled — no
+  feedback rather than motion, the same trade the refresh indicator makes.
 
 ### Constructor option
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `autoRefresh` | `number` | `0` (off) | Seconds between silent refetches; clamped to a 5s minimum. Pauses while hidden/blurred, while a selection is active, and (TableView) during an inline edit or open row menu. |
+| `autoRefresh` | `number \| object` | `0` (off) | Seconds between silent refreshes; clamped to a 5s minimum. Pauses while hidden/blurred, while a selection is active, and (TableView) during an inline edit or open row menu. Object form: `{ every, mode, indicator, flash }`. |
+| `autoRefresh.every` | `number` | — | Seconds between ticks, same unit and 5s floor as the bare number. Required for the object form to do anything. |
+| `autoRefresh.mode` | `string` | `'collection'` | `'collection'` = full refetch (what a bare number means); `'models'` = batched in-place refresh of the visible rows only. |
+| `autoRefresh.flash` | `boolean` | `true` in models mode, else `false` | Highlight rows whose data changed. No effect in collection mode. |
+| `autoRefresh.indicator` | `boolean` | `true` | Object-form alias for `autoRefreshIndicator`; wins when both are given. |
 | `autoRefreshIndicator` | `boolean` | `true` | When `autoRefresh` is on, shows a quiet muted `bi-arrow-repeat` toolbar indicator that spins on each successful tick. Set `false` to hide it while keeping the refresh running. Ignored when `autoRefresh` is off. |
 
 ### Out of scope
 
 - A full progress/countdown UI — the indicator is a quiet icon that pulses on each tick, not a live "next refresh in Ns" timer.
-- Object-form config (`{ interval, indicator }`) — the seconds-number `autoRefresh` plus the boolean `autoRefreshIndicator` are the only surface.
 - Per-tick backoff / adaptive cadence.
+- Re-sorting or re-paginating during a models-mode watch.
 
 ---
 
