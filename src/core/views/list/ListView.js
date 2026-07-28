@@ -3369,16 +3369,21 @@ class ListView extends View {
   }
 
   /**
-   * Whether changed rows get the highlight flash. Defaults ON for models mode
-   * (a brand-new mode, so there's no prior behavior to preserve) and OFF for
-   * collection mode — where a refetch resets the collection and rebuilds every
-   * item view, so there is no surviving row element to flash anyway. An
-   * explicit boolean `flash` always wins.
+   * Whether changed rows get the highlight flash. A models-mode-only option:
+   * defaults ON there (a brand-new mode, so there's no prior behavior to
+   * preserve) and an explicit `flash: false` opts out.
+   *
+   * Collection mode always resolves to `false`, `flash` key or not — a refetch
+   * resets the collection, which rebuilds every item view, so no row element
+   * survives for a highlight to land on. Honoring `flash: true` there would
+   * ship two keyframe definitions that can never fire and imply a feature that
+   * doesn't exist.
    * @private
    */
   _normalizeAutoRefreshFlash(raw, mode) {
+    if (mode !== 'models') return false;
     if (this._isAutoRefreshConfig(raw) && typeof raw.flash === 'boolean') return raw.flash;
-    return mode === 'models';
+    return true;
   }
 
   /**

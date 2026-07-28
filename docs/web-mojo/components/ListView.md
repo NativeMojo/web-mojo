@@ -794,9 +794,11 @@ In models mode, rows whose merged data actually differed get a brief
 changed fields count — an object field that re-serializes identically is not a
 change, so a steady row never flashes.
 
-- Defaults **on** for `mode: 'models'`; pass `flash: false` to opt out. It has no
-  effect in collection mode: a refetch resets the collection and rebuilds every
-  row view, so no row element survives for the highlight to land on.
+- **`flash` is a models-mode option and is ignored in collection mode.**
+  `{ mode: 'collection', flash: true }` resolves to no flash and ships no flash
+  CSS: a collection refetch resets the collection, which rebuilds every row
+  view, so no row element survives for a highlight to land on.
+- Defaults **on** for `mode: 'models'`; pass `flash: false` to opt out.
 - Theme-correct in both themes (the dark variant uses a stronger tint), and the
   CSS ships only when the flash is enabled.
 - Under `prefers-reduced-motion: reduce` the animation is disabled — no
@@ -809,7 +811,7 @@ change, so a steady row never flashes.
 | `autoRefresh` | `number \| object` | `0` (off) | Seconds between silent refreshes; clamped to a 5s minimum. Pauses while hidden/blurred, while a selection is active, and (TableView) during an inline edit or open row menu. Object form: `{ every, mode, indicator, flash }`. |
 | `autoRefresh.every` | `number` | — | Seconds between ticks, same unit and 5s floor as the bare number. Required for the object form to do anything. |
 | `autoRefresh.mode` | `string` | `'collection'` | `'collection'` = full refetch (what a bare number means); `'models'` = batched in-place refresh of the visible rows only. |
-| `autoRefresh.flash` | `boolean` | `true` in models mode, else `false` | Highlight rows whose data changed. No effect in collection mode. |
+| `autoRefresh.flash` | `boolean` | `true` in models mode | Highlight rows whose data changed. Models-mode only — ignored (and always `false`) in collection mode. |
 | `autoRefresh.indicator` | `boolean` | `true` | Object-form alias for `autoRefreshIndicator`; wins when both are given. |
 | `autoRefreshIndicator` | `boolean` | `true` | When `autoRefresh` is on, shows a quiet muted `bi-arrow-repeat` toolbar indicator that spins on each successful tick. Set `false` to hide it while keeping the refresh running. Ignored when `autoRefresh` is off. |
 

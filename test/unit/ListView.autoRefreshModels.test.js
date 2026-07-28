@@ -256,6 +256,24 @@ module.exports = async function (testContext) {
       await tv.destroy();
     });
 
+    it('flash is ignored in collection mode — no flag, no CSS', async () => {
+      // The collection-mode flash cannot exist: a refetch resets the collection,
+      // which rebuilds every item view, so no row element survives to flash.
+      // `flash: true` there must therefore ship neither the flag nor the CSS.
+      const tv = new TableView({
+        collection: seeded(threeRows()),
+        columns: COLUMNS,
+        autoRefresh: { every: 30, mode: 'collection', flash: true }
+      });
+      await mountInto(tv);
+
+      expect(tv._autoRefreshFlash).toBe(false);
+      expect(tv._rowFlashEnabled()).toBe(false);
+      expect(tv.element.innerHTML).not.toContain('mojo-row-flash');
+
+      await tv.destroy();
+    });
+
     it('a bare-number autoRefresh never flashes (back-compat)', async () => {
       const tv = new TableView({ collection: seeded(threeRows()), columns: COLUMNS, autoRefresh: 30 });
       await mountInto(tv);
