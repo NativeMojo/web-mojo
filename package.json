@@ -69,7 +69,7 @@
     ],
     "scripts": {
         "dev": "npm run examples:registry && concurrently \"npm run build:templates:watch\" \"vite\"",
-        "examples:registry": "node examples/portal/scripts/build-registry.js",
+        "examples:registry": "node examples/portal/scripts/build-registry.js && node examples/portal/scripts/cross-link-docs.js",
         "dev:live": "node serve-dev.js",
         "dev:watch": "vite build --watch",
         "dev:full": "concurrently \"npm run build:templates:watch\" \"npm run version:watch\" \"npm run dev\" \"npm run test:watch\"",

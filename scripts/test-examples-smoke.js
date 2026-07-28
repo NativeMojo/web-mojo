@@ -10,13 +10,19 @@
  * the ones that need it fail in REST-layer code that surfaces as a fetch
  * rejection rather than a JS error.
  *
- * NOT wired into the default test runner. Invoke via `npm run test:examples`.
- * One-time setup: `npx playwright install chromium`.
+ * NOT wired into the default test runner (it boots Vite + Chromium). Invoke via
+ * `npm run test:examples`. One-time setup: `npx playwright install chromium`.
+ *
+ * ESM — `package.json` declares `"type": "module"`, so this file must not use
+ * `require`. It did until #298, which made every invocation die on
+ * `ReferenceError: require is not defined in ES module scope`.
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 const REGISTRY_PATH = path.join(REPO_ROOT, 'examples/portal/examples.registry.json');
 
@@ -31,7 +37,10 @@ const IGNORE_NET_HOSTS = ['localhost:9009', '127.0.0.1:9009'];
 
 async function loadPlaywright() {
     try {
-        return require('playwright');
+        // `playwright` is CJS; Node's interop usually surfaces `chromium` as a
+        // named export, but fall back to the default (module.exports) if not.
+        const mod = await import('playwright');
+        return mod.chromium ? mod : mod.default;
     } catch (err) {
         console.error('✗ playwright is not installed.');
         console.error('  Run:  npm install   (and then: npx playwright install chromium)');
