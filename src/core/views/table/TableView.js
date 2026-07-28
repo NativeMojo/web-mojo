@@ -1189,6 +1189,7 @@ class TableView extends ListView {
     // Table-only inline cell editing events.
     itemView.on('cell:edit', this._onCellEdit.bind(this));
     itemView.on('cell:save', this._onCellSave.bind(this));
+    itemView.on('cell:save:error', this._onCellSaveError.bind(this));
     itemView.on('cell:cancel', this._onCellCancel.bind(this));
 
     return itemView;
@@ -1216,8 +1217,12 @@ class TableView extends ListView {
   }
 
   // -------- Cell-editing events (table-only) --------
+  // Each re-emits the row's payload verbatim so consumers can listen once on
+  // the table instead of wiring every TableRow. `cell:save:error` fires when
+  // `model.save()` rejects; the row stays in edit mode.
   _onCellEdit(event) { this.emit('cell:edit', event); }
   async _onCellSave(event) { this.emit('cell:save', event); }
+  _onCellSaveError(event) { this.emit('cell:save:error', event); }
   _onCellCancel(event) { this.emit('cell:cancel', event); }
 
   /**
