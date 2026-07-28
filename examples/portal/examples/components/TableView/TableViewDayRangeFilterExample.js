@@ -99,7 +99,7 @@ class TableViewDayRangeFilterExample extends Page {
             // source of truth for the range.
             hideActivePillNames: ['created__gte'],
             columns: [
-                { key: 'id', label: 'ID', width: '64px', sortable: true },
+                { key: 'id', label: 'ID', sortable: true },
                 { key: 'title', label: 'Title', sortable: true },
                 {
                     key: 'kind',

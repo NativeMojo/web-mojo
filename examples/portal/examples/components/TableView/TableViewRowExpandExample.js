@@ -54,7 +54,7 @@ class TableViewRowExpandExample extends Page {
             containerId: 'table-slot',
             collection: new Collection(SEED_INCIDENTS),
             columns: [
-                { key: 'priority', label: 'Priority', width: '96px', formatter: PRIORITY_BADGE },
+                { key: 'priority', label: 'Priority', formatter: PRIORITY_BADGE },
                 { key: 'title', label: 'Incident', sortable: true },
                 { key: 'service', label: 'Service', visibility: 'md' },
                 { key: 'owner', label: 'On call', visibility: 'md' },

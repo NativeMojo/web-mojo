@@ -94,7 +94,7 @@ class TableViewLiveWatchExample extends Page {
             containerId: 'table-slot',
             collection: new FakeJobsCollection(),
             columns: [
-                { key: 'id', label: 'ID', width: '64px' },
+                { key: 'id', label: 'ID' },
                 { key: 'name', label: 'Job' },
                 { key: 'worker', label: 'Worker' },
                 {

@@ -446,7 +446,7 @@ All [TableView constructor options](./TableView.md#constructor-options) are pass
 | `filters` | `Array<object>` | `[]` | Additional filter definitions |
 | `hideActivePills` | `boolean` | `false` | Hide active filter pills |
 | `hideActivePillNames` | `Array<string>` | `[]` | Filter keys to hide from pills |
-| `searchPlacement` | `string` | `'toolbar'` | `'toolbar'` or `'dropdown'` |
+| `searchPlacement` | `string` | `'toolbar'` | Only `'toolbar'` is implemented; `'dropdown'` has no renderer and silently removes the search input |
 | `tableOptions` | `object` | `{ striped: true, bordered: false, hover: true, responsive: false }` | Table HTML element styling |
 | `emptyMessage` | `string` | `'No data available'` | Message when table is empty |
 | `searchPlaceholder` | `string` | `'Search...'` | Search input placeholder |

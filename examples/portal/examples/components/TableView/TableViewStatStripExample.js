@@ -126,7 +126,7 @@ class TableViewStatStripExample extends Page {
             containerId: 'table-slot',
             collection: new FakeIncidentsCollection(),
             columns: [
-                { key: 'id', label: 'ID', width: '64px', sortable: true },
+                { key: 'id', label: 'ID', sortable: true },
                 { key: 'title', label: 'Incident' },
                 { key: 'team', label: 'Team', visibility: 'md' },
                 {

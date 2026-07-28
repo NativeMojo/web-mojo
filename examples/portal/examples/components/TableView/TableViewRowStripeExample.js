@@ -14,8 +14,9 @@ import { Page, TableView, Collection } from 'web-mojo';
  *
  * Demonstrates:
  *   1. Severity feed in tabular form — `level` thresholds → stripe class.
- *   2. With `selectable: true`, the checkbox `<td>` is `td:first-child`, so
- *      the stripe paints on the leftmost edge as intended (alongside the
+ *   2. With `selectable: true` **plus** a `batchActions` entry — both are
+ *      required for `isSelectable()` — the checkbox `<td>` is `td:first-child`,
+ *      so the stripe paints on the leftmost edge as intended (alongside the
  *      checkbox column).
  */
 
@@ -57,11 +58,10 @@ class TableViewRowStripeExample extends Page {
         await super.onInit();
 
         const columns = [
-            { key: 'id', label: 'ID', width: '64px', sortable: true },
+            { key: 'id', label: 'ID', sortable: true },
             {
                 key: 'level',
                 label: 'Lvl',
-                width: '72px',
                 sortable: true,
                 formatter: 'badge:1=light,2=light,3=info,4=warning,5=danger',
             },
@@ -97,7 +97,13 @@ class TableViewRowStripeExample extends Page {
             collection: new Collection(SEED_EVENTS),
             title: 'Security events · selectable',
             columns,
+            // `selectable` alone renders NO checkbox column — isSelectable() is
+            // `batchActions.length > 0 && selectionMode === 'multiple'`. Pass a
+            // batch action too, or there is nothing to do with a selection.
             selectable: true,
+            batchActions: [
+                { action: 'acknowledge', label: 'Acknowledge', icon: 'bi bi-check2-circle' },
+            ],
             searchable: false,
             filterable: false,
             showAdd: false,
@@ -136,11 +142,14 @@ class TableViewRowStripeExample extends Page {
                 </div>
             </div>
 
-            <h5 class="mt-5">With <code>selectable: true</code></h5>
+            <h5 class="mt-5">With <code>selectable: true</code> + <code>batchActions</code></h5>
             <p class="text-secondary small mb-3">
-                When <code>selectable: true</code>, the checkbox <code>&lt;td&gt;</code>
-                is <code>td:first-child</code> — so the stripe paints the leftmost
-                edge of the row alongside the checkbox column, as intended.
+                The checkbox <code>&lt;td&gt;</code> becomes <code>td:first-child</code> —
+                so the stripe paints the leftmost edge of the row alongside the checkbox
+                column, as intended. Note that <code>selectable</code> alone is not enough:
+                <code>isSelectable()</code> is
+                <code>batchActions.length &gt; 0 &amp;&amp; selectionMode === 'multiple'</code>,
+                so a table with no batch actions renders no selection column.
             </p>
             <div class="card">
                 <div class="card-body">

@@ -75,7 +75,7 @@ class TableViewFeedbackStatesExample extends Page {
             containerId: 'table-slot',
             collection: this.tickets,
             columns: [
-                { key: 'id', label: 'ID', width: '64px', sortable: true },
+                { key: 'id', label: 'ID', sortable: true },
                 { key: 'subject', label: 'Subject', sortable: true },
                 {
                     key: 'status',

@@ -87,7 +87,7 @@ class TableViewFilterPresetsExample extends Page {
             containerId: 'table-slot',
             collection: new FakeLogsCollection(),
             columns: [
-                { key: 'id', label: 'ID', width: '64px', sortable: true },
+                { key: 'id', label: 'ID', sortable: true },
                 {
                     key: 'severity',
                     label: 'Level',

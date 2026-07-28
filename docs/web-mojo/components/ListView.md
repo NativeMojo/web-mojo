@@ -925,7 +925,7 @@ ListView ships an opt-in toolbar that mirrors what `TableView` has. Every flag b
 |--------|------|---------|-------------|
 | `searchable` | `boolean` | `false` | Render a search input that drives `collection.params.search`. |
 | `searchPlaceholder` | `string` | `'Search...'` | Placeholder text for the search input. |
-| `searchPlacement` | `string` | `'toolbar'` | `'toolbar'` or `'dropdown'`. |
+| `searchPlacement` | `string` | `'toolbar'` | Only `'toolbar'` is implemented. The historically documented `'dropdown'` value has no renderer — setting it silently removes the search input. |
 | `filterable` | `boolean` | `false` | Render the "Add Filter" dropdown + active-pill bar. Requires `filters: [...]` (or column filters when subclassed). |
 | `filters` | `Array<object>` | `[]` | Filter definitions: `{ name, label, type, options? }`. Same shape as TableView's `filters` (a.k.a. additional filters). |
 | `hideActivePills` | `boolean` | `false` | Hide the active-filter pills bar. |
@@ -1864,6 +1864,11 @@ Runnable, copy-paste references in the examples portal:
 
 - [`examples/portal/examples/components/ListView/ListViewExample.js`](../../../examples/portal/examples/components/ListView/ListViewExample.js) — Visual list bound to a Collection — per-row Views with click-to-select.
 - [`examples/portal/examples/components/ListView/ListViewCustomItemExample.js`](../../../examples/portal/examples/components/ListView/ListViewCustomItemExample.js) — ListViewItem subclass with avatar, badges, and computed display fields.
+- [`examples/portal/examples/components/ListView/ListViewGroupedExample.js`](../../../examples/portal/examples/components/ListView/ListViewGroupedExample.js) — Synthetic group headers between items — raw groupBy + groupByDay helper.
+- [`examples/portal/examples/components/ListView/ListViewLifecycleExample.js`](../../../examples/portal/examples/components/ListView/ListViewLifecycleExample.js) — Full Add / View / Edit / Delete flow with click-to-view and per-card buttons.
 - [`examples/portal/examples/components/ListView/ListViewLiveFilterExample.js`](../../../examples/portal/examples/components/ListView/ListViewLiveFilterExample.js) — Search input above the list, debounced via MOJOUtils.debounce + collection.where().
+- [`examples/portal/examples/components/ListView/ListViewPaginatedExample.js`](../../../examples/portal/examples/components/ListView/ListViewPaginatedExample.js) — Numbered pagination with page-size selector for an ordered visual list.
+- [`examples/portal/examples/components/ListView/ListViewRowStripeExample.js`](../../../examples/portal/examples/components/ListView/ListViewRowStripeExample.js) — Severity-coded 4px left-edge stripe per row — six Bootstrap tokens + refreshStripes().
+- [`examples/portal/examples/components/ListView/ListViewToolbarExample.js`](../../../examples/portal/examples/components/ListView/ListViewToolbarExample.js) — Search, filter pills, sort, and refresh wrapped around a visual list.
 
 <!-- examples:cross-link end -->

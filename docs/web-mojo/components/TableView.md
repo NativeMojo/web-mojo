@@ -286,14 +286,14 @@ await table.mount('#users-table');
 |--------|------|---------|-------------|
 | `addButtonLabel` | `string` | `'Add'` | Label text for the add button |
 | `addButtonIcon` | `string` | `'bi bi-plus-circle'` | Icon class for the add button |
-| `searchPlacement` | `string` | `'toolbar'` | Where to place search: `'toolbar'` or `'dropdown'` |
+| `searchPlacement` | `string` | `'toolbar'` | Where to place search. Only `'toolbar'` is implemented — **any other value, including the historically documented `'dropdown'`, renders no search input at all** |
 | `searchPlaceholder` | `string` | `'Search...'` | Placeholder text for the search input |
 | `emptyMessage` | `string` | `'No data available'` | Message shown when no data |
 | `toolbarButtons` | `Array<object>` | `[]` | Custom toolbar button definitions ([details](#custom-toolbar-buttons)) |
 | `toolbarRight` | `View` | `null` | A View mounted into the toolbar's right-hand slot |
 | `title` | `string` | `null` | Heading rendered on the toolbar's left. Also settable live via `setTitle()` |
 | `eyebrow` | `string` | `null` | Small uppercase line above `title`. Also settable live via `setEyebrow()` |
-| `rowAction` | `string` | `'row-click'` | The `data-action` put on every non-editable cell that has no `column.action`. Set to `null` to make cells inert |
+| `rowAction` | `string` | `'row-click'` | The `data-action` put on every non-editable cell that has no `column.action`. Any falsy value falls back to `'row-click'` — to make rows inert, set `clickAction: 'none'` instead |
 
 ### Selection & Batch
 
@@ -620,6 +620,15 @@ the ✓ button instead. Text and textarea editors are never auto-saved.
   never discard an open editor.
 - Models without a `save()` method fall back to assigning the value directly on
   the model object — useful for local-only tables.
+- **Don't put an HTML-producing formatter on an editable column.** On exit the
+  cell is repainted as `escapeHtml(dataFormatter.pipe(newValue, formatter))`,
+  so a `badge:`-style formatter renders as literal markup until the next full
+  render. Plain-text formatters (`yesno`, `currency`, `date`, …) are fine.
+- `cell:save:error` requires `model.save()` to **reject**. The stock `Model.save()`
+  never does — it catches transport errors and returns `{ success: false }`, and
+  a `{ status: false }` body is stored in `model.errors` — so a server-side
+  validation failure currently exits edit mode as though it succeeded. Override
+  `save()` (or use a Model subclass that throws) if you need the error branch.
 - Editable columns get a `.editable-cell` class on the `<td>` and wrap their
   content in `<span class="cell-content">`, which is what the editor swaps out.
   A `column.action` is ignored on an editable column (the cell needs
@@ -1203,7 +1212,7 @@ const table = new TableView({
   columns: [...],
   searchable: true,
   searchPlaceholder: 'Search users...',
-  searchPlacement: 'toolbar' // or 'dropdown'
+  searchPlacement: 'toolbar' // the only implemented value
 });
 ```
 
@@ -2219,7 +2228,20 @@ Runnable, copy-paste references in the examples portal:
 
 - [`examples/portal/examples/components/TableView/TableViewExample.js`](../../../examples/portal/examples/components/TableView/TableViewExample.js) — Sortable, filterable, paginated table over ~25 seeded user rows.
 - [`examples/portal/examples/components/TableView/TableViewBatchActionsExample.js`](../../../examples/portal/examples/components/TableView/TableViewBatchActionsExample.js) — Multi-select rows + bulk actions wired to the in-memory Collection.
+- [`examples/portal/examples/components/TableView/TableViewColumnsExample.js`](../../../examples/portal/examples/components/TableView/TableViewColumnsExample.js) — Object-form `visibility`, a function `formatter(value, ctx)`, a Mustache `column.template`, per-column `class`, and the `tableOptions` display bundle.
+- [`examples/portal/examples/components/TableView/TableViewContextMenuExample.js`](../../../examples/portal/examples/components/TableView/TableViewContextMenuExample.js) — Per-row kebab menu: string vs callback `action`, `divider`, `danger`, `disabled`, per-row `visible(model)`, fail-closed `permissions`, and the `rowContextMenu` alias.
 - [`examples/portal/examples/components/TableView/TableViewCustomRowExample.js`](../../../examples/portal/examples/components/TableView/TableViewCustomRowExample.js) — Custom itemClass (TableRow subclass) with avatar, badges, and expand-on-click.
+- [`examples/portal/examples/components/TableView/TableViewDayRangeFilterExample.js`](../../../examples/portal/examples/components/TableView/TableViewDayRangeFilterExample.js) — `dayRangeFilter: true` drops a 1d/7d/30d/90d SegmentControl into the toolbar and auto-applies `created__gte` to the collection.
+- [`examples/portal/examples/components/TableView/TableViewFeedbackStatesExample.js`](../../../examples/portal/examples/components/TableView/TableViewFeedbackStatesExample.js) — `emptyState` (configured + filtered-empty branches), `loadingStyle: 'skeleton'`, and `showResultCount` — the loading/empty/summary chrome.
+- [`examples/portal/examples/components/TableView/TableViewFilterPresetsExample.js`](../../../examples/portal/examples/components/TableView/TableViewFilterPresetsExample.js) — `filterPresets` renders named one-click queries as a toolbar segment (≤4 inline); mutually exclusive, derived active state, `'@me'` token.
+- [`examples/portal/examples/components/TableView/TableViewGroupedExample.js`](../../../examples/portal/examples/components/TableView/TableViewGroupedExample.js) — `groupBy` as a full-width `<tr><th colspan=N>` header, the `groupByField`/`groupByRecency`/`groupByBoolean` helpers, and the four `groupHeaderStyle` treatments.
+- [`examples/portal/examples/components/TableView/TableViewInlineEditExample.js`](../../../examples/portal/examples/components/TableView/TableViewInlineEditExample.js) — `column.editable` + all four `editableOptions.type` editors, `autoSave: false`, and a live log of all four `cell:*` events including the rejected-save branch.
+- [`examples/portal/examples/components/TableView/TableViewLiveWatchExample.js`](../../../examples/portal/examples/components/TableView/TableViewLiveWatchExample.js) — `autoRefresh: { every, mode: 'models' }` refreshes only the visible rows via one batched `id__in` request and flashes the ones that changed.
+- [`examples/portal/examples/components/TableView/TableViewPowerToolsExample.js`](../../../examples/portal/examples/components/TableView/TableViewPowerToolsExample.js) — `persistState` + `persistKey` + `columnChooser` (with `hideable: false`) + `autoRefresh: 30` on one wide table; reset via `clearPersistedState()`.
+- [`examples/portal/examples/components/TableView/TableViewRowExpandExample.js`](../../../examples/portal/examples/components/TableView/TableViewRowExpandExample.js) — `rowExpand` chevron column opens a full-width string-template detail row; `rowExpandMultiple` toggles single vs many open.
+- [`examples/portal/examples/components/TableView/TableViewRowStripeExample.js`](../../../examples/portal/examples/components/TableView/TableViewRowStripeExample.js) — Severity-coded 4px left-edge stripe per row, inherited from ListView — same callback, same six tokens.
 - [`examples/portal/examples/components/TableView/TableViewServerExample.js`](../../../examples/portal/examples/components/TableView/TableViewServerExample.js) — Bound to UserList against the live backend, with fetch:error handling.
+- [`examples/portal/examples/components/TableView/TableViewStatStripExample.js`](../../../examples/portal/examples/components/TableView/TableViewStatStripExample.js) — `stats` renders live server-computed counts above the toolbar; each block is also a one-click filter with derived active state.
+- [`examples/portal/examples/components/TableView/TableViewToolbarExample.js`](../../../examples/portal/examples/components/TableView/TableViewToolbarExample.js) — `toolbarButtons` in both `handler:` and `action:` forms (one permission-gated), a `toolbarRight` View, live `setTitle()`/`setEyebrow()`, and the `showRefresh`/`showFullscreen` chrome gates.
 
 <!-- examples:cross-link end -->

@@ -16,6 +16,30 @@
             "summary": "Sortable, filterable, paginated table over ~25 seeded user rows."
         },
         {
+            "page": "TableViewColumnsExample.js",
+            "route": "components/table-view/columns",
+            "title": "TableView — column configuration",
+            "summary": "Object-form `visibility`, a function `formatter(value, ctx)`, a Mustache `column.template`, per-column `class`, and the `tableOptions` display bundle."
+        },
+        {
+            "page": "TableViewToolbarExample.js",
+            "route": "components/table-view/toolbar",
+            "title": "TableView — toolbar",
+            "summary": "`toolbarButtons` in both `handler:` and `action:` forms (one permission-gated), a `toolbarRight` View, live `setTitle()`/`setEyebrow()`, and the `showRefresh`/`showFullscreen` chrome gates."
+        },
+        {
+            "page": "TableViewContextMenuExample.js",
+            "route": "components/table-view/context-menu",
+            "title": "TableView — context menus",
+            "summary": "Per-row kebab menu: string vs callback `action`, `divider`, `danger`, `disabled`, per-row `visible(model)`, fail-closed `permissions`, and the `rowContextMenu` alias."
+        },
+        {
+            "page": "TableViewInlineEditExample.js",
+            "route": "components/table-view/inline-edit",
+            "title": "TableView — inline cell editing",
+            "summary": "`column.editable` + all four `editableOptions.type` editors, `autoSave: false`, and a live log of all four `cell:*` events including the rejected-save branch."
+        },
+        {
             "page": "TableViewBatchActionsExample.js",
             "route": "components/table-view/batch-actions",
             "title": "TableView — batch actions",
@@ -44,6 +68,12 @@
             "route": "components/table-view/row-stripe",
             "title": "TableView row stripe",
             "summary": "Severity-coded 4px left-edge stripe per row, inherited from ListView — same callback, same six tokens."
+        },
+        {
+            "page": "TableViewGroupedExample.js",
+            "route": "components/table-view/grouped",
+            "title": "TableView — grouped rows",
+            "summary": "`groupBy` as a full-width `<tr><th colspan=N>` header, the `groupByField`/`groupByRecency`/`groupByBoolean` helpers, and the four `groupHeaderStyle` treatments."
         },
         {
             "page": "TableViewFilterPresetsExample.js",

@@ -84,7 +84,7 @@ class TableViewPowerToolsExample extends Page {
             containerId: 'table-slot',
             collection: new FakeHostsCollection(),
             columns: [
-                { key: 'id', label: 'ID', width: '64px', sortable: true, hideable: false },
+                { key: 'id', label: 'ID', sortable: true, hideable: false },
                 { key: 'hostname', label: 'Host', sortable: true },
                 { key: 'region', label: 'Region', filter: { type: 'select', options: REGIONS } },
                 { key: 'role', label: 'Role', filter: { type: 'select', options: ROLES } },
