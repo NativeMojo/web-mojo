@@ -231,44 +231,64 @@ class DnsRecordList extends Collection {
  * Registrar + capabilities
  * ========================= */
 
-let _capabilities = null;
-let _capabilitiesPromise = null;
+const _capabilities = new Map();
+const _capabilitiesPromises = new Map();
+
+const capabilityKey = (group) => String(group === null || group === undefined ? '' : group);
 
 export const registrar = {
     /**
      * `GET /api/dnsman/config` — the one place any view asks what this
      * deployment supports (django-mojo >= v1.2.55).
      *
-     * Cached for the app session: the answer is operator configuration, not
-     * tenant data, and it does not vary per group. A backend without the
-     * endpoint gets DEFAULT_CAPABILITIES, which is deliberately permissive
-     * everywhere except `search_batch_limit` / `suggestions_enabled` — so an
-     * older server degrades to its previous behaviour instead of blanking.
+     * Cached for the app session, KEYED BY GROUP. Most of the answer is
+     * operator configuration that does not vary per tenant, but
+     * `registrant_contact_configured` does: since #951 a group with its own
+     * registrant contact answers for that contact, and one without answers for
+     * whatever it inherits. Calling this with no argument returns the
+     * deployment-wide answer — which is what every caller wanting
+     * `allowed_record_types` / `cert_renew_days` / `acme` should use. Pass a
+     * group only when the decision is per-tenant, i.e. "can THIS group buy a
+     * domain right now".
+     *
+     * A backend without the endpoint gets DEFAULT_CAPABILITIES, which is
+     * deliberately permissive everywhere except `search_batch_limit` /
+     * `suggestions_enabled` — so an older server degrades to its previous
+     * behaviour instead of blanking. An older server also simply ignores
+     * `?group=` and answers globally, which is the pre-#951 behaviour.
      */
-    async capabilities() {
-        if (_capabilities) return _capabilities;
-        if (_capabilitiesPromise) return _capabilitiesPromise;
-        _capabilitiesPromise = (async () => {
+    async capabilities(group = null) {
+        const key = capabilityKey(group);
+        if (_capabilities.has(key)) return _capabilities.get(key);
+        if (_capabilitiesPromises.has(key)) return _capabilitiesPromises.get(key);
+        const promise = (async () => {
             let resp = null;
             try {
-                resp = await rest.GET(`${BASE}/config`);
+                resp = await rest.GET(`${BASE}/config`, group ? { group } : {});
             } catch {
                 resp = null;
             }
             const data = resp && resp.success && resp.data && resp.data.data;
-            _capabilities = data
+            const caps = data
                 ? { ...DEFAULT_CAPABILITIES, ...data }
                 : { ...DEFAULT_CAPABILITIES };
-            _capabilitiesPromise = null;
-            return _capabilities;
+            _capabilities.set(key, caps);
+            _capabilitiesPromises.delete(key);
+            return caps;
         })();
-        return _capabilitiesPromise;
+        _capabilitiesPromises.set(key, promise);
+        return promise;
     },
 
-    /** Test seam + a way for a settings change to take effect without a reload. */
+    /**
+     * Test seam + a way for a settings change to take effect without a reload.
+     *
+     * Clears EVERY scope, deliberately: saving the house contact changes the
+     * effective answer for every group that has none of its own.
+     */
     resetCapabilities() {
-        _capabilities = null;
-        _capabilitiesPromise = null;
+        _capabilities.clear();
+        _capabilitiesPromises.clear();
     },
 
     /** Single name. Returns the flat row — unchanged across all backend versions. */
@@ -308,6 +328,43 @@ export const registrar = {
     /** Platform superuser only — hands a group control of a house hosted zone. */
     adopt({ group, domain, create_zone = false }) {
         return rest.POST(`${BASE}/registrar/adopt`, { group, domain, create_zone });
+    }
+};
+
+/* =========================
+ * Registrant contact — portal-managed, per group with a house fallback
+ * ========================= */
+
+/**
+ * `GET`/`POST /api/dnsman/registrant` (django-mojo #951).
+ *
+ * Two scopes on one path, selected by the framework's standard `?group=`:
+ * omit it and you are addressing the HOUSE contact (platform superusers only,
+ * enforced by the backend's `require_platform_admin`); supply it and you are
+ * addressing that group's own contact.
+ *
+ * **`group` is omitted, never sent as null.** The backend guards a supplied
+ * -but-unresolvable group with a readable 400, and its check is
+ * `"group" in request.DATA` — so a JSON body carrying `group: null` trips it
+ * on every house-scope save. Query strings are safe either way (Rest drops
+ * null params), bodies are not.
+ *
+ * The response describes THIS scope's own row only — `contact: null`,
+ * `source: "none"` and an empty `problems` for a group that inherits. It never
+ * echoes an inherited contact's values, and neither may we.
+ */
+export const registrantContact = {
+    get(group = null) {
+        return rest.GET(`${BASE}/registrant`, group ? { group } : {});
+    },
+
+    save(contact, group = null) {
+        return rest.POST(`${BASE}/registrant`, group ? { group, contact } : { contact });
+    },
+
+    /** Revert a group to whatever it inherits. Never offered for the house scope. */
+    clear(group = null) {
+        return rest.POST(`${BASE}/registrant`, group ? { group, clear: true } : { clear: true });
     }
 };
 
@@ -441,7 +498,7 @@ export default {
     DomainPurchase, DomainPurchaseList,
     Certificate, CertificateList,
     DnsRecord, DnsRecordList,
-    registrar, whois,
+    registrar, whois, registrantContact,
     DomainForms, DnsCredentialForms, CertificateForms,
     DomainProviderOptions, DomainStatusOptions,
     CertificateStatusOptions, PurchaseStatusOptions,

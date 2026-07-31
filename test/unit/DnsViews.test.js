@@ -106,8 +106,21 @@ module.exports = async function(testContext) {
             });
 
             it('resolves capabilities in exactly one place', () => {
-                expect(source).toContain('capabilities()');
-                expect(source).toContain('/config');
+                expect(source).toContain('async capabilities(');
+                // Assert the invariant the name claims — ONE fetch site for
+                // /config — rather than the method's arity. It grew an optional
+                // group argument in #952 (registrant_contact_configured varies
+                // per group since django-mojo #951), and a literal
+                // `capabilities()` match would have failed on that alone.
+                expect(source.match(/\/config/g)).toHaveLength(1);
+            });
+
+            it('keys the capability cache by group', () => {
+                // A group-blind cache answers the HOUSE registrant-contact
+                // question for a tenant, so a group whose own contact is
+                // incomplete passes the buy gate and then fails at quote.
+                expect(source).toContain('capabilityKey');
+                expect(source).not.toContain('let _capabilities = null');
             });
         });
 
