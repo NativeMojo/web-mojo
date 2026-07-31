@@ -220,6 +220,15 @@ module.exports = async function(testContext) {
                 await page.loadScope();
                 expect(page._raw).toBeNull();
             });
+
+            it('has capabilities resolved by the time it returns', async () => {
+                // Fire-and-forget would land after the render that shows the
+                // purchase-disabled note, so the note would miss its own paint.
+                const page = make({ scope: 'group', groupId: 7, caps: null });
+                await page.loadScope();
+                expect(calls.caps).toEqual([7]);
+                expect(page.caps).toEqual({});
+            });
         });
 
         describe('applyPayload — an inherited contact discloses nothing', () => {
@@ -560,6 +569,17 @@ module.exports = async function(testContext) {
                     .toContain('Purchasing is turned off for this deployment');
                 expect(render(make({ ...base, caps: {} })))
                     .not.toContain('Purchasing is turned off');
+            });
+
+            it('does not strand a pinned user who has no active group', () => {
+                // needsGroup with no picker to satisfy it would be a dead end:
+                // a message telling them to pick, and nothing to pick with.
+                const html = render(make({
+                    state: 'ready', scope: 'group', groupId: null, canChooseScope: false
+                }));
+                expect(html).not.toContain('Pick a group to edit');
+                expect(html).toContain('No group is currently selected');
+                expect(html).not.toContain('data-action="save-contact"');
             });
 
             it('offers the clear control only when there is a group row to clear', () => {

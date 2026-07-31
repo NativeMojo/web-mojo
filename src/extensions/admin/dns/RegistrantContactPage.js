@@ -132,7 +132,15 @@ class RegistrantContactPage extends Page {
                     {{#isReady|bool}}
                     {{#needsGroup|bool}}
                     <div class="card"><div class="card-body text-secondary small">
+                        {{#canChooseScope|bool}}
                         <i class="bi bi-arrow-up me-1"></i>Pick a group to edit its registrant contact.
+                        {{/canChooseScope|bool}}
+                        {{^canChooseScope}}
+                        <i class="bi bi-info-circle me-1"></i>
+                        No group is currently selected, so there is no contact to edit. Choose a group first —
+                        the registrant contact is per group, and the house contact used by groups without one
+                        is managed by platform administrators.
+                        {{/canChooseScope}}
                     </div></div>
                     {{/needsGroup|bool}}
 
@@ -338,9 +346,16 @@ class RegistrantContactPage extends Page {
             resp = null;
         }
 
-        // Capabilities drive the purchase-disabled note only; a failure here is
-        // never allowed to block the contact editor.
-        registrar.capabilities(group).then(caps => { this.caps = caps || {}; }).catch(() => {});
+        // Capabilities drive the purchase-disabled note only, but they are
+        // awaited rather than fired off: loadScope() resolves BEFORE the render
+        // that would show the note, so a fire-and-forget assignment lands after
+        // its own paint and the note misses the render it belongs to. Cached
+        // per scope, and a failure here is never allowed to block the editor.
+        try {
+            this.caps = (await registrar.capabilities(group)) || {};
+        } catch {
+            this.caps = {};
+        }
 
         if (resp && resp.success) {
             return { state: 'ready', payload: (resp.data && resp.data.data) || {} };
