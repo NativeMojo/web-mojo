@@ -254,6 +254,52 @@ module.exports = async function(testContext) {
             });
         });
 
+        describe('blocked on a missing registrant contact (#952)', () => {
+            // Loaded for real rather than re-implemented on the stand-in: the
+            // point of this block is that the wizard's OWN branch fires, and a
+            // hand-copied getter would pass while the shipped one did nothing.
+            const Wizard = moduleLoader.loadModuleFromFile(
+                path.join(dnsDir, 'DomainPurchaseWizard.js'), 'DomainPurchaseWizardClass');
+            const blocked = (caps) => Object.assign(Object.create(Wizard.prototype), {
+                caps, step: 'search', query: 'nativemojo', searching: false,
+                exactRow: null, tldRows: [], suggestRows: [], searchError: null,
+                render() { this.renderCount = (this.renderCount || 0) + 1; }
+            });
+
+            it('is blocked when the scope has no registrant contact', () => {
+                expect(blocked({ registrant_contact_configured: false }).contactMissing).toBe(true);
+            });
+
+            it('is NOT blocked when configured, nor when the server never said', () => {
+                // DEFAULT_CAPABILITIES is permissive on purpose — an older
+                // backend must degrade to its previous behaviour, not to a
+                // wizard that refuses to open.
+                expect(blocked({ registrant_contact_configured: true }).contactMissing).toBe(false);
+                expect(blocked({}).contactMissing).toBe(false);
+            });
+
+            it('renders the blocked state instead of the search step', () => {
+                const html = blocked({ registrant_contact_configured: false }).renderBody();
+                expect(html).toContain('needs a complete registrant contact');
+                expect(html).toContain('configure-registrant');
+                expect(html).not.toContain('data-action="run-search"');
+            });
+
+            it('renders search normally when a contact exists', () => {
+                expect(blocked({ registrant_contact_configured: true }).renderBody())
+                    .toContain('data-action="run-search"');
+            });
+
+            it('refuses to search at all while blocked', async () => {
+                const wizard = blocked({ registrant_contact_configured: false });
+                await wizard.runSearch();
+                // Not even the "searching…" repaint: there is no request this
+                // wizard could make that would succeed.
+                expect(wizard.renderCount).toBeUndefined();
+                expect(wizard.searching).toBe(false);
+            });
+        });
+
         it('constructs a plausible state object for the stand-in', () => {
             const w = makeWizard();
             expect(w.confirmToken).toBeNull();

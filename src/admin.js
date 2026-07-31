@@ -89,6 +89,7 @@ export { default as DnsCredentialView } from '@ext/admin/dns/DnsCredentialView.j
 export { default as CertificateTablePage } from '@ext/admin/dns/CertificateTablePage.js';
 export { default as CertificateView } from '@ext/admin/dns/CertificateView.js';
 export { default as DomainPurchaseTablePage } from '@ext/admin/dns/DomainPurchaseTablePage.js';
+export { default as RegistrantContactPage } from '@ext/admin/dns/RegistrantContactPage.js';
 // Pure record validation/mapping — exported so a consuming portal can reuse the
 // same rules rather than re-deriving them (the geofenceData precedent).
 export {
@@ -231,6 +232,7 @@ import DnsRecordsPageClass from '@ext/admin/dns/DnsRecordsPage.js';
 import DnsCredentialTablePageClass from '@ext/admin/dns/DnsCredentialTablePage.js';
 import CertificateTablePageClass from '@ext/admin/dns/CertificateTablePage.js';
 import DomainPurchaseTablePageClass from '@ext/admin/dns/DomainPurchaseTablePage.js';
+import RegistrantContactPageClass from '@ext/admin/dns/RegistrantContactPage.js';
 
 import AssistantSkillTablePageClass from '@ext/admin/assistant/AssistantSkillTablePage.js';
 import AssistantConversationTablePageClass from '@ext/admin/assistant/AssistantConversationTablePage.js';
@@ -269,6 +271,10 @@ export function registerSystemPages(app, addToMenu = true) {
     app.registerPage('system/dns/certificates', CertificateTablePageClass, {permissions: ["view_dns", "manage_dns"]});
     app.registerPage('system/dns/credentials', DnsCredentialTablePageClass, {permissions: ["view_dns", "manage_dns"]});
     app.registerPage('system/dns/purchases', DomainPurchaseTablePageClass, {permissions: ["view_dns", "manage_dns"]});
+    // Stricter than its siblings on purpose: the payload is registrant PII, so
+    // `view_dns` does not reach it. The house scope is stricter still — the
+    // backend gates it on the literal `is_superuser` (see RegistrantContactPage).
+    app.registerPage('system/dns/registrant', RegistrantContactPageClass, {permissions: ["manage_dns"]});
     app.registerPage('system/incidents', IncidentTablePageClass, {permissions: ["view_security"]});
     app.registerPage('system/events', EventTablePageClass, {permissions: ["view_security"]});
     app.registerPage('system/logs', LogTablePageClass, {permissions: ["view_logs"]});
@@ -479,6 +485,7 @@ export function registerSystemPages(app, addToMenu = true) {
                         { text: 'Certificates', route: '?page=system/dns/certificates', icon: 'bi-patch-check', permissions: ["view_dns", "manage_dns"] },
                         { text: 'Credentials', route: '?page=system/dns/credentials', icon: 'bi-key', permissions: ["view_dns", "manage_dns"] },
                         { text: 'Purchases', route: '?page=system/dns/purchases', icon: 'bi-receipt', permissions: ["view_dns", "manage_dns"] },
+                        { text: 'Registrant Contact', route: '?page=system/dns/registrant', icon: 'bi-person-vcard', permissions: ["manage_dns"] },
                     ]
                 },
 

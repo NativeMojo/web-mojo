@@ -95,7 +95,19 @@ class DomainPurchaseWizard extends View {
         return limit > 0 ? list.slice(0, limit) : list;
     }
 
+    /**
+     * True when this scope has no usable registrant contact, so no quote can
+     * be taken. `caps` must be the GROUP-scoped answer — DomainTablePage
+     * resolves it per group before constructing this view, because the
+     * deployment-wide flag says nothing about a tenant with its own incomplete
+     * contact (django-mojo #951).
+     */
+    get contactMissing() {
+        return this.caps.registrant_contact_configured === false;
+    }
+
     async runSearch() {
+        if (this.contactMissing) return;
         const { label, tld } = this.splitQuery(this.query);
         if (!label) return;
 
@@ -352,6 +364,10 @@ class DomainPurchaseWizard extends View {
     }
 
     renderBody() {
+        // Ahead of the step machine: with no registrant contact there is no
+        // step of this wizard that can succeed. DomainTablePage refuses to open
+        // it in the first place; this is the guard for any other mount.
+        if (this.contactMissing) return this.renderBlocked();
         switch (this.step) {
             case 'quote': return this.renderQuoting();
             case 'confirm': return this.renderConfirm();
@@ -360,6 +376,22 @@ class DomainPurchaseWizard extends View {
             case 'failed': return this.renderFailed();
             default: return this.renderSearch();
         }
+    }
+
+    renderBlocked() {
+        return `
+            <div class="alert alert-warning py-2 px-3 small">
+                <i class="bi bi-person-vcard me-1"></i>
+                Buying a domain needs a complete registrant contact — the ICANN details the registration
+                is filed under. This group does not have one yet.
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button class="btn btn-primary ms-auto" data-action="configure-registrant">
+                    Set up the registrant contact
+                </button>
+            </div>
+        `;
     }
 
     renderSearch() {
@@ -620,6 +652,14 @@ class DomainPurchaseWizard extends View {
         this.purchaseError = null;
         this.purchasing = false;
         this.render();
+        return true;
+    }
+
+    onActionConfigureRegistrant() {
+        const app = this.getApp();
+        app?.navigate?.('?page=system/dns/registrant');
+        const dialog = this.element?.closest('.modal');
+        if (dialog) window.bootstrap?.Modal?.getInstance(dialog)?.hide();
         return true;
     }
 

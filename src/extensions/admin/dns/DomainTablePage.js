@@ -136,15 +136,35 @@ class DomainTablePage extends TablePage {
                 + 'management with "Register existing".');
             return true;
         }
-        if (this.caps.registrant_contact_configured === false) {
-            Modal.showError('Domain purchasing needs a registrant contact configured on the server '
-                + 'before a quote can be taken.');
+
+        // `this.caps` is the deployment-wide answer, but the registrant contact
+        // is per-group since django-mojo #951: a group with its own INCOMPLETE
+        // contact is blocked while the house answer still reads "configured".
+        // Reading the global flag here would open a wizard that cannot quote.
+        // Cached per scope, so this is free after the first call.
+        const group = app?.getActiveGroupId?.() || app?.activeGroup?.id;
+        const caps = await registrar.capabilities(group);
+
+        if (caps.registrant_contact_configured === false) {
+            // Name the fix rather than pointing at "the server" — since #952 it
+            // is a page in this admin, and the operator standing here may well
+            // be the person who can set it.
+            if (this.checkPermissions(MANAGE_PERMS)) {
+                const go = await Modal.confirm(
+                    'Buying a domain needs a complete registrant contact — the ICANN details the '
+                    + 'registration is filed under. This group does not have one yet.',
+                    'Registrant contact required',
+                    { confirmText: 'Set it up', confirmClass: 'btn-primary' }
+                );
+                if (go) app?.navigate?.('?page=system/dns/registrant');
+            } else {
+                Modal.showError('Buying a domain needs a registrant contact configured for this group '
+                    + 'before a quote can be taken. Ask a DNS administrator to set one up.');
+            }
             return true;
         }
-        const wizard = new DomainPurchaseWizard({
-            caps: this.caps,
-            group: app?.getActiveGroupId?.() || app?.activeGroup?.id
-        });
+
+        const wizard = new DomainPurchaseWizard({ caps, group });
         wizard.on('purchased', () => this.collection?.fetch());
         await Modal.show(wizard, { title: false, size: 'lg', buttons: [] });
         return true;

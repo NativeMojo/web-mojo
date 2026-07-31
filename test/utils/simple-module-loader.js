@@ -605,6 +605,15 @@ class SimpleModuleLoader {
             // dnsData is dependency-free; tests set `global.dnsData` before
             // loadModuleFromFile('Dns') so models/Dns.js can resolve it.
             { test: /dns\/dnsData(\.js)?$/, name: 'dnsData' },
+            // Same shape for the registrant-contact surface (#952):
+            // registrantData is dependency-free and loaded for real, while the
+            // model layer and the country-option source are stubbed on `global`
+            // before loadModuleFromFile('RegistrantContactPage').
+            // Matched without a directory prefix: the page imports it as
+            // './registrantData.js', not by the @ext alias.
+            { test: /registrantData(\.js)?$/, name: 'registrantData' },
+            { test: /admin\/models\/Dns(\.js)?$/, name: 'DnsModelsStub' },
+            { test: /GeofenceRuleForm(\.js)?$/, name: 'GeofenceRuleFormStub' },
             { test: /models\/Member(\.js)?$/, name: 'Member' },
             { test: /models\/ApiKey(\.js)?$/, name: 'ApiKey' },
             { test: /models\/Log(\.js)?$/, name: 'LogList' },
