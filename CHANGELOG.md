@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+_Nothing yet._
+
+## 2.8.0 — 2026-07-30
+
+Everything below shipped in this release. It is a large one — the previous
+published version was 2.7.2 — so the entries are grouped by the area they
+touch rather than strictly by date.
+
+**Upgrade notes.** No public API was removed that anything could have been
+using: the four `table:*` / `filter:edit` events deleted in #298 never existed
+as `emit()` calls, so a listener on them was always dead code (the real names
+are `list:search` / `list:page` / `list:pagesize`, with `params-changed` as the
+umbrella signal). `searchPlacement` now falls back to `'toolbar'` with a console
+warning on an unrecognized value instead of silently rendering no search box.
+
+**Known issue, not fixed here.** Every `TableRow` cell emits bare model values
+unescaped (`{{{model.key}}}`), so a table column bound to a user-writable field
+renders markup in that field. This predates 2.7.2 and every earlier version. The
+fix is a behaviour change for any consumer intentionally placing HTML in an
+unformatted column, so it is deliberately held for its own release with a
+migration note rather than folded into this one. Until then, treat plain columns
+as trusted-data-only, or route untrusted fields through a formatter that escapes.
+
 ### Admin · Registrant Contact page, and the capability cache stops being group-blind (#952)
 
 A new page under System → DNS (`system/dns/registrant`) edits the ICANN contact that domain registrations are filed under, so configuring one no longer means a deploy. Frontend half of django-mojo's portal-managed registrant contact; the page reports plainly when the backend does not expose that API rather than erroring.
