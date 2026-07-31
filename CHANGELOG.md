@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Admin · Registrant Contact page, and the capability cache stops being group-blind (#952)
+
+A new page under System → DNS (`system/dns/registrant`) edits the ICANN contact that domain registrations are filed under, so configuring one no longer means a deploy. Frontend half of django-mojo's portal-managed registrant contact; the page reports plainly when the backend does not expose that API rather than erroring.
+
+- **Two scopes on one page.** The *house* contact used by every group without one of its own, and a specific *group's* contact. The house scope gates on the **literal `is_superuser`** attribute — the backend's `require_platform_admin` checks that, not `manage_dns` and not the `admin` wildcard, so gating on a permission would render a control that 403s. Same reasoning as the Adopt button. Everyone else is pinned to their active group, and a house-scope 403 demotes to the group scope rather than stranding the user.
+- **An inherited contact discloses nothing** — not its values and not its validation problems. That contact is the operator's (or a parent group's) personal name, address and phone; a problem list would otherwise tell a tenant which of its fields are malformed. The banner says the contact comes from "its parent group, or the house contact" rather than naming one, because settings resolution walks the parent chain before falling back to global.
+- **Keys the form does not render survive a save but never a scope change.** The backend replaces the stored contact rather than merging, so dropping `Fax` / `ExtraParams` destroys a ccTLD deployment's registry parameters — while carrying them from one scope to another would write the house contact's `ExtraParams` (where AWS keeps date of birth and national ID) into a tenant's record, invisibly, since neither key is on screen.
+- **Validation mirrors the server** — required fields, `State` conditional on US/CA, the Route53 `ContactType` enum, ICANN phone format — so a bad contact is caught before the round trip. The server stays the authority and its 400 is surfaced inline. Problem messages name **fields, never values**, matching the discipline the backend keeps for the same reason.
+- **`registrar.capabilities()` is now keyed by group.** `registrant_contact_configured` stopped being a deployment-wide fact once contacts became per-group: the old single-slot cache answered the *house* question for a tenant, so a group whose own contact was incomplete passed the buy gate and then failed at quote. `capabilities()` with no argument keeps its exact previous meaning and its existing callers are untouched; `capabilities(group)` is new. Saving or clearing a contact invalidates every scope, because the house contact decides the answer for every group that inherits it.
+- **The buy flow names the fix.** "Buy a domain" now reads the group's answer and offers to open this page instead of saying the contact must be "configured on the server". The purchase wizard gained a matching blocked state for any other mount.
+- Tests: +112 across four files. The page's template is rendered through the real Mustache in every state — the `examples-*` build suites check route *registration* only, so a malformed template would otherwise ship green and fail on mount.
+
 ### Core · Inline cell editing — a rejected save no longer looks like a successful one, and HTML formatters survive an edit (#495)
 
 Two user-visible correctness bugs in `column.editable`, both found by driving the editors in a browser during the #298 audit.
