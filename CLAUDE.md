@@ -33,11 +33,27 @@ Workflow scaffolding (imposed by this workflow):
   its markdown description, progress on its activity trail. There is no
   `planning/` pipeline and no `WM-###` ids — items are referenced by board id.
 - Board resolution comes from `.claude/maestro.json` — workspace `17`
-  (NativeMojo), board `11` (Backlog), project `14` (web-mojo). Board 11 is
+  (NativeMojo), board `11` (**Inbox**), project `14` (web-mojo). Both boards are
   **shared with django-mojo** (project `12`); always set `project: 14` on items
   filed from this repo so they stay attributable.
+- **There are TWO boards** (since 2026-07-31) — `.claude/maestro.json` names
+  only the filing default, not the whole queue:
+  - **Inbox `11`** — everything that is not security: bugs, features, chores.
+  - **Security `37`** — all security work: exploitable weaknesses (XSS, injection,
+    authz bypass, credential exposure), defense-in-depth hardening, and features
+    whose *purpose* is a security control. Ambiguous → file here.
+  Routing and the full protocol live in the workspace `nativemojo-board-conventions`
+  rule doc (fetched via `get_workspace_context`) — read it before filing or building.
+- **Enumerate BOTH boards whenever you list work** — picking something to scope or
+  build, reporting what's open, checking WIP. `get_board(11)` alone hides every
+  in-flight security item. Several web-mojo items already live on `37`.
 - Stage is a column value, advanced only via `update_board_item`:
-  `inbox → scoped → planned → building → review → done`.
+  `inbox → scoped/accepted → planned → building → review → done`, plus `parked`.
+  **The "Accepted" stage has a different underlying value on each board** — `scoped`
+  on Inbox, `accepted` on Security. Always match stage options **by value** from
+  `get_board(<the board you are on>)`; never carry a value across. A cross-board
+  `move_board_item` of an item at `scoped` silently lands it at `inbox`.
+- **WIP = 1 per project is summed across both boards**, not per board.
 - The `## Plan` section in the item description is the "designed" signal.
   `/maestro-build` refuses an item whose description has no `## Plan` — only
   `/maestro-scope` writes it.
