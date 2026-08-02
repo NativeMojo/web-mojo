@@ -3,9 +3,10 @@
  *
  * Sections:
  *   Overview     — key facts (ID, group, created, last used) + token note
- *   Permissions  — autosave tabset (Member.PERMISSION_TABSET); an API key
- *                  "acts as" a member of its group, so it offers exactly the
- *                  Group Member permission catalog (ITEM-025)
+ *   Permissions  — autosave tabset (ApiKey.permissionTabset()); an API key
+ *                  "acts as" a member of its group, so it offers the Group
+ *                  Member permission catalog (ITEM-025) plus a Federation tab
+ *                  that exists only on keys
  *   ── Reference ──
  *   Rate Limits  — read-only limits overrides
  *   Usage        — Authorization header snippet
@@ -19,7 +20,6 @@ import View from '@core/View.js';
 import DetailView from '@core/views/data/DetailView.js';
 import FormView from '@core/forms/FormView.js';
 import dataFormatter from '@core/utils/DataFormatter.js';
-import { Member } from '@core/models/Member.js';
 import { ApiKey, ApiKeyForms } from '@core/models/ApiKey.js';
 
 
@@ -85,10 +85,14 @@ class ApiKeyOverviewSection extends View {
 
 // ── Permissions section ────────────────────────────────────
 //
-// One autosaving FormView over the live Member.PERMISSION_TABSET cache —
-// the exact MemberPermissionsSection shape. Each switch saves a flat dotted
-// `permissions.<name>` boolean; permissions outside the catalog are never
-// shown and never touched.
+// One autosaving FormView over the live ApiKey.permissionTabset() — the
+// MemberPermissionsSection shape plus a Federation tab only keys get. Each
+// switch saves a flat dotted `permissions.<name>` boolean; permissions outside
+// the catalog are never shown and never touched.
+//
+// A failed save needs no handling here: FormView.executeBatchSave already
+// toasts the server error and calls revertFields(), so a 403 on a protected
+// federation permission snaps the switch back to its persisted value.
 
 class ApiKeyPermissionsSection extends View {
     constructor(options = {}) {
@@ -97,8 +101,9 @@ class ApiKeyPermissionsSection extends View {
             template: `
                 <div class="detail-section-eyebrow">API key permissions</div>
                 <p class="text-secondary small mb-3">
-                    Grants this key can exercise — the same catalog a group
-                    member can hold. Toggles autosave as soon as you flip them.
+                    Grants this key can exercise — the catalog a group member
+                    can hold, plus federation grants unique to keys. Toggles
+                    autosave as soon as you flip them.
                 </p>
                 <div data-container="apikey-perms"></div>
             `,
@@ -107,9 +112,13 @@ class ApiKeyPermissionsSection extends View {
     }
 
     async onInit() {
+        // checkPermissions is the framework's fail-closed gate (View.js) and
+        // resolves the active user the same way; pass its verdict rather than
+        // letting the tabset resolve the user a second, different way.
         this.formView = new FormView({
             containerId: 'apikey-perms',
-            fields: Member.PERMISSION_TABSET,
+            fields: ApiKey.permissionTabset(
+                this.checkPermissions(ApiKey.FEDERATION_GRANT_PERMS)),
             model: this.model,
             autosaveModelField: true
         });

@@ -132,9 +132,24 @@ module.exports = async function (testContext) {
             expect(fv).toBeInstanceOf(FormViewStub);
             expect(fv.options.autosaveModelField).toBe(true);
             expect(fv.options.model).toBe(model);
-            // Literal live reference — app-registered permissions appear
-            // for API keys automatically.
-            expect(fv.options.fields).toBe(Member.PERMISSION_TABSET);
+            // The wrapper is now ApiKey's own — it appends a Federation tab
+            // that must never reach the Member editor — but the member tabs
+            // inside it are the live objects Member.rebuildPermissions()
+            // maintains, so app-registered permissions still appear for API
+            // keys automatically.
+            const tabs = fv.options.fields[0].tabs;
+            expect(tabs[0]).toBe(Member.PERMISSION_TABSET[0].tabs[0]);
+            expect(tabs.map(t => t.label)).toContain('Federation');
+        });
+
+        it('Permissions section disables the federation switch without grant rights', () => {
+            // The stub view resolves no active user, so checkPermissions() fails
+            // closed — the geoip_sync toggle must render disabled rather than
+            // inviting a guaranteed 403.
+            const tabs = view.permissionsSection.formView.options.fields[0].tabs;
+            const fed = tabs.find(t => t.label === 'Federation');
+            const field = fed.fields.find(f => f.name === 'permissions.geoip_sync');
+            expect(field.disabled).toBe(true);
         });
 
         it('overview computes group label and "never" for unused keys', () => {
