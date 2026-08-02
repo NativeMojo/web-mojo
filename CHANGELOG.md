@@ -4,6 +4,44 @@
 
 _Nothing yet._
 
+## 2.8.1 — 2026-08-02
+
+**API key permission editor: the `geoip_sync` federation toggle.** Provisioning a
+GeoIP federation key stops being a shell task. The ApiKey create form and the
+detail view's Permissions section both gain a **Federation** tab carrying a
+`geoip_sync` switch.
+
+`geoip_sync` is deliberately **not** added to `Member.BASE_PERMISSIONS`. That
+catalog is shared with the Group Member editor, and a *member* grant of
+`geoip_sync` authorizes nothing — the endpoint it gates is declared
+`requires_global_perms` on the backend, which refuses the group-permission
+fallback outright. Rendering it there would have advertised a grant that
+silently does nothing.
+
+The switch renders **disabled**, with an explanatory tooltip, for users who
+cannot grant it — mirroring the backend rule (django-mojo ≥ 1.2.67 protects
+`geoip_sync` behind `APIKEY_PERMS_PROTECTION` → `sys.geoip_sync`, with a global
+`manage_users`/`manage_groups` early return). The mirror is **UX only and errs
+permissive**: the server is authoritative, and a rejected save already toasts
+the error and reverts the switch via `FormView.executeBatchSave`. A user holding
+a global `admin` wildcard will see the toggle enabled and get a clean 403,
+because web-mojo's `hasPermission` treats `admin` as a wildcard where the
+backend does not — duplicating the backend's exact expansion rules in JS would
+mean two copies to keep in sync, a worse failure than one over-optimistic
+toggle.
+
+**New public statics on `ApiKey`** (additive, nothing removed):
+`ApiKey.PERMISSION_TABSET` (getter), `ApiKey.permissionTabset(canGrant)`,
+`ApiKey.canGrantFederation(user)`, `ApiKey.FEDERATION_PERMISSIONS`,
+`ApiKey.FEDERATION_GRANT_PERMS`.
+
+**Upgrade note for anyone reading the tabset.** The ApiKey permission editor no
+longer hands out `Member.PERMISSION_TABSET` itself — it returns its own wrapper
+whose *member tabs are the same live objects*, plus the Federation tab. Code
+asserting literal identity with `Member.PERMISSION_TABSET[0]` needs to compare
+`tabs[0]` instead. App-registered permissions (`Member.registerPermissions()`)
+still flow through unchanged.
+
 ## 2.8.0 — 2026-07-30
 
 Everything below shipped in this release. It is a large one — the previous
