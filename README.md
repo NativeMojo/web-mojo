@@ -8,9 +8,15 @@
 
 > **Part of the MOJO Framework Family** - WEB-MOJO is the browser-based framework. See our other MOJO frameworks for native mobile and desktop applications.
 
+## 🌐 Public Website
+
+- **[WEB-MOJO](https://web-mojo.sitesmojo.com/)** - Product overview and framework highlights
+- **[Documentation](https://web-mojo.sitesmojo.com/docs/)** - Searchable guides and API reference
+- **[Runnable Examples](https://web-mojo.sitesmojo.com/examples/)** - Interactive examples covering the public framework surface
+
 ## 📚 Documentation
 
-**📖 [View Full Documentation](https://nativemojo.com/web-mojo/)**
+**📖 [View Full Documentation](https://web-mojo.sitesmojo.com/docs/)**
 
 Complete guides covering:
 - **Application Layer** - WebApp, PortalApp, Pages
