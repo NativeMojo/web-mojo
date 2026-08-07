@@ -1,18 +1,17 @@
 ---
 name: maestro-vibe
 description: >-
-  Vibe-code one or more small changes in one session — explore, implement, test,
-  commit — with full build discipline but no board ceremony. The lightweight
-  alternative to the task→scope→build workflow for work too small to track;
-  leaves a born-done history item on the board at close-out.
-user-invocable: true
-argument-hint: <small feature/bug/tweak description(s)>
-maestro-skill-version: 10
+  Vibe-code one or more small changes in one session — explore, implement,
+  test, commit — with full build discipline but no board ceremony. The
+  lightweight alternative to the task→scope→build workflow for work too small
+  to track; leaves a born-done history item on the board at close-out.
 ---
+
+<!-- Generated from .claude/skills/maestro-vibe/SKILL.md (maestro-skill-version: 10). Do not edit directly. -->
 
 # Maestro Vibe — One Session, No Board Ceremony
 
-Same build discipline as `/maestro-build` — conventions, tests, commits,
+Same build discipline as `$maestro-build` — conventions, tests, commits,
 honest reporting — with no board ceremony: no workspec, no `## Plan` push, no
 stage flips, no `planning/built/` snapshot. The board hears about it once, at
 close-out (step 9).
@@ -31,7 +30,7 @@ have to invoke this three times.
   honest and keeps a red test attributable.
 - **The size gate below applies to the set, not only to each change.** Five
   "small" changes across four apps is a build wearing a vibe's clothes: sum the
-  diff, not the sentence count, and offer `/maestro-task` when it adds up.
+  diff, not the sentence count, and offer `$maestro-task` when it adds up.
 - **Verify per change, at its own tier.** Where two changes cover the same
   module, one run of that module after both is enough. Anything needing `full`
   was never vibe-sized.
@@ -44,7 +43,7 @@ have to invoke this three times.
 Sanity-check the scope before the first edit. If the change is bigger than it
 sounded — multiple apps touched, a schema/contract change, permission design,
 anything you'd want a reviewed plan for — **stop and say so**: "This is bigger
-than a vibe — want me to file it with `/maestro-task` instead?" Never grind a
+than a vibe — want me to file it with `$maestro-task` instead?" Never grind a
 large change through with no plan just because the session started as a vibe.
 Same mid-build: if the diff sprawls past what was described, pause and offer to
 escalate.
@@ -54,10 +53,10 @@ escalate.
 1. Parse the ask from the arguments (or ask what they want) — one change, or
    several, in which case name the list back and take them in order. One or two
    clarifying questions max — if scope needs a real Q&A session, escalate to
-   `/maestro-task`.
-2. Read `AGENTS.md` when present, plus `CLAUDE.md`, applicable project rules,
+   `$maestro-task`.
+2. Read `AGENTS.md` when present, plus `AGENTS.md`, applicable project rules,
    and every file you'll touch — no blind edits. Fast, not sloppy.
-3. **Pick the verification tier** — the same three `/maestro-scope` assigns,
+3. **Pick the verification tier** — the same three `$maestro-scope` assigns,
    decided inline since there is no plan to carry one:
    - **`none`** — a test run would prove nothing (docs, comments, prose), or
      the change is verified more convincingly some other way. Say what.
@@ -65,7 +64,7 @@ escalate.
      run only those, after. **No baseline.**
    - **`full`** — unbounded blast radius (migration, shared helper, contract).
      Take a green baseline first; needing `full` is proof this was never
-     vibe-sized, so offer `/maestro-task` instead.
+     vibe-sized, so offer `$maestro-task` instead.
 
    Below `full` there is no up-front baseline. If a test goes red, attribute it
    then: read the failure, and if that doesn't settle it, `git stash -u`,
@@ -94,7 +93,7 @@ escalate.
      it was verified, and anything deliberately left open. Five lines is a
      normal vibe spec — do not pad it.
    - Skip it when the vibe closed an existing tracked item (that close-out IS
-     the history) or the session escalated to `/maestro-task`.
+     the history) or the session escalated to `$maestro-task`.
    - Maestro unreachable: say so in the report and move on — this never blocks
      a close-out.
 10. Report back briefly: what changed (commits, one line each), how it was
@@ -108,7 +107,7 @@ escalate.
   no stage flips, no progress comments — the conversation is the work record
   until close-out.
 - The **only** item a vibe creates is step 9's. Work that deserves a live board
-  item deserves `/maestro-task` — hand off.
+  item deserves `$maestro-task` — hand off.
 - If the change closes an **existing** board item (you notice one, or the user
   names one), do that item's close-out instead: comment the commits, flip its
   stage — any session that finishes a tracked item flips it. No separate
