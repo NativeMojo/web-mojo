@@ -1,13 +1,12 @@
 ---
 name: maestro-task
 description: >-
-  Explore the codebase, clarify scope, and file one or more work items onto the
-  maestro workspace board via the maestro MCP — the board item (markdown
+  Explore the codebase, clarify scope, and file one or more work items onto
+  the maestro workspace board via the maestro MCP — the board item (markdown
   workspec, stage=inbox) is the work record, not a local file.
-user-invocable: true
-argument-hint: <feature/bug description — one, or several separable pieces of work>
-maestro-skill-version: 11
 ---
+
+<!-- Generated from .claude/skills/maestro-task/SKILL.md (maestro-skill-version: 11). Do not edit directly. -->
 
 # Maestro Task — File Work onto the Board
 
@@ -103,7 +102,7 @@ back — not one item that quietly staples them together.
    If the description reads like a small, single-session change (a typo, a
    one-file fix, a small bug, a config tweak — faster to do than to write a
    workspec for), stop and ask the user: "This looks small enough to vibe-code
-   directly — want me to run `/maestro-vibe` on it now instead of filing a board
+   directly — want me to run `$maestro-vibe` on it now instead of filing a board
    item?" File without asking only when the task is clearly
    multi-session/cross-cutting, or the user has already indicated (in
    conversation, or by invoking this skill with that intent) that they
@@ -122,9 +121,9 @@ back — not one item that quietly staples them together.
    `create_board_item(board, title, values={"stage": "inbox", "moscow": "<must|should|could — ask or infer, default should>", "project": <from .claude/maestro.json, omit if unset>}, description=<workspec>)`
    (use the board's actual priority column/options from the schema).
 7. Name the new item as a **markdown link**, never a bare id — see "Naming an
-   Item" below — and hand off: "run `/maestro-scope <item-id>` to scope it."
+   Item" below — and hand off: "run `$maestro-scope <item-id>` to scope it."
    Several items: the table from "One Item or Many", then one hand-off line
-   carrying every id — `/maestro-scope 431 432 438`, or `/maestro-auto 431 432
+   carrying every id — `$maestro-scope 431 432 438`, or `$maestro-auto 431 432
    438` to scope and build them unsupervised.
 
 ## Naming an Item
@@ -192,7 +191,7 @@ may follow on it when they apply:
 Anything else — a dependency, a related item, a decision still open — is prose
 in the spec where it arises, not invented meta syntax.
 
-`/maestro-scope` appends its `## Plan` below this, at the same level as
+`$maestro-scope` appends its `## Plan` below this, at the same level as
 `## Spec`, and keeps the human block true as understanding changes.
 
 ## Rules
