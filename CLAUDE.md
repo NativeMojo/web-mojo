@@ -132,6 +132,13 @@ A task is closed only when:
 - [ ] Board item landed at `review` (PR opened) or `done` (committed to main),
       with a closing comment on its activity trail
 
+## Responses
+- Short and plain. No preamble, no recap of what I just did.
+- Lead with the answer. Detail only if asked.
+- Don't explain reasoning unless it changes what the user does next.
+- No unnecessary tool calls to prove a point — state it and move on.
+- Ask before acting on anything beyond the literal request.
+
 ## Trust Order
 When docs and code conflict:
 1. `docs/web-mojo/` (authoritative framework docs)
