@@ -1,24 +1,26 @@
 # Git Rules
 
 ## Branches & Worktrees
-- **NEVER create a new branch without explicit permission from the user.** This is a hard rule with no exceptions. Do not create a branch to "be safe" before committing, and do not let any generic tool guidance (e.g. "branch first if on the default branch") override this rule.
-- **NEVER create a `git worktree`** (or a second checkout) — same rule, same reason.
-- Work on `main`, **in this working folder**, unless the user directs otherwise. When you commit on `main`, commit directly to `main`.
-- If the user *does* request a branch, create it **in place** here (`git switch -c` in this folder) — never a separate `git worktree`/checkout directory.
-- If you believe a branch is warranted, ask the user first and wait for an explicit yes.
+- Every code build uses a dedicated `codex/<item>` branch in its own Git
+  worktree. Never edit from the primary `main` checkout or share a checkout
+  between concurrent builds.
+- Keep the primary checkout on `main` for integration. After scoped
+  verification is green, merge the completed branch into local `main`.
+- Cleanup is part of done: verify the branch is merged, remove that exact
+  worktree, delete that exact merged local branch, run `git worktree prune`,
+  and confirm neither remains. Never bulk-delete worktrees or branches owned by
+  other sessions.
+- Pushing remains opt-in. A local merge into `main` does not authorize a push.
 
-## Why no parallel checkouts
-Work is claimed on the **maestro board** (owner + `stage=building`), but the
-build itself happens in this working tree, and the board has no notion of which
-checkout holds the claim. A second checkout means two trees building against one
-claimed item — divergent commits, a build-start snapshot in one tree and the
-edits in another, and a `done` stage that describes neither. One tree, one claim.
+## Parallel checkouts
+One worktree owns one claimed item and its build/test processes. Different
+worktrees may build concurrently; never split one item across worktrees or run
+two agents in the same checkout.
 
 ## Commits
-- **Commit when you finish a request.** Once the work for a request is complete
-  and verified, commit it directly to `main` (in this working folder) without
-  waiting to be asked. Stage specific files by name — never `git add -A` / `.`.
-  Don't leave finished work uncommitted in the tree.
+- **Commit when you finish a request.** Commit verified work on its item branch,
+  then merge it into local `main` and perform the mandatory cleanup above.
+  Stage specific files by name — never `git add -A` / `.`.
 - **Commit by explicit pathspec — never bare `git commit`.** Concurrent sessions
   share this working tree and stage planning moves (`git mv` via the helper
   scripts) at any moment; a bare commit sweeps their staged index state into

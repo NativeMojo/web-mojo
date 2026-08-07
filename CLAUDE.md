@@ -53,7 +53,9 @@ Workflow scaffolding (imposed by this workflow):
   on Inbox, `accepted` on Security. Always match stage options **by value** from
   `get_board(<the board you are on>)`; never carry a value across. A cross-board
   `move_board_item` of an item at `scoped` silently lands it at `inbox`.
-- **WIP = 1 per project is summed across both boards**, not per board.
+- **Parallel builds require isolated worktrees.** Every code item gets its own
+  branch/worktree; verified work merges into local `main`, then its worktree
+  and merged branch are removed and pruned.
 - The `## Plan` section in the item description is the "designed" signal.
   `/maestro-build` refuses an item whose description has no `## Plan` — only
   `/maestro-scope` writes it.
@@ -80,14 +82,15 @@ Project rules (verified in the codebase — see `.claude/rules/` for detail):
   add separate admin-scoped endpoints.
 - New components must render correctly in both light and dark themes from day one
   (`.claude/rules/theming.md`).
-- Git: never create a branch or worktree, and never push, without the user's
-  explicit permission. Work in place on the current branch; commit finished work
-  by explicit pathspec — never `git add -A` (`.claude/rules/git.md`).
+- Git: build on a dedicated item branch/worktree; merge verified work into local
+  `main`, then remove/prune that worktree and merged branch. Never push without
+  the user's explicit permission; commit by explicit pathspec, never
+  `git add -A` (`.claude/rules/git.md`).
 
 ## Layer Conventions → `.claude/rules/`
 Rule files load automatically (layer rules are path-scoped via `globs:`):
 - `core.md` — philosophy, imports, forbidden actions, delivery checklist
-- `git.md` — no branches/worktrees/push; commit-on-finish by explicit pathspec
+- `git.md` — isolated worktree lifecycle, mandatory merge/cleanup, no push
 - `build-baseline.md` — green `npm test` baseline before the first edit
 - `views.md` — View/Page lifecycle, data binding, actions/containers, templates
 - `api.md` — Models, Collections, REST conventions, response handling
