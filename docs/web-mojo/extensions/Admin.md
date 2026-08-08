@@ -38,7 +38,7 @@ The admin extension ships ~50 pre-built admin pages plus an LLM-backed Assistant
 - **Job engine** — dashboard, runners, jobs, scheduled tasks.
 - **Messaging** — email domains/mailboxes/templates/sent, public (contact-form) messages, SMS phone numbers, SMS log, SMS provider configs (Twilio / AWS SNS / Mojo Remote).
 - **Push notifications** — dashboard, configurations, templates, deliveries, devices.
-- **DNS** — domains, DNS records, delegated/direct ACME certificate status, provider credentials, purchase ledger (`system/dns/*`, over django-mojo's `dnsman` app). Certificate responses are positively projected to status metadata only; no PEM, key, material URL, export, or download control is accepted or rendered. Delegated issuance requires an exact capability load plus an authoritative delegation read, and the `apex_wildcard` profile accepts exactly the apex and wildcard. Ambiguous record, certificate, and credential mutations reconcile from the authoritative resource in `finally`; if reconciliation fails, that resource remains locked until an explicit successful Refresh. Record confirmation is invalidated when either the exact set or any same-owner row changes, including a new CNAME conflict. Credential links let global managers choose an eligible group while tenant managers retain their active group; rotation retains the row's group/provider and clears typed secrets after one attempt. Buying a domain is a search→quote→confirm→register wizard; the TLD comparison grid and similar-name suggestions need django-mojo ≥ v1.2.55 (older backends fall back to a single-name check with a note). **Registrant Contact** (`system/dns/registrant`) edits the ICANN contact registrations are filed under, in two scopes: the *house* contact used by every group without one of its own, and a specific *group's* contact. A group that merely inherits a contact is told so and never shown its values — that contact is the operator's personal name, address and phone. Needs django-mojo's portal-managed registrant API; an older backend says so and points at `DNSMAN_REGISTRANT_CONTACT` instead of erroring.
+- **DNS** — domains, DNS records, delegated/direct ACME certificate status, provider credentials, purchase ledger (`system/dns/*`, over django-mojo's `dnsman` app). Certificate responses are positively projected to status metadata only; no PEM, key, material URL, export, or download control is accepted or rendered. Delegated issuance requires an exact capability load plus an authoritative delegation read, and the `apex_wildcard` profile accepts exactly the apex and wildcard. Ambiguous record, certificate, and credential mutations reconcile from the authoritative resource in `finally`; if reconciliation fails, that resource remains locked until an explicit successful Refresh. Record confirmation is invalidated when either the exact set or any same-owner row changes, including a new CNAME conflict. Credential links let global managers choose an eligible group while tenant managers retain their active group; rotation retains the row's group/provider and clears typed secrets after one attempt. Buying a domain is a search→quote→confirm→register wizard; the TLD comparison grid and similar-name suggestions need django-mojo ≥ v1.2.55 (older backends fall back to a single-name check with a note). **Registrant Contact** (`system/dns/registrant`) edits the ICANN contact registrations are filed under, in two scopes: the *house* contact used by every group without one of its own, and a specific *group's* contact. A group that merely inherits a contact is told so and never shown its values — that contact is the operator's personal name, address and phone. Needs django-mojo's portal-managed registrant API; an older backend says so and points at `DNSMAN_REGISTRANT_CONTACT` instead of erroring. **Edge** adds structured VHosts and declared Upstreams (`system/dns/vhosts`, `system/dns/upstreams`, django-mojo ≥1.3.0): no nginx text or free-text proxy destination; Upstreams are read-only except for literal-superuser `declare` and `retire`; Edge desired state, node inventory, and certificate material never appear in browser surfaces.
 - **Storage** — file managers, files, S3 buckets. Uploads on the Files page (`system/files`) are capped client-side at **1 GB by default** — override app-wide with the WebApp config key `max_upload_size` (bytes) or per registration via the `maxFileSize` page option (option wins). The cap is a UX guard; the server still enforces its own limits.
 - **Shortlinks** — links table, click history.
 - **Monitoring** — logs, metrics permissions, CloudWatch dashboard.
@@ -141,7 +141,7 @@ registerAdminPages(app, true);
 | `app` | `WebApp` / `PortalApp` / `PortalWebApp` | The running app instance. |
 | `addToMenu` | `boolean` (default `true`) | If `true` and a sidebar menu named `system` exists, the helper unshifts a fully-wired admin tree into that menu's `items` array. If `false`, only `registerPage` calls happen — you handle the menu yourself. |
 
-**What it registers:** every page under `system/*` — DNS (`system/dns/domains`, `system/dns/records`, `system/dns/certificates`, `system/dns/credentials`, `system/dns/purchases`, `system/dns/registrant`), Account (`system/dashboard`, `system/users`, `system/groups`, `system/members`, `system/api-keys`), Job Engine (`system/jobs/dashboard`, `system/jobs/runners`, `system/jobs/list`, `system/jobs/scheduled-tasks`), Security (`system/incidents`, `system/tickets`, `system/events`, `system/rulesets`, `system/security/*`, `system/system/geoip`), Messaging (`system/email/*`, `system/messaging/public-messages`, `system/phonehub/*`), Push (`system/push/*`), Storage (`system/s3buckets`, `system/filemanagers`, `system/files`), Shortlinks (`system/shortlinks/links`, `system/shortlinks/clicks`), Monitoring (`system/logs`, `system/metrics/permissions`, `system/cloudwatch`), Settings (`system/settings`), and Assistant admin (`system/assistant/skills`, `system/assistant/memory`, `system/assistant/conversations`).
+**What it registers:** every page under `system/*` — DNS (`system/dns/domains`, `system/dns/records`, `system/dns/certificates`, `system/dns/credentials`, `system/dns/purchases`, `system/dns/registrant`, `system/dns/vhosts`, `system/dns/upstreams`), Account (`system/dashboard`, `system/users`, `system/groups`, `system/members`, `system/api-keys`), Job Engine (`system/jobs/dashboard`, `system/jobs/runners`, `system/jobs/list`, `system/jobs/scheduled-tasks`), Security (`system/incidents`, `system/tickets`, `system/events`, `system/rulesets`, `system/security/*`, `system/system/geoip`), Messaging (`system/email/*`, `system/messaging/public-messages`, `system/phonehub/*`), Push (`system/push/*`), Storage (`system/s3buckets`, `system/filemanagers`, `system/files`), Shortlinks (`system/shortlinks/links`, `system/shortlinks/clicks`), Monitoring (`system/logs`, `system/metrics/permissions`, `system/cloudwatch`), Settings (`system/settings`), and Assistant admin (`system/assistant/skills`, `system/assistant/memory`, `system/assistant/conversations`).
 
 > ℹ️ The complete `(route, page-class, permissions)` mapping lives in [`src/admin.js`](../../src/admin.js). It is the single source of truth — read it directly when you need the exact list.
 
@@ -289,6 +289,8 @@ Every admin page is registered with a `permissions:` requirement. The framework'
 - `manage_shortlinks` — shortlinks and click history
 - `view_dns` / `manage_dns` — the `system/dns/*` pages. `view_dns` renders read-only; every write control needs `manage_dns`. The `security` category covers both (mirroring dnsman's `VIEW_PERMS`/`SAVE_PERMS`). **Four surfaces are stricter than they look and the UI matches each deliberately:** *adopting a hosted zone* checks the literal `is_superuser` attribute, not the `admin` wildcard, because adoption hands a group control of a zone in the house account; *certificate key material* is never exposed by this UI at any permission level (that endpoint exists for serving hosts pulling with their own API key after a `certificate_updated` broadcast); **WHOIS is gated on `manage_dns`, not `view_dns`** — the registrar returns the real registrant name, address, phone and email regardless of WHOIS privacy, so a read-only operator does not see the section at all; and the **Registrant Contact** page is `manage_dns` only (`view_dns` does not reach it), with its *house* scope stricter still — the backend gates that on the literal `is_superuser`, the same reasoning as adoption, so the scope selector is only rendered for a superuser and everyone else is pinned to their active group.
 
+  Edge adds two more literal-superuser boundaries. A VHost's owning Domain is fetched separately before detail or mutation because the embedded basic graph cannot identify house ownership; a group-less Domain refuses non-superusers. Upstream declaration and retirement are literal-superuser actions, never generic CRUD or an active switch. Non-superuser lists always carry the active group while a literal superuser's platform inventory remains unscoped.
+
   Two properties of the Registrant Contact page are load-bearing rather than cosmetic. **A group that inherits a contact is never shown its values, and never its validation problems either** — the inherited contact belongs to the operator (or to a parent group), and a problem list would otherwise tell a tenant which of its fields are malformed. And **the keys the form does not render (`Fax`, `ExtraParams`) are carried across a save but never across a scope change**: the backend replaces the stored contact rather than merging, so dropping them destroys a ccTLD deployment's registry parameters, while carrying them between scopes writes one scope's private data into another's record.
 - `manage_notifications` / `manage_push_config` / `view_notifications` / `view_devices` / `manage_devices` — push notifications and devices
 - `view_phone_numbers` / `manage_phone_numbers` / `view_sms` / `manage_sms` — phone hub numbers and SMS log
@@ -359,6 +361,7 @@ import {
     PushDashboardPage, PushConfigTablePage, PushTemplateTablePage, PushDeliveryTablePage, PushDeviceTablePage,
     FileManagerTablePage, FileTablePage, S3BucketTablePage,
     ShortLinkTablePage, ShortLinkClickTablePage,
+    VhostTablePage, UpstreamTablePage,
     BlockedIPsTablePage, FirewallLogTablePage, BouncerSignalTablePage, BouncerDeviceTablePage, BotSignatureTablePage, IPSetTablePage,
     LogTablePage, MetricsPermissionsTablePage, SettingTablePage, CloudWatchDashboardPage,
     AssistantSkillTablePage, AssistantConversationTablePage, AssistantMemoryPage,
@@ -369,6 +372,7 @@ import {
     JobDetailsView, JobHealthView, JobStatsView, RunnerDetailsView, ScheduledTaskView,
     EmailTemplateView, EmailView, PublicMessageView, PhoneNumberView, PhoneConfigView, PushDeliveryView, PushDeviceView,
     ShortLinkView, BouncerSignalView, BouncerDeviceView, IPSetView,
+    VhostView, UpstreamView,
     LogView, MetricsPermissionsView, SettingView, FileView, FileManagerView, CloudWatchResourceView, CloudWatchChart,
     AssistantView, AssistantSkillView, AssistantConversationView,
 } from 'web-mojo/admin';
@@ -519,13 +523,14 @@ Requirements: `this.model` is set with an `id`; `this.model.get('metadata')` is 
 
 ## Admin Models
 
-Fourteen Model/Collection sets are coupled to the admin extension. They ship from a **separate, UI-free entry** so a Node script, an API client, or a different UI framework can use them without pulling in the admin pages from `web-mojo/admin`.
+Sixteen Model/Collection modules are coupled to the admin extension. They ship from a **separate, UI-free entry** so a Node script, an API client, or a different UI framework can use them without pulling in the admin pages from `web-mojo/admin`.
 
 ```js
 import { Job, JobList, JobForms } from 'web-mojo/admin-models';
 import { Incident, RuleSet } from 'web-mojo/admin-models';
 import { Email, Mailbox, EmailDomain } from 'web-mojo/admin-models';
 import { Push, PushDevice, PushTemplate } from 'web-mojo/admin-models';
+import { Vhost, VhostList, Upstream, UpstreamList } from 'web-mojo/admin-models';
 ```
 
 ### What's in `web-mojo/admin-models`
@@ -535,6 +540,8 @@ import { Push, PushDevice, PushTemplate } from 'web-mojo/admin-models';
 | `AWS` (S3Bucket) | S3 buckets | `/api/aws/...` |
 | `Assistant` | Assistant conversations + skills | `/api/assistant/...` |
 | `Bouncer` | Fraud-detection device/signal/signature | `/api/account/bouncer/...` |
+| `Dns` | Domains, records, certificates, credentials, purchases | `/api/dnsman/...` |
+| `Edge` | Structured VHosts and declared Upstreams | `/api/edge/...` |
 | `Email` | Email domain / mailbox / template / sent message | `/api/aws/email/...` |
 | `Incident` | Incident / event / rule set / rule | `/api/incident/...` |
 | `IPSet` | IP allow/block sets | `/api/incident/ipset` |
@@ -552,7 +559,7 @@ import { Push, PushDevice, PushTemplate } from 'web-mojo/admin-models';
 | Entry | What's in it | Pulls UI deps? |
 |---|---|---|
 | `web-mojo/admin` | Pages + views (sidebar, dashboards, table pages, detail views) | **Yes** (Sidebar, TableView, ContextMenu, Bootstrap, …) |
-| `web-mojo/admin-models` | The 14 Model/Collection classes only — pure data | **No** |
+| `web-mojo/admin-models` | The 16 Model/Collection modules only — pure data | **No** |
 
 Use `web-mojo/admin` when you're building an admin portal that registers admin pages. Use `web-mojo/admin-models` when you need just the data shapes and REST methods.
 

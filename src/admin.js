@@ -77,8 +77,8 @@ export { default as ShortLinkTablePage } from '@ext/admin/shortlinks/ShortLinkTa
 export { default as ShortLinkClickTablePage } from '@ext/admin/shortlinks/ShortLinkClickTablePage.js';
 export { default as ShortLinkView } from '@ext/admin/shortlinks/ShortLinkView.js';
 
-// DNS management (dnsman) — needs django-mojo >= v1.2.55 for the TLD grid and
-// the capability probe; older backends degrade with an explanatory note.
+// DNS management — dnsman capability pages need django-mojo >= v1.2.55;
+// structured Edge VHosts/Upstreams need django-mojo >= v1.3.0.
 export { default as DomainTablePage } from '@ext/admin/dns/DomainTablePage.js';
 export { default as DomainView } from '@ext/admin/dns/DomainView.js';
 export { default as DnsRecordsPage } from '@ext/admin/dns/DnsRecordsPage.js';
@@ -90,6 +90,10 @@ export { default as CertificateTablePage } from '@ext/admin/dns/CertificateTable
 export { default as CertificateView } from '@ext/admin/dns/CertificateView.js';
 export { default as DomainPurchaseTablePage } from '@ext/admin/dns/DomainPurchaseTablePage.js';
 export { default as RegistrantContactPage } from '@ext/admin/dns/RegistrantContactPage.js';
+export { default as VhostTablePage } from '@ext/admin/dns/VhostTablePage.js';
+export { default as VhostView } from '@ext/admin/dns/VhostView.js';
+export { default as UpstreamTablePage } from '@ext/admin/dns/UpstreamTablePage.js';
+export { default as UpstreamView } from '@ext/admin/dns/UpstreamView.js';
 // Pure record validation/mapping — exported so a consuming portal can reuse the
 // same rules rather than re-deriving them (the geofenceData precedent).
 export {
@@ -233,6 +237,8 @@ import DnsCredentialTablePageClass from '@ext/admin/dns/DnsCredentialTablePage.j
 import CertificateTablePageClass from '@ext/admin/dns/CertificateTablePage.js';
 import DomainPurchaseTablePageClass from '@ext/admin/dns/DomainPurchaseTablePage.js';
 import RegistrantContactPageClass from '@ext/admin/dns/RegistrantContactPage.js';
+import VhostTablePageClass from '@ext/admin/dns/VhostTablePage.js';
+import UpstreamTablePageClass from '@ext/admin/dns/UpstreamTablePage.js';
 
 import AssistantSkillTablePageClass from '@ext/admin/assistant/AssistantSkillTablePage.js';
 import AssistantConversationTablePageClass from '@ext/admin/assistant/AssistantConversationTablePage.js';
@@ -271,6 +277,8 @@ export function registerSystemPages(app, addToMenu = true) {
     app.registerPage('system/dns/certificates', CertificateTablePageClass, {permissions: ["view_dns", "manage_dns"]});
     app.registerPage('system/dns/credentials', DnsCredentialTablePageClass, {permissions: ["view_dns", "manage_dns"]});
     app.registerPage('system/dns/purchases', DomainPurchaseTablePageClass, {permissions: ["view_dns", "manage_dns"]});
+    app.registerPage('system/dns/vhosts', VhostTablePageClass, {permissions: ["view_dns", "manage_dns"]});
+    app.registerPage('system/dns/upstreams', UpstreamTablePageClass, {permissions: ["view_dns", "manage_dns"]});
     // Stricter than its siblings on purpose: the payload is registrant PII, so
     // `view_dns` does not reach it. The house scope is stricter still — the
     // backend gates it on the literal `is_superuser` (see RegistrantContactPage).
@@ -485,6 +493,8 @@ export function registerSystemPages(app, addToMenu = true) {
                         { text: 'Certificates', route: '?page=system/dns/certificates', icon: 'bi-patch-check', permissions: ["view_dns", "manage_dns"] },
                         { text: 'Credentials', route: '?page=system/dns/credentials', icon: 'bi-key', permissions: ["view_dns", "manage_dns"] },
                         { text: 'Purchases', route: '?page=system/dns/purchases', icon: 'bi-receipt', permissions: ["view_dns", "manage_dns"] },
+                        { text: 'VHosts', route: '?page=system/dns/vhosts', icon: 'bi-hdd-network', permissions: ["view_dns", "manage_dns"] },
+                        { text: 'Upstreams', route: '?page=system/dns/upstreams', icon: 'bi-diagram-3', permissions: ["view_dns", "manage_dns"] },
                         { text: 'Registrant Contact', route: '?page=system/dns/registrant', icon: 'bi-person-vcard', permissions: ["manage_dns"] },
                     ]
                 },

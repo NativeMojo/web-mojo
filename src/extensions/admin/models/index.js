@@ -7,7 +7,7 @@
  * Usage examples:
  *   import { AWS } from 'web-mojo/admin-models';
  *
- * Generated on: 2026-08-02T23:55:18.536Z
+ * Generated on: 2026-08-08T18:05:12.340Z
  */
 
 // AWS model exports
@@ -23,6 +23,10 @@ export * from './Bouncer.js';
 // Dns model exports
 export * from './Dns.js';
 export { default as Dns } from './Dns.js';
+
+// Edge model exports
+export * from './Edge.js';
+export { default as Edge } from './Edge.js';
 
 // Email model exports
 export * from './Email.js';

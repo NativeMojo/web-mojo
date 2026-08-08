@@ -817,13 +817,14 @@ const payload = extractShortLinkPayload({ url: 'https://...', og_title: 'Hello',
 
 ## Admin models
 
-Fourteen Model/Collection sets are coupled to the admin extension and ship from a separate, **UI-free** entry: [`web-mojo/admin-models`](../extensions/Admin.md#admin-models).
+Sixteen Model/Collection modules are coupled to the admin extension and ship from a separate, **UI-free** entry: [`web-mojo/admin-models`](../extensions/Admin.md#admin-models).
 
 ```js
 import { Job, JobList, JobForms } from 'web-mojo/admin-models';
 import { Incident, IncidentList, RuleSet } from 'web-mojo/admin-models';
 import { Email, Mailbox, EmailDomain, SentMessage, EmailTemplate } from 'web-mojo/admin-models';
 import { Push, PushDevice, PushTemplate, PushDelivery } from 'web-mojo/admin-models';
+import { Vhost, VhostList, Upstream, UpstreamList } from 'web-mojo/admin-models';
 ```
 
 | Model | Purpose | Endpoint |
@@ -831,6 +832,8 @@ import { Push, PushDevice, PushTemplate, PushDelivery } from 'web-mojo/admin-mod
 | `AWS` (S3Bucket) | S3 buckets | `/api/aws/...` |
 | `Assistant` | Assistant conversations + skills | `/api/assistant/...` |
 | `Bouncer` | Fraud-detection device/signal/signature | `/api/account/bouncer/...` |
+| `Dns` | Domains, records, certificates, credentials, purchases | `/api/dnsman/...` |
+| `Edge` | Structured VHosts and declared Upstreams | `/api/edge/...` |
 | `Email` | Email domain / mailbox / template / sent message | `/api/aws/email/...` |
 | `Incident` | Incident / event / rule set | `/api/incident/...` |
 | `IPSet` | IP allow/block sets | `/api/incident/ipset` |

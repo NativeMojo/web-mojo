@@ -71,6 +71,12 @@ export { default as FileManagerTablePage } from './storage/FileManagerTablePage.
 export { default as FileTablePage } from './storage/FileTablePage.js';
 export { default as S3BucketTablePage } from './storage/S3BucketTablePage.js';
 
+// DNS / Edge
+export { default as VhostTablePage } from './dns/VhostTablePage.js';
+export { default as VhostView } from './dns/VhostView.js';
+export { default as UpstreamTablePage } from './dns/UpstreamTablePage.js';
+export { default as UpstreamView } from './dns/UpstreamView.js';
+
 // Registration helpers — re-exported from src/admin.js so consumers can
 // wire the admin extension via the package surface alone.
 export { registerSystemPages, registerAdminPages, registerAssistant, registerTicketPanel } from '../../admin.js';
