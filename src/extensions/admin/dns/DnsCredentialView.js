@@ -17,6 +17,7 @@ import DetailView from '@core/views/data/DetailView.js';
 import Modal from '@core/views/feedback/Modal.js';
 import { DnsCredential } from '@ext/admin/models/Dns.js';
 import { providerLabel } from './dnsData.js';
+import DnsCredentialLinkForm from './DnsCredentialLinkForm.js';
 
 const MANAGE_PERMS = ['manage_dns', 'security'];
 
@@ -109,10 +110,12 @@ class DnsCredentialView extends DetailView {
         this.overviewSection = overviewSection;
     }
 
-    onActionRotateKey() {
-        // The table page owns the link/rotate form; ask it to run the flow so
-        // there is exactly one implementation of the verify-before-store call.
-        this.emit('rotate-key', { model: this.model });
+    async onActionRotateKey() {
+        await DnsCredentialLinkForm.open({
+            app: this.getApp(),
+            existing: this.model,
+            collection: this.collection
+        });
         return true;
     }
 

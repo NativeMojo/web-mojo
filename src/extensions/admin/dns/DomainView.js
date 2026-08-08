@@ -23,10 +23,16 @@ import TableView from '@core/views/table/TableView.js';
 import Modal from '@core/views/feedback/Modal.js';
 import MOJOUtils from '@core/utils/MOJOUtils.js';
 import {
-    Domain, Certificate, CertificateList, DomainPurchaseList,
+    Domain, Certificate, CertificateList, DomainPurchaseList, AcmeDelegationList,
     registrar, whois, CertificateForms
 } from '@ext/admin/models/Dns.js';
 import { isManagementOnly, providerLabel, certExpiryTone } from './dnsData.js';
+import {
+    certificateReadiness,
+    normalizeCertificateSans
+} from './certificateData.js';
+import CertificateLifecyclePoller from './CertificateLifecyclePoller.js';
+import { dnsMutations } from './DnsMutationCoordinator.js';
 import DnsRecordsView from './DnsRecordsView.js';
 
 const escapeHtml = MOJOUtils.escapeHtml;
@@ -62,6 +68,7 @@ class DomainOverviewSection extends View {
                 </div>
                 {{/model.last_error}}
 
+                {{^certificateOnly|bool}}
                 <div class="detail-section-eyebrow mt-4">Registrar settings</div>
                 <div data-container="domain-settings"></div>
                 {{#managementOnly|bool}}
@@ -70,10 +77,12 @@ class DomainOverviewSection extends View {
                     renewal and WHOIS privacy are managed in that account, not here.
                 </p>
                 {{/managementOnly|bool}}
+                {{/certificateOnly|bool}}
             `,
             ...options
         });
         this.caps = options.caps || {};
+        this.certificateOnly = this.model?.get?.('provider') === 'mojo';
     }
 
     get providerName() { return providerLabel(this.model?.get?.('provider')); }
@@ -83,6 +92,7 @@ class DomainOverviewSection extends View {
     get expiresLabel() { return this.model?.get?.('expires|date') || '—'; }
 
     async onInit() {
+        if (this.certificateOnly) return;
         const managementOnly = this.managementOnly;
         const canManage = this.checkPermissions(MANAGE_PERMS);
         this.formView = new FormView({
@@ -193,6 +203,7 @@ class DomainCertificatesSection extends View {
             ...options
         });
         this.caps = options.caps || {};
+        this.poller = new CertificateLifecyclePoller();
     }
 
     async onInit() {
@@ -223,7 +234,36 @@ class DomainCertificatesSection extends View {
                 }
             ]
         });
+        this.tableView.onActionRefresh = async () => {
+            const response = await this.tableView.refresh();
+            if (response && response.success !== false) dnsMutations.clearPrefix('certificate:');
+            return response;
+        };
         this.addChild(this.tableView);
+        this.collection.on('fetch:end', () => {
+            if (!this.poller.active) this.syncPolling();
+        });
+    }
+
+    rows() {
+        return (this.collection?.models || []).map(model => model.attributes);
+    }
+
+    syncPolling() {
+        this.poller.start({
+            domainId: this.model?.id,
+            snapshot: this.rows(),
+            fetch: async () => {
+                const response = await this.collection.fetch();
+                if (!response || response.success === false) throw new Error('Certificate refresh failed');
+                return this.rows();
+            }
+        });
+    }
+
+    async destroy() {
+        this.poller.stop('destroy');
+        return super.destroy();
     }
 }
 
@@ -280,6 +320,25 @@ class DomainView extends DetailView {
         const whoisSection = new DomainWhoisSection({ model, caps });
         const certificatesSection = new DomainCertificatesSection({ model, caps });
         const purchasesSection = new DomainPurchasesSection({ model });
+        const certificateOnly = model.get('provider') === 'mojo';
+
+        const sections = [
+            { key: 'Overview', label: 'Overview', icon: 'bi-grid-1x2', view: overviewSection }
+        ];
+        if (!certificateOnly) {
+            sections.push(
+                { key: 'Records', label: 'DNS Records', icon: 'bi-list-columns', view: recordsSection },
+                {
+                    key: 'WHOIS', label: 'WHOIS', icon: 'bi-lock', view: whoisSection,
+                    permissions: MANAGE_PERMS
+                },
+                { type: 'divider', label: 'Related' }
+            );
+        }
+        sections.push({ key: 'Certificates', label: 'Certificates', icon: 'bi-patch-check', view: certificatesSection });
+        if (!certificateOnly) {
+            sections.push({ key: 'Purchases', label: 'Purchases', icon: 'bi-receipt', view: purchasesSection });
+        }
 
         super({
             className: 'domain-view',
@@ -321,20 +380,8 @@ class DomainView extends DetailView {
                     ]
                 }
             },
-            sections: [
-                { key: 'Overview', label: 'Overview', icon: 'bi-grid-1x2', view: overviewSection },
-                { key: 'Records', label: 'DNS Records', icon: 'bi-list-columns', view: recordsSection },
-                {
-                    key: 'WHOIS', label: 'WHOIS', icon: 'bi-lock', view: whoisSection,
-                    // Gated on manage_dns, NOT view_dns: the registrar hands
-                    // back real registrant PII regardless of WHOIS privacy.
-                    permissions: MANAGE_PERMS
-                },
-                { type: 'divider', label: 'Related' },
-                { key: 'Certificates', label: 'Certificates', icon: 'bi-patch-check', view: certificatesSection },
-                { key: 'Purchases', label: 'Purchases', icon: 'bi-receipt', view: purchasesSection }
-            ],
-            activeSection: 'Records'
+            sections,
+            activeSection: certificateOnly ? 'Overview' : 'Records'
         });
 
         this.caps = caps;
@@ -343,6 +390,10 @@ class DomainView extends DetailView {
         this.whoisSection = whoisSection;
         this.certificatesSection = certificatesSection;
         this.purchasesSection = purchasesSection;
+        this.certificateOnly = certificateOnly;
+        this.delegation = null;
+        this.delegationLoaded = false;
+        this.delegationUnsupported = false;
     }
 
     async onAfterMount() {
@@ -353,8 +404,29 @@ class DomainView extends DetailView {
             this.overviewSection.caps = this.caps;
             this.whoisSection.caps = this.caps;
             this.certificatesSection.caps = this.caps;
-            this.recordsSection.refresh();
+            if (!this.certificateOnly) this.recordsSection.refresh();
+            await this.loadDelegation();
         }
+    }
+
+    async loadDelegation() {
+        const list = new AcmeDelegationList();
+        const response = await list.fetch({ domain: this.model.id });
+        this.delegationLoaded = !!(response && response.success !== false);
+        this.delegationUnsupported = response?.status === 404;
+        this.delegation = this.delegationLoaded ? (list.models[0]?.attributes || null) : null;
+        return this.certificateReady();
+    }
+
+    certificateReady() {
+        return certificateReadiness({
+            caps: this.caps,
+            capabilitiesLoaded: registrar.capabilityState().loaded,
+            domain: this.model.attributes,
+            delegation: this.delegation,
+            delegationLoaded: this.delegationLoaded,
+            delegationUnsupported: this.delegationUnsupported
+        });
     }
 
     async onActionRequestCertificate() {
@@ -367,25 +439,62 @@ class DomainView extends DetailView {
             return true;
         }
 
+        await this.loadDelegation();
+        const readiness = this.certificateReady();
+        if (!readiness.ready) {
+            Modal.showError(readiness.reason);
+            return true;
+        }
+
+        const defaults = [name, `*.${name}`];
+
         const result = await app.showForm({
             ...CertificateForms.request,
             fields: [{
                 name: 'names', type: 'taginput', label: 'Names', columns: 12,
-                value: [name, `*.${name}`],
+                value: defaults,
                 help: 'Defaults to the domain plus its wildcard. Issuance runs in the background and takes a few minutes.'
             }]
         });
         if (!result) return true;
 
-        app.showLoading();
-        const resp = await Certificate.request({ domain: this.model.id, names: result.names });
-        app.hideLoading();
+        const normalized = normalizeCertificateSans(result.names, {
+            apex: name,
+            profile: readiness.profile
+        });
+        if (!normalized.ok) {
+            Modal.showError(normalized.errors[0]);
+            return true;
+        }
 
-        if (resp && resp.data && resp.data.status) {
+        app.showLoading();
+        let mutation;
+        const existingCertificateIds = new Set(this.certificatesSection.rows().map(row => String(row.id)));
+        try {
+            mutation = await Certificate.request({ domain: this.model.id, names: normalized.names }, {
+                apex: name,
+                profile: readiness.profile,
+                reconcile: async () => {
+                    const response = await this.certificatesSection.collection.fetch();
+                    if (!response || response.success === false) return null;
+                    return this.certificatesSection.rows();
+                },
+                classify: rows => rows.some(row => (row.domain?.id === this.model.id
+                    || row.domain === this.model.id)
+                    && !existingCertificateIds.has(String(row.id))) ? 'applied' : 'not-applied'
+            });
+        } finally {
+            app.hideLoading();
+        }
+
+        if (mutation?.state === 'applied') {
             app.toast.success('Certificate requested — issuance takes a few minutes.');
-            this.certificatesSection.collection?.fetch();
+            this.certificatesSection.syncPolling();
+        } else if (mutation?.refreshRequired || mutation?.state === 'unconfirmed') {
+            Modal.showError('Issuance could not be confirmed. Refresh the certificate list before trying again.');
         } else {
-            Modal.showError((resp && resp.data && resp.data.error) || 'Failed to request the certificate.');
+            const response = mutation?.response;
+            Modal.showError((response?.data && response.data.error) || 'The certificate request was not applied.');
         }
         return true;
     }

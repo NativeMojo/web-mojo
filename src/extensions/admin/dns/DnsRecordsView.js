@@ -25,8 +25,13 @@ import {
     isSpentAcmeChallenge,
     recordWarnings,
     diffRecordValues,
-    normalizeRecordValues
+    normalizeRecordValues,
+    recordKey,
+    recordMutationSnapshot,
+    recordSnapshotMatches,
+    classifyRecordMutation
 } from './dnsData.js';
+import { dnsMutations } from './DnsMutationCoordinator.js';
 import DnsRecordEditor from './DnsRecordEditor.js';
 
 // Function-formatter output lands in cell.innerHTML raw — every provider-
@@ -130,6 +135,7 @@ class DnsRecordsView extends View {
                 ]
             }
         });
+        this.tableView.onActionRefresh = () => this.refresh({ explicit: true });
         this.addChild(this.tableView);
     }
 
@@ -158,8 +164,8 @@ class DnsRecordsView extends View {
 
     // ── Loading ────────────────────────────────────────────────────────
 
-    async refresh() {
-        if (!this.model || !this.model.id) return;
+    async refresh(options = {}) {
+        if (!this.model || !this.model.id) return null;
         this.caps = await registrar.capabilities();
 
         if (this.model.get('status') !== 'active') {
@@ -169,7 +175,7 @@ class DnsRecordsView extends View {
                 message: `This domain is ${this.model.get('status')}. The provider zone does not exist `
                     + 'until the registrar confirms, usually within a few minutes.'
             });
-            return;
+            return null;
         }
 
         const resp = await this.collection.fetch({ domain: this.model.id });
@@ -183,12 +189,14 @@ class DnsRecordsView extends View {
                 message: (resp.data && resp.data.error) || resp.error || 'The provider did not answer.',
                 retry: true
             });
-            return;
+            return null;
         }
 
         this.allRecords = this.collection.models.map(m => ({ ...m.attributes }));
         this.clearBlocked();
         this.applyFilter();
+        if (options.explicit) dnsMutations.clearPrefix(`dns:${this.model.id}:`);
+        return this.allRecords.map(record => ({ ...record }));
     }
 
     setBlocked({ icon, title, message, retry }) {
@@ -212,11 +220,11 @@ class DnsRecordsView extends View {
             ? this.allRecords.filter(record => record.type === this.typeFilter)
             : this.allRecords;
         this.collection.reset(filtered);
-        this.tableView?.refresh?.();
+        this.tableView?.render?.();
     }
 
     onActionRefresh() {
-        return this.refresh();
+        return this.refresh({ explicit: true });
     }
 
     onActionCycleTypeFilter() {
@@ -276,15 +284,39 @@ class DnsRecordsView extends View {
         const confirmed = await this.confirmWrite(payload, editor.before);
         if (!confirmed) return true;
 
-        app?.showLoading?.();
-        const resp = await this.collection.upsert(this.model.id, payload);
-        app?.hideLoading?.();
+        const key = `dns:${this.model.id}:${recordKey(payload)}`;
+        if (dnsMutations.isLatched(key)) {
+            Modal.showError('This record needs a successful Refresh before another change can be attempted.');
+            return true;
+        }
+        const beforeSnapshot = recordMutationSnapshot(this.allRecords, payload);
+        const current = await this.refresh();
+        if (!current || !recordSnapshotMatches(beforeSnapshot, recordMutationSnapshot(current, payload))) {
+            Modal.showError('The record set changed after confirmation. Review the refreshed values and confirm again.');
+            return true;
+        }
 
-        if (resp && resp.data && resp.data.status) {
+        app?.showLoading?.();
+        let mutation;
+        try {
+            mutation = await this.collection.upsert(this.model.id, payload, {
+                reconcile: () => this.refresh(),
+                classify: observed => classifyRecordMutation(observed, {
+                    before: beforeSnapshot,
+                    target: payload
+                })
+            });
+        } finally {
+            app?.hideLoading?.();
+        }
+
+        if (mutation?.state === 'applied') {
             app?.toast?.success('Record saved');
-            await this.refresh();
+        } else if (mutation?.refreshRequired || mutation?.state === 'unconfirmed') {
+            Modal.showError('The provider result could not be confirmed. Refresh is required before another change.');
         } else {
-            Modal.showError((resp && resp.data && resp.data.error) || 'Failed to save the record.');
+            const response = mutation?.response;
+            Modal.showError((response?.data && response.data.error) || 'The record was not applied.');
         }
         return true;
     }
@@ -360,20 +392,45 @@ class DnsRecordsView extends View {
         });
         if (!confirmed) return true;
 
-        app?.showLoading?.();
-        const resp = await this.collection.remove(this.model.id, {
-            type: record.type, name: record.name
-        });
-        app?.hideLoading?.();
+        const key = `dns:${this.model.id}:${recordKey(record)}`;
+        if (dnsMutations.isLatched(key)) {
+            Modal.showError('This record needs a successful Refresh before another change can be attempted.');
+            return true;
+        }
+        const beforeSnapshot = recordMutationSnapshot(this.allRecords, record);
+        const current = await this.refresh();
+        if (!current || !recordSnapshotMatches(beforeSnapshot, recordMutationSnapshot(current, record))) {
+            Modal.showError('The record set changed after confirmation. Review the refreshed values and confirm again.');
+            return true;
+        }
 
-        if (resp && resp.data && resp.data.status) {
+        app?.showLoading?.();
+        let mutation;
+        try {
+            mutation = await this.collection.remove(this.model.id, {
+                type: record.type, name: record.name
+            }, {
+                reconcile: () => this.refresh(),
+                classify: observed => classifyRecordMutation(observed, {
+                    before: beforeSnapshot,
+                    target: record,
+                    deleting: true
+                })
+            });
+        } finally {
+            app?.hideLoading?.();
+        }
+
+        if (mutation?.state === 'applied') {
             app?.toast?.success('Record deleted');
-            await this.refresh();
+        } else if (mutation?.refreshRequired || mutation?.state === 'unconfirmed') {
+            Modal.showError('The provider result could not be confirmed. Refresh is required before another change.');
         } else {
             // GoDaddy has no true delete: removing the last record of a type is
             // refused by the provider with a specific message. Show it as-is
             // rather than guessing at it client-side.
-            Modal.showError((resp && resp.data && resp.data.error) || 'Failed to delete the record.');
+            const response = mutation?.response;
+            Modal.showError((response?.data && response.data.error) || 'The record was not deleted.');
         }
         return true;
     }

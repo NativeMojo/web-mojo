@@ -2,7 +2,32 @@
 
 ## Unreleased
 
-_Nothing yet._
+### Admin · DNSMan delegated-ACME and mutation-safety parity
+
+- Certificate models now positively project every constructor, set/merge,
+  collection, detail, and action response to material-free status fields.
+  Unknown graphs, PEM/key fields, custom material/export URLs, and unsafe SANs
+  never reach model storage; `last_error` is redacted, control-stripped, and
+  capped before rendering.
+- Certificate controls require an exact capability load and authoritative
+  delegation status. Verified delegation is sticky/fail-closed, the delegated
+  `apex_wildcard` profile accepts exactly apex + wildcard, `mojo` domains are
+  certificate-only, and house detail/revoke gates hydrate the owning Domain and
+  require literal `is_superuser` without disclosing which refusal occurred.
+- Certificate surfaces use one non-overlapping 10-second timer, bounded to 36
+  ticks and torn down across exit/destroy/re-entry. It covers issuance and
+  due-active renewal transitions.
+- DNS, certificate, and credential mutations are keyed single-flight and never
+  retried. Authoritative reconciliation runs in `finally`; an ambiguous result
+  locks that resource until explicit successful Refresh. DNS confirmation also
+  refetches the exact and all same-owner rows before one write, so drift and
+  newly introduced CNAME conflicts invalidate stale consent.
+- Credential linking now shares one global/tenant-aware flow. Global managers
+  choose an eligible group through `credential/group-choice` (exact hydration
+  uses `?id=`); tenant managers retain their active group, rotation retains the
+  row's immutable group/provider, and secret inputs are cleared after the one
+  attempt. Certificate custody, delegation onboarding, and registrar behavior
+  remain explicitly outside this UI.
 
 ## 2.8.1 — 2026-08-02
 

@@ -26,8 +26,30 @@ import {
     CAA_TAGS,
     recordKey
 } from '@ext/admin/dns/dnsData.js';
+import {
+    normalizeCertificateSans,
+    normalizeDelegationResponse,
+    projectCertificate,
+    projectCertificateResponse,
+    projectDelegation,
+    sanitizeCertificateError
+} from '@ext/admin/dns/certificateData.js';
+import { dnsMutations } from '@ext/admin/dns/DnsMutationCoordinator.js';
 
 const BASE = '/api/dnsman';
+
+const responseRows = (response) => {
+    const payload = response?.data?.data;
+    if (Array.isArray(payload)) return payload;
+    if (payload && Array.isArray(payload.data)) return payload.data;
+    return [];
+};
+
+const sanitizeErrorField = (data = {}) => {
+    if (!data || typeof data !== 'object' || Array.isArray(data)
+        || !Object.prototype.hasOwnProperty.call(data, 'last_error')) return data;
+    return { ...data, last_error: sanitizeCertificateError(data.last_error) };
+};
 
 /* =========================
  * Constants
@@ -35,7 +57,8 @@ const BASE = '/api/dnsman';
 
 export const DomainProviderOptions = [
     { value: 'route53', label: 'Route 53' },
-    { value: 'godaddy', label: 'GoDaddy' }
+    { value: 'godaddy', label: 'GoDaddy' },
+    { value: 'mojo', label: 'Mojo delegated ACME (certificate only)' }
 ];
 
 // `failed` is deliberately absent: a failed registration DELETES its domain row
@@ -69,7 +92,13 @@ export const PurchaseStatusOptions = [
 
 class Domain extends Model {
     constructor(data = {}, options = {}) {
-        super(data, { endpoint: `${BASE}/domain`, ...options });
+        super(sanitizeErrorField(data), { endpoint: `${BASE}/domain`, ...options });
+    }
+
+    set(key, value, options = {}) {
+        if (key && typeof key === 'object') return super.set(sanitizeErrorField(key), value, options);
+        if (key === 'last_error') return super.set(key, sanitizeCertificateError(value), options);
+        return super.set(key, value, options);
     }
 
     get isActive() {
@@ -89,7 +118,13 @@ class DomainList extends Collection {
 
 class DnsCredential extends Model {
     constructor(data = {}, options = {}) {
-        super(data, { endpoint: `${BASE}/credential`, ...options });
+        super(sanitizeErrorField(data), { endpoint: `${BASE}/credential`, ...options });
+    }
+
+    set(key, value, options = {}) {
+        if (key && typeof key === 'object') return super.set(sanitizeErrorField(key), value, options);
+        if (key === 'last_error') return super.set(key, sanitizeCertificateError(value), options);
+        return super.set(key, value, options);
     }
 
     /**
@@ -101,14 +136,58 @@ class DnsCredential extends Model {
      * so a failed first link persists nothing and a failed rotation leaves the
      * old pair in place.
      */
-    static link(data = {}) {
-        return rest.POST(`${BASE}/credential/link`, data);
+    static link(data = {}, options = {}) {
+        const mutate = () => rest.POST(`${BASE}/credential/link`, {
+            group: data.group,
+            provider: data.provider,
+            name: data.name,
+            api_key: data.api_key,
+            api_secret: data.api_secret,
+            ...(data.credential ? { credential: data.credential } : {})
+        });
+        if (typeof options.reconcile !== 'function') return mutate();
+        const key = `credential:${data.credential || `link:${data.group}:${data.provider}`}`;
+        return dnsMutations.run(key, {
+            mutate,
+            reconcile: options.reconcile,
+            classify: options.classify
+        });
     }
 }
 
 class DnsCredentialList extends Collection {
     constructor(options = {}) {
         super({ ModelClass: DnsCredential, endpoint: `${BASE}/credential`, ...options });
+    }
+}
+
+class DnsGroupChoice extends Model {
+    constructor(data = {}, options = {}) {
+        super(data, { endpoint: `${BASE}/credential/group-choice`, ...options });
+    }
+}
+
+class DnsGroupChoiceList extends Collection {
+    constructor(options = {}) {
+        super({ ModelClass: DnsGroupChoice, endpoint: `${BASE}/credential/group-choice`, ...options });
+    }
+
+    parse(response) {
+        const rows = responseRows(response);
+        const payload = response?.data?.data || {};
+        this.meta = {
+            start: payload.start || 0,
+            size: payload.size || rows.length,
+            count: payload.count === undefined ? rows.length : payload.count
+        };
+        return rows.map(row => ({ id: row.id, name: row.name }));
+    }
+
+    /** Hydrate one selected choice through the route's exact `?id=` contract. */
+    async fetchChoice(id) {
+        const response = await rest.GET(`${BASE}/credential/group-choice`, { id });
+        const row = responseRows(response)[0];
+        return row ? new DnsGroupChoice({ id: row.id, name: row.name }) : null;
     }
 }
 
@@ -134,16 +213,46 @@ class DomainPurchaseList extends Collection {
 
 class Certificate extends Model {
     constructor(data = {}, options = {}) {
-        super(data, { endpoint: `${BASE}/certificate`, ...options });
+        super(projectCertificate(data), { endpoint: `${BASE}/certificate`, ...options });
+    }
+
+    set(key, value, options = {}) {
+        if (key && typeof key === 'object') return super.set(projectCertificate(key), value, options);
+        const projected = projectCertificate({ [key]: value });
+        if (!Object.prototype.hasOwnProperty.call(projected, key)) return;
+        return super.set(key, projected[key], options);
     }
 
     /** Queue issuance. Runs as a background job — returns a `pending` row. */
-    static request(data = {}) {
-        return rest.POST(`${BASE}/certificate/request`, data);
+    static request(data = {}, options = {}) {
+        const normalized = normalizeCertificateSans(data.names, { apex: options.apex, profile: options.profile });
+        if (data.names !== undefined && !normalized.ok) {
+            return Promise.resolve({
+                success: false,
+                data: { status: false, error: normalized.errors[0] }
+            });
+        }
+        const payload = { domain: data.domain };
+        if (data.names !== undefined) payload.names = normalized.names;
+        const mutate = async () => projectCertificateResponse(
+            await rest.POST(`${BASE}/certificate/request`, payload));
+        if (typeof options.reconcile !== 'function') return mutate();
+        return dnsMutations.run(`certificate:request:${data.domain}`, {
+            mutate,
+            reconcile: options.reconcile,
+            classify: options.classify
+        });
     }
 
-    revoke() {
-        return rest.POST(`${BASE}/certificate/revoke`, { certificate: this.id });
+    revoke(options = {}) {
+        const mutate = async () => projectCertificateResponse(
+            await rest.POST(`${BASE}/certificate/revoke`, { certificate: this.id }));
+        if (typeof options.reconcile !== 'function') return mutate();
+        return dnsMutations.run(`certificate:revoke:${this.id}`, {
+            mutate,
+            reconcile: options.reconcile,
+            classify: options.classify
+        });
     }
 
     // NOTE: there is deliberately no `material()` helper. The backend's
@@ -155,6 +264,35 @@ class Certificate extends Model {
 class CertificateList extends Collection {
     constructor(options = {}) {
         super({ ModelClass: Certificate, endpoint: `${BASE}/certificate`, ...options });
+    }
+
+    parse(response) {
+        return super.parse(response).map(projectCertificate);
+    }
+}
+
+class AcmeDelegation extends Model {
+    constructor(data = {}, options = {}) {
+        super(projectDelegation(data), { endpoint: `${BASE}/delegation`, ...options });
+    }
+
+    set(key, value, options = {}) {
+        if (key && typeof key === 'object') return super.set(projectDelegation(key), value, options);
+        const projected = projectDelegation({ [key]: value });
+        if (!Object.prototype.hasOwnProperty.call(projected, key)) return;
+        return super.set(key, projected[key], options);
+    }
+}
+
+class AcmeDelegationList extends Collection {
+    constructor(options = {}) {
+        super({ ModelClass: AcmeDelegation, endpoint: `${BASE}/delegation`, ...options });
+    }
+
+    parse(response) {
+        const rows = normalizeDelegationResponse(response);
+        this.meta = { ...this.meta, count: rows.length };
+        return rows;
     }
 }
 
@@ -209,21 +347,33 @@ class DnsRecordList extends Collection {
     }
 
     /** Create or REPLACE a record set — `record_values` is the complete list. */
-    upsert(domainId, record = {}) {
-        return rest.POST(`${BASE}/dns`, {
+    upsert(domainId, record = {}, options = {}) {
+        const mutate = () => rest.POST(`${BASE}/dns`, {
             domain: domainId,
             type: record.type,
             name: record.name,
             record_values: record.record_values,
             ttl: record.ttl
         });
+        if (typeof options.reconcile !== 'function') return mutate();
+        return dnsMutations.run(`dns:${domainId}:${recordKey(record)}`, {
+            mutate,
+            reconcile: options.reconcile,
+            classify: options.classify
+        });
     }
 
     /** Delete a record set, or just the listed values from it. */
-    remove(domainId, record = {}) {
+    remove(domainId, record = {}, options = {}) {
         const body = { domain: domainId, type: record.type, name: record.name };
         if (record.record_values) body.record_values = record.record_values;
-        return rest.POST(`${BASE}/dns/delete`, body);
+        const mutate = () => rest.POST(`${BASE}/dns/delete`, body);
+        if (typeof options.reconcile !== 'function') return mutate();
+        return dnsMutations.run(`dns:${domainId}:${recordKey(record)}`, {
+            mutate,
+            reconcile: options.reconcile,
+            classify: options.classify
+        });
     }
 }
 
@@ -233,6 +383,7 @@ class DnsRecordList extends Collection {
 
 const _capabilities = new Map();
 const _capabilitiesPromises = new Map();
+const _capabilityStates = new Map();
 
 const capabilityKey = (group) => String(group === null || group === undefined ? '' : group);
 
@@ -262,16 +413,16 @@ export const registrar = {
         if (_capabilities.has(key)) return _capabilities.get(key);
         if (_capabilitiesPromises.has(key)) return _capabilitiesPromises.get(key);
         const promise = (async () => {
-            let resp = null;
-            try {
-                resp = await rest.GET(`${BASE}/config`, group ? { group } : {});
-            } catch {
-                resp = null;
-            }
+            const resp = await rest.GET(`${BASE}/config`, group ? { group } : {});
             const data = resp && resp.success && resp.data && resp.data.data;
             const caps = data
                 ? { ...DEFAULT_CAPABILITIES, ...data }
                 : { ...DEFAULT_CAPABILITIES };
+            _capabilityStates.set(key, {
+                loaded: !!data,
+                status: resp?.status || null,
+                unsupported: !data && resp?.status === 404
+            });
             _capabilities.set(key, caps);
             _capabilitiesPromises.delete(key);
             return caps;
@@ -289,6 +440,13 @@ export const registrar = {
     resetCapabilities() {
         _capabilities.clear();
         _capabilitiesPromises.clear();
+        _capabilityStates.clear();
+    },
+
+    capabilityState(group = null) {
+        return _capabilityStates.get(capabilityKey(group)) || {
+            loaded: false, status: null, unsupported: false
+        };
     },
 
     /** Single name. Returns the flat row — unchanged across all backend versions. */
@@ -477,9 +635,9 @@ export const CertificateForms = {
 
 export {
     Domain, DomainList,
-    DnsCredential, DnsCredentialList,
+    DnsCredential, DnsCredentialList, DnsGroupChoice, DnsGroupChoiceList,
     DomainPurchase, DomainPurchaseList,
-    Certificate, CertificateList,
+    Certificate, CertificateList, AcmeDelegation, AcmeDelegationList,
     DnsRecord, DnsRecordList,
     DNS_RECORD_TYPES, CAA_TAGS
 };
@@ -494,9 +652,9 @@ export {
 // silently emits a `return` above the real declaration (memory: WM-024).
 export default {
     Domain, DomainList,
-    DnsCredential, DnsCredentialList,
+    DnsCredential, DnsCredentialList, DnsGroupChoice, DnsGroupChoiceList,
     DomainPurchase, DomainPurchaseList,
-    Certificate, CertificateList,
+    Certificate, CertificateList, AcmeDelegation, AcmeDelegationList,
     DnsRecord, DnsRecordList,
     registrar, whois, registrantContact,
     DomainForms, DnsCredentialForms, CertificateForms,

@@ -13,10 +13,11 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import Modal from '@core/views/feedback/Modal.js';
 import MOJOUtils from '@core/utils/MOJOUtils.js';
-import { DnsCredential, DnsCredentialList, DnsCredentialForms } from '@ext/admin/models/Dns.js';
+import { DnsCredential, DnsCredentialList } from '@ext/admin/models/Dns.js';
 import { providerLabel } from './dnsData.js';
+import DnsCredentialLinkForm from './DnsCredentialLinkForm.js';
+import { dnsMutations } from './DnsMutationCoordinator.js';
 import DnsCredentialView from './DnsCredentialView.js';
 
 const escapeHtml = MOJOUtils.escapeHtml;
@@ -81,6 +82,15 @@ class DnsCredentialTablePage extends TablePage {
     }
 
     /** Create goes through credential/link so nothing is stored unverified. */
+    async onInit() {
+        await super.onInit();
+        this.tableView.onActionRefresh = async () => {
+            const response = await this.tableView.refresh();
+            if (response && response.success !== false) dnsMutations.clearPrefix('credential:');
+            return response;
+        };
+    }
+
     async onActionAdd() {
         return this.linkCredential(null);
     }
@@ -88,39 +98,7 @@ class DnsCredentialTablePage extends TablePage {
     async linkCredential(existing) {
         const app = this.getApp();
         if (!this.checkPermissions(MANAGE_PERMS)) return true;
-
-        const form = JSON.parse(JSON.stringify(DnsCredentialForms.link));
-        if (existing) {
-            form.title = `Rotate the key for ${existing.get('name')}`;
-            form.fields = form.fields.filter(field => field.name !== 'provider');
-            form.fields.find(f => f.name === 'name').value = existing.get('name');
-        }
-
-        const result = await app.showForm(form);
-        if (!result) return true;
-
-        const payload = {
-            group: app.getActiveGroupId?.() || app.activeGroup?.id,
-            provider: existing ? existing.get('provider') : result.provider,
-            name: result.name,
-            api_key: result.api_key,
-            api_secret: result.api_secret
-        };
-        if (existing) payload.credential = existing.id;
-
-        app.showLoading();
-        const resp = await DnsCredential.link(payload);
-        app.hideLoading();
-
-        if (resp && resp.data && resp.data.status) {
-            app.toast.success(existing ? 'Key rotated and verified' : 'Credential linked and verified');
-            this.collection?.fetch();
-        } else {
-            // The provider's own refusal is the useful message here — an
-            // unverified key names why it failed.
-            Modal.showError((resp && resp.data && resp.data.error)
-                || 'The provider rejected that key. Nothing was stored.');
-        }
+        await DnsCredentialLinkForm.open({ app, existing, collection: this.collection });
         return true;
     }
 }
