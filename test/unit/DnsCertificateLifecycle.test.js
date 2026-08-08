@@ -36,11 +36,17 @@ module.exports = async function(testContext) {
     });
 
     it('redacts credentials, strips controls, and caps last_error', () => {
-        const value = `failed\u0000 Authorization: Bearer abc token=secret password:'hunter2' ${'x'.repeat(3000)}`;
+        const value = `failed\u0000 Authorization: Bearer abc token=tokvalue password:'passvalue' `
+            + `key=keyvalue access_token=accessvalue client_secret="clientvalue" credential_id=credvalue `
+            + `${'x'.repeat(3000)}`;
         const safe = sanitizeCertificateError(value);
         expect(safe).not.toContain('abc');
-        expect(safe).not.toContain('secret');
-        expect(safe).not.toContain('hunter2');
+        expect(safe).not.toContain('tokvalue');
+        expect(safe).not.toContain('passvalue');
+        expect(safe).not.toContain('keyvalue');
+        expect(safe).not.toContain('accessvalue');
+        expect(safe).not.toContain('clientvalue');
+        expect(safe).not.toContain('credvalue');
         expect(safe.length).toBeLessThanOrEqual(2000);
         expect(safe).not.toMatch(/[\x00-\x1f\x7f]/);
     });
@@ -98,6 +104,37 @@ module.exports = async function(testContext) {
         expect(fetches).toBe(1);
         expect(poller.active).toBe(false);
         expect(scheduled).toBe(1);
+    });
+
+    it('retires one terminal row while continuing to poll other issuing rows', async () => {
+        let callback = null;
+        let scheduled = 0;
+        let fetches = 0;
+        const poller = new CertificateLifecyclePoller({
+            setTimer(fn) { scheduled += 1; callback = fn; return scheduled; },
+            clearTimer() {}
+        });
+        poller.start({
+            snapshot: [
+                { id: 1, status: 'issuing' },
+                { id: 2, status: 'issuing' }
+            ],
+            fetch: async () => {
+                fetches += 1;
+                return fetches === 1
+                    ? [{ id: 1, status: 'failed' }, { id: 2, status: 'issuing' }]
+                    : [{ id: 1, status: 'failed' }, { id: 2, status: 'active' }];
+            }
+        });
+
+        await callback();
+        expect(poller.active).toBe(true);
+        expect(scheduled).toBe(2);
+        expect([...poller.trackedIds]).toEqual(['2']);
+
+        await callback();
+        expect(fetches).toBe(2);
+        expect(poller.active).toBe(false);
     });
     });
 };

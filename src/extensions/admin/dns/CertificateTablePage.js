@@ -103,6 +103,10 @@ class CertificateTablePage extends TablePage {
     /** The days-left column needs capabilities, so it is installed once loaded. */
     async onInit() {
         await super.onInit();
+        this._onCertificateFetchEnd = () => {
+            if (this.isActive && this.isMounted?.() && !this.poller.active) this.syncAutoRefresh();
+        };
+        this.collection.on('fetch:end', this._onCertificateFetchEnd, this);
         this.tableView.onActionRefresh = async () => {
             const response = await this.tableView.refresh();
             if (response && response.success !== false) dnsMutations.clearPrefix('certificate:');
@@ -193,7 +197,18 @@ class CertificateTablePage extends TablePage {
 
     async destroy() {
         this.poller.stop('destroy');
+        this.collection?.off?.('fetch:end', this._onCertificateFetchEnd, this);
         return super.destroy();
+    }
+
+    /**
+     * A bare certificate id cannot be opened safely: the owning Domain must be
+     * known and gated before the certificate detail endpoint is touched.
+     */
+    async _openDeepLinkedItem(itemId) {
+        const model = this.collection?.get?.(itemId);
+        if (model) await this.showItemDialog(model);
+        else this._clearItemParam();
     }
 
     async showItemDialog(model) {

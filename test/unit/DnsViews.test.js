@@ -104,6 +104,21 @@ module.exports = async function(testContext) {
                 expect(table).toContain('const domain = new Domain');
                 expect(table).toContain('Certificate details are unavailable.');
             });
+
+            it('does not detail-fetch a bare certificate deep link before the Domain gate', () => {
+                const start = table.indexOf('async _openDeepLinkedItem');
+                const end = table.indexOf('async showItemDialog', start);
+                const method = table.slice(start, end);
+                expect(method).toContain('this.collection?.get?.(itemId)');
+                expect(method).not.toContain('fetchOne');
+                expect(method).not.toContain('.fetch(');
+            });
+
+            it('starts lifecycle polling after the initial collection fetch', () => {
+                expect(table).toContain("this.collection.on('fetch:end'");
+                expect(table).toContain('this._onCertificateFetchEnd');
+                expect(table).toContain("this.collection?.off?.('fetch:end'");
+            });
         });
 
         describe('models/Dns.js', () => {
@@ -225,6 +240,7 @@ module.exports = async function(testContext) {
                 expect(source).toContain('recordMutationSnapshot');
                 expect(source).toContain('recordSnapshotMatches');
                 expect(source).toContain('classifyRecordMutation');
+                expect(source).toContain('mutationKey: key');
                 expect(source).toContain('reconcile: () => this.refresh()');
             });
         });
