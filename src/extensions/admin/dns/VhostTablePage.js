@@ -63,6 +63,11 @@ class VhostTablePage extends TablePage {
         const superuser = isLiteralSuperuser(app);
         const group = app?.getActiveGroupId?.() || app?.activeGroup?.id || null;
         if (!superuser) {
+            // The active group is the scope boundary. Do not let a bookmarked
+            // or hand-written query replace it when TablePage applies URL
+            // filters below.
+            if (group) this.query.group = group;
+            else delete this.query.group;
             if (!group) {
                 this.collection = new VhostList({ params: { id: '__no_active_group__' } });
             } else {
@@ -76,6 +81,39 @@ class VhostTablePage extends TablePage {
             this.options.requiresGroup = false;
         }
         await super.onInit();
+    }
+
+    async _openDeepLinkedItem(itemId) {
+        try {
+            const app = this.getApp();
+            const superuser = isLiteralSuperuser(app);
+            const group = app?.getActiveGroupId?.() || app?.activeGroup?.id || null;
+            if (!superuser && !group) {
+                this._clearItemParam();
+                return;
+            }
+
+            // TablePage.fetchOne() goes straight to the detail endpoint. Resolve
+            // the id through the safe list scope first so a house VHost is never
+            // probed before its owning Domain has been independently resolved.
+            const scoped = new VhostList({
+                size: 1,
+                params: { id: itemId, ...(superuser ? {} : { group }) }
+            });
+            const response = await scoped.fetch();
+            if (!classifyActionResponse(response, scoped).ok) {
+                this._clearItemParam();
+                return;
+            }
+            const model = scoped.get(itemId);
+            if (!model) {
+                this._clearItemParam();
+                return;
+            }
+            await this.showItemDialog(model);
+        } catch {
+            this._clearItemParam();
+        }
     }
 
     async showItemDialog(model) {

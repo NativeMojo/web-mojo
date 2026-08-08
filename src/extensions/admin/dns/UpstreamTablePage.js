@@ -68,6 +68,10 @@ class UpstreamTablePage extends TablePage {
         const superuser = isLiteralSuperuser(app);
         const group = app?.getActiveGroupId?.() || app?.activeGroup?.id || null;
         if (!superuser) {
+            // Keep URL filters from replacing the active tenant scope when
+            // TablePage applies the current query to this collection.
+            if (group) this.query.group = group;
+            else delete this.query.group;
             this.collection = new UpstreamList({
                 params: group ? { group } : { id: '__no_active_group__' }
             });
