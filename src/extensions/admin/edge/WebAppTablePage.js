@@ -23,7 +23,8 @@ class WebAppTablePage extends TablePage {
                 { key: 'slug', label: 'Site', sortable: true, formatter: value => `<span class="font-monospace">${escapeHtml(value)}</span>` },
                 { key: 'vhost.server_name', label: 'VHost', visibility: 'lg', formatter: "default('External delivery')" },
                 { key: 'current_release.version', label: 'Current release', visibility: 'md', formatter: "default('—')" },
-                { key: 'auto_promote', label: 'Auto-promote', width: '120px', formatter: "boolean('On|bg-success','Off|bg-secondary')|badge" },
+                { key: 'auto_promote', label: 'Auto-promote', width: '120px',
+                    formatter: value => `<span class="badge ${value ? 'bg-success' : 'bg-secondary'}">${value ? 'On' : 'Off'}</span>` },
                 { key: 'bucket', label: 'Release bucket', visibility: 'xl', formatter: "default('—')" },
                 { key: 'created|date', label: 'Created', width: '130px', sortable: true, visibility: 'xl' }
             ],

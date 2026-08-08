@@ -36,7 +36,7 @@ class VhostTablePage extends TablePage {
                 { key: 'pool', label: 'Pool', width: '120px', sortable: true },
                 {
                     key: 'is_enabled', label: 'Status', width: '110px',
-                    formatter: "boolean('Enabled|bg-success','Disabled|bg-secondary')|badge"
+                    formatter: value => `<span class="badge ${value ? 'bg-success' : 'bg-secondary'}">${value ? 'Enabled' : 'Disabled'}</span>`
                 },
                 { key: 'domain.name', label: 'Domain', visibility: 'lg', formatter: "default('—')" },
                 { key: 'created|date', label: 'Created', width: '130px', sortable: true, visibility: 'xl' }

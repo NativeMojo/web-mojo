@@ -49,6 +49,12 @@ module.exports = async function(testContext) {
             expect(source.indexOf('this.query.group = group')).toBeLessThan(source.indexOf('await super.onInit()'));
         });
 
+        it('renders named auto-promote states without pipe delimiters inside formatter arguments', () => {
+            const source = stripComments(read('src/extensions/admin/edge/WebAppTablePage.js'));
+            expect(source).toContain("value ? 'On' : 'Off'");
+            expect(source).not.toContain("boolean('On|bg-success'");
+        });
+
         it('resolves WebApp deep links through the selected tenant before detail hydration', () => {
             const table = stripComments(read('src/extensions/admin/edge/WebAppTablePage.js'));
             const start = table.indexOf('async _openDeepLinkedItem(itemId)');

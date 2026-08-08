@@ -83,6 +83,16 @@ module.exports = async function(testContext) {
             expect(view).not.toContain('.destroy(');
         });
 
+        it('renders structured destinations and operator status labels from TableRow formatter context', () => {
+            const upstream = source('src/extensions/admin/dns/UpstreamTablePage.js');
+            const vhost = source('src/extensions/admin/dns/VhostTablePage.js');
+            expect(upstream).toContain('context?.model?.attributes || context?.row?.attributes');
+            expect(upstream).toContain("value ? 'Active' : 'Retired'");
+            expect(vhost).toContain("value ? 'Enabled' : 'Disabled'");
+            expect(upstream).not.toContain("boolean('Active|bg-success'");
+            expect(vhost).not.toContain("boolean('Enabled|bg-success'");
+        });
+
         it('classifies resolved failures before success effects and refreshes successful mutations', () => {
             for (const file of ['VhostForm.js', 'VhostView.js', 'UpstreamTablePage.js', 'UpstreamView.js']) {
                 const text = source(`src/extensions/admin/dns/${file}`);

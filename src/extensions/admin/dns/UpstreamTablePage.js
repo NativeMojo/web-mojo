@@ -34,8 +34,8 @@ class UpstreamTablePage extends TablePage {
                 },
                 {
                     key: 'target', label: 'Destination', visibility: 'lg',
-                    formatter: (value, row) => {
-                        const data = row?.attributes || {};
+                    formatter: (value, context) => {
+                        const data = context?.model?.attributes || context?.row?.attributes || {};
                         const target = data.kind === 'unix'
                             ? `unix:${data.socket_path || '—'}`
                             : `${data.host || '—'}${data.port ? `:${data.port}` : ''}`;
@@ -45,7 +45,7 @@ class UpstreamTablePage extends TablePage {
                 { key: 'group.name', label: 'Scope', visibility: 'lg', formatter: "default('Shared platform')" },
                 {
                     key: 'is_enabled', label: 'Status', width: '110px',
-                    formatter: "boolean('Active|bg-success','Retired|bg-secondary')|badge"
+                    formatter: value => `<span class="badge ${value ? 'bg-success' : 'bg-secondary'}">${value ? 'Active' : 'Retired'}</span>`
                 },
                 { key: 'created|date', label: 'Created', width: '130px', sortable: true, visibility: 'xl' }
             ],
