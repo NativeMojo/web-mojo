@@ -22,8 +22,12 @@ module.exports = async function(testContext) {
         it('normalizes exact 7-40 hex SHAs and rejects branch names', () => {
             expect(Edge.normalizeDeploySha(' ABCDEF1 ')).toBe('abcdef1');
             expect(Edge.normalizeDeploySha('a'.repeat(40))).toBe('a'.repeat(40));
-            expect(() => Edge.normalizeDeploySha('main')).toThrow('7–40');
-            expect(() => Edge.normalizeDeploySha('abcdef')).toThrow('7–40');
+            expect(() => Edge.normalizeDeploySha('main')).toThrow(
+                'Enter a commit SHA containing 7–40 hexadecimal characters.'
+            );
+            expect(() => Edge.normalizeDeploySha('abcdef')).toThrow(
+                'Enter a commit SHA containing 7–40 hexadecimal characters.'
+            );
         });
 
         it('accepts flat queued true and queued false 202 bodies', () => {

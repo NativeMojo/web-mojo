@@ -60,7 +60,7 @@ module.exports = async function(testContext) {
         it('requires a declared upstream for proxy', () => {
             expect(() => Edge.buildVhostPayload({
                 kind: 'proxy', certificate: 9, pool: 'default'
-            })).toThrow('requires a declared upstream');
+            })).toThrow('A proxy VHost requires a declared upstream.');
         });
 
         it('enforces the pool 1–32 bound and rejects final newlines', () => {
@@ -137,8 +137,8 @@ module.exports = async function(testContext) {
             const release = new Edge.WebAppRelease({ id: 4 });
             release.set({ id: 4, version: 'safe', status: 'live', manifest: ['hidden'] });
             expect(release.get('manifest')).toBeUndefined();
-            expect(() => release.save()).toThrow('immutable');
-            expect(() => release.destroy()).toThrow('immutable');
+            expect(() => release.save()).toThrow('WebApp releases are immutable.');
+            expect(() => release.destroy()).toThrow('WebApp releases are immutable.');
             expect(new Edge.WebAppReleaseList().params.id).toBe('__no_webapp__');
             expect(new Edge.WebAppReleaseList({ webapp: 3 }).params.webapp).toBe(3);
         });
@@ -158,13 +158,13 @@ module.exports = async function(testContext) {
             expect(update).not.toHaveProperty('bucket');
             expect(() => Edge.buildWebAppPayload({ group: 8, slug: 'x', bucket: ' ' }, {
                 create: true
-            })).toThrow('release bucket');
+            })).toThrow('Enter a release bucket.');
             expect(() => Edge.buildWebAppPayload({ group: 8, slug: 'x', bucket: `ok\nnot-ok` }, {
                 create: true
-            })).toThrow('control characters');
+            })).toThrow('Release bucket cannot contain control characters.');
             expect(() => Edge.buildWebAppPayload({ group: 8, slug: 'x', bucket: 'x'.repeat(256) }, {
                 create: true
-            })).toThrow('255');
+            })).toThrow('Release bucket must be 255 characters or fewer.');
         });
 
         it('maps only uploaded and superseded releases to actions', () => {
@@ -185,17 +185,36 @@ module.exports = async function(testContext) {
         });
 
         it('posts link/promote once while in flight and reconciles in finally', async () => {
-            let resolveAction;
-            restMock.POST.mockReturnValue(new Promise(resolve => { resolveAction = resolve; }));
-            restMock.GET.mockResolvedValue({ success: true, data: { status: true, data: { id: 3 } } });
             const site = new Edge.WebApp({ id: 3, slug: 'portal' });
-            const first = site.linkKey();
-            const second = site.linkKey();
-            expect(first).toBe(second);
+            const siteFetch = jest.spyOn(site, 'fetch').mockResolvedValue({ success: true });
+            const releases = { fetch: jest.fn().mockResolvedValue({ success: true }) };
+
+            let resolveLink;
+            restMock.POST.mockReturnValue(new Promise(resolve => { resolveLink = resolve; }));
+            const firstLink = site.linkKey(releases);
+            const secondLink = site.linkKey(releases);
+            expect(firstLink).toBe(secondLink);
             expect(restMock.POST).toHaveBeenCalledTimes(1);
-            resolveAction({ success: true, data: { status: true, data: { token: 'once' } } });
-            await first;
-            expect(restMock.GET).toHaveBeenCalled();
+            expect(restMock.POST).toHaveBeenCalledWith('/api/edge/webapp/link_key', { webapp: 3 });
+            resolveLink({ success: true, data: { status: true, data: { token: 'once' } } });
+            await firstLink;
+            expect(siteFetch).toHaveBeenCalledTimes(1);
+            expect(releases.fetch).toHaveBeenCalledTimes(1);
+
+            restMock.POST.mockReset();
+            let resolvePromote;
+            restMock.POST.mockReturnValue(new Promise(resolve => { resolvePromote = resolve; }));
+            const firstPromote = site.promote({ id: 7 }, releases);
+            const secondPromote = site.promote({ id: 7 }, releases);
+            expect(firstPromote).toBe(secondPromote);
+            expect(restMock.POST).toHaveBeenCalledTimes(1);
+            expect(restMock.POST).toHaveBeenCalledWith('/api/edge/webapp/promote', {
+                webapp: 3, release: 7
+            });
+            resolvePromote({ success: true, data: { status: true } });
+            await firstPromote;
+            expect(siteFetch).toHaveBeenCalledTimes(2);
+            expect(releases.fetch).toHaveBeenCalledTimes(2);
         });
     });
 };
