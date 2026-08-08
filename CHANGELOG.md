@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Admin · structured Edge VHosts and declared Upstreams
+
+- Added `Vhost`/`VhostList` and `Upstream`/`UpstreamList` to
+  `web-mojo/admin-models`, plus DNS sidebar pages at `system/dns/vhosts` and
+  `system/dns/upstreams` for django-mojo ≥1.3.0.
+- VHost writes are allowlisted and kind-discriminated; pools are capped at 32
+  safe characters, non-proxy kinds explicitly clear upstream, and the owning
+  Domain is resolved before house-sensitive detail or mutation.
+- Upstream destinations can only be declared or retired through their named
+  literal-superuser actions. No generic create/delete, destination edit,
+  desired state, node inventory, nginx text, or certificate material is
+  exposed.
+
 ### Admin · DNSMan delegated-ACME and mutation-safety parity
 
 - Certificate models now positively project every constructor, set/merge,
