@@ -40,10 +40,16 @@ function projectScalars(raw, fields) {
     return out;
 }
 
+function stripControlCharacters(value) {
+    return Array.from(String(value), character => {
+        const code = character.charCodeAt(0);
+        return code <= 31 || code === 127 ? ' ' : character;
+    }).join('');
+}
+
 export function sanitizeCertificateError(value) {
     if (value === null || value === undefined || value === '') return null;
-    let text = String(value)
-        .replace(/[\x00-\x1f\x7f]/g, ' ')
+    let text = stripControlCharacters(value)
         .replace(/\b(Bearer|Basic)\s+[^\s,;]+/gi, '$1 [REDACTED]')
         .replace(/\b([a-z0-9_.-]*(?:token|key|secret|password|credential)[a-z0-9_.-]*)\s*[:=]\s*(?:"[^"]*"|'[^']*'|[^\s,;]+)/gi,
             '$1=[REDACTED]')
