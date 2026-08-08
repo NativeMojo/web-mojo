@@ -414,21 +414,34 @@ export const registrar = {
         const key = capabilityKey(group);
         if (_capabilities.has(key)) return _capabilities.get(key);
         if (_capabilitiesPromises.has(key)) return _capabilitiesPromises.get(key);
-        const promise = (async () => {
-            const resp = await rest.GET(`${BASE}/config`, group ? { group } : {});
-            const data = resp && resp.success && resp.data && resp.data.data;
-            const caps = data
-                ? { ...DEFAULT_CAPABILITIES, ...data }
-                : { ...DEFAULT_CAPABILITIES };
-            _capabilityStates.set(key, {
-                loaded: !!data,
-                status: resp?.status || null,
-                unsupported: !data && resp?.status === 404
+        const promise = Promise.resolve()
+            .then(() => rest.GET(`${BASE}/config`, group ? { group } : {}))
+            .then(resp => {
+                const data = resp && resp.success && resp.data && resp.data.data;
+                const caps = data
+                    ? { ...DEFAULT_CAPABILITIES, ...data }
+                    : { ...DEFAULT_CAPABILITIES };
+                _capabilityStates.set(key, {
+                    loaded: !!data,
+                    status: resp?.status || null,
+                    unsupported: !data && resp?.status === 404
+                });
+                _capabilities.set(key, caps);
+                return caps;
+            })
+            .catch(error => {
+                const caps = { ...DEFAULT_CAPABILITIES };
+                _capabilityStates.set(key, {
+                    loaded: false,
+                    status: error?.status || null,
+                    unsupported: false
+                });
+                _capabilities.set(key, caps);
+                return caps;
+            })
+            .finally(() => {
+                _capabilitiesPromises.delete(key);
             });
-            _capabilities.set(key, caps);
-            _capabilitiesPromises.delete(key);
-            return caps;
-        })();
         _capabilitiesPromises.set(key, promise);
         return promise;
     },

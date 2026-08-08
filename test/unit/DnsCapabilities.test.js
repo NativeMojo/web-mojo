@@ -148,6 +148,13 @@ module.exports = async function(testContext) {
             restMock.GET.mockRejectedValue(new Error('network down'));
             const caps = await registrar.capabilities(7);
             expect(caps.purchase_enabled).toBe(true);
+            expect(registrar.capabilityState(7)).toEqual({
+                loaded: false, status: null, unsupported: false
+            });
+
+            const cached = await registrar.capabilities(7);
+            expect(cached).toBe(caps);
+            expect(restMock.GET).toHaveBeenCalledTimes(1);
         });
     });
 
