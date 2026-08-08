@@ -109,8 +109,8 @@ class WebAppReleasesSection extends View {
                   <div class="edge-release-row">
                     <div class="min-width-0"><div class="font-monospace text-break fw-semibold">{{version}}</div><div class="small text-secondary">{{created|epoch|datetime}}</div></div>
                     <span class="badge {{badgeClass}}">{{statusLabel}}</span>
-                    {{#showAction|bool}}<button class="btn btn-sm btn-outline-primary" data-action="release-action" data-release-id="{{id}}">{{actionLabel}}</button>{{/showAction|bool}}
-                    {{#current|bool}}<span class="small text-success"><i class="bi bi-check-circle me-1"></i>Current</span>{{/current|bool}}
+                    {{#showAction}}<button class="btn btn-sm btn-outline-primary" data-action="release-action" data-release-id="{{id}}">{{actionLabel}}</button>{{/showAction}}
+                    {{#current}}<span class="small text-success"><i class="bi bi-check-circle me-1"></i>Current</span>{{/current}}
                   </div>
                 {{/rows}}
                 {{^hasRows|bool}}<div class="text-secondary text-center py-4">No releases have been registered.</div>{{/hasRows|bool}}

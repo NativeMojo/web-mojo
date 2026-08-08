@@ -32,6 +32,9 @@ module.exports = async function(testContext) {
             const source = stripComments(read('src/extensions/admin/edge/WebAppView.js'));
             expect(source).toContain('when: m => canManageWebApp(m._edgeApp)');
             expect(source).toContain('canManageWebApp(this.model?._edgeApp');
+            expect(source).toContain('{{#showAction}}');
+            expect(source).toContain('{{#current}}');
+            expect(source).not.toContain('{{#showAction|bool}}');
             expect((source.match(/if \(!canManageWebApp\(app\)\) return true/g) || []).length).toBe(2);
         });
 
