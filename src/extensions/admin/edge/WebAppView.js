@@ -125,7 +125,8 @@ class WebAppReleasesSection extends View {
     get rows() {
         // This section is constructed before DetailView adopts its child views,
         // so resolve the mounted parent first instead of depending on a global app.
-        const allowed = canManageWebApp(this.webAppView?.getApp?.() || this.getApp());
+        const allowed = canManageWebApp(this.model?._edgeApp
+            || this.webAppView?.getApp?.() || this.getApp());
         return (this.collection?.models || []).map(model => {
             const status = model.get('status');
             const action = releaseActionFor(status);

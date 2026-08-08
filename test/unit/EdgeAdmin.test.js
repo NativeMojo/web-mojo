@@ -31,7 +31,7 @@ module.exports = async function(testContext) {
         it('uses the named conjunctive action predicate for visibility and execution', () => {
             const source = stripComments(read('src/extensions/admin/edge/WebAppView.js'));
             expect(source).toContain('when: m => canManageWebApp(m._edgeApp)');
-            expect(source).toContain('canManageWebApp(this.webAppView?.getApp?.() || this.getApp())');
+            expect(source).toContain('canManageWebApp(this.model?._edgeApp');
             expect((source.match(/if \(!canManageWebApp\(app\)\) return true/g) || []).length).toBe(2);
         });
 
