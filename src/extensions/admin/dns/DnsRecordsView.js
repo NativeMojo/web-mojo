@@ -26,7 +26,6 @@ import {
     recordWarnings,
     diffRecordValues,
     normalizeRecordValues,
-    recordKey,
     recordMutationSnapshot,
     recordSnapshotMatches,
     classifyRecordMutation
@@ -284,14 +283,15 @@ class DnsRecordsView extends View {
         const confirmed = await this.confirmWrite(payload, editor.before);
         if (!confirmed) return true;
 
-        const key = `dns:${this.model.id}:${recordKey(payload)}`;
+        const beforeSnapshot = recordMutationSnapshot(this.allRecords, payload, { zone: this.zone });
+        const key = `dns:${this.model.id}:${beforeSnapshot.key}`;
         if (dnsMutations.isLatched(key)) {
             Modal.showError('This record needs a successful Refresh before another change can be attempted.');
             return true;
         }
-        const beforeSnapshot = recordMutationSnapshot(this.allRecords, payload);
         const current = await this.refresh();
-        if (!current || !recordSnapshotMatches(beforeSnapshot, recordMutationSnapshot(current, payload))) {
+        if (!current || !recordSnapshotMatches(
+            beforeSnapshot, recordMutationSnapshot(current, payload, { zone: this.zone }))) {
             Modal.showError('The record set changed after confirmation. Review the refreshed values and confirm again.');
             return true;
         }
@@ -300,10 +300,12 @@ class DnsRecordsView extends View {
         let mutation;
         try {
             mutation = await this.collection.upsert(this.model.id, payload, {
+                mutationKey: key,
                 reconcile: () => this.refresh(),
                 classify: observed => classifyRecordMutation(observed, {
                     before: beforeSnapshot,
-                    target: payload
+                    target: payload,
+                    zone: this.zone
                 })
             });
         } finally {
@@ -392,14 +394,15 @@ class DnsRecordsView extends View {
         });
         if (!confirmed) return true;
 
-        const key = `dns:${this.model.id}:${recordKey(record)}`;
+        const beforeSnapshot = recordMutationSnapshot(this.allRecords, record, { zone: this.zone });
+        const key = `dns:${this.model.id}:${beforeSnapshot.key}`;
         if (dnsMutations.isLatched(key)) {
             Modal.showError('This record needs a successful Refresh before another change can be attempted.');
             return true;
         }
-        const beforeSnapshot = recordMutationSnapshot(this.allRecords, record);
         const current = await this.refresh();
-        if (!current || !recordSnapshotMatches(beforeSnapshot, recordMutationSnapshot(current, record))) {
+        if (!current || !recordSnapshotMatches(
+            beforeSnapshot, recordMutationSnapshot(current, record, { zone: this.zone }))) {
             Modal.showError('The record set changed after confirmation. Review the refreshed values and confirm again.');
             return true;
         }
@@ -410,11 +413,13 @@ class DnsRecordsView extends View {
             mutation = await this.collection.remove(this.model.id, {
                 type: record.type, name: record.name
             }, {
+                mutationKey: key,
                 reconcile: () => this.refresh(),
                 classify: observed => classifyRecordMutation(observed, {
                     before: beforeSnapshot,
                     target: record,
-                    deleting: true
+                    deleting: true,
+                    zone: this.zone
                 })
             });
         } finally {

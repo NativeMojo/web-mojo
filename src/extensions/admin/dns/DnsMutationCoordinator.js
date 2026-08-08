@@ -74,9 +74,12 @@ class DnsMutationCoordinator {
         } catch {
             state = 'unconfirmed';
         }
+        if (state !== 'applied' && state !== 'not-applied') state = 'unconfirmed';
+        const refreshRequired = state === 'unconfirmed';
+        if (refreshRequired) this.refreshRequired.add(key);
         return {
             key, attempted: true, response, mutationError, observed, state,
-            refreshRequired: false
+            refreshRequired
         };
     }
 }

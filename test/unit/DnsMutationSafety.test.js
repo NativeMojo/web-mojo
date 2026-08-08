@@ -59,6 +59,18 @@ module.exports = async function(testContext) {
         expect(coordinator.isLatched('credential:4')).toBe(false);
     });
 
+    it('latches an authoritative result that still classifies as unconfirmed', async () => {
+        const coordinator = new DnsMutationCoordinator();
+        const result = await coordinator.run('dns:1:A|www.example.com', {
+            mutate: async () => ({ success: true }),
+            reconcile: async () => [{ type: 'A', name: 'changed.example.com' }],
+            classify: () => 'unconfirmed'
+        });
+        expect(result.state).toBe('unconfirmed');
+        expect(result.refreshRequired).toBe(true);
+        expect(coordinator.isLatched('dns:1:A|www.example.com')).toBe(true);
+    });
+
     it('snapshots exact and same-owner records so CNAME drift blocks a stale confirmation', () => {
         const beforeRows = [{ type: 'A', name: 'www.example.com', record_values: ['1.1.1.1'], ttl: 300 }];
         const target = { type: 'A', name: 'www.example.com', record_values: ['2.2.2.2'], ttl: 300 };
@@ -70,6 +82,27 @@ module.exports = async function(testContext) {
         expect(recordSnapshotMatches(before, drifted)).toBe(false);
         expect(classifyRecordMutation([target], { before, target })).toBe('applied');
         expect(classifyRecordMutation(beforeRows, { before, target })).toBe('not-applied');
+    });
+
+    it('canonicalizes relative mutation targets before same-owner comparison', () => {
+        const rows = [{ type: 'A', name: 'www.example.com', record_values: ['1.1.1.1'], ttl: 300 }];
+        const target = { type: 'A', name: 'www', record_values: ['2.2.2.2'], ttl: 300 };
+        const options = { zone: 'example.com' };
+        const before = recordMutationSnapshot(rows, target, options);
+        const drifted = recordMutationSnapshot([
+            ...rows,
+            { type: 'CNAME', name: 'www.example.com', record_values: ['other.example.com'], ttl: 300 }
+        ], target, options);
+
+        expect(before.key).toBe('A|www.example.com');
+        expect(before.exact.name).toBe('www.example.com');
+        expect(recordSnapshotMatches(before, drifted)).toBe(false);
+        expect(classifyRecordMutation(rows, {
+            before, target, deleting: true, zone: 'example.com'
+        })).toBe('not-applied');
+        expect(classifyRecordMutation([], {
+            before, target, deleting: true, zone: 'example.com'
+        })).toBe('applied');
     });
     });
 };

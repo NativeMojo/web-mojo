@@ -356,7 +356,8 @@ class DnsRecordList extends Collection {
             ttl: record.ttl
         });
         if (typeof options.reconcile !== 'function') return mutate();
-        return dnsMutations.run(`dns:${domainId}:${recordKey(record)}`, {
+        const mutationKey = options.mutationKey || `dns:${domainId}:${recordKey(record)}`;
+        return dnsMutations.run(mutationKey, {
             mutate,
             reconcile: options.reconcile,
             classify: options.classify
@@ -369,7 +370,8 @@ class DnsRecordList extends Collection {
         if (record.record_values) body.record_values = record.record_values;
         const mutate = () => rest.POST(`${BASE}/dns/delete`, body);
         if (typeof options.reconcile !== 'function') return mutate();
-        return dnsMutations.run(`dns:${domainId}:${recordKey(record)}`, {
+        const mutationKey = options.mutationKey || `dns:${domainId}:${recordKey(record)}`;
+        return dnsMutations.run(mutationKey, {
             mutate,
             reconcile: options.reconcile,
             classify: options.classify

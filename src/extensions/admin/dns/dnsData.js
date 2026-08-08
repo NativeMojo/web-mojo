@@ -685,19 +685,21 @@ export function diffRecordValues(before, after) {
 }
 
 /** Canonical provider row used for preflight drift and post-write evidence. */
-export function canonicalRecord(record = {}) {
+export function canonicalRecord(record = {}, options = {}) {
+    const zone = str(options.zone).trim().toLowerCase().replace(/\.+$/, '');
+    const rawName = str(record.name).trim().toLowerCase().replace(/\.+$/, '');
     return {
         type: str(record.type).toUpperCase(),
-        name: str(record.name).trim().toLowerCase().replace(/\.+$/, ''),
+        name: zone ? toFqdn(rawName, zone) : rawName,
         record_values: normalizeRecordValues(record.record_values).sort(),
         ttl: Number.isFinite(Number(record.ttl)) ? Number(record.ttl) : null
     };
 }
 
-export function recordMutationSnapshot(records, target = {}) {
-    const intended = canonicalRecord(target);
+export function recordMutationSnapshot(records, target = {}, options = {}) {
+    const intended = canonicalRecord(target, options);
     const rows = (Array.isArray(records) ? records : [])
-        .map(canonicalRecord)
+        .map(record => canonicalRecord(record, options))
         .filter(row => row.name === intended.name)
         .sort((a, b) => recordKey(a).localeCompare(recordKey(b)));
     return {
@@ -717,8 +719,8 @@ export function recordSnapshotMatches(left, right) {
  */
 export function classifyRecordMutation(observedRecords, options = {}) {
     const before = options.before || { exact: null, sameOwner: [] };
-    const target = canonicalRecord(options.target || {});
-    const observed = recordMutationSnapshot(observedRecords, target);
+    const target = canonicalRecord(options.target || {}, options);
+    const observed = recordMutationSnapshot(observedRecords, target, options);
     const intendedExact = options.deleting ? null : target;
 
     if (recordSnapshotMatches(observed.exact, intendedExact)) {

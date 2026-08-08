@@ -45,7 +45,7 @@ export function sanitizeCertificateError(value) {
     let text = String(value)
         .replace(/[\x00-\x1f\x7f]/g, ' ')
         .replace(/\b(Bearer|Basic)\s+[^\s,;]+/gi, '$1 [REDACTED]')
-        .replace(/\b(token|api[_-]?key|secret|password|credential)\b\s*[:=]\s*(?:"[^"]*"|'[^']*'|[^\s,;]+)/gi,
+        .replace(/\b([a-z0-9_.-]*(?:token|key|secret|password|credential)[a-z0-9_.-]*)\s*[:=]\s*(?:"[^"]*"|'[^']*'|[^\s,;]+)/gi,
             '$1=[REDACTED]')
         .replace(/\s+/g, ' ')
         .trim();

@@ -79,22 +79,20 @@ class CertificateLifecyclePoller {
             this.stop('complete');
             return;
         }
-        if (tracked.some(isTerminalCertificate)) {
-            this.stop('terminal');
-            return;
-        }
-        if (signature !== this.baseline && !tracked.some(row => certificateNeedsPolling(row))) {
-            this.stop('changed');
+        const terminal = tracked.some(isTerminalCertificate);
+        const polling = tracked.filter(row => certificateNeedsPolling(row));
+        if (!polling.length) {
+            this.stop(terminal ? 'terminal' : (signature !== this.baseline ? 'changed' : 'complete'));
             return;
         }
         if (this.ticks >= this.maxTicks) {
             this.stop('timeout');
             return;
         }
-        if (!tracked.some(row => certificateNeedsPolling(row))) {
-            this.stop('complete');
-            return;
-        }
+        // A list surface may track several issuances. Retire rows that reached
+        // a terminal/completed state without stopping the remaining rows.
+        this.trackedIds = new Set(polling.map(row => String(row.id)));
+        this.baseline = polling.map(certificateLifecycleSignature).sort().join('|');
         this._schedule();
     }
 
