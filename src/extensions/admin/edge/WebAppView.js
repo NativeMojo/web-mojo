@@ -6,19 +6,15 @@ import Modal from '@core/views/feedback/Modal.js';
 import MOJOUtils from '@core/utils/MOJOUtils.js';
 import {
     VhostList, WebApp, WebAppReleaseList,
-    buildWebAppPayload, canManageWebApp, classifyActionResponse, releaseActionFor
+    WEBAPP_BUCKET_MAX_LENGTH, buildWebAppPayload, canManageWebApp,
+    classifyActionResponse, releaseActionFor
 } from '@ext/admin/models/Edge.js';
 
 const WRITE_PERMS = ['manage_dns', 'security'];
 const activeGroupId = app => app?.getActiveGroupId?.() || app?.activeGroup?.id || null;
 const idOf = value => value && typeof value === 'object' ? value.id : value;
 
-function releaseBuckets(app, supplied) {
-    const values = supplied || app?.config?.edge_release_buckets || [];
-    return Array.isArray(values) ? [...new Set(values.filter(Boolean))] : [];
-}
-
-export async function openWebAppForm({ app, existing = null, collection = null, allowedBuckets = null }) {
+export async function openWebAppForm({ app, existing = null, collection = null }) {
     const creating = !existing;
     const group = activeGroupId(app);
     if (creating && !group) {
@@ -32,18 +28,13 @@ export async function openWebAppForm({ app, existing = null, collection = null, 
         Modal.showError('Could not load VHosts for this site.');
         return null;
     }
-    const buckets = releaseBuckets(app, allowedBuckets);
-    if (creating && !buckets.length) {
-        Modal.showError('No release buckets are configured for this deployment.');
-        return null;
-    }
     const fields = [
         { name: 'slug', type: 'text', label: 'Site slug', required: true, columns: 12,
           value: existing?.get?.('slug') || '', attributes: { maxlength: 64 },
           help: 'A tenant-scoped label; it is never used as a filesystem path.' },
-        ...(creating ? [{ name: 'bucket', type: 'select', label: 'Release bucket', required: true,
-            columns: 12, options: buckets.map(value => ({ value, label: value })),
-            help: 'The bucket is allowlisted by the server and immutable after creation.' }] : []),
+        ...(creating ? [{ name: 'bucket', type: 'text', label: 'Release bucket', required: true,
+            columns: 12, attributes: { maxlength: WEBAPP_BUCKET_MAX_LENGTH },
+            help: 'Enter a server-declared release bucket. The server validates its allowlist; the bucket is immutable after creation.' }] : []),
         { name: 'vhost', type: 'select', label: 'VHost', columns: 12,
           options: [{ value: '', label: 'None (served outside the Edge fleet)' },
               ...vhosts.models.map(model => ({ value: model.id, label: model.get('server_name') || `VHost ${model.id}` }))],
@@ -60,9 +51,7 @@ export async function openWebAppForm({ app, existing = null, collection = null, 
 
     let payload;
     try {
-        payload = buildWebAppPayload({ ...result, group }, {
-            create: creating, allowedBuckets: buckets
-        });
+        payload = buildWebAppPayload({ ...result, group }, { create: creating });
     } catch (error) {
         Modal.showError(error.message);
         return { ok: false, error: error.message };
@@ -185,7 +174,6 @@ class WebAppView extends DetailView {
         this.releases = releases;
         this.overviewSection = overviewSection;
         this.releasesSection = releasesSection;
-        this.allowedBuckets = options.allowedBuckets || null;
     }
 
     async onInit() {
@@ -196,7 +184,7 @@ class WebAppView extends DetailView {
 
     async onActionEditWebapp() {
         await openWebAppForm({ app: this.getApp(), existing: this.model,
-            collection: this.collection, allowedBuckets: this.allowedBuckets });
+            collection: this.collection });
         await this.headerView?.render?.();
         await this.overviewSection?.render?.();
         return true;

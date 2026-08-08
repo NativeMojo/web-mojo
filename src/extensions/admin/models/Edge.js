@@ -37,6 +37,7 @@ const hasErrors = (model) => !!(model?.errors
 
 export const WEBAPP_CREATE_FIELDS = Object.freeze(['group', 'slug', 'bucket', 'vhost', 'auto_promote']);
 export const WEBAPP_UPDATE_FIELDS = Object.freeze(['slug', 'vhost', 'auto_promote']);
+export const WEBAPP_BUCKET_MAX_LENGTH = 255;
 export const DEPLOY_SHA_PATTERN = /^[0-9a-f]{7,40}$/;
 
 /** Named AND gate for destructive WebApp actions; permission arrays are OR gates. */
@@ -100,12 +101,15 @@ export function buildWebAppPayload(input = {}, options = {}) {
 
     const group = idOf(input.group);
     if (!group) throw new Error('Select an active group before creating a WebApp.');
-    const allowedBuckets = Array.isArray(options.allowedBuckets)
-        ? options.allowedBuckets.filter(Boolean) : [];
-    if (!allowedBuckets.includes(input.bucket)) {
-        throw new Error('Choose a release bucket allowed by this deployment.');
+    const bucket = typeof input.bucket === 'string' ? input.bucket.trim() : '';
+    if (!bucket) throw new Error('Enter a release bucket.');
+    if (bucket.length > WEBAPP_BUCKET_MAX_LENGTH) {
+        throw new Error(`Release bucket must be ${WEBAPP_BUCKET_MAX_LENGTH} characters or fewer.`);
     }
-    return { group, slug, bucket: input.bucket, vhost: payload.vhost, auto_promote: payload.auto_promote };
+    if (/[\u0000-\u001f\u007f]/.test(bucket)) {
+        throw new Error('Release bucket cannot contain control characters.');
+    }
+    return { group, slug, bucket, vhost: payload.vhost, auto_promote: payload.auto_promote };
 }
 
 export function releaseActionFor(status) {
@@ -289,10 +293,9 @@ class WebApp extends Model {
         }
     }
 
-    saveSafe(input = {}, options = {}) {
+    saveSafe(input = {}) {
         return this.save(buildWebAppPayload(input, {
-            create: !this.id,
-            allowedBuckets: options.allowedBuckets
+            create: !this.id
         }));
     }
 
@@ -390,7 +393,7 @@ export { Vhost, VhostList, Upstream, UpstreamList, WebApp, WebAppList, WebAppRel
 
 export default {
     Vhost, VhostList, Upstream, UpstreamList, WebApp, WebAppList, WebAppRelease, WebAppReleaseList,
-    VhostKindOptions, UpstreamKindOptions, VHOST_POOL_PATTERN,
+    VhostKindOptions, UpstreamKindOptions, VHOST_POOL_PATTERN, WEBAPP_BUCKET_MAX_LENGTH,
     isLiteralSuperuser, isValidVhostPool,
     buildVhostPayload, buildUpstreamDeclarePayload, buildWebAppPayload,
     projectWebApp, projectWebAppRelease, releaseActionFor, canManageWebApp,

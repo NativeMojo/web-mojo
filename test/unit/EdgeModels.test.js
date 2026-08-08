@@ -145,9 +145,9 @@ module.exports = async function(testContext) {
 
         it('uses distinct create/update allowlists and nulls a blank VHost', () => {
             const create = Edge.buildWebAppPayload({
-                group: { id: 8 }, slug: ' portal ', bucket: 'releases', vhost: '',
+                group: { id: 8 }, slug: ' portal ', bucket: ' releases ', vhost: '',
                 auto_promote: true, prefix: '../../escape', api_key: 'secret', current_release: 99
-            }, { create: true, allowedBuckets: ['releases'] });
+            }, { create: true });
             expect(create).toEqual({ group: 8, slug: 'portal', bucket: 'releases', vhost: null, auto_promote: true });
             expect(create).not.toHaveProperty('prefix');
             const update = Edge.buildWebAppPayload({
@@ -156,9 +156,15 @@ module.exports = async function(testContext) {
             expect(update).toEqual({ slug: 'portal-2', vhost: null, auto_promote: false });
             expect(update).not.toHaveProperty('group');
             expect(update).not.toHaveProperty('bucket');
-            expect(() => Edge.buildWebAppPayload({ group: 8, slug: 'x', bucket: 'other' }, {
-                create: true, allowedBuckets: ['releases']
-            })).toThrow('allowed');
+            expect(() => Edge.buildWebAppPayload({ group: 8, slug: 'x', bucket: ' ' }, {
+                create: true
+            })).toThrow('release bucket');
+            expect(() => Edge.buildWebAppPayload({ group: 8, slug: 'x', bucket: `ok\nnot-ok` }, {
+                create: true
+            })).toThrow('control characters');
+            expect(() => Edge.buildWebAppPayload({ group: 8, slug: 'x', bucket: 'x'.repeat(256) }, {
+                create: true
+            })).toThrow('255');
         });
 
         it('maps only uploaded and superseded releases to actions', () => {

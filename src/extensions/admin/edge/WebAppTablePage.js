@@ -2,7 +2,9 @@
 
 import TablePage from '@core/pages/TablePage.js';
 import MOJOUtils from '@core/utils/MOJOUtils.js';
-import { WebApp, WebAppList, isLiteralSuperuser } from '@ext/admin/models/Edge.js';
+import {
+    WebApp, WebAppList, classifyActionResponse, isLiteralSuperuser
+} from '@ext/admin/models/Edge.js';
 import WebAppView, { openWebAppForm } from './WebAppView.js';
 
 const escapeHtml = MOJOUtils.escapeHtml;
@@ -31,13 +33,17 @@ class WebAppTablePage extends TablePage {
             tableOptions: { striped: true, bordered: false, hover: true, responsive: false },
             toolbarButtons: [{ label: 'Create WebApp', icon: 'bi bi-plus-lg', action: 'create-webapp', variant: 'primary', permissions: WRITE_PERMS }]
         });
-        this.allowedBuckets = options.allowedBuckets || null;
     }
 
     async onInit() {
         const app = this.getApp();
         const group = app?.getActiveGroupId?.() || app?.activeGroup?.id || null;
         if (!isLiteralSuperuser(app)) {
+            // The active group is the scope boundary. Do not let a bookmarked
+            // or hand-written query replace it when TablePage applies URL
+            // filters below.
+            if (group) this.query.group = group;
+            else delete this.query.group;
             this.collection = new WebAppList({ params: group ? { group } : { id: '__no_active_group__' } });
             this.options.requiresGroup = true;
         } else {
@@ -47,6 +53,39 @@ class WebAppTablePage extends TablePage {
         await super.onInit();
     }
 
+    async _openDeepLinkedItem(itemId) {
+        try {
+            const app = this.getApp();
+            const superuser = isLiteralSuperuser(app);
+            const group = app?.getActiveGroupId?.() || app?.activeGroup?.id || null;
+            if (!superuser && !group) {
+                this._clearItemParam();
+                return;
+            }
+
+            // Resolve through the selected tenant before TablePage hydrates the
+            // detail endpoint. A global DNS manager must not cross that scope
+            // merely by editing `_item` in the URL.
+            const scoped = new WebAppList({
+                size: 1,
+                params: { id: itemId, ...(superuser ? {} : { group }) }
+            });
+            const response = await scoped.fetch();
+            if (!classifyActionResponse(response, scoped).ok) {
+                this._clearItemParam();
+                return;
+            }
+            const model = scoped.get(itemId);
+            if (!model) {
+                this._clearItemParam();
+                return;
+            }
+            await this.showItemDialog(model);
+        } catch {
+            this._clearItemParam();
+        }
+    }
+
     async showItemDialog(model) {
         model._edgeApp = this.getApp();
         return super.showItemDialog(model);
@@ -54,7 +93,7 @@ class WebAppTablePage extends TablePage {
 
     async onActionCreateWebapp() {
         if (!this.checkPermissions(WRITE_PERMS)) return true;
-        await openWebAppForm({ app: this.getApp(), collection: this.collection, allowedBuckets: this.allowedBuckets });
+        await openWebAppForm({ app: this.getApp(), collection: this.collection });
         return true;
     }
 }

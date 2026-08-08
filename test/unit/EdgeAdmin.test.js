@@ -34,6 +34,33 @@ module.exports = async function(testContext) {
             expect((source.match(/if \(!canManageWebApp\(app\)\) return true/g) || []).length).toBe(2);
         });
 
+        it('uses constrained bucket text and leaves allowlist authority on the server', () => {
+            const source = stripComments(read('src/extensions/admin/edge/WebAppView.js'));
+            expect(source).toContain("name: 'bucket', type: 'text'");
+            expect(source).toContain('maxlength: WEBAPP_BUCKET_MAX_LENGTH');
+            expect(source).not.toContain('edge_release_buckets');
+            expect(source).not.toContain('allowedBuckets');
+        });
+
+        it('pins non-superuser URL scope to the active group before initialization', () => {
+            const source = stripComments(read('src/extensions/admin/edge/WebAppTablePage.js'));
+            expect(source).toContain('this.query.group = group');
+            expect(source).toContain('delete this.query.group');
+            expect(source.indexOf('this.query.group = group')).toBeLessThan(source.indexOf('await super.onInit()'));
+        });
+
+        it('resolves WebApp deep links through the selected tenant before detail hydration', () => {
+            const table = stripComments(read('src/extensions/admin/edge/WebAppTablePage.js'));
+            const start = table.indexOf('async _openDeepLinkedItem(itemId)');
+            const end = table.indexOf('async showItemDialog(model)', start);
+            const method = table.slice(start, end);
+            expect(start).not.toBe(-1);
+            expect(method).toContain('new WebAppList');
+            expect(method).toContain('superuser ? {} : { group }');
+            expect(method).not.toContain('fetchOne');
+            expect(method.indexOf('scoped.fetch()')).toBeLessThan(method.indexOf('showItemDialog(model)'));
+        });
+
         it('keeps the one-time key local and supplies an explicit selectable fallback', () => {
             const source = stripComments(read('src/extensions/admin/edge/WebAppView.js'));
             expect(source).toContain('await navigator.clipboard.writeText(token)');
