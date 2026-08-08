@@ -12,8 +12,10 @@
 import View from '@core/View.js';
 import DetailView from '@core/views/data/DetailView.js';
 import Modal from '@core/views/feedback/Modal.js';
-import { Certificate } from '@ext/admin/models/Dns.js';
+import { Certificate, Domain } from '@ext/admin/models/Dns.js';
 import { certExpiryTone } from './dnsData.js';
+import { isInteractiveSuperuser } from './certificateData.js';
+import CertificateLifecyclePoller from './CertificateLifecyclePoller.js';
 
 const MANAGE_PERMS = ['manage_dns', 'security'];
 
@@ -175,6 +177,45 @@ class CertificateView extends DetailView {
         this.overviewSection = overviewSection;
         this.namesSection = namesSection;
         this.renewalSection = renewalSection;
+        this.poller = new CertificateLifecyclePoller({
+            onUpdate: () => {
+                this.headerView?.render?.();
+                this.overviewSection?.render?.();
+                this.namesSection?.render?.();
+                this.renewalSection?.render?.();
+            }
+        });
+    }
+
+    async resolveOwningDomain() {
+        const embedded = this.model.get('domain');
+        const domainId = embedded?.id || embedded;
+        if (!domainId) return null;
+        const domain = this.model._owningDomain || new Domain({ id: domainId });
+        const response = await domain.fetch();
+        if (!response || response.success === false || !domain.get('name')) return null;
+        if (domain.get('group') === null && !isInteractiveSuperuser(this.getApp())) return null;
+        this.model._owningDomain = domain;
+        return domain;
+    }
+
+    async onAfterMount() {
+        if (super.onAfterMount) await super.onAfterMount();
+        this.poller.start({
+            domainId: this.model.get('domain')?.id || this.model.get('domain'),
+            snapshot: this.model.attributes,
+            fetch: async () => {
+                if (!await this.resolveOwningDomain()) throw new Error('Certificate unavailable');
+                const response = await this.model.fetch();
+                if (!response || response.success === false) throw new Error('Certificate unavailable');
+                return this.model.attributes;
+            }
+        });
+    }
+
+    async destroy() {
+        this.poller.stop('destroy');
+        return super.destroy();
     }
 
     async onActionRevokeCertificate() {
@@ -189,16 +230,36 @@ class CertificateView extends DetailView {
         });
         if (!confirmed) return true;
 
-        app.showLoading();
-        const resp = await this.model.revoke();
-        app.hideLoading();
+        if (!await this.resolveOwningDomain()) {
+            Modal.showError('Certificate details are unavailable.');
+            return true;
+        }
 
-        if (resp && resp.data && resp.data.status) {
+        app.showLoading();
+        let mutation;
+        try {
+            mutation = await this.model.revoke({
+                reconcile: async () => {
+                    if (!await this.resolveOwningDomain()) return null;
+                    const response = await this.model.fetch();
+                    if (!response || response.success === false) return null;
+                    return this.model.attributes;
+                },
+                classify: observed => observed.status === 'revoked' ? 'applied' : 'not-applied'
+            });
+        } finally {
+            app.hideLoading();
+        }
+
+        if (mutation?.state === 'applied') {
             app.toast.success('Certificate revoked');
-            this.model.set(resp.data.data || { status: 'revoked' });
             await this.headerView?.render();
+            this.poller.stop('terminal');
+        } else if (mutation?.refreshRequired || mutation?.state === 'unconfirmed') {
+            Modal.showError('Revocation could not be confirmed. Refresh before trying again.');
         } else {
-            Modal.showError((resp && resp.data && resp.data.error) || 'Failed to revoke the certificate.');
+            const response = mutation?.response;
+            Modal.showError((response?.data && response.data.error) || 'The certificate was not revoked.');
         }
         return true;
     }

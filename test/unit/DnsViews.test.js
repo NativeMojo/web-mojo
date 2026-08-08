@@ -63,6 +63,12 @@ module.exports = async function(testContext) {
             it("says the delete removes management, not the registration", () => {
                 expect(source).toContain('remains registered');
             });
+
+            it('reduces mojo domains to Overview and Certificates', () => {
+                expect(source).toContain("model.get('provider') === 'mojo'");
+                expect(source).toContain("activeSection: certificateOnly ? 'Overview' : 'Records'");
+                expect(source).toContain('if (!certificateOnly)');
+            });
         });
 
         describe('CertificateView never exposes key material', () => {
@@ -90,6 +96,13 @@ module.exports = async function(testContext) {
                 expect(source).toContain("when: m => m.get('status') === 'active'");
                 // CAN_DELETE is False on the backend.
                 expect(source).not.toContain("action: 'delete-certificate'");
+            });
+
+            it('resolves the owning Domain before detail and revoke gates', () => {
+                expect(source).toContain('resolveOwningDomain');
+                expect(source).toContain('isInteractiveSuperuser');
+                expect(table).toContain('const domain = new Domain');
+                expect(table).toContain('Certificate details are unavailable.');
             });
         });
 
@@ -122,6 +135,19 @@ module.exports = async function(testContext) {
                 expect(source).toContain('capabilityKey');
                 expect(source).not.toContain('let _capabilities = null');
             });
+
+            it('projects certificate constructor, merge, list, detail, and action ingress', () => {
+                expect(source).toContain('super(projectCertificate(data)');
+                expect(source).toContain('super.set(projectCertificate(key)');
+                expect(source).toContain('super.parse(response).map(projectCertificate)');
+                expect(source).toContain('projectCertificateResponse');
+            });
+
+            it('hydrates a group choice through ?id= instead of a detail URL', () => {
+                expect(source).toContain('fetchChoice(id)');
+                expect(source).toContain("credential/group-choice`, { id }");
+                expect(source).not.toMatch(/credential\/group-choice\/\$\{/);
+            });
         });
 
         describe('DnsCredential surfaces never reveal a secret', () => {
@@ -139,6 +165,11 @@ module.exports = async function(testContext) {
                     expect(text).not.toContain("get('api_key')");
                     expect(text).not.toContain("get('api_secret')");
                 });
+            });
+
+            it('shares the functional link and rotation form', () => {
+                expect(view).toContain('DnsCredentialLinkForm.open');
+                expect(page).toContain('DnsCredentialLinkForm.open');
             });
         });
 
@@ -188,6 +219,13 @@ module.exports = async function(testContext) {
 
             it('renders the server error verbatim rather than inventing one', () => {
                 expect(source).toContain('resp.data.error');
+            });
+
+            it('refetches exact and same-owner state before and after one write', () => {
+                expect(source).toContain('recordMutationSnapshot');
+                expect(source).toContain('recordSnapshotMatches');
+                expect(source).toContain('classifyRecordMutation');
+                expect(source).toContain('reconcile: () => this.refresh()');
             });
         });
 

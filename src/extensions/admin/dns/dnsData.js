@@ -49,6 +49,7 @@ export const DEFAULT_CAPABILITIES = {
     suggestions_enabled: false,
     providers: [],
     acme: { configured: true, staging: false },
+    delegated_acme: { available: false, profile: null },
     cert_renew_days: 30
 };
 
@@ -683,6 +684,51 @@ export function diffRecordValues(before, after) {
     };
 }
 
+/** Canonical provider row used for preflight drift and post-write evidence. */
+export function canonicalRecord(record = {}) {
+    return {
+        type: str(record.type).toUpperCase(),
+        name: str(record.name).trim().toLowerCase().replace(/\.+$/, ''),
+        record_values: normalizeRecordValues(record.record_values).sort(),
+        ttl: Number.isFinite(Number(record.ttl)) ? Number(record.ttl) : null
+    };
+}
+
+export function recordMutationSnapshot(records, target = {}) {
+    const intended = canonicalRecord(target);
+    const rows = (Array.isArray(records) ? records : [])
+        .map(canonicalRecord)
+        .filter(row => row.name === intended.name)
+        .sort((a, b) => recordKey(a).localeCompare(recordKey(b)));
+    return {
+        key: recordKey(intended),
+        exact: rows.find(row => recordKey(row) === recordKey(intended)) || null,
+        sameOwner: rows
+    };
+}
+
+export function recordSnapshotMatches(left, right) {
+    return JSON.stringify(left || null) === JSON.stringify(right || null);
+}
+
+/**
+ * Classify only from the authoritative records observed after a write.
+ * Transport success/failure is deliberately not an input.
+ */
+export function classifyRecordMutation(observedRecords, options = {}) {
+    const before = options.before || { exact: null, sameOwner: [] };
+    const target = canonicalRecord(options.target || {});
+    const observed = recordMutationSnapshot(observedRecords, target);
+    const intendedExact = options.deleting ? null : target;
+
+    if (recordSnapshotMatches(observed.exact, intendedExact)) {
+        const hasCname = observed.sameOwner.some(row => row.type === 'CNAME');
+        if (!hasCname || observed.sameOwner.length === 1) return 'applied';
+    }
+    if (recordSnapshotMatches(observed, before)) return 'not-applied';
+    return 'unconfirmed';
+}
+
 // Aggregate default export — the unit-test module loader returns a module's
 // default export; runtime code uses the named exports above.
 export default {
@@ -716,5 +762,9 @@ export default {
     normalizeRecordValues,
     validateRecordSet,
     recordWarnings,
-    diffRecordValues
+    diffRecordValues,
+    canonicalRecord,
+    recordMutationSnapshot,
+    recordSnapshotMatches,
+    classifyRecordMutation
 };

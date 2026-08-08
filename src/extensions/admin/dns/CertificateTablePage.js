@@ -20,15 +20,21 @@ import TablePage from '@core/pages/TablePage.js';
 import Modal from '@core/views/feedback/Modal.js';
 import MOJOUtils from '@core/utils/MOJOUtils.js';
 import {
-    Certificate, CertificateList, DomainList,
+    Certificate, CertificateList, Domain, DomainList, AcmeDelegationList,
     registrar, CertificateStatusOptions
 } from '@ext/admin/models/Dns.js';
 import { certExpiryTone } from './dnsData.js';
+import {
+    certificateReadiness,
+    isInteractiveSuperuser,
+    normalizeCertificateSans
+} from './certificateData.js';
+import CertificateLifecyclePoller from './CertificateLifecyclePoller.js';
+import { dnsMutations } from './DnsMutationCoordinator.js';
 import CertificateView from './CertificateView.js';
 
 const escapeHtml = MOJOUtils.escapeHtml;
 const MANAGE_PERMS = ['manage_dns', 'security'];
-const NON_TERMINAL = ['pending', 'issuing'];
 
 Certificate.VIEW_CLASS = CertificateView;
 
@@ -91,9 +97,19 @@ class CertificateTablePage extends TablePage {
         };
         super(page);
         this.caps = {};
+        this.poller = new CertificateLifecyclePoller();
     }
 
     /** The days-left column needs capabilities, so it is installed once loaded. */
+    async onInit() {
+        await super.onInit();
+        this.tableView.onActionRefresh = async () => {
+            const response = await this.tableView.refresh();
+            if (response && response.success !== false) dnsMutations.clearPrefix('certificate:');
+            return response;
+        };
+    }
+
     installDaysColumn() {
         const caps = this.caps;
         if (!this.tableView || this.tableView.columns.some(c => c.key === 'days_remaining')) return;
@@ -158,20 +174,51 @@ class CertificateTablePage extends TablePage {
      * so the tick is self-terminating rather than relying on teardown.
      */
     syncAutoRefresh() {
-        const pending = (this.collection?.models || [])
-            .some(model => NON_TERMINAL.includes(model.get('status')));
-        if (!pending) {
-            if (this._pollTimer) { clearTimeout(this._pollTimer); this._pollTimer = null; }
+        const rows = (this.collection?.models || []).map(model => model.attributes);
+        this.poller.start({
+            snapshot: rows,
+            fetch: async () => {
+                if (!this.isMounted?.()) throw new Error('Certificate page is not mounted');
+                const response = await this.collection?.fetch();
+                if (!response || response.success === false) throw new Error('Certificate refresh failed');
+                return (this.collection?.models || []).map(model => model.attributes);
+            }
+        });
+    }
+
+    async onExit() {
+        this.poller.stop('exit');
+        await super.onExit();
+    }
+
+    async destroy() {
+        this.poller.stop('destroy');
+        return super.destroy();
+    }
+
+    async showItemDialog(model) {
+        const domainRef = model?.get?.('domain');
+        const domainId = domainRef?.id || domainRef;
+        try {
+            if (!domainId) throw new Error('Missing certificate domain');
+            const domain = new Domain({ id: domainId });
+            const domainResponse = await domain.fetch();
+            if (!domainResponse || domainResponse.success === false || !domain.get('name')) {
+                throw new Error('Domain unavailable');
+            }
+            if (domain.get('group') === null && !isInteractiveSuperuser(this.getApp())) {
+                throw new Error('House certificate refused');
+            }
+            const certificateResponse = await model.fetch();
+            if (!certificateResponse || certificateResponse.success === false) {
+                throw new Error('Certificate unavailable');
+            }
+            model._owningDomain = domain;
+        } catch {
+            Modal.showError('Certificate details are unavailable.');
             return;
         }
-        if (this._pollTimer) return;
-        const tick = async () => {
-            this._pollTimer = null;
-            if (!this.isMounted?.()) return;
-            await this.collection?.fetch();
-            this.syncAutoRefresh();
-        };
-        this._pollTimer = setTimeout(tick, 10000);
+        return super.showItemDialog(model);
     }
 
     async onActionRequestCertificate() {
@@ -204,17 +251,64 @@ class CertificateTablePage extends TablePage {
         if (!result) return true;
 
         app.showLoading();
-        const payload = { domain: result.domain };
-        if (result.names && result.names.length) payload.names = result.names;
-        const resp = await Certificate.request(payload);
-        app.hideLoading();
+        const domain = new Domain({ id: result.domain });
+        const domainResponse = await domain.fetch();
+        if (!domainResponse || domainResponse.success === false) {
+            app.hideLoading();
+            Modal.showError('The selected domain could not be loaded.');
+            return true;
+        }
+        const delegations = new AcmeDelegationList();
+        const delegationResponse = await delegations.fetch({ domain: domain.id });
+        const readiness = certificateReadiness({
+            caps: this.caps,
+            capabilitiesLoaded: registrar.capabilityState().loaded,
+            domain: domain.attributes,
+            delegation: delegations.models[0]?.attributes || null,
+            delegationLoaded: !!(delegationResponse && delegationResponse.success !== false),
+            delegationUnsupported: delegationResponse?.status === 404
+        });
+        if (!readiness.ready) {
+            app.hideLoading();
+            Modal.showError(readiness.reason);
+            return true;
+        }
+        const normalized = normalizeCertificateSans(
+            result.names?.length ? result.names : [domain.get('name'), `*.${domain.get('name')}`],
+            { apex: domain.get('name'), profile: readiness.profile });
+        if (!normalized.ok) {
+            app.hideLoading();
+            Modal.showError(normalized.errors[0]);
+            return true;
+        }
 
-        if (resp && resp.data && resp.data.status) {
+        let mutation;
+        const existingCertificateIds = new Set((this.collection?.models || []).map(item => String(item.id)));
+        try {
+            mutation = await Certificate.request({ domain: domain.id, names: normalized.names }, {
+                apex: domain.get('name'),
+                profile: readiness.profile,
+                reconcile: async () => {
+                    const response = await this.collection?.fetch();
+                    if (!response || response.success === false) return null;
+                    return (this.collection?.models || []).map(item => item.attributes);
+                },
+                classify: rows => rows.some(row => (row.domain?.id || row.domain) == domain.id
+                    && !existingCertificateIds.has(String(row.id)))
+                    ? 'applied' : 'not-applied'
+            });
+        } finally {
+            app.hideLoading();
+        }
+
+        if (mutation?.state === 'applied') {
             app.toast.success('Certificate requested — issuance takes a few minutes.');
-            await this.collection?.fetch();
             this.syncAutoRefresh();
+        } else if (mutation?.refreshRequired || mutation?.state === 'unconfirmed') {
+            Modal.showError('Issuance could not be confirmed. Refresh before trying again.');
         } else {
-            Modal.showError((resp && resp.data && resp.data.error) || 'Failed to request the certificate.');
+            const response = mutation?.response;
+            Modal.showError((response?.data && response.data.error) || 'The certificate request was not applied.');
         }
         return true;
     }
