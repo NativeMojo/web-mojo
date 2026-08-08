@@ -6,7 +6,7 @@ module.exports = async function(testContext) {
 
     await testHelpers.setup();
     const jest = global.jest;
-    const restMock = { POST: jest.fn(), DELETE: jest.fn() };
+    const restMock = { GET: jest.fn(), POST: jest.fn(), DELETE: jest.fn() };
     global.Rest = restMock;
     global.Collection = moduleLoader.loadModule('Collection');
     global.Model = moduleLoader.loadModule('Model');
@@ -20,6 +20,7 @@ module.exports = async function(testContext) {
 
     describe('Edge model contracts', () => {
         beforeEach(() => {
+            restMock.GET.mockReset();
             restMock.POST.mockReset();
             restMock.DELETE.mockReset();
         });
@@ -118,6 +119,77 @@ module.exports = async function(testContext) {
             expect(restMock.POST.mock.calls[1]).toEqual([
                 '/api/edge/upstream/retire', { upstream: 5 }
             ]);
+        });
+
+        it('exports safe WebApp and immutable release contracts', () => {
+            ['WebApp', 'WebAppList', 'WebAppRelease', 'WebAppReleaseList']
+                .forEach(name => expect(Edge[name]).toBeDefined());
+            const projected = Edge.projectWebAppRelease({
+                id: 4, version: 'abc1234', status: 'uploaded', file_count: 3,
+                manifest: [{ path: 'index.html' }], uploads: ['secret-url']
+            });
+            expect(projected).toEqual({
+                id: 4, version: 'abc1234', status: 'uploaded', created: null,
+                modified: null, file_count: 3, created_by: null
+            });
+            expect(projected).not.toHaveProperty('manifest');
+            expect(projected).not.toHaveProperty('uploads');
+            const release = new Edge.WebAppRelease({ id: 4 });
+            release.set({ id: 4, version: 'safe', status: 'live', manifest: ['hidden'] });
+            expect(release.get('manifest')).toBeUndefined();
+            expect(() => release.save()).toThrow('immutable');
+            expect(() => release.destroy()).toThrow('immutable');
+            expect(new Edge.WebAppReleaseList().params.id).toBe('__no_webapp__');
+            expect(new Edge.WebAppReleaseList({ webapp: 3 }).params.webapp).toBe(3);
+        });
+
+        it('uses distinct create/update allowlists and nulls a blank VHost', () => {
+            const create = Edge.buildWebAppPayload({
+                group: { id: 8 }, slug: ' portal ', bucket: 'releases', vhost: '',
+                auto_promote: true, prefix: '../../escape', api_key: 'secret', current_release: 99
+            }, { create: true, allowedBuckets: ['releases'] });
+            expect(create).toEqual({ group: 8, slug: 'portal', bucket: 'releases', vhost: null, auto_promote: true });
+            expect(create).not.toHaveProperty('prefix');
+            const update = Edge.buildWebAppPayload({
+                group: 9, slug: 'portal-2', bucket: 'other', vhost: '', auto_promote: false
+            });
+            expect(update).toEqual({ slug: 'portal-2', vhost: null, auto_promote: false });
+            expect(update).not.toHaveProperty('group');
+            expect(update).not.toHaveProperty('bucket');
+            expect(() => Edge.buildWebAppPayload({ group: 8, slug: 'x', bucket: 'other' }, {
+                create: true, allowedBuckets: ['releases']
+            })).toThrow('allowed');
+        });
+
+        it('maps only uploaded and superseded releases to actions', () => {
+            expect(Edge.releaseActionFor('pending')).toBeNull();
+            expect(Edge.releaseActionFor('uploaded')).toBe('promote');
+            expect(Edge.releaseActionFor('live')).toBeNull();
+            expect(Edge.releaseActionFor('superseded')).toBe('rollback');
+        });
+
+        it('requires manage_webapp AND instance write authority', () => {
+            const user = grants => ({ hasPermission: name => grants.includes(name) });
+            expect(Edge.canManageWebApp(user([]))).toBe(false);
+            expect(Edge.canManageWebApp(user(['manage_webapp']))).toBe(false);
+            expect(Edge.canManageWebApp(user(['manage_dns']))).toBe(false);
+            expect(Edge.canManageWebApp(user(['security']))).toBe(false);
+            expect(Edge.canManageWebApp(user(['manage_webapp', 'manage_dns']))).toBe(true);
+            expect(Edge.canManageWebApp(user(['manage_webapp', 'security']))).toBe(true);
+        });
+
+        it('posts link/promote once while in flight and reconciles in finally', async () => {
+            let resolveAction;
+            restMock.POST.mockReturnValue(new Promise(resolve => { resolveAction = resolve; }));
+            restMock.GET.mockResolvedValue({ success: true, data: { status: true, data: { id: 3 } } });
+            const site = new Edge.WebApp({ id: 3, slug: 'portal' });
+            const first = site.linkKey();
+            const second = site.linkKey();
+            expect(first).toBe(second);
+            expect(restMock.POST).toHaveBeenCalledTimes(1);
+            resolveAction({ success: true, data: { status: true, data: { token: 'once' } } });
+            await first;
+            expect(restMock.GET).toHaveBeenCalled();
         });
     });
 };

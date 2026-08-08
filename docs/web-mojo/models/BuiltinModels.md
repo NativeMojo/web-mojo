@@ -188,6 +188,11 @@ User.CATEGORY_PERMISSIONS
 
 `admin` is a top-level switch but **not** a category with granular children — it has no `CATEGORY_GRANULAR_MAP` entry; `hasPermission()` checks it by name as the full-access wildcard.
 
+The Platform granular tab also includes `manage_webapp` (human site-key and
+promotion/rollback actions) and `manage_deploy` (global fleet deploy). Neither
+has a `CATEGORY_GRANULAR_MAP` entry: `security` does not imply either. They are
+User permissions only and are not copied into Member or ApiKey catalogs.
+
 ### Category fallback
 
 A page or view gate written against a *granular* permission is automatically satisfied when the user holds the parent *category*. The mapping lives in `User.CATEGORY_GRANULAR_MAP` (forward) and `User.GRANULAR_TO_CATEGORY` (reverse).
@@ -824,7 +829,7 @@ import { Job, JobList, JobForms } from 'web-mojo/admin-models';
 import { Incident, IncidentList, RuleSet } from 'web-mojo/admin-models';
 import { Email, Mailbox, EmailDomain, SentMessage, EmailTemplate } from 'web-mojo/admin-models';
 import { Push, PushDevice, PushTemplate, PushDelivery } from 'web-mojo/admin-models';
-import { Vhost, VhostList, Upstream, UpstreamList } from 'web-mojo/admin-models';
+import { Vhost, VhostList, Upstream, UpstreamList, WebApp, WebAppList, WebAppRelease, WebAppReleaseList } from 'web-mojo/admin-models';
 ```
 
 | Model | Purpose | Endpoint |
@@ -833,7 +838,7 @@ import { Vhost, VhostList, Upstream, UpstreamList } from 'web-mojo/admin-models'
 | `Assistant` | Assistant conversations + skills | `/api/assistant/...` |
 | `Bouncer` | Fraud-detection device/signal/signature | `/api/account/bouncer/...` |
 | `Dns` | Domains, records, certificates, credentials, purchases | `/api/dnsman/...` |
-| `Edge` | Structured VHosts and declared Upstreams | `/api/edge/...` |
+| `Edge` | Structured VHosts/Upstreams, safe WebApps, immutable releases, exact-SHA fleet deploy | `/api/edge/...` |
 | `Email` | Email domain / mailbox / template / sent message | `/api/aws/email/...` |
 | `Incident` | Incident / event / rule set | `/api/incident/...` |
 | `IPSet` | IP allow/block sets | `/api/incident/ipset` |

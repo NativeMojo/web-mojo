@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Admin · WebApp releases and exact-revision Edge deploy
+
+- Added safe `WebApp`/`WebAppRelease` models plus tenant-scoped site CRUD and
+  immutable release history at `system/dns/webapps`. Uploaded releases can be
+  promoted and superseded releases rolled back through the same named action.
+- CI-key linking now requires the explicit `manage_webapp` + site-write
+  conjunction, warns about immediate prior-key revocation, copies the returned
+  one-time token without retaining it, and shows a selectable fallback only if
+  clipboard access fails.
+- Added a distinct Edge sidebar parent and `system/edge/deploy` for global
+  `sys.manage_deploy` operators. It accepts only exact 7–40 character hex SHAs
+  and preserves the flat queued/already-recorded/coordination-unavailable API
+  outcomes. CI transfer, node, and fleet-material surfaces remain absent.
+- Added global User switches for `manage_webapp` and `manage_deploy` without
+  category implication or Member/API-key catalog changes.
+
 ### Admin · structured Edge VHosts and declared Upstreams
 
 - Added `Vhost`/`VhostList` and `Upstream`/`UpstreamList` to
