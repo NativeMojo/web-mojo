@@ -34,6 +34,13 @@ const idOf = (value) => value && typeof value === 'object' ? value.id : value;
 const hasErrors = (model) => !!(model?.errors
     && typeof model.errors === 'object'
     && Object.keys(model.errors).length);
+const hasControlCharacter = (value) => {
+    for (let index = 0; index < value.length; index++) {
+        const code = value.charCodeAt(index);
+        if (code <= 0x1f || code === 0x7f) return true;
+    }
+    return false;
+};
 
 export const WEBAPP_CREATE_FIELDS = Object.freeze(['group', 'slug', 'bucket', 'vhost', 'auto_promote']);
 export const WEBAPP_UPDATE_FIELDS = Object.freeze(['slug', 'vhost', 'auto_promote']);
@@ -106,7 +113,7 @@ export function buildWebAppPayload(input = {}, options = {}) {
     if (bucket.length > WEBAPP_BUCKET_MAX_LENGTH) {
         throw new Error(`Release bucket must be ${WEBAPP_BUCKET_MAX_LENGTH} characters or fewer.`);
     }
-    if (/[\u0000-\u001f\u007f]/.test(bucket)) {
+    if (hasControlCharacter(bucket)) {
         throw new Error('Release bucket cannot contain control characters.');
     }
     return { group, slug, bucket, vhost: payload.vhost, auto_promote: payload.auto_promote };
