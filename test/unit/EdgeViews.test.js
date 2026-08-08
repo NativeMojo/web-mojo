@@ -41,9 +41,24 @@ module.exports = async function(testContext) {
             for (const file of ['VhostTablePage.js', 'UpstreamTablePage.js']) {
                 const text = source(`src/extensions/admin/dns/${file}`);
                 expect(text).toContain('isLiteralSuperuser(app)');
-                expect(text).toContain('params: { group }');
+                expect(text).toContain('{ group }');
+                expect(text).toContain('this.query.group = group');
+                expect(text).toContain('delete this.query.group');
+                expect(text.indexOf('this.query.group = group')).toBeLessThan(text.indexOf('await super.onInit()'));
                 expect(text).toContain('this.options.requiresGroup = false');
             }
+        });
+
+        it('resolves VHost deep links through a scoped list before detail hydration', () => {
+            const table = source('src/extensions/admin/dns/VhostTablePage.js');
+            const start = table.indexOf('async _openDeepLinkedItem(itemId)');
+            const end = table.indexOf('async showItemDialog(model)', start);
+            const method = table.slice(start, end);
+            expect(start).not.toBe(-1);
+            expect(method).toContain('new VhostList');
+            expect(method).toContain('superuser ? {} : { group }');
+            expect(method).not.toContain('fetchOne');
+            expect(method.indexOf('scoped.fetch()')).toBeLessThan(method.indexOf('showItemDialog(model)'));
         });
 
         it('hydrates Domain before VHost detail, edit, and delete', () => {
