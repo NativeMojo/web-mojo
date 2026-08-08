@@ -94,6 +94,9 @@ export { default as VhostTablePage } from '@ext/admin/dns/VhostTablePage.js';
 export { default as VhostView } from '@ext/admin/dns/VhostView.js';
 export { default as UpstreamTablePage } from '@ext/admin/dns/UpstreamTablePage.js';
 export { default as UpstreamView } from '@ext/admin/dns/UpstreamView.js';
+export { default as WebAppTablePage } from '@ext/admin/edge/WebAppTablePage.js';
+export { default as WebAppView } from '@ext/admin/edge/WebAppView.js';
+export { default as EdgeDeployPage } from '@ext/admin/edge/EdgeDeployPage.js';
 // Pure record validation/mapping — exported so a consuming portal can reuse the
 // same rules rather than re-deriving them (the geofenceData precedent).
 export {
@@ -239,6 +242,8 @@ import DomainPurchaseTablePageClass from '@ext/admin/dns/DomainPurchaseTablePage
 import RegistrantContactPageClass from '@ext/admin/dns/RegistrantContactPage.js';
 import VhostTablePageClass from '@ext/admin/dns/VhostTablePage.js';
 import UpstreamTablePageClass from '@ext/admin/dns/UpstreamTablePage.js';
+import WebAppTablePageClass from '@ext/admin/edge/WebAppTablePage.js';
+import EdgeDeployPageClass from '@ext/admin/edge/EdgeDeployPage.js';
 
 import AssistantSkillTablePageClass from '@ext/admin/assistant/AssistantSkillTablePage.js';
 import AssistantConversationTablePageClass from '@ext/admin/assistant/AssistantConversationTablePage.js';
@@ -279,6 +284,8 @@ export function registerSystemPages(app, addToMenu = true) {
     app.registerPage('system/dns/purchases', DomainPurchaseTablePageClass, {permissions: ["view_dns", "manage_dns"]});
     app.registerPage('system/dns/vhosts', VhostTablePageClass, {permissions: ["view_dns", "manage_dns"]});
     app.registerPage('system/dns/upstreams', UpstreamTablePageClass, {permissions: ["view_dns", "manage_dns"]});
+    app.registerPage('system/dns/webapps', WebAppTablePageClass, { permissions: ["view_dns", "manage_dns", "security"] });
+    app.registerPage('system/edge/deploy', EdgeDeployPageClass, { permissions: ["sys.manage_deploy"] });
     // Stricter than its siblings on purpose: the payload is registrant PII, so
     // `view_dns` does not reach it. The house scope is stricter still — the
     // backend gates it on the literal `is_superuser` (see RegistrantContactPage).
@@ -496,6 +503,18 @@ export function registerSystemPages(app, addToMenu = true) {
                         { text: 'VHosts', route: '?page=system/dns/vhosts', icon: 'bi-hdd-network', permissions: ["view_dns", "manage_dns"] },
                         { text: 'Upstreams', route: '?page=system/dns/upstreams', icon: 'bi-diagram-3', permissions: ["view_dns", "manage_dns"] },
                         { text: 'Registrant Contact', route: '?page=system/dns/registrant', icon: 'bi-person-vcard', permissions: ["manage_dns"] },
+                    ]
+                },
+
+                // ── Edge hosting and fleet operations ──
+                {
+                    text: 'Edge',
+                    route: null,
+                    icon: 'bi-cloud-check',
+                    permissions: ["view_dns", "manage_dns", "security", "sys.manage_deploy"],
+                    children: [
+                        { text: 'WebApps', route: '?page=system/dns/webapps', icon: 'bi-window-stack', permissions: ["view_dns", "manage_dns", "security"] },
+                        { text: 'Fleet Deploy', route: '?page=system/edge/deploy', icon: 'bi-cloud-arrow-up', permissions: ["sys.manage_deploy"] },
                     ]
                 },
 

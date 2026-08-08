@@ -396,4 +396,20 @@ module.exports = async function (testContext) {
             expect(User.GRANULAR_TO_CATEGORY['extra_security_perm']).toBe('security');
         });
     });
+
+    describe('Edge global permission catalog', () => {
+        it('exposes WebApp and fleet deploy grants in Platform only', () => {
+            const platform = User.GRANULAR_PERMISSION_TABS.find(tab => tab.label === 'Platform');
+            expect(platform.permissions.map(permission => permission.name)).toContain('manage_webapp');
+            expect(platform.permissions.map(permission => permission.name)).toContain('manage_deploy');
+            expect(User.GRANULAR_TO_CATEGORY.manage_webapp).toBeUndefined();
+            expect(User.GRANULAR_TO_CATEGORY.manage_deploy).toBeUndefined();
+        });
+
+        it('does not category-imply either Edge grant', () => {
+            const security = new User({ permissions: { security: true } });
+            expect(security.hasPermission('manage_webapp')).toBe(false);
+            expect(security.hasPermission('sys.manage_deploy')).toBe(false);
+        });
+    });
 };

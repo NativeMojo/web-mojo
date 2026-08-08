@@ -38,7 +38,7 @@ The admin extension ships ~50 pre-built admin pages plus an LLM-backed Assistant
 - **Job engine** — dashboard, runners, jobs, scheduled tasks.
 - **Messaging** — email domains/mailboxes/templates/sent, public (contact-form) messages, SMS phone numbers, SMS log, SMS provider configs (Twilio / AWS SNS / Mojo Remote).
 - **Push notifications** — dashboard, configurations, templates, deliveries, devices.
-- **DNS** — domains, DNS records, delegated/direct ACME certificate status, provider credentials, purchase ledger (`system/dns/*`, over django-mojo's `dnsman` app). Certificate responses are positively projected to status metadata only; no PEM, key, material URL, export, or download control is accepted or rendered. Delegated issuance requires an exact capability load plus an authoritative delegation read, and the `apex_wildcard` profile accepts exactly the apex and wildcard. Ambiguous record, certificate, and credential mutations reconcile from the authoritative resource in `finally`; if reconciliation fails, that resource remains locked until an explicit successful Refresh. Record confirmation is invalidated when either the exact set or any same-owner row changes, including a new CNAME conflict. Credential links let global managers choose an eligible group while tenant managers retain their active group; rotation retains the row's group/provider and clears typed secrets after one attempt. Buying a domain is a search→quote→confirm→register wizard; the TLD comparison grid and similar-name suggestions need django-mojo ≥ v1.2.55 (older backends fall back to a single-name check with a note). **Registrant Contact** (`system/dns/registrant`) edits the ICANN contact registrations are filed under, in two scopes: the *house* contact used by every group without one of its own, and a specific *group's* contact. A group that merely inherits a contact is told so and never shown its values — that contact is the operator's personal name, address and phone. Needs django-mojo's portal-managed registrant API; an older backend says so and points at `DNSMAN_REGISTRANT_CONTACT` instead of erroring. **Edge** adds structured VHosts and declared Upstreams (`system/dns/vhosts`, `system/dns/upstreams`, django-mojo ≥1.3.0): no nginx text or free-text proxy destination; Upstreams are read-only except for literal-superuser `declare` and `retire`; Edge desired state, node inventory, and certificate material never appear in browser surfaces.
+- **DNS / Edge** — domains, DNS records, delegated/direct ACME certificate status, provider credentials, purchase ledger (`system/dns/*`, over django-mojo's `dnsman` app). Certificate responses are positively projected to status metadata only; no PEM, key, material URL, export, or download control is accepted or rendered. Delegated issuance requires an exact capability load plus an authoritative delegation read, and the `apex_wildcard` profile accepts exactly the apex and wildcard. Ambiguous record, certificate, and credential mutations reconcile from the authoritative resource in `finally`; if reconciliation fails, that resource remains locked until an explicit successful Refresh. Record confirmation is invalidated when either the exact set or any same-owner row changes, including a new CNAME conflict. Credential links let global managers choose an eligible group while tenant managers retain their active group; rotation retains the row's group/provider and clears typed secrets after one attempt. Buying a domain is a search→quote→confirm→register wizard; the TLD comparison grid and similar-name suggestions need django-mojo ≥ v1.2.55 (older backends fall back to a single-name check with a note). **Registrant Contact** (`system/dns/registrant`) edits the ICANN contact registrations are filed under, in two scopes: the *house* contact used by every group without one of its own, and a specific *group's* contact. A group that merely inherits a contact is told so and never shown its values — that contact is the operator's personal name, address and phone. Needs django-mojo's portal-managed registrant API; an older backend says so and points at `DNSMAN_REGISTRANT_CONTACT` instead of erroring. **Edge** adds structured VHosts and declared Upstreams (`system/dns/vhosts`, `system/dns/upstreams`, django-mojo ≥1.3.0), WebApps and immutable release history (`system/dns/webapps`), and global exact-revision fleet deploy (`system/edge/deploy`). WebApp creation takes its group from the active portal context and accepts a constrained bucket name only at create time; the backend allowlist remains authoritative. No nginx text, free-text proxy destination, CI transfer, node control, or fleet material is exposed.
 - **Storage** — file managers, files, S3 buckets. Uploads on the Files page (`system/files`) are capped client-side at **1 GB by default** — override app-wide with the WebApp config key `max_upload_size` (bytes) or per registration via the `maxFileSize` page option (option wins). The cap is a UX guard; the server still enforces its own limits.
 - **Shortlinks** — links table, click history.
 - **Monitoring** — logs, metrics permissions, CloudWatch dashboard.
@@ -289,6 +289,9 @@ Every admin page is registered with a `permissions:` requirement. The framework'
 - `manage_shortlinks` — shortlinks and click history
 - `view_dns` / `manage_dns` — the `system/dns/*` pages. `view_dns` renders read-only; every write control needs `manage_dns`. The `security` category covers both (mirroring dnsman's `VIEW_PERMS`/`SAVE_PERMS`). **Four surfaces are stricter than they look and the UI matches each deliberately:** *adopting a hosted zone* checks the literal `is_superuser` attribute, not the `admin` wildcard, because adoption hands a group control of a zone in the house account; *certificate key material* is never exposed by this UI at any permission level (that endpoint exists for serving hosts pulling with their own API key after a `certificate_updated` broadcast); **WHOIS is gated on `manage_dns`, not `view_dns`** — the registrar returns the real registrant name, address, phone and email regardless of WHOIS privacy, so a read-only operator does not see the section at all; and the **Registrant Contact** page is `manage_dns` only (`view_dns` does not reach it), with its *house* scope stricter still — the backend gates that on the literal `is_superuser`, the same reasoning as adoption, so the scope selector is only rendered for a superuser and everyone else is pinned to their active group.
 
+- `manage_webapp` plus `manage_dns` or `security` — the named conjunctive gate for linking a site's one-time CI key and promoting or rolling back releases. Neither grant alone renders or executes those actions.
+- `sys.manage_deploy` — global-only access to `system/edge/deploy`; a deploy-only operator still sees the distinct **Edge** parent. Member/API-key permissions never satisfy this route.
+
   Edge adds two more literal-superuser boundaries. A VHost's owning Domain is fetched separately before detail or mutation because the embedded basic graph cannot identify house ownership; a group-less Domain refuses non-superusers. Upstream declaration and retirement are literal-superuser actions, never generic CRUD or an active switch. Non-superuser lists always carry the active group while a literal superuser's platform inventory remains unscoped.
 
   Two properties of the Registrant Contact page are load-bearing rather than cosmetic. **A group that inherits a contact is never shown its values, and never its validation problems either** — the inherited contact belongs to the operator (or to a parent group), and a problem list would otherwise tell a tenant which of its fields are malformed. And **the keys the form does not render (`Fax`, `ExtraParams`) are carried across a save but never across a scope change**: the backend replaces the stored contact rather than merging, so dropping them destroys a ccTLD deployment's registry parameters, while carrying them between scopes writes one scope's private data into another's record.
@@ -361,7 +364,7 @@ import {
     PushDashboardPage, PushConfigTablePage, PushTemplateTablePage, PushDeliveryTablePage, PushDeviceTablePage,
     FileManagerTablePage, FileTablePage, S3BucketTablePage,
     ShortLinkTablePage, ShortLinkClickTablePage,
-    VhostTablePage, UpstreamTablePage,
+    VhostTablePage, UpstreamTablePage, WebAppTablePage, EdgeDeployPage,
     BlockedIPsTablePage, FirewallLogTablePage, BouncerSignalTablePage, BouncerDeviceTablePage, BotSignatureTablePage, IPSetTablePage,
     LogTablePage, MetricsPermissionsTablePage, SettingTablePage, CloudWatchDashboardPage,
     AssistantSkillTablePage, AssistantConversationTablePage, AssistantMemoryPage,
@@ -372,7 +375,7 @@ import {
     JobDetailsView, JobHealthView, JobStatsView, RunnerDetailsView, ScheduledTaskView,
     EmailTemplateView, EmailView, PublicMessageView, PhoneNumberView, PhoneConfigView, PushDeliveryView, PushDeviceView,
     ShortLinkView, BouncerSignalView, BouncerDeviceView, IPSetView,
-    VhostView, UpstreamView,
+    VhostView, UpstreamView, WebAppView,
     LogView, MetricsPermissionsView, SettingView, FileView, FileManagerView, CloudWatchResourceView, CloudWatchChart,
     AssistantView, AssistantSkillView, AssistantConversationView,
 } from 'web-mojo/admin';
@@ -530,7 +533,7 @@ import { Job, JobList, JobForms } from 'web-mojo/admin-models';
 import { Incident, RuleSet } from 'web-mojo/admin-models';
 import { Email, Mailbox, EmailDomain } from 'web-mojo/admin-models';
 import { Push, PushDevice, PushTemplate } from 'web-mojo/admin-models';
-import { Vhost, VhostList, Upstream, UpstreamList } from 'web-mojo/admin-models';
+import { Vhost, VhostList, Upstream, UpstreamList, WebApp, WebAppList, WebAppRelease, WebAppReleaseList } from 'web-mojo/admin-models';
 ```
 
 ### What's in `web-mojo/admin-models`
@@ -541,7 +544,7 @@ import { Vhost, VhostList, Upstream, UpstreamList } from 'web-mojo/admin-models'
 | `Assistant` | Assistant conversations + skills | `/api/assistant/...` |
 | `Bouncer` | Fraud-detection device/signal/signature | `/api/account/bouncer/...` |
 | `Dns` | Domains, records, certificates, credentials, purchases | `/api/dnsman/...` |
-| `Edge` | Structured VHosts and declared Upstreams | `/api/edge/...` |
+| `Edge` | Structured VHosts/Upstreams, safe WebApps, immutable release history, exact-SHA deploy helper | `/api/edge/...` |
 | `Email` | Email domain / mailbox / template / sent message | `/api/aws/email/...` |
 | `Incident` | Incident / event / rule set / rule | `/api/incident/...` |
 | `IPSet` | IP allow/block sets | `/api/incident/ipset` |

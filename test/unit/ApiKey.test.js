@@ -212,5 +212,16 @@ module.exports = async function (testContext) {
                 .find(f => f.type === 'tabset').tabs.map(t => t.label);
             expect(labels).toContain('Federation');
         });
+
+        it('never offers human Edge operator grants to members or API keys', () => {
+            const memberNames = Member.PERMISSION_TABSET[0].tabs
+                .flatMap(tab => tab.fields.map(field => field.name));
+            const keyNames = ApiKey.permissionTabset(true)[0].tabs
+                .flatMap(tab => tab.fields.map(field => field.name));
+            for (const name of ['permissions.manage_webapp', 'permissions.manage_deploy']) {
+                expect(memberNames).not.toContain(name);
+                expect(keyNames).not.toContain(name);
+            }
+        });
     });
 };

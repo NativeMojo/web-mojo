@@ -13,6 +13,7 @@ import rest from '@core/Rest.js';
 const BASE = '/api/edge';
 const VHOST_KINDS = new Set(['static', 'spa', 'proxy']);
 const UPSTREAM_KINDS = new Set(['http', 'unix']);
+const RELEASE_STATUSES = new Set(['pending', 'uploaded', 'live', 'superseded']);
 
 export const VhostKindOptions = [
     { value: 'static', label: 'Static files' },
@@ -33,6 +34,112 @@ const idOf = (value) => value && typeof value === 'object' ? value.id : value;
 const hasErrors = (model) => !!(model?.errors
     && typeof model.errors === 'object'
     && Object.keys(model.errors).length);
+
+export const WEBAPP_CREATE_FIELDS = Object.freeze(['group', 'slug', 'bucket', 'vhost', 'auto_promote']);
+export const WEBAPP_UPDATE_FIELDS = Object.freeze(['slug', 'vhost', 'auto_promote']);
+export const WEBAPP_BUCKET_MAX_LENGTH = 255;
+export const DEPLOY_SHA_PATTERN = /^[0-9a-f]{7,40}$/;
+
+/** Named AND gate for destructive WebApp actions; permission arrays are OR gates. */
+export function canManageWebApp(appOrUser) {
+    const user = appOrUser?.activeUser || appOrUser;
+    if (!user || typeof user.hasPermission !== 'function') return false;
+    return user.hasPermission('manage_webapp')
+        && (user.hasPermission('manage_dns') || user.hasPermission('security'));
+}
+
+export function normalizeDeploySha(value) {
+    const sha = typeof value === 'string' ? value.trim().toLowerCase() : '';
+    if (!DEPLOY_SHA_PATTERN.test(sha)) {
+        throw new Error('Enter a commit SHA containing 7–40 hexadecimal characters.');
+    }
+    return sha;
+}
+
+/** Positive projection for release rows; manifest/material never cross this boundary. */
+export function projectWebAppRelease(input = {}) {
+    const status = RELEASE_STATUSES.has(input.status) ? input.status : 'pending';
+    return {
+        id: input.id,
+        version: input.version || '',
+        status,
+        created: input.created || null,
+        modified: input.modified || null,
+        file_count: Number.isInteger(input.file_count) ? input.file_count : null,
+        created_by: input.created_by || null
+    };
+}
+
+/** Positive projection for operator-visible site metadata. */
+export function projectWebApp(input = {}) {
+    return {
+        id: input.id,
+        created: input.created || null,
+        modified: input.modified || null,
+        group: input.group || null,
+        slug: input.slug || '',
+        bucket: input.bucket || '',
+        prefix: input.prefix || '',
+        vhost: input.vhost || null,
+        auto_promote: input.auto_promote === true,
+        current_release: input.current_release
+            ? projectWebAppRelease(input.current_release) : null
+    };
+}
+
+export function buildWebAppPayload(input = {}, options = {}) {
+    const create = options.create === true;
+    const slug = typeof input.slug === 'string' ? input.slug.trim() : '';
+    if (!slug) throw new Error('Enter a site slug.');
+
+    const payload = {
+        slug,
+        vhost: idOf(input.vhost) || null,
+        auto_promote: input.auto_promote === true
+    };
+    if (!create) return payload;
+
+    const group = idOf(input.group);
+    if (!group) throw new Error('Select an active group before creating a WebApp.');
+    const bucket = typeof input.bucket === 'string' ? input.bucket.trim() : '';
+    if (!bucket) throw new Error('Enter a release bucket.');
+    if (bucket.length > WEBAPP_BUCKET_MAX_LENGTH) {
+        throw new Error(`Release bucket must be ${WEBAPP_BUCKET_MAX_LENGTH} characters or fewer.`);
+    }
+    if (/[\u0000-\u001f\u007f]/.test(bucket)) {
+        throw new Error('Release bucket cannot contain control characters.');
+    }
+    return { group, slug, bucket, vhost: payload.vhost, auto_promote: payload.auto_promote };
+}
+
+export function releaseActionFor(status) {
+    if (status === 'uploaded') return 'promote';
+    if (status === 'superseded') return 'rollback';
+    return null;
+}
+
+/** Classify the deliberately flat /api/edge/deploy contract without envelope assumptions. */
+export function classifyDeployResponse(response) {
+    const body = response?.data || {};
+    if (response?.status === 202 && response.success !== false
+        && body.status === true && typeof body.queued === 'boolean') {
+        return { accepted: true, queued: body.queued, sha: body.sha || null, error: null };
+    }
+    const unavailable = response?.status === 503 && body.error === 'deploy coordination unavailable';
+    return {
+        accepted: false,
+        queued: null,
+        sha: null,
+        error: unavailable ? 'deploy coordination unavailable'
+            : (body.error || response?.error || response?.message || 'Fleet deploy was not accepted.')
+    };
+}
+
+export async function requestFleetDeploy(value) {
+    const sha = normalizeDeploySha(value);
+    const response = await rest.POST(`${BASE}/deploy`, { sha });
+    return { ...classifyDeployResponse(response), response };
+}
 
 export function isLiteralSuperuser(appOrUser) {
     const user = appOrUser?.activeUser || appOrUser;
@@ -170,11 +277,125 @@ class UpstreamList extends Collection {
     }
 }
 
-export { Vhost, VhostList, Upstream, UpstreamList };
+class WebApp extends Model {
+    constructor(data = {}, options = {}) {
+        super(projectWebApp(data), { endpoint: `${BASE}/webapp`, ...options });
+        this._linkKeyFlight = null;
+        this._promoteFlight = null;
+    }
+
+    set(key, value, options = {}) {
+        if (key && typeof key === 'object') {
+            return super.set(projectWebApp(key), value, options);
+        }
+        if (WEBAPP_CREATE_FIELDS.includes(key) || ['id', 'created', 'modified', 'prefix', 'current_release'].includes(key)) {
+            return super.set(key, value, options);
+        }
+    }
+
+    saveSafe(input = {}) {
+        return this.save(buildWebAppPayload(input, {
+            create: !this.id
+        }));
+    }
+
+    async reconcile(releases = null) {
+        const tasks = [this.fetch({ graph: 'default' })];
+        if (releases?.fetch) tasks.push(releases.fetch());
+        await Promise.allSettled(tasks);
+    }
+
+    linkKey(releases = null) {
+        if (!this.id) return Promise.resolve({ success: false, error: 'WebApp id is required', status: 400 });
+        if (this._linkKeyFlight) return this._linkKeyFlight;
+        this._linkKeyFlight = (async () => {
+            try {
+                return await rest.POST(`${BASE}/webapp/link_key`, { webapp: this.id });
+            } finally {
+                await this.reconcile(releases);
+                this._linkKeyFlight = null;
+            }
+        })();
+        return this._linkKeyFlight;
+    }
+
+    promote(release, releases = null) {
+        if (!this.id || !idOf(release)) {
+            return Promise.resolve({ success: false, error: 'WebApp and release ids are required', status: 400 });
+        }
+        if (this._promoteFlight) return this._promoteFlight;
+        this._promoteFlight = (async () => {
+            try {
+                return await rest.POST(`${BASE}/webapp/promote`, {
+                    webapp: this.id,
+                    release: idOf(release)
+                });
+            } finally {
+                await this.reconcile(releases);
+                this._promoteFlight = null;
+            }
+        })();
+        return this._promoteFlight;
+    }
+}
+
+class WebAppList extends Collection {
+    constructor(options = {}) {
+        super({
+            ModelClass: WebApp,
+            endpoint: `${BASE}/webapp`,
+            ...options,
+            params: { graph: 'default', ...options.params }
+        });
+    }
+}
+
+class WebAppRelease extends Model {
+    constructor(data = {}, options = {}) {
+        super(projectWebAppRelease(data), { endpoint: `${BASE}/release`, ...options });
+    }
+
+    set(key, value, options = {}) {
+        if (key && typeof key === 'object') {
+            return super.set(projectWebAppRelease(key), value, options);
+        }
+        if (['id', 'version', 'status', 'created', 'modified', 'file_count', 'created_by'].includes(key)) {
+            return super.set(key, value, options);
+        }
+    }
+
+    save() {
+        throw new Error('WebApp releases are immutable.');
+    }
+
+    destroy() {
+        throw new Error('WebApp releases are immutable.');
+    }
+}
+
+class WebAppReleaseList extends Collection {
+    constructor(options = {}) {
+        const webapp = idOf(options.webapp || options.params?.webapp);
+        super({
+            ModelClass: WebAppRelease,
+            endpoint: `${BASE}/release`,
+            ...options,
+            params: {
+                graph: 'default',
+                ...(webapp ? { webapp } : { id: '__no_webapp__' }),
+                ...options.params
+            }
+        });
+    }
+}
+
+export { Vhost, VhostList, Upstream, UpstreamList, WebApp, WebAppList, WebAppRelease, WebAppReleaseList };
 
 export default {
-    Vhost, VhostList, Upstream, UpstreamList,
-    VhostKindOptions, UpstreamKindOptions, VHOST_POOL_PATTERN,
+    Vhost, VhostList, Upstream, UpstreamList, WebApp, WebAppList, WebAppRelease, WebAppReleaseList,
+    VhostKindOptions, UpstreamKindOptions, VHOST_POOL_PATTERN, WEBAPP_BUCKET_MAX_LENGTH,
     isLiteralSuperuser, isValidVhostPool,
-    buildVhostPayload, buildUpstreamDeclarePayload, classifyActionResponse
+    buildVhostPayload, buildUpstreamDeclarePayload, buildWebAppPayload,
+    projectWebApp, projectWebAppRelease, releaseActionFor, canManageWebApp,
+    normalizeDeploySha, classifyDeployResponse, requestFleetDeploy, classifyActionResponse
 };
