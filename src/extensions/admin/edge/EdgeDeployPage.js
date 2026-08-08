@@ -1,6 +1,6 @@
 /** Exact-revision fleet deploy control (route: system/edge/deploy). */
 
-import Page from '@core/pages/Page.js';
+import Page from '@core/Page.js';
 import Modal from '@core/views/feedback/Modal.js';
 import { normalizeDeploySha, requestFleetDeploy } from '@ext/admin/models/Edge.js';
 
