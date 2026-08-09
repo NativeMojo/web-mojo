@@ -64,9 +64,9 @@ export const VHOST_POOL_PATTERN = /^[a-z0-9_-]{1,32}$/;
 // Mirrors the server's QUIET_PATH_RE / ROUTE_PREFIX_RE and LABEL_RE
 // (mojo/apps/edge/validators.py). The server stays authoritative; these catch
 // the obvious mistakes before a request is made.
-export const QUIET_PATH_PATTERN = /^\/[A-Za-z0-9._\/-]{0,127}$/;
+export const QUIET_PATH_PATTERN = /^\/[A-Za-z0-9._/-]{0,127}$/;
 const HOST_LABEL_PATTERN = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
-const UA_PATTERN_ALLOWED = /^[A-Za-z0-9()[\]|?^.*+\-\/_\\]{1,256}$/;
+const UA_PATTERN_ALLOWED = /^[A-Za-z0-9()[\]|?^.*+\-/_\\]{1,256}$/;
 
 const idOf = (value) => value && typeof value === 'object' ? value.id : value;
 const hasErrors = (model) => !!(model?.errors
@@ -228,7 +228,7 @@ export function formatQuietPaths(list) {
 export function validateRedirectTarget(value) {
     const target = typeof value === 'string' ? value.trim().toLowerCase() : '';
     if (!target) throw new Error('A redirect VHost requires a target host.');
-    if (/[:\/\s]/.test(target)) {
+    if (/[:/\s]/.test(target)) {
         throw new Error('Target must be a bare host — drop the scheme, path, or port.');
     }
     if (target.startsWith('*')) throw new Error('A redirect target cannot be a wildcard.');

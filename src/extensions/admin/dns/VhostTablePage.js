@@ -8,6 +8,7 @@ import {
     classifyActionResponse, isLiteralSuperuser
 } from '@ext/admin/models/Edge.js';
 import VhostForm from './VhostForm.js';
+import VhostCreateWizard from './VhostCreateWizard.js';
 import VhostView from './VhostView.js';
 
 const escapeHtml = MOJOUtils.escapeHtml;
@@ -29,8 +30,11 @@ class VhostTablePage extends TablePage {
             columns: [
                 { key: 'server_name', label: 'Server name', sortable: true },
                 {
-                    key: 'kind', label: 'Kind', width: '120px', sortable: true,
-                    formatter: value => `<span class="badge bg-info bg-opacity-25 text-body">${escapeHtml(value)}</span>`,
+                    key: 'kind', label: 'Kind', width: '140px', sortable: true,
+                    formatter: value => {
+                        const label = VhostKindOptions.find(entry => entry.value === value)?.label || value;
+                        return `<span class="badge bg-info bg-opacity-25 text-body">${escapeHtml(label)}</span>`;
+                    },
                     filter: { type: 'select', options: VhostKindOptions }
                 },
                 { key: 'pool', label: 'Pool', width: '120px', sortable: true },
@@ -142,7 +146,14 @@ class VhostTablePage extends TablePage {
 
     async onActionCreateVhost() {
         if (!this.checkPermissions(MANAGE_PERMS)) return true;
-        await VhostForm.open({ app: this.getApp(), collection: this.collection });
+        const app = this.getApp();
+        const group = app?.getActiveGroupId?.() || app?.activeGroup?.id || null;
+        if (!isLiteralSuperuser(app) && !group) {
+            Modal.showError('Select an active group before creating a VHost.');
+            return true;
+        }
+        const wizard = new VhostCreateWizard({ collection: this.collection });
+        await Modal.show(wizard, { title: false, size: 'lg', buttons: [] });
         return true;
     }
 }

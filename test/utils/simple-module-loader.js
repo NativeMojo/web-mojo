@@ -410,6 +410,18 @@ class SimpleModuleLoader {
                 path: path.join(this.sourceRoot, 'extensions/admin/jobs/RunnerDetailsView.js'),
                 dependencies: ['View', 'DetailView', 'Modal', 'StatusPanel', 'KnownFieldsCard', 'MOJOUtils']
             },
+            'VhostCreateWizard': {
+                // Tests must set, BEFORE loadModule, then delete after:
+                //   global.EdgeModelsStub  — the REAL models/Edge.js, loaded via
+                //     loadModuleFromFile with Rest/Collection/Model globals set
+                //     (the EdgeModels.test.js pattern), so the wizard runs
+                //     against the real payload builders;
+                //   global.DnsModelsStub   — { CertificateList } stub;
+                //   global.VhostFormStub   — statics listDomainChoices /
+                //     resolveDomain (only invoked from onInit/actions).
+                path: path.join(this.sourceRoot, 'extensions/admin/dns/VhostCreateWizard.js'),
+                dependencies: ['View', 'MOJOUtils']
+            },
             'FormBuilder': {
                 // FormBuilder is a pure HTML generator (no lifecycle). Tests stub
                 // `global.FormPlugins = {}` and `global.TabView = class {}` before
@@ -613,6 +625,11 @@ class SimpleModuleLoader {
             // './registrantData.js', not by the @ext alias.
             { test: /registrantData(\.js)?$/, name: 'registrantData' },
             { test: /admin\/models\/Dns(\.js)?$/, name: 'DnsModelsStub' },
+            // Edge admin surfaces — tests load the REAL models/Edge.js via
+            // loadModuleFromFile and expose it as `global.EdgeModelsStub`
+            // (capture-then-delete, per the MemberView/UserView pattern).
+            { test: /admin\/models\/Edge(\.js)?$/, name: 'EdgeModelsStub' },
+            { test: /dns\/VhostForm(\.js)?$/, name: 'VhostFormStub' },
             { test: /GeofenceRuleForm(\.js)?$/, name: 'GeofenceRuleFormStub' },
             { test: /models\/Member(\.js)?$/, name: 'Member' },
             { test: /models\/ApiKey(\.js)?$/, name: 'ApiKey' },
