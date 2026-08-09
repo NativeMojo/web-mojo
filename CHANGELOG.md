@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.9.0 — 2026-08-08
 
 ### Admin · Edge template kinds: vhost wizard, routes, reserved claims, blocklist
 
