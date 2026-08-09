@@ -79,6 +79,8 @@ export { default as UpstreamView } from './dns/UpstreamView.js';
 export { default as WebAppTablePage } from './edge/WebAppTablePage.js';
 export { default as WebAppView } from './edge/WebAppView.js';
 export { default as EdgeDeployPage } from './edge/EdgeDeployPage.js';
+export { default as BlocklistTablePage } from './edge/BlocklistTablePage.js';
+export { default as VhostCreateWizard } from './dns/VhostCreateWizard.js';
 
 // Registration helpers — re-exported from src/admin.js so consumers can
 // wire the admin extension via the package surface alone.

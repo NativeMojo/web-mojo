@@ -78,7 +78,9 @@ export { default as ShortLinkClickTablePage } from '@ext/admin/shortlinks/ShortL
 export { default as ShortLinkView } from '@ext/admin/shortlinks/ShortLinkView.js';
 
 // DNS management — dnsman capability pages need django-mojo >= v1.2.55;
-// structured Edge VHosts/Upstreams need django-mojo >= v1.3.0.
+// structured Edge VHosts/Upstreams need django-mojo >= v1.3.0; the template
+// kinds (api/site/site_api/redirect), routes, blocklist, and claim_reserved
+// need django-mojo >= v1.6.0 (edge template-kind system, item 1590).
 export { default as DomainTablePage } from '@ext/admin/dns/DomainTablePage.js';
 export { default as DomainView } from '@ext/admin/dns/DomainView.js';
 export { default as DnsRecordsPage } from '@ext/admin/dns/DnsRecordsPage.js';
@@ -97,6 +99,8 @@ export { default as UpstreamView } from '@ext/admin/dns/UpstreamView.js';
 export { default as WebAppTablePage } from '@ext/admin/edge/WebAppTablePage.js';
 export { default as WebAppView } from '@ext/admin/edge/WebAppView.js';
 export { default as EdgeDeployPage } from '@ext/admin/edge/EdgeDeployPage.js';
+export { default as BlocklistTablePage } from '@ext/admin/edge/BlocklistTablePage.js';
+export { default as VhostCreateWizard } from '@ext/admin/dns/VhostCreateWizard.js';
 // Pure record validation/mapping — exported so a consuming portal can reuse the
 // same rules rather than re-deriving them (the geofenceData precedent).
 export {
@@ -244,6 +248,7 @@ import VhostTablePageClass from '@ext/admin/dns/VhostTablePage.js';
 import UpstreamTablePageClass from '@ext/admin/dns/UpstreamTablePage.js';
 import WebAppTablePageClass from '@ext/admin/edge/WebAppTablePage.js';
 import EdgeDeployPageClass from '@ext/admin/edge/EdgeDeployPage.js';
+import BlocklistTablePageClass from '@ext/admin/edge/BlocklistTablePage.js';
 
 import AssistantSkillTablePageClass from '@ext/admin/assistant/AssistantSkillTablePage.js';
 import AssistantConversationTablePageClass from '@ext/admin/assistant/AssistantConversationTablePage.js';
@@ -286,6 +291,10 @@ export function registerSystemPages(app, addToMenu = true) {
     app.registerPage('system/dns/upstreams', UpstreamTablePageClass, {permissions: ["view_dns", "manage_dns"]});
     app.registerPage('system/dns/webapps', WebAppTablePageClass, { permissions: ["view_dns", "manage_dns", "security"] });
     app.registerPage('system/edge/deploy', EdgeDeployPageClass, { permissions: ["sys.manage_deploy"] });
+    // The edge blocklist is fleet-scoped: the backend counts GLOBAL security
+    // grants only, so the gates are sys.-prefixed like geofencing — a
+    // member-scoped view_security grant must not see a page that always 403s.
+    app.registerPage('system/edge/blocklist', BlocklistTablePageClass, { permissions: ["sys.view_security", "sys.manage_security", "sys.security"] });
     // Stricter than its siblings on purpose: the payload is registrant PII, so
     // `view_dns` does not reach it. The house scope is stricter still — the
     // backend gates it on the literal `is_superuser` (see RegistrantContactPage).
@@ -404,6 +413,7 @@ export function registerSystemPages(app, addToMenu = true) {
                         { text: 'Blocked', route: '?page=system/security/blocked-ips', icon: 'bi-slash-circle', permissions: ["view_security"] },
                         { text: 'Firewall Log', route: '?page=system/security/firewall-log', icon: 'bi-journal-code', permissions: ["view_security"] },
                         { text: 'Geofencing', route: '?page=system/security/geofencing', icon: 'bi-globe-americas', permissions: ["sys.view_geofence", "sys.manage_geofence", "sys.security"] },
+                        { text: 'Edge Blocklist', route: '?page=system/edge/blocklist', icon: 'bi-shield-slash', permissions: ["sys.view_security", "sys.manage_security", "sys.security"] },
                     ]
                 },
 

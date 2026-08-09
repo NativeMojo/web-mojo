@@ -13,6 +13,7 @@ module.exports = async function(testContext) {
         'src/extensions/admin/dns/VhostForm.js',
         'src/extensions/admin/dns/VhostTablePage.js',
         'src/extensions/admin/dns/VhostView.js',
+        'src/extensions/admin/dns/VhostCreateWizard.js',
         'src/extensions/admin/dns/UpstreamTablePage.js',
         'src/extensions/admin/dns/UpstreamView.js'
     ];
@@ -112,6 +113,30 @@ module.exports = async function(testContext) {
                 expect(text).not.toContain("name: 'proxy_target'");
                 expect(text).not.toContain("name: 'nginx'");
             }
+        });
+
+        it('creates through the shape wizard and edits without a kind control anywhere', () => {
+            const table = source('src/extensions/admin/dns/VhostTablePage.js');
+            expect(table).toContain('new VhostCreateWizard');
+            const wizard = source('src/extensions/admin/dns/VhostCreateWizard.js');
+            expect(wizard).toContain('data-action="pick-shape"');
+            expect(wizard).toContain('runDuplicateCheck');
+            expect(wizard).toContain("quiet_paths: this.kind === 'api'");
+            const form = source('src/extensions/admin/dns/VhostForm.js');
+            expect(form).toContain('if (!app || !existing) return null');
+            expect(form).toContain('VHOST_KIND_MATRIX[kind]');
+            for (const file of ['VhostForm.js', 'VhostCreateWizard.js']) {
+                expect(source(`src/extensions/admin/dns/${file}`)).not.toContain("name: 'kind'");
+            }
+        });
+
+        it('offers the reserved-name claim only to literal superusers on house domains', () => {
+            const view = source('src/extensions/admin/dns/VhostView.js');
+            expect((view.match(/isLiteralSuperuser\(m\._edgeApp\)/g) || []).length).toBe(2);
+            expect((view.match(/_owningDomain\?\.get\?\.\('group'\) == null/g) || []).length).toBe(2);
+            expect(view).toContain('claimReserved');
+            expect(view).toContain('new WebAppList');
+            expect(view).toContain('strandedQuietPaths');
         });
     });
 };

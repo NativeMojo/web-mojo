@@ -85,7 +85,8 @@ module.exports = async function(testContext) {
 
         it('contains no CI transfer, node, or material helper endpoints', () => {
             const files = ['src/extensions/admin/models/Edge.js', 'src/extensions/admin/edge/WebAppView.js',
-                'src/extensions/admin/edge/WebAppTablePage.js', 'src/extensions/admin/edge/EdgeDeployPage.js'];
+                'src/extensions/admin/edge/WebAppTablePage.js', 'src/extensions/admin/edge/EdgeDeployPage.js',
+                'src/extensions/admin/edge/BlocklistTablePage.js'];
             for (const file of files) {
                 const source = stripComments(read(file));
                 expect(source).not.toContain('/api/edge/release/complete');
@@ -94,6 +95,34 @@ module.exports = async function(testContext) {
                 expect(source).not.toContain('/api/edge/edge_node');
                 expect(source).not.toContain('release_webapp');
             }
+        });
+    });
+
+    describe('Edge blocklist admin', () => {
+        it('registers the blocklist page and nav behind sys.-prefixed global security gates', () => {
+            const admin = stripComments(read('src/admin.js'));
+            expect(admin).toContain("registerPage('system/edge/blocklist', BlocklistTablePageClass, { permissions: [\"sys.view_security\", \"sys.manage_security\", \"sys.security\"] })");
+            expect(admin).toContain("{ text: 'Edge Blocklist', route: '?page=system/edge/blocklist', icon: 'bi-shield-slash', permissions: [\"sys.view_security\", \"sys.manage_security\", \"sys.security\"] }");
+            for (const file of ['src/admin.js', 'src/extensions/admin/index.js']) {
+                expect(stripComments(read(file))).toContain('as BlocklistTablePage');
+            }
+        });
+
+        it('gates every write on sys.-prefixed grants and never on plain member-satisfiable keys', () => {
+            const source = stripComments(read('src/extensions/admin/edge/BlocklistTablePage.js'));
+            expect(source).toContain("const WRITE_PERMS = ['sys.manage_security', 'sys.security']");
+            expect(source).not.toContain("'manage_security'");
+            expect(source).not.toContain("'view_security'");
+            expect((source.match(/checkPermissions\(WRITE_PERMS\)/g) || []).length).toBe(2);
+        });
+
+        it('builds allowlisted rule bodies, defaults to log, and owns the opaque duplicate error', () => {
+            const source = stripComments(read('src/extensions/admin/edge/BlocklistTablePage.js'));
+            expect(source).toContain('buildBlocklistPayload(result)');
+            expect(source).toContain("existing?.get?.('mode') || 'log'");
+            expect(source).toContain("verdict.error === 'system error'");
+            expect(source).toContain('may already exist');
+            expect(source).toContain('classifyActionResponse');
         });
     });
 };
