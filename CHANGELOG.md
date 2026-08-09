@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+### Admin · Edge template kinds: vhost wizard, routes, reserved claims, blocklist
+
+- Adopted django-mojo ≥ 1.6.0's edge template-kind system (`api` / `site` /
+  `site_api` / `redirect` — the old `static|spa|proxy` enum is gone; the `spa`
+  boolean replaces the old `spa` kind). Hard cutover: lists, filters, forms,
+  and payload builders all speak the new values.
+- VHost creation is now a four-shape wizard (shape cards → that shape's knobs
+  only → review + create) with a client-side duplicate pre-check for enabled
+  server names and vhost-then-routes create sequencing that reports partial
+  failures per prefix. Editing is kind-aware with no kind control anywhere;
+  changing shape is delete-and-recreate, and deleting a vhost that serves a
+  WebApp warns by name before severing the link.
+- `site_api` vhosts gain a Routes section (declare/retire proxied path
+  prefixes against declared upstreams, with a stranded-quiet-path warning);
+  quiet paths defer to the edit form because the server validates their
+  coverage against declared routes.
+- New read-only `claims_reserved` field with a Claim/Release reserved-name
+  kebab rendered only for literal superusers on house-domain vhosts.
+- New fleet-wide Edge Blocklist admin at `system/edge/blocklist` (`ip`/`ua`
+  rows, `allow|off|log|enforce` modes, log-first posture) behind
+  `sys.`-prefixed global security gates.
+
 ### Admin · WebApp releases and exact-revision Edge deploy
 
 - Added safe `WebApp`/`WebAppRelease` models plus tenant-scoped site CRUD and
