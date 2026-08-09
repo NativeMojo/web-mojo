@@ -268,6 +268,7 @@ class VhostCreateWizard extends View {
             let ok = false;
             let error = null;
             try {
+                // eslint-disable-next-line no-await-in-loop -- routes are created sequentially, in row order, on purpose
                 const routeResponse = await route.save(buildRoutePayload({
                     vhost: vhost.id, path_prefix: row.path_prefix, upstream: row.upstream
                 }));
