@@ -11,15 +11,46 @@ import Model from '@core/Model.js';
 import rest from '@core/Rest.js';
 
 const BASE = '/api/edge';
-const VHOST_KINDS = new Set(['static', 'spa', 'proxy']);
 const UPSTREAM_KINDS = new Set(['http', 'unix']);
 const RELEASE_STATUSES = new Set(['pending', 'uploaded', 'live', 'superseded']);
 
 export const VhostKindOptions = [
-    { value: 'static', label: 'Static files' },
-    { value: 'spa', label: 'Single-page app' },
-    { value: 'proxy', label: 'Reverse proxy' }
+    { value: 'api', label: 'API host' },
+    { value: 'site', label: 'Static site / SPA' },
+    { value: 'site_api', label: 'Site + API paths' },
+    { value: 'redirect', label: 'Host redirect' }
 ];
+
+/**
+ * Which knobs each template kind carries — the client mirror of the server's
+ * kind matrix (django-mojo mojo/apps/edge/validators.py::validate_vhost).
+ * `upstream`/`redirect_to` true means REQUIRED for that kind; the boolean
+ * knobs true mean allowed. Off-matrix knobs are always sent as neutral values
+ * so a stale value clears on update.
+ */
+export const VHOST_KIND_MATRIX = Object.freeze({
+    api: Object.freeze({ upstream: true, redirect_to: false, spa: false, serve_static: true, quiet_paths: true, body_size: true, routes: false }),
+    site: Object.freeze({ upstream: false, redirect_to: false, spa: true, serve_static: false, quiet_paths: false, body_size: false, routes: false }),
+    site_api: Object.freeze({ upstream: false, redirect_to: false, spa: true, serve_static: true, quiet_paths: true, body_size: true, routes: true }),
+    redirect: Object.freeze({ upstream: false, redirect_to: true, spa: false, serve_static: false, quiet_paths: false, body_size: false, routes: false })
+});
+
+export const BODY_SIZE_BOUNDS = Object.freeze({ min: 1, max: 4096, default: 50 });
+
+export const BlocklistKindOptions = [
+    { value: 'ip', label: 'IP / CIDR' },
+    { value: 'ua', label: 'User agent' }
+];
+
+// `log` first: the blocklist's whole posture is observe-then-enforce.
+export const BlocklistModeOptions = [
+    { value: 'log', label: 'Log — watch only' },
+    { value: 'enforce', label: 'Enforce — block with 444' },
+    { value: 'allow', label: 'Allow — exempt from both' },
+    { value: 'off', label: 'Off — parked' }
+];
+const BLOCKLIST_KINDS = new Set(BlocklistKindOptions.map(option => option.value));
+const BLOCKLIST_MODES = new Set(BlocklistModeOptions.map(option => option.value));
 
 export const UpstreamKindOptions = [
     { value: 'http', label: 'HTTP host and port' },
@@ -29,6 +60,13 @@ export const UpstreamKindOptions = [
 // `$` accepts a position before a final newline in JavaScript. The explicit
 // CR/LF rejection below is therefore part of the validation contract.
 export const VHOST_POOL_PATTERN = /^[a-z0-9_-]{1,32}$/;
+
+// Mirrors the server's QUIET_PATH_RE / ROUTE_PREFIX_RE and LABEL_RE
+// (mojo/apps/edge/validators.py). The server stays authoritative; these catch
+// the obvious mistakes before a request is made.
+export const QUIET_PATH_PATTERN = /^\/[A-Za-z0-9._\/-]{0,127}$/;
+const HOST_LABEL_PATTERN = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
+const UA_PATTERN_ALLOWED = /^[A-Za-z0-9()[\]|?^.*+\-\/_\\]{1,256}$/;
 
 const idOf = (value) => value && typeof value === 'object' ? value.id : value;
 const hasErrors = (model) => !!(model?.errors
@@ -159,27 +197,86 @@ export function isValidVhostPool(value) {
         && VHOST_POOL_PATTERN.test(value);
 }
 
+/**
+ * One quiet path / route prefix, validated like the server validates it:
+ * leading '/', safe charset, no '//', no '..' segment.
+ */
+function validateRequestPath(path, what) {
+    if (typeof path !== 'string' || !QUIET_PATH_PATTERN.test(path)) {
+        throw new Error(`${what} must start with '/' and use only letters, digits, `
+            + `'.', '_', '-' and '/' (max 128 characters).`);
+    }
+    if (path.includes('//')) throw new Error(`${what} may not contain '//'.`);
+    if (path.split('/').includes('..')) throw new Error(`${what} may not contain a '..' segment.`);
+    return path;
+}
+
+/** Textarea text (one per line) or an array → a validated, de-duplicated list. */
+export function parseQuietPaths(value) {
+    const lines = Array.isArray(value) ? value : String(value ?? '').split('\n');
+    const paths = lines.map(line => (typeof line === 'string' ? line.trim() : '')).filter(Boolean);
+    paths.forEach(path => validateRequestPath(path, 'A quiet path'));
+    if (new Set(paths).size !== paths.length) throw new Error('Quiet paths contain a duplicate.');
+    return paths;
+}
+
+export function formatQuietPaths(list) {
+    return (Array.isArray(list) ? list : []).join('\n');
+}
+
+/** A redirect destination is a bare host — never a URL. */
+export function validateRedirectTarget(value) {
+    const target = typeof value === 'string' ? value.trim().toLowerCase() : '';
+    if (!target) throw new Error('A redirect VHost requires a target host.');
+    if (/[:\/\s]/.test(target)) {
+        throw new Error('Target must be a bare host — drop the scheme, path, or port.');
+    }
+    if (target.startsWith('*')) throw new Error('A redirect target cannot be a wildcard.');
+    if (target.length > 253) throw new Error('Target host is too long (max 253 characters).');
+    const labels = target.split('.');
+    if (!labels.every(label => HOST_LABEL_PATTERN.test(label))) {
+        throw new Error('Enter a valid hostname, like example.com.');
+    }
+    return target;
+}
+
 /** Return a new allowlisted VHost body; never pass form/model objects through. */
 export function buildVhostPayload(input = {}, { create = false } = {}) {
-    const kind = input.kind || 'static';
+    const kind = input.kind || 'site';
+    const rules = VHOST_KIND_MATRIX[kind];
+    if (!rules) throw new Error('Choose a valid VHost kind.');
+
     const pool = input.pool === undefined || input.pool === null || input.pool === ''
         ? 'default' : input.pool;
-    const upstream = idOf(input.upstream);
-    const certificate = idOf(input.certificate);
-
-    if (!VHOST_KINDS.has(kind)) throw new Error('Choose a valid VHost kind.');
     if (!isValidVhostPool(pool)) {
         throw new Error('Pool must be 1–32 lowercase letters, digits, underscores, or hyphens.');
     }
-    if (kind === 'proxy' && !upstream) throw new Error('A proxy VHost requires a declared upstream.');
+    const certificate = idOf(input.certificate);
     if (!certificate) throw new Error('Choose a certificate.');
+    const upstream = idOf(input.upstream);
+    if (rules.upstream && !upstream) throw new Error('An API host requires a declared upstream.');
 
+    const rawBody = input.body_size_mb;
+    const body = rawBody === undefined || rawBody === null || rawBody === ''
+        ? BODY_SIZE_BOUNDS.default : Number(rawBody);
+    if (!Number.isInteger(body) || body < BODY_SIZE_BOUNDS.min || body > BODY_SIZE_BOUNDS.max) {
+        throw new Error(`Upload cap must be a whole number from ${BODY_SIZE_BOUNDS.min} `
+            + `to ${BODY_SIZE_BOUNDS.max} MB.`);
+    }
+
+    // Off-matrix knobs are sent as neutral values on purpose: an update after
+    // any state drift clears them instead of tripping the server's kind matrix.
     const payload = {
         label: input.label || '',
         kind,
-        upstream: kind === 'proxy' ? upstream : null,
+        upstream: rules.upstream ? upstream : null,
         certificate,
         pool,
+        spa: rules.spa ? input.spa === true : false,
+        serve_static: rules.serve_static ? input.serve_static === true : false,
+        quiet_paths: rules.quiet_paths ? parseQuietPaths(input.quiet_paths ?? []) : [],
+        body_size_mb: body,
+        redirect_to: rules.redirect_to ? validateRedirectTarget(input.redirect_to) : null,
         is_enabled: input.is_enabled === undefined ? true : input.is_enabled === true
     };
 
@@ -189,6 +286,43 @@ export function buildVhostPayload(input = {}, { create = false } = {}) {
         payload.domain = domain;
     }
     return payload;
+}
+
+/** One site_api proxied prefix. The server refuses '/' — that is what api is for. */
+export function buildRoutePayload(input = {}) {
+    const vhost = idOf(input.vhost);
+    if (!vhost) throw new Error('A route requires a VHost.');
+    const prefix = typeof input.path_prefix === 'string' ? input.path_prefix.trim() : '';
+    validateRequestPath(prefix, 'A route prefix');
+    if (prefix === '/') {
+        throw new Error("A route prefix cannot be '/' — use the API host shape for a whole-host proxy.");
+    }
+    const upstream = idOf(input.upstream);
+    if (!upstream) throw new Error('Choose an upstream for this route.');
+    return { vhost, path_prefix: prefix, upstream };
+}
+
+/** Allowlisted blocklist body. ip values are normalized server-side. */
+export function buildBlocklistPayload(input = {}) {
+    const kind = input.kind || 'ip';
+    if (!BLOCKLIST_KINDS.has(kind)) throw new Error('Choose a valid rule kind.');
+    const mode = input.mode || 'log';
+    if (!BLOCKLIST_MODES.has(mode)) throw new Error('Choose a valid rule mode.');
+    const value = typeof input.value === 'string' ? input.value.trim() : '';
+    if (!value) throw new Error('Enter a value for the rule.');
+    if (kind === 'ua') {
+        if (!UA_PATTERN_ALLOWED.test(value)) {
+            throw new Error('A user-agent pattern may use letters, digits and the regex '
+                + 'characters ()[]|?^.*+-/_\\ only (max 256 characters — no spaces, '
+                + 'quotes, or braces).');
+        }
+        const trailing = value.length - value.replace(/\\+$/, '').length;
+        if (trailing % 2 === 1) {
+            throw new Error('A user-agent pattern cannot end with an unescaped backslash.');
+        }
+    }
+    const note = typeof input.note === 'string' ? input.note.trim().slice(0, 255) : '';
+    return { kind, value, mode, note };
 }
 
 /** Discriminated declare body. Hidden values from the inactive branch vanish. */
@@ -238,29 +372,80 @@ export function classifyActionResponse(response, model = null) {
     return { ok, error };
 }
 
+/** Shared structured-delete path: never throw, classify, stash errors on the model. */
+async function requestModelDelete(model, what) {
+    if (!model.id) return { success: false, error: `${what} id is required`, status: 400 };
+    model.errors = {};
+    let response;
+    try {
+        response = await model.rest.DELETE(model.buildUrl(model.id));
+    } catch (error) {
+        response = { success: false, error: error.message, status: error.status || 500 };
+    }
+    const verdict = classifyActionResponse(response);
+    if (!verdict.ok) model.errors = response?.data || response?.errors || { error: verdict.error };
+    return response;
+}
+
 class Vhost extends Model {
     constructor(data = {}, options = {}) {
         super(data, { endpoint: `${BASE}/vhost`, ...options });
     }
 
-    async remove() {
-        if (!this.id) return { success: false, error: 'VHost id is required', status: 400 };
-        this.errors = {};
-        let response;
-        try {
-            response = await this.rest.DELETE(this.buildUrl(this.id));
-        } catch (error) {
-            response = { success: false, error: error.message, status: error.status || 500 };
+    remove() {
+        return requestModelDelete(this, 'VHost');
+    }
+
+    /**
+     * The reserved-name house override — the only writer of `claims_reserved`.
+     * Platform superusers only, house-domain vhosts only; the server enforces
+     * both and refuses API-key sessions outright.
+     */
+    claimReserved(release = false) {
+        if (!this.id) {
+            return Promise.resolve({ success: false, error: 'VHost id is required', status: 400 });
         }
-        const verdict = classifyActionResponse(response);
-        if (!verdict.ok) this.errors = response?.data || response?.errors || { error: verdict.error };
-        return response;
+        return rest.POST(`${BASE}/vhost/claim_reserved`, {
+            vhost: this.id, ...(release ? { release: true } : {})
+        });
     }
 }
 
 class VhostList extends Collection {
     constructor(options = {}) {
         super({ ModelClass: Vhost, endpoint: `${BASE}/vhost`, ...options });
+    }
+}
+
+class VhostRoute extends Model {
+    constructor(data = {}, options = {}) {
+        super(data, { endpoint: `${BASE}/route`, ...options });
+    }
+
+    remove() {
+        return requestModelDelete(this, 'Route');
+    }
+}
+
+class VhostRouteList extends Collection {
+    constructor(options = {}) {
+        super({ ModelClass: VhostRoute, endpoint: `${BASE}/route`, ...options });
+    }
+}
+
+class BlocklistEntry extends Model {
+    constructor(data = {}, options = {}) {
+        super(data, { endpoint: `${BASE}/blocklist`, ...options });
+    }
+
+    remove() {
+        return requestModelDelete(this, 'Blocklist entry');
+    }
+}
+
+class BlocklistEntryList extends Collection {
+    constructor(options = {}) {
+        super({ ModelClass: BlocklistEntry, endpoint: `${BASE}/blocklist`, ...options });
     }
 }
 
@@ -396,13 +581,21 @@ class WebAppReleaseList extends Collection {
     }
 }
 
-export { Vhost, VhostList, Upstream, UpstreamList, WebApp, WebAppList, WebAppRelease, WebAppReleaseList };
+export {
+    Vhost, VhostList, VhostRoute, VhostRouteList, BlocklistEntry, BlocklistEntryList,
+    Upstream, UpstreamList, WebApp, WebAppList, WebAppRelease, WebAppReleaseList
+};
 
 export default {
-    Vhost, VhostList, Upstream, UpstreamList, WebApp, WebAppList, WebAppRelease, WebAppReleaseList,
-    VhostKindOptions, UpstreamKindOptions, VHOST_POOL_PATTERN, WEBAPP_BUCKET_MAX_LENGTH,
+    Vhost, VhostList, VhostRoute, VhostRouteList, BlocklistEntry, BlocklistEntryList,
+    Upstream, UpstreamList, WebApp, WebAppList, WebAppRelease, WebAppReleaseList,
+    VhostKindOptions, VHOST_KIND_MATRIX, BODY_SIZE_BOUNDS,
+    BlocklistKindOptions, BlocklistModeOptions,
+    UpstreamKindOptions, VHOST_POOL_PATTERN, QUIET_PATH_PATTERN, WEBAPP_BUCKET_MAX_LENGTH,
     isLiteralSuperuser, isValidVhostPool,
-    buildVhostPayload, buildUpstreamDeclarePayload, buildWebAppPayload,
+    parseQuietPaths, formatQuietPaths, validateRedirectTarget,
+    buildVhostPayload, buildRoutePayload, buildBlocklistPayload,
+    buildUpstreamDeclarePayload, buildWebAppPayload,
     projectWebApp, projectWebAppRelease, releaseActionFor, canManageWebApp,
     normalizeDeploySha, classifyDeployResponse, requestFleetDeploy, classifyActionResponse
 };
