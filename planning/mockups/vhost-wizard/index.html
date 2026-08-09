@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>#1620 · VHost creation wizard mockup</title>
+
+  <!-- Bootstrap 5.3 + Bootstrap Icons via CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+  <style>
+    /* web-mojo dark palette (mirrors src/core/css/core.css :root[data-bs-theme=dark]) */
+    :root[data-bs-theme="dark"] {
+      --bs-body-bg:                  #0a0d11;
+      --bs-tertiary-bg:              #11161d;
+      --bs-secondary-bg:             #161b22;
+      --bs-border-color:             #1f2630;
+      --bs-border-color-translucent: rgba(255, 255, 255, 0.06);
+      --bs-emphasis-color:           #e6ecf3;
+      --bs-body-color:               #e6ecf3;
+      --bs-secondary-color:          #8a96a6;
+    }
+
+    body { background: var(--bs-body-bg); color: var(--bs-body-color); min-height: 100vh; }
+    .page-shell { max-width: 860px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+    .theme-toggle { position: fixed; top: 1rem; right: 1rem; z-index: 1080; }
+
+    .variant-eyebrow {
+      font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--bs-secondary-color);
+    }
+    .variant-title { font-size: 1.0625rem; font-weight: 600; margin: 0.15rem 0; }
+    .variant-note { font-size: 0.8125rem; color: var(--bs-secondary-color); margin: 0 0 0.9rem; max-width: 68ch; }
+    .variant-divider { border: 0; border-top: 1px solid var(--bs-border-color-translucent); margin: 3rem 0; }
+
+    /* The modal shell (echoes Modal.show(wizard, {size:'lg'})) */
+    .wizard-modal {
+      max-width: 720px; margin: 0 auto;
+      background: var(--bs-tertiary-bg);
+      border: 1px solid var(--bs-border-color);
+      border-radius: 0.75rem;
+      box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.12);
+      padding: 1.25rem 1.5rem 1.5rem;
+    }
+    [data-bs-theme="dark"] .wizard-modal { box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.5); }
+
+    .wizard-icon-tile {
+      width: 44px; height: 44px; border-radius: 11px; display: grid; place-items: center;
+      background: rgba(var(--bs-primary-rgb), .12); color: var(--bs-primary);
+    }
+
+    /* Step chips — DomainPurchaseWizard's language */
+    .step-row { display: flex; gap: 1rem; flex-wrap: wrap; border-top: 1px solid var(--bs-border-color-translucent);
+                border-bottom: 1px solid var(--bs-border-color-translucent); padding: 0.55rem 0; }
+    .step-chip { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; color: var(--bs-secondary-color); }
+    .step-chip.is-on { color: var(--bs-body-color); font-weight: 600; }
+    .step-dot {
+      width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 0.7rem;
+      background: var(--bs-secondary-bg); color: var(--bs-secondary-color);
+    }
+    .step-chip.is-on .step-dot { background: var(--bs-primary); color: #fff; }
+    .step-chip.is-done .step-dot { background: rgba(var(--bs-success-rgb), .25); color: var(--bs-success); }
+
+    /* Shape cards */
+    .shape-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+    @media (max-width: 560px) { .shape-grid { grid-template-columns: 1fr; } }
+    .shape-card {
+      border: 1px solid var(--bs-border-color); border-radius: 0.65rem;
+      background: var(--bs-body-bg); padding: 0.9rem 1rem; cursor: pointer;
+      display: flex; gap: 0.85rem; align-items: flex-start; text-align: left; width: 100%;
+      transition: border-color .12s ease, background .12s ease;
+    }
+    .shape-card:hover { border-color: var(--bs-primary); }
+    .shape-card.is-selected {
+      border-color: var(--bs-primary);
+      background: rgba(var(--bs-primary-rgb), .06);
+      box-shadow: inset 0 0 0 1px var(--bs-primary);
+    }
+    .shape-card .shape-icon {
+      width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; flex: 0 0 auto;
+      background: var(--bs-secondary-bg); color: var(--bs-secondary-color); font-size: 1.05rem;
+    }
+    .shape-card.is-selected .shape-icon { background: rgba(var(--bs-primary-rgb), .15); color: var(--bs-primary); }
+    .shape-name { font-weight: 600; font-size: 0.9375rem; margin: 0 0 0.1rem; }
+    .shape-kind { font-family: var(--bs-font-monospace); font-size: 0.6875rem; color: var(--bs-secondary-color); }
+    .shape-desc { font-size: 0.8125rem; color: var(--bs-secondary-color); margin: 0.15rem 0 0; }
+
+    /* Details step */
+    .field-label { font-size: 0.8125rem; color: var(--bs-secondary-color); margin-bottom: 0.25rem; }
+    .knob-block {
+      border: 1px solid var(--bs-border-color); border-radius: 0.65rem;
+      background: var(--bs-body-bg); padding: 1rem 1.1rem; margin-top: 1.25rem;
+    }
+    .knob-block-title { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--bs-secondary-color); margin-bottom: 0.75rem; }
+
+    /* Routes editor */
+    .route-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem 0.6rem;
+      border: 1px solid var(--bs-border-color-translucent); border-radius: 0.5rem; margin-bottom: 0.45rem;
+      background: var(--bs-tertiary-bg); }
+    .route-prefix { font-family: var(--bs-font-monospace); font-size: 0.875rem; }
+    .route-arrow { color: var(--bs-secondary-color); }
+    .route-upstream { font-size: 0.8125rem; }
+    .route-upstream .badge { font-size: 0.65rem; }
+
+    /* Review step */
+    .review-line { display: flex; justify-content: space-between; gap: 1rem;
+      padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--bs-border-color-translucent); font-size: 0.875rem; }
+    .review-line:last-child { border-bottom: 0; }
+    .review-key { color: var(--bs-secondary-color); }
+    .review-val { font-family: var(--bs-font-monospace); text-align: right; }
+    .review-box { border: 1px solid var(--bs-border-color); border-radius: 0.65rem; overflow: hidden;
+      background: var(--bs-body-bg); }
+    .server-name-hero {
+      background: var(--bs-secondary-bg); border-bottom: 1px solid var(--bs-border-color);
+      padding: 0.8rem 0.9rem; font-family: var(--bs-font-monospace); font-size: 1.05rem;
+    }
+    .server-name-hero .hero-eyebrow { font-family: var(--bs-font-sans-serif); font-size: 0.6875rem;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--bs-secondary-color); margin-bottom: 0.15rem; }
+  </style>
+</head>
+<body>
+  <button class="btn btn-sm btn-outline-secondary theme-toggle" type="button" onclick="toggleTheme()">
+    <i class="bi bi-circle-half me-1"></i>Theme
+  </button>
+
+  <div class="page-shell">
+    <p class="variant-eyebrow">#1620 · Edge admin v2 · mockup</p>
+    <h1 class="variant-title">VHost creation wizard — shape, knobs, review</h1>
+    <p class="variant-note">
+      Opened from VHosts → Create VHost as a lg modal (same wiring as the domain purchase wizard).
+      Four stacked states below: the shape step, the site_api details step (the richest), the redirect
+      details step (the smallest, showing the client-side host validation), and the review step with
+      the duplicate pre-check warning.
+    </p>
+
+    <!-- ── STATE 1 · shape ─────────────────────────────────────────────── -->
+    <hr class="variant-divider">
+    <p class="variant-eyebrow">State 1 · Pick the shape</p>
+    <div class="wizard-modal">
+      <div class="d-flex align-items-start gap-3 mb-3">
+        <span class="wizard-icon-tile"><i class="bi bi-hdd-network fs-5"></i></span>
+        <div>
+          <h5 class="mb-0">Create a VHost</h5>
+          <div class="text-secondary small">A domain is served in one of four known-good shapes.</div>
+        </div>
+        <button type="button" class="btn btn-link text-secondary ms-auto p-0" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="step-row mb-3">
+        <span class="step-chip is-on"><span class="step-dot">1</span>Shape</span>
+        <span class="step-chip"><span class="step-dot">2</span>Details</span>
+        <span class="step-chip"><span class="step-dot">3</span>Review</span>
+      </div>
+
+      <div class="shape-grid">
+        <button type="button" class="shape-card" data-shape="api" onclick="pickShape(this)">
+          <span class="shape-icon"><i class="bi bi-arrow-left-right"></i></span>
+          <span>
+            <span class="d-flex align-items-baseline gap-2"><span class="shape-name">API host</span><span class="shape-kind">api</span></span>
+            <p class="shape-desc">The whole host proxies to a declared upstream.</p>
+          </span>
+        </button>
+        <button type="button" class="shape-card" data-shape="site" onclick="pickShape(this)">
+          <span class="shape-icon"><i class="bi bi-window"></i></span>
+          <span>
+            <span class="d-flex align-items-baseline gap-2"><span class="shape-name">Site</span><span class="shape-kind">site</span></span>
+            <p class="shape-desc">A static site or single-page app.</p>
+          </span>
+        </button>
+        <button type="button" class="shape-card is-selected" data-shape="site_api" onclick="pickShape(this)">
+          <span class="shape-icon"><i class="bi bi-window-split"></i></span>
+          <span>
+            <span class="d-flex align-items-baseline gap-2"><span class="shape-name">Site + API paths</span><span class="shape-kind">site_api</span></span>
+            <p class="shape-desc">A marketing site with chosen path prefixes proxied to upstreams.</p>
+          </span>
+        </button>
+        <button type="button" class="shape-card" data-shape="redirect" onclick="pickShape(this)">
+          <span class="shape-icon"><i class="bi bi-signpost-split"></i></span>
+          <span>
+            <span class="d-flex align-items-baseline gap-2"><span class="shape-name">Redirect</span><span class="shape-kind">redirect</span></span>
+            <p class="shape-desc">www → apex and friends. A 301 that preserves the path.</p>
+          </span>
+        </button>
+      </div>
+
+      <div class="d-flex mt-3">
+        <button class="btn btn-primary ms-auto">Continue<i class="bi bi-arrow-right ms-2"></i></button>
+      </div>
+    </div>
+
+    <!-- ── STATE 2 · details (site_api) ────────────────────────────────── -->
+    <hr class="variant-divider">
+    <p class="variant-eyebrow">State 2 · Details — site_api (the richest shape)</p>
+    <div class="wizard-modal">
+      <div class="d-flex align-items-start gap-3 mb-3">
+        <span class="wizard-icon-tile"><i class="bi bi-window-split fs-5"></i></span>
+        <div>
+          <h5 class="mb-0">Site + API paths</h5>
+          <div class="text-secondary small">Static site plus proxied path prefixes.</div>
+        </div>
+        <button type="button" class="btn btn-link text-secondary ms-auto p-0" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="step-row mb-3">
+        <span class="step-chip is-done"><span class="step-dot">&check;</span>Shape</span>
+        <span class="step-chip is-on"><span class="step-dot">2</span>Details</span>
+        <span class="step-chip"><span class="step-dot">3</span>Review</span>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-7">
+          <div class="field-label">Domain</div>
+          <select class="form-select"><option>nativemojo.com</option><option>mojoverify.com</option></select>
+          <div class="form-text">Owns the VHost and cannot be changed later.</div>
+        </div>
+        <div class="col-md-5">
+          <div class="field-label">Host label</div>
+          <input type="text" class="form-control font-monospace" value="app" placeholder="www">
+          <div class="form-text">Blank = apex · <code>*</code> = wildcard → <span class="font-monospace">app.nativemojo.com</span></div>
+        </div>
+        <div class="col-md-7">
+          <div class="field-label">Certificate</div>
+          <select class="form-select"><option>nativemojo.com + *.nativemojo.com (issued)</option></select>
+        </div>
+        <div class="col-md-3">
+          <div class="field-label">Fleet pool</div>
+          <input type="text" class="form-control font-monospace" value="default">
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <div class="form-check form-switch mb-1">
+            <input class="form-check-input" type="checkbox" checked id="mock-enabled">
+            <label class="form-check-label small" for="mock-enabled">Enabled</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="knob-block">
+        <div class="knob-block-title">Site behavior</div>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" checked id="mock-spa">
+              <label class="form-check-label small" for="mock-spa">SPA history fallback</label>
+            </div>
+            <div class="form-text">Unknown paths serve <code>index.html</code> instead of 404.</div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="mock-static">
+              <label class="form-check-label small" for="mock-static">Serve platform static</label>
+            </div>
+            <div class="form-text">Serve Django static at <code>/static/</code> instead of proxying it.</div>
+          </div>
+          <div class="col-md-4">
+            <div class="field-label">Max upload size (MB)</div>
+            <input type="number" class="form-control" value="50" min="1" max="4096">
+            <div class="form-text">1–4096.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="knob-block">
+        <div class="knob-block-title">Proxied path prefixes</div>
+        <div class="route-row">
+          <span class="route-prefix">/api</span>
+          <i class="bi bi-arrow-right route-arrow"></i>
+          <span class="route-upstream">api-core <span class="badge bg-secondary bg-opacity-25 text-body">shared</span></span>
+          <button class="btn btn-sm btn-link text-danger ms-auto p-0" aria-label="Remove route"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="route-row">
+          <span class="route-prefix">/api/ws</span>
+          <i class="bi bi-arrow-right route-arrow"></i>
+          <span class="route-upstream">api-realtime</span>
+          <button class="btn btn-sm btn-link text-danger ms-auto p-0" aria-label="Remove route"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="d-flex gap-2 mt-2">
+          <input type="text" class="form-control form-control-sm font-monospace" placeholder="/app" style="max-width: 180px;">
+          <select class="form-select form-select-sm" style="max-width: 220px;">
+            <option>Choose an upstream…</option><option>api-core (shared)</option><option>api-realtime</option>
+          </select>
+          <button class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg me-1"></i>Add route</button>
+        </div>
+        <div class="form-text mt-2">
+          Longest prefix wins, so <code>/api</code> and <code>/api/ws</code> can point at different upstreams.
+          Quiet paths (log silencing) are added after creation from the VHost detail — each must sit under a declared prefix.
+        </div>
+      </div>
+
+      <div class="d-flex mt-3">
+        <button class="btn btn-secondary"><i class="bi bi-arrow-left me-2"></i>Back</button>
+        <button class="btn btn-primary ms-auto">Review<i class="bi bi-arrow-right ms-2"></i></button>
+      </div>
+    </div>
+
+    <!-- ── STATE 3 · details (redirect) ────────────────────────────────── -->
+    <hr class="variant-divider">
+    <p class="variant-eyebrow">State 3 · Details — redirect (the smallest shape, with client-side host validation)</p>
+    <div class="wizard-modal">
+      <div class="d-flex align-items-start gap-3 mb-3">
+        <span class="wizard-icon-tile"><i class="bi bi-signpost-split fs-5"></i></span>
+        <div>
+          <h5 class="mb-0">Redirect</h5>
+          <div class="text-secondary small">Every request 301s to another host, path preserved.</div>
+        </div>
+        <button type="button" class="btn btn-link text-secondary ms-auto p-0" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="step-row mb-3">
+        <span class="step-chip is-done"><span class="step-dot">&check;</span>Shape</span>
+        <span class="step-chip is-on"><span class="step-dot">2</span>Details</span>
+        <span class="step-chip"><span class="step-dot">3</span>Review</span>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-7">
+          <div class="field-label">Domain</div>
+          <select class="form-select"><option>nativemojo.com</option></select>
+        </div>
+        <div class="col-md-5">
+          <div class="field-label">Host label</div>
+          <input type="text" class="form-control font-monospace" value="www">
+          <div class="form-text">→ <span class="font-monospace">www.nativemojo.com</span></div>
+        </div>
+        <div class="col-md-7">
+          <div class="field-label">Certificate</div>
+          <select class="form-select"><option>nativemojo.com + *.nativemojo.com (issued)</option></select>
+        </div>
+        <div class="col-md-3">
+          <div class="field-label">Fleet pool</div>
+          <input type="text" class="form-control font-monospace" value="default">
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <div class="form-check form-switch mb-1">
+            <input class="form-check-input" type="checkbox" checked id="mock-enabled-r">
+            <label class="form-check-label small" for="mock-enabled-r">Enabled</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="knob-block">
+        <div class="knob-block-title">Redirect target</div>
+        <input type="text" class="form-control font-monospace is-invalid" value="https://nativemojo.com">
+        <div class="invalid-feedback">Host only — drop the <code>https://</code> and any path.</div>
+        <div class="form-text">A bare hostname, e.g. <code>nativemojo.com</code>. A 301 preserving the request path is rendered.</div>
+      </div>
+
+      <div class="d-flex mt-3">
+        <button class="btn btn-secondary"><i class="bi bi-arrow-left me-2"></i>Back</button>
+        <button class="btn btn-primary ms-auto" disabled>Review<i class="bi bi-arrow-right ms-2"></i></button>
+      </div>
+    </div>
+
+    <!-- ── STATE 4 · review + duplicate warning ────────────────────────── -->
+    <hr class="variant-divider">
+    <p class="variant-eyebrow">State 4 · Review — with the duplicate pre-check warning</p>
+    <div class="wizard-modal">
+      <div class="d-flex align-items-start gap-3 mb-3">
+        <span class="wizard-icon-tile"><i class="bi bi-window-split fs-5"></i></span>
+        <div>
+          <h5 class="mb-0">Review and create</h5>
+          <div class="text-secondary small">Nothing is written until you create.</div>
+        </div>
+        <button type="button" class="btn btn-link text-secondary ms-auto p-0" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="step-row mb-3">
+        <span class="step-chip is-done"><span class="step-dot">&check;</span>Shape</span>
+        <span class="step-chip is-done"><span class="step-dot">&check;</span>Details</span>
+        <span class="step-chip is-on"><span class="step-dot">3</span>Review</span>
+      </div>
+
+      <div class="alert alert-warning py-2 px-3 small">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        An enabled VHost already claims <span class="font-monospace">app.nativemojo.com</span> —
+        disable it first, or stage this one disabled.
+      </div>
+
+      <div class="review-box mb-3">
+        <div class="server-name-hero">
+          <div class="hero-eyebrow">Will serve</div>
+          app.nativemojo.com
+        </div>
+        <div class="review-line"><span class="review-key">Shape</span><span class="review-val">site_api · Site + API paths</span></div>
+        <div class="review-line"><span class="review-key">SPA fallback</span><span class="review-val">on</span></div>
+        <div class="review-line"><span class="review-key">Routes</span><span class="review-val">/api → api-core<br>/api/ws → api-realtime</span></div>
+        <div class="review-line"><span class="review-key">Max upload</span><span class="review-val">50 MB</span></div>
+        <div class="review-line"><span class="review-key">Certificate</span><span class="review-val">*.nativemojo.com (issued)</span></div>
+        <div class="review-line"><span class="review-key">Fleet pool</span><span class="review-val">default</span></div>
+        <div class="review-line"><span class="review-key">Enabled</span><span class="review-val">yes</span></div>
+      </div>
+
+      <div class="d-flex mt-3">
+        <button class="btn btn-secondary"><i class="bi bi-arrow-left me-2"></i>Back</button>
+        <button class="btn btn-primary ms-auto" disabled><i class="bi bi-plus-lg me-2"></i>Create VHost</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      html.setAttribute('data-bs-theme', html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark');
+    }
+    function pickShape(card) {
+      card.closest('.shape-grid').querySelectorAll('.shape-card').forEach(c => c.classList.remove('is-selected'));
+      card.classList.add('is-selected');
+    }
+  </script>
+</body>
+</html>
