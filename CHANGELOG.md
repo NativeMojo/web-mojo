@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.9.0 — 2026-08-08
+## 2.10.0 — 2026-08-18
 
 ### Admin · Group Auth Config hosted-page visual preview workspace (#2139)
 
@@ -46,6 +46,8 @@
   resets, send only a sparse leaf patch, verify the result, retry a
   persisted-null cleanup once, preserve drafts on failure, and
   refresh/rebaseline successfully saved forms without moving the active tab.
+
+## 2.9.0 — 2026-08-08
 
 ### Admin · Edge template kinds: vhost wizard, routes, reserved claims, blocklist
 
