@@ -257,14 +257,18 @@ module.exports = async function (testContext) {
             await oldProbe;
             expect(view._frame.src).toBe(newUrl);
 
-            view.mounted = true;
-            view._refreshPreview = jest.fn().mockResolvedValue();
-            view._onConfigSaved({
-                resolvedConfig: { theme: { layout: 'minimal', appearance: 'system' }, registration: { enabled: true } },
-                registrationEnabled: true
-            });
-            expect(view._refreshPreview).toHaveBeenCalledWith(true);
-            expect(view.dirty).toBe(false);
+            document.body.appendChild(view.element);
+            try {
+                view._refreshPreview = jest.fn().mockResolvedValue();
+                view._onConfigSaved({
+                    resolvedConfig: { theme: { layout: 'minimal', appearance: 'system' }, registration: { enabled: true } },
+                    registrationEnabled: true
+                });
+                expect(view._refreshPreview).toHaveBeenCalledWith(true);
+                expect(view.dirty).toBe(false);
+            } finally {
+                view.element.remove();
+            }
         });
 
         it('disconnects observers, aborts probes, removes listeners, and invalidates late work on destroy', async () => {
