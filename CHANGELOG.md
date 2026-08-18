@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **Configure Auth now uses a true fullscreen modal.** This prevents the editor
+  and hosted-page preview from overflowing a constrained `xxl` dialog.
+
 ## 2.10.0 — 2026-08-18
 
 ### Admin · Group Auth Config hosted-page visual preview workspace (#2139)

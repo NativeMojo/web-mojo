@@ -339,7 +339,7 @@ Events are entered via the framework's `TagInput` (`type: 'tags'`). `WebhookSubs
 
 ## Auth Config — per-group editor (`GroupView` → Auth Config)
 
-`GroupView` exposes a permission-gated **Configure Auth** context-menu action. It opens an `xxl` workspace with `GroupAuthConfigSection` beside a private hosted-page visual preview. On wide screens the editor scrolls independently while the preview stays sticky; narrow screens stack the two surfaces. Desktop (`1280 × 800`) and phone (`390 × 844`) frames retain their real dimensions and are scaled inside a measured viewport. When a side-by-side frame would become too small to read, **Focus preview** temporarily gives it the full workspace.
+`GroupView` exposes a permission-gated **Configure Auth** context-menu action. It opens a fullscreen workspace with `GroupAuthConfigSection` beside a private hosted-page visual preview. On wide screens the editor scrolls independently while the preview stays sticky; narrow screens stack the two surfaces. Desktop (`1280 × 800`) and phone (`390 × 844`) frames retain their real dimensions and are scaled inside a measured viewport. When a side-by-side frame would become too small to read, **Focus preview** temporarily gives it the full workspace.
 
 The hosted-page location is app configuration, not inferred from django settings:
 

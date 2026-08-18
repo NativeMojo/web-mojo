@@ -3,6 +3,7 @@
  * inert frame, scaling, generation, and cleanup. Fetch is always mocked.
  */
 const path = require('path');
+const fs = require('fs');
 const { SimpleModuleLoader } = require('../utils/simple-module-loader');
 
 module.exports = async function (testContext) {
@@ -58,6 +59,20 @@ module.exports = async function (testContext) {
         view.element.innerHTML = view.template;
         return view;
     }
+
+    describe('GroupView modal shell', () => {
+        it('opens Configure Auth in a true fullscreen modal', () => {
+            const source = fs.readFileSync(
+                path.resolve(__dirname, '../../src/extensions/admin/account/groups/GroupView.js'),
+                'utf8'
+            );
+            const start = source.indexOf('async onActionConfigureAuth()');
+            const end = source.indexOf('\n    }\n', start);
+            const action = source.slice(start, end);
+            expect(action).toContain("size: 'fullscreen'");
+            expect(action).not.toContain("size: 'xxl'");
+        });
+    });
 
     beforeEach(() => {
         fetchImpl = jest.fn();

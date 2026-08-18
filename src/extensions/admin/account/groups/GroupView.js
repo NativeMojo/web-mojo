@@ -2151,7 +2151,7 @@ class GroupView extends DetailView {
         const dialog = new ModalView({
             title: `Configure Auth — ${this.model.get('name')}`,
             body: workspace,
-            size: 'xxl',
+            size: 'fullscreen',
             scrollable: false,
             noBodyPadding: true,
             bodyClass: 'overflow-hidden',
