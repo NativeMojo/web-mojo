@@ -6,10 +6,11 @@
  * on display, and the raw textarea string was POSTed with no JSON.parse —
  * silently corrupting a key's permissions on any save.
  *
- * The fix: no JSON textarea at all. The create form embeds the live
- * Member.PERMISSION_TABSET (switch-per-permission, saved as flat dotted
- * `permissions.<name>` keys — Member parity); the edit dialog shrinks to
- * `name` (is_active moved to the DetailView header active switch).
+ * The fix: no unparsed JSON textarea in the generic create/edit forms. The
+ * create form embeds the live Member.PERMISSION_TABSET (switch-per-permission,
+ * saved as flat dotted `permissions.<name>` keys — Member parity); the edit
+ * dialog shrinks to `name`. ApiKeyView's separate raw policy editor uses a
+ * real JSON field plus validation and replacement-patch construction.
  */
 
 const { testHelpers } = require('../utils/test-helpers');
@@ -111,6 +112,26 @@ module.exports = async function (testContext) {
         it('ApiKey model still targets the standard CRUD endpoint', () => {
             const key = new ApiKey({ id: 1 });
             expect(key.endpoint).toBe('/api/group/apikey');
+        });
+
+        it('builds a complete-policy patch that grants unknown keys and revokes omissions', () => {
+            const patch = ApiKey.buildPermissionsPatch(
+                { view_logs: true, send_sms: true },
+                { send_sms: true, future_provider_permission: true }
+            );
+
+            expect(patch).toEqual({
+                send_sms: true,
+                future_provider_permission: true,
+                view_logs: false
+            });
+        });
+
+        it('rejects non-object and non-boolean permission policies', () => {
+            expect(() => ApiKey.validatePermissionsPolicy([]))
+                .toThrow('Permissions policy must be a JSON object.');
+            expect(() => ApiKey.validatePermissionsPolicy({ send_sms: 'yes' }))
+                .toThrow('Permission "send_sms" must have a boolean value.');
         });
     });
 

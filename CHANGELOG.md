@@ -4,6 +4,10 @@
 
 - **Configure Auth now uses a true fullscreen modal.** This prevents the editor
   and hosted-page preview from overflowing a constrained `xxl` dialog.
+- **API keys can now edit their complete permissions policy as JSON.** The
+  existing guided switches remain the default, while JSON policy mode supports
+  uncatalogued grants such as `send_sms`. Values must be boolean, omitted keys
+  are revoked on save, and django-mojo still authorizes every changed key.
 
 ## 2.10.0 — 2026-08-18
 

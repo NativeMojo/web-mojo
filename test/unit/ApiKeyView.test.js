@@ -7,8 +7,7 @@
  *   - ApiKeyView extends DetailView (header with × close renders).
  *   - Header: titleField name, activeField is_active, Edit/Delete kebab.
  *   - Permissions section wraps an autosaving FormView over the LIVE
- *     Member.PERMISSION_TABSET (Member parity — the dotted-key save path
- *     itself is covered by FormView.autosaveSkipRender.test.js).
+ *     Member.PERMISSION_TABSET and a validated complete-policy JSON editor.
  *   - Section registry: Overview / Permissions / divider / Limits / Usage,
  *     with Permissions as the landing section.
  *   - Overview/limits computed fields guard corrupted (non-object) data.
@@ -42,6 +41,7 @@ module.exports = async function (testContext) {
             this.element.className = 'form-view-component';
         }
         async render() { return this; }
+        async getFormData() { return { ...this.data }; }
         isMounted() { return false; }
         on() {} off() {}
     }
@@ -63,8 +63,11 @@ module.exports = async function (testContext) {
             ...attrs
         };
         const handlers = new Map();
+        const saveCalls = [];
         return {
             attributes: data,
+            errors: {},
+            saveCalls,
             get(k) { return data[k]; },
             set(k, v) {
                 if (typeof k === 'object') Object.assign(data, k);
@@ -82,7 +85,18 @@ module.exports = async function (testContext) {
             },
             toJSON() { return { ...data }; },
             async fetch() { return { success: true }; },
-            async save()  { return { success: true, status: 200 }; }
+            async save(payload, options) {
+                saveCalls.push({ payload, options });
+                if (payload?.permissions) {
+                    const next = { ...(data.permissions || {}) };
+                    Object.entries(payload.permissions).forEach(([name, value]) => {
+                        if (value) next[name] = value;
+                        else delete next[name];
+                    });
+                    data.permissions = next;
+                }
+                return { success: true, status: 200, data: { status: true, data: { ...data } } };
+            }
         };
     }
 
@@ -150,6 +164,48 @@ module.exports = async function (testContext) {
             const fed = tabs.find(t => t.label === 'Federation');
             const field = fed.fields.find(f => f.name === 'permissions.geoip_sync');
             expect(field.disabled).toBe(true);
+        });
+
+        it('Permissions section includes an explicit raw JSON policy editor', () => {
+            const section = view.permissionsSection;
+            expect(section.rawFormView).toBeInstanceOf(FormViewStub);
+            expect(section.rawFormView.options.model).toBe(model);
+
+            const field = section.rawFormView.options.fields
+                .find(f => f.name === 'permissions');
+            expect(field).toBeDefined();
+            expect(field.type).toBe('json');
+            expect(field.label).toBe('Permissions policy (JSON)');
+        });
+
+        it('raw JSON save treats the document as complete and supports uncatalogued permissions', async () => {
+            const section = view.permissionsSection;
+            section.rawFormView.getFormData = async () => ({
+                permissions: {
+                    send_sms: true,
+                    future_provider_permission: true
+                }
+            });
+
+            await section.onActionSaveJsonPolicy();
+
+            expect(model.saveCalls).toHaveLength(1);
+            expect(model.saveCalls[0]).toEqual({
+                payload: {
+                    permissions: {
+                        send_sms: true,
+                        future_provider_permission: true,
+                        manage_group: false,
+                        view_metrics: false,
+                        view_logs: false
+                    }
+                },
+                options: { skipRender: true }
+            });
+            expect(model.get('permissions')).toEqual({
+                send_sms: true,
+                future_provider_permission: true
+            });
         });
 
         it('overview computes group label and "never" for unused keys', () => {

@@ -643,14 +643,33 @@ of its group, so the create form embeds the **Group Member permission
 catalog** as a switch tabset — the same `Member.PERMISSION_TABSET` the
 MemberView permissions editor consumes (app permissions registered via
 `Member.registerPermissions(...)` appear automatically). Each switch is a
-dotted `permissions.<name>` key saved as a boolean; there is no whole-object
-JSON permissions field, and callers should strip unchecked (`false`)
-permission keys before POSTing a create (grant-only semantics — see
-`ApiKeyTablePage.onActionAdd`).
+dotted `permissions.<name>` key saved as a boolean. Callers should strip
+unchecked (`false`) permission keys before POSTing a create (grant-only
+semantics — see `ApiKeyTablePage.onActionAdd`).
 
 `ApiKeyForms.edit` is name-only: `is_active` is toggled from the ApiKeyView
 detail header's active switch, and permissions autosave from its Permissions
 section (`ApiKeyView` extends `DetailView`).
+
+The Permissions section also has a **JSON policy** mode for permissions that
+are not registered in the guided catalog. It edits the complete boolean map:
+
+```json
+{
+  "send_sms": true,
+  "geoip_sync": true
+}
+```
+
+Saving validates that the top level is an object and every value is boolean.
+Keys removed from the document are revoked; unknown permission names are sent
+unchanged so newly deployed backend capabilities do not require a web-mojo
+catalog release. The backend remains authoritative and independently checks
+whether the current operator may grant or revoke every changed key.
+
+`ApiKey.validatePermissionsPolicy(policy)` validates this document shape, and
+`ApiKey.buildPermissionsPatch(current, desired)` converts the complete desired
+document into the backend's merge-style permission patch.
 
 Permission threshold for CRUD is `manage_group` / `manage_groups` / `groups`.
 

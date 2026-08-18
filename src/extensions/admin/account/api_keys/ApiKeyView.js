@@ -3,10 +3,8 @@
  *
  * Sections:
  *   Overview     — key facts (ID, group, created, last used) + token note
- *   Permissions  — autosave tabset (ApiKey.permissionTabset()); an API key
- *                  "acts as" a member of its group, so it offers the Group
- *                  Member permission catalog (ITEM-025) plus a Federation tab
- *                  that exists only on keys
+ *   Permissions  — guided autosave switches plus a complete raw JSON policy
+ *                  editor for grants outside the registered catalog
  *   ── Reference ──
  *   Rate Limits  — read-only limits overrides
  *   Usage        — Authorization header snippet
@@ -85,10 +83,11 @@ class ApiKeyOverviewSection extends View {
 
 // ── Permissions section ────────────────────────────────────
 //
-// One autosaving FormView over the live ApiKey.permissionTabset() — the
-// MemberPermissionsSection shape plus a Federation tab only keys get. Each
-// switch saves a flat dotted `permissions.<name>` boolean; permissions outside
-// the catalog are never shown and never touched.
+// The guided editor is one autosaving FormView over the live
+// ApiKey.permissionTabset(). The JSON editor binds to the same model and saves
+// explicitly, treating the document as the complete policy. Because the
+// backend setter is merge-style, ApiKey.buildPermissionsPatch() emits false
+// for omitted existing keys so the result has replacement semantics.
 //
 // A failed save needs no handling here: FormView.executeBatchSave already
 // toasts the server error and calls revertFields(), so a 403 on a protected
@@ -99,17 +98,57 @@ class ApiKeyPermissionsSection extends View {
         super({
             className: 'api-key-permissions-section',
             template: `
-                <div class="detail-section-eyebrow">API key permissions</div>
-                <p class="text-secondary small mb-3">
-                    Grants this key can exercise — the catalog a group member
-                    can hold, plus federation grants unique to keys. Toggles
-                    autosave as soon as you flip them.
-                </p>
-                <div data-container="apikey-perms"></div>
+                <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
+                    <div>
+                        <div class="detail-section-eyebrow">API key permissions</div>
+                        <p class="text-secondary small mb-0">
+                            Edit common grants with switches or manage the complete policy as JSON.
+                        </p>
+                    </div>
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Permission editor mode">
+                        <button type="button" class="btn {{guidedButtonClass}}"
+                                data-action="show-guided-policy" aria-pressed="{{guidedPressed}}">
+                            <i class="bi bi-toggles me-1"></i>Guided
+                        </button>
+                        <button type="button" class="btn {{jsonButtonClass}}"
+                                data-action="show-json-policy" aria-pressed="{{jsonPressed}}">
+                            <i class="bi bi-braces me-1"></i>JSON policy
+                        </button>
+                    </div>
+                </div>
+
+                <div data-policy-pane="guided" class="{{guidedPaneClass}}">
+                    <p class="text-secondary small mb-3">
+                        Toggles autosave as soon as you flip them.
+                    </p>
+                    <div data-container="apikey-perms"></div>
+                </div>
+
+                <div data-policy-pane="json" class="{{jsonPaneClass}}">
+                    <div class="alert alert-warning py-2 small" role="alert">
+                        This document is the complete policy. Removing a key revokes it on Save.
+                        The server independently authorizes every changed permission.
+                    </div>
+                    <div data-container="apikey-perms-json"></div>
+                    <div class="d-flex flex-wrap align-items-center justify-content-end gap-3 mt-3 pt-3 border-top">
+                        <span class="api-key-policy-status small text-secondary"></span>
+                        <button type="button" class="btn btn-primary btn-sm" data-action="save-json-policy">
+                            <i class="bi bi-check-lg me-1"></i>Save JSON policy
+                        </button>
+                    </div>
+                </div>
             `,
             ...options
         });
+        this.policyMode = 'guided';
     }
+
+    get guidedButtonClass() { return this.policyMode === 'guided' ? 'btn-primary' : 'btn-outline-secondary'; }
+    get jsonButtonClass() { return this.policyMode === 'json' ? 'btn-primary' : 'btn-outline-secondary'; }
+    get guidedPaneClass() { return this.policyMode === 'guided' ? '' : 'd-none'; }
+    get jsonPaneClass() { return this.policyMode === 'json' ? '' : 'd-none'; }
+    get guidedPressed() { return this.policyMode === 'guided' ? 'true' : 'false'; }
+    get jsonPressed() { return this.policyMode === 'json' ? 'true' : 'false'; }
 
     async onInit() {
         // checkPermissions is the framework's fail-closed gate (View.js) and
@@ -123,6 +162,107 @@ class ApiKeyPermissionsSection extends View {
             autosaveModelField: true
         });
         this.addChild(this.formView);
+
+        this.rawFormView = new FormView({
+            containerId: 'apikey-perms-json',
+            fields: [{
+                name: 'permissions',
+                type: 'json',
+                label: 'Permissions policy (JSON)',
+                rows: 14,
+                columns: 12,
+                help: 'Boolean permission map, for example { "send_sms": true }. Unknown permission names are allowed; the server remains authoritative.'
+            }],
+            model: this.model
+        });
+        this.addChild(this.rawFormView);
+    }
+
+    onActionShowGuidedPolicy() {
+        this._setPolicyMode('guided');
+        return true;
+    }
+
+    onActionShowJsonPolicy() {
+        // FormView is deliberately not model-mutating until Save. Refresh the
+        // JSON field when entering this mode so guided autosaves made since the
+        // last visit are represented in the complete policy document.
+        this.rawFormView.syncFormWithModel?.();
+        this._setPolicyMode('json');
+        return true;
+    }
+
+    _setPolicyMode(mode) {
+        this.policyMode = mode;
+        const guided = mode === 'guided';
+        this.element?.querySelector('[data-policy-pane="guided"]')?.classList.toggle('d-none', !guided);
+        this.element?.querySelector('[data-policy-pane="json"]')?.classList.toggle('d-none', guided);
+
+        const guidedButton = this.element?.querySelector('[data-action="show-guided-policy"]');
+        const jsonButton = this.element?.querySelector('[data-action="show-json-policy"]');
+        this._styleModeButton(guidedButton, guided);
+        this._styleModeButton(jsonButton, !guided);
+    }
+
+    _styleModeButton(button, active) {
+        if (!button) return;
+        button.classList.toggle('btn-primary', active);
+        button.classList.toggle('btn-outline-secondary', !active);
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    }
+
+    async onActionSaveJsonPolicy() {
+        const app = this.getApp();
+        const formData = await this.rawFormView.getFormData();
+        let patch;
+        try {
+            ApiKey.validatePermissionsPolicy(formData.permissions);
+            patch = ApiKey.buildPermissionsPatch(
+                this.model?.get?.('permissions'), formData.permissions);
+        } catch (error) {
+            this._setPolicyStatus(error.message, 'danger');
+            app?.toast?.error(error.message);
+            return true;
+        }
+
+        this._setPolicyStatus('Saving…');
+        app?.showLoading?.();
+        let resp;
+        try {
+            resp = await this.model.save(
+                { permissions: patch }, { skipRender: true });
+        } catch (error) {
+            resp = { success: false, error: error.message };
+        } finally {
+            app?.hideLoading?.();
+        }
+
+        const failed = !resp || resp.success === false
+            || resp.data?.status === false
+            || Object.keys(this.model?.errors || {}).length > 0;
+        if (failed) {
+            const message = resp?.data?.error || resp?.error || resp?.message
+                || 'Failed to save the permissions policy.';
+            this._setPolicyStatus(message, 'danger');
+            app?.toast?.error(message);
+            return true;
+        }
+
+        this.rawFormView.syncFormWithModel?.();
+        this.formView.syncFormWithModel?.();
+        this._setPolicyStatus('Policy saved.', 'success');
+        app?.toast?.success('API key permissions saved');
+        return true;
+    }
+
+    _setPolicyStatus(text, tone) {
+        const el = this.element?.querySelector('.api-key-policy-status');
+        if (!el) return;
+        el.textContent = text || '';
+        el.className = 'api-key-policy-status small '
+            + (tone === 'danger' ? 'text-danger'
+                : tone === 'success' ? 'text-success'
+                : 'text-secondary');
     }
 }
 

@@ -32,6 +32,41 @@ class ApiKey extends Model {
 }
 
 /**
+ * Validate the complete permission policy used by the raw JSON editor.
+ * Permission values are booleans; false is equivalent to revoking the key.
+ */
+ApiKey.validatePermissionsPolicy = function (policy) {
+    if (!policy || typeof policy !== 'object' || Array.isArray(policy)) {
+        throw new Error('Permissions policy must be a JSON object.');
+    }
+    for (const [name, value] of Object.entries(policy)) {
+        if (typeof value !== 'boolean') {
+            throw new Error(`Permission "${name}" must have a boolean value.`);
+        }
+    }
+    return policy;
+};
+
+/**
+ * Convert a complete desired policy into django-mojo's merge-style patch.
+ * Keys omitted from the desired document are sent as false so saving raw JSON
+ * has replacement semantics instead of silently retaining old grants.
+ */
+ApiKey.buildPermissionsPatch = function (current, desired) {
+    ApiKey.validatePermissionsPolicy(desired);
+    const stored = current && typeof current === 'object' && !Array.isArray(current)
+        ? current
+        : {};
+    const patch = { ...desired };
+    for (const name of Object.keys(stored)) {
+        if (!Object.prototype.hasOwnProperty.call(desired, name)) {
+            patch[name] = false;
+        }
+    }
+    return patch;
+};
+
+/**
  * ApiKeyList - Collection of ApiKey records.
  * Filter by group: new ApiKeyList({ params: { group: groupId } })
  */
@@ -160,12 +195,12 @@ Object.defineProperty(ApiKey, 'PERMISSION_TABSET', {
 /**
  * Forms configuration for ApiKey.
  *
- * Permissions are edited with the same switch/tabset editor a Group Member
- * uses, plus a Federation tab unique to keys (see
+ * Common permissions are edited with the same switch/tabset editor a Group
+ * Member uses, plus a Federation tab unique to keys (see
  * ApiKey.FEDERATION_PERMISSIONS). Each switch is a `permissions.<name>` dotted
- * key saved as a boolean — never a whole-object JSON blob (ITEM-025: the old
- * `type: 'textarea'` field string-coerced objects to "[object Object]" and
- * silently corrupted permissions on save).
+ * key saved as a boolean. ApiKeyView also provides an explicit JSON policy
+ * editor for permissions outside the catalog; unlike ITEM-025's old plain
+ * textarea, it parses and validates the JSON object before saving.
  */
 const ApiKeyForms = {
     create: {
