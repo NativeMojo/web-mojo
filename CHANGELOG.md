@@ -2,6 +2,28 @@
 
 ## 2.9.0 — 2026-08-08
 
+### Admin · Group Auth Config contract parity and honest inheritance (#2138)
+
+- Expanded the Group Auth Config editor to django-mojo's complete hosted-auth
+  contract: all 20 public theme keys, current and legacy layouts, appearance
+  and hero-position controls, login heading/supporting copy, and GitHub login
+  and registration. Configured unknown select/method tokens remain visible
+  instead of being silently dropped.
+- Effective values now resolve from the deployment default plus raw ancestor
+  Group rows walked by parent id, so inactive and UUID-less ancestors still
+  count. Every leaf shows provenance; owned leaves have independent queued
+  reset controls, while incomplete ancestry disables resets rather than
+  presenting a guessed inherited value. Explicit false, empty, zero, and empty
+  arrays remain real overrides.
+- Replaced lossy extra-field entry with ordered `name` / `label` / `required`
+  rows that visibly validate identifiers and preserve legacy strings, object
+  shape, and order. An explicit `registration.fields=[]` continues to mean the
+  legal/default displayed schema.
+- Saves now use a detached latest raw Group branch to prune already-satisfied
+  resets, send only a sparse leaf patch, verify the result, retry a
+  persisted-null cleanup once, preserve drafts on failure, and
+  refresh/rebaseline successfully saved forms without moving the active tab.
+
 ### Admin · Edge template kinds: vhost wizard, routes, reserved claims, blocklist
 
 - Adopted django-mojo ≥ 1.6.0's edge template-kind system (`api` / `site` /

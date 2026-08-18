@@ -1,177 +1,255 @@
 /**
- * GroupAuthConfigSection - Form-based editor for a Group's `metadata.auth_config`.
+ * GroupAuthConfigSection - honest, inheritance-aware editor for
+ * `Group.metadata.auth_config`.
  *
- * `auth_config` is the per-group structured config that drives the
- * django-mojo–hosted login, registration, and passkey pages. It is resolved
- * server-side as: code defaults <- the deployment `AUTH_CONFIG` setting <-
- * `group.metadata.auth_config`, deep-merged down the parent chain.
- *
- * This section edits the group's own override only. It embeds a single
- * `FormView` with a 3-tab `tabset` (Theme / Login / Registration) plus a Save
- * button. On Save it checks the cross-field rules the server enforces, then
- * writes the changed keys via `model.save({ metadata: { auth_config: {...} } })`.
- * django deep-merges the `metadata` JSONField, so sibling keys survive and
- * untouched fields keep inheriting.
- *
- * Save is explicit (not autosave) because the server applies cross-field
- * validation — `registration.fields` must include email or phone, and
- * `login.methods` must be non-empty — so a mid-edit state is routinely
- * invalid and would fail a per-keystroke save.
- *
- * Load:  each field shows the group's own override value if present, else the
- *        resolved/inherited value (fetched from `GET /api/auth/config`). Text
- *        fields additionally show the resolved value as placeholder text.
- * Save:  sends only fields changed from the loaded baseline, so untouched
- *        fields keep inheriting.
+ * The public auth endpoint is used only for the deployment default. Group
+ * inheritance is reconstructed from raw Group REST rows by parent id so an
+ * inactive or UUID-less ancestor remains part of the chain. Every editable
+ * leaf names its source, and Reset queues a leaf-level null deletion for the
+ * next explicit save.
  */
 import View from '@core/View.js';
 import FormView from '@core/forms/FormView.js';
-
-// ── Allowed tokens (must match django-mojo auth_config schema) ─────────────
+import { Group } from '@core/models/Group.js';
 
 const LOGIN_METHOD_OPTS = [
     { value: 'password', label: 'Password' },
-    { value: 'sms',      label: 'SMS code' },
-    { value: 'passkey',  label: 'Passkey' },
-    { value: 'magic',    label: 'Magic link' },
-    { value: 'google',   label: 'Google' },
-    { value: 'apple',    label: 'Apple' }
+    { value: 'sms', label: 'SMS code' },
+    { value: 'passkey', label: 'Passkey' },
+    { value: 'magic', label: 'Magic link' },
+    { value: 'google', label: 'Google' },
+    { value: 'apple', label: 'Apple' },
+    { value: 'github', label: 'GitHub' }
 ];
 
 const REGISTRATION_METHOD_OPTS = [
     { value: 'password', label: 'Password' },
-    { value: 'google',   label: 'Google' },
-    { value: 'apple',    label: 'Apple' }
+    { value: 'google', label: 'Google' },
+    { value: 'apple', label: 'Apple' },
+    { value: 'github', label: 'GitHub' }
 ];
 
 const LAYOUT_OPTS = [
-    { value: 'card',       label: 'Card' },
-    { value: 'fullscreen', label: 'Full screen' }
+    { value: 'minimal', label: 'Minimal' },
+    { value: 'compact', label: 'Compact' },
+    { value: 'branded-panel', label: 'Branded panel' },
+    { value: 'editorial', label: 'Editorial' },
+    { value: 'card', label: 'Card (legacy alias)' },
+    { value: 'fullscreen', label: 'Full screen (legacy alias)' }
 ];
 
+const APPEARANCE_OPTS = [
+    { value: 'light', label: 'Light' },
+    { value: 'dark', label: 'Dark' },
+    { value: 'system', label: 'Follow system' }
+];
+
+const HERO_POSITION_OPTS = ['center', 'top', 'bottom', 'left', 'right']
+    .map(value => ({ value, label: value[0].toUpperCase() + value.slice(1) }));
+
 const PASSKEY_PROMPT_OPTS = [
-    { value: 'off',      label: 'Off' },
+    { value: 'off', label: 'Off' },
     { value: 'optional', label: 'Optional' },
     { value: 'required', label: 'Required' }
 ];
 
 const IDENTITY_FIELD_OPTS = [
-    { value: '',      label: 'Auto (email, then phone)' },
+    { value: '', label: 'Auto (email, then phone)' },
     { value: 'email', label: 'Email' },
     { value: 'phone', label: 'Phone' }
 ];
 
 const VERIFY_OPTS = [
-    { value: '',      label: 'None' },
+    { value: '', label: 'None' },
     { value: 'email', label: 'Email' },
-    { value: 'sms',   label: 'SMS' }
+    { value: 'sms', label: 'SMS' }
 ];
 
-// Canonical registration-form fields (closed set — register_schema.CANONICAL_FIELDS).
 const CANONICAL_REG_FIELDS = [
     { name: 'first_name', label: 'First name' },
-    { name: 'last_name',  label: 'Last name' },
-    { name: 'email',      label: 'Email' },
-    { name: 'phone',      label: 'Phone' },
-    { name: 'dob',        label: 'Date of birth' },
-    { name: 'password',   label: 'Password' }
+    { name: 'last_name', label: 'Last name' },
+    { name: 'email', label: 'Email' },
+    { name: 'phone', label: 'Phone' },
+    { name: 'dob', label: 'Date of birth' },
+    { name: 'password', label: 'Password' }
 ];
-const CANONICAL_REG_NAMES = new Set(CANONICAL_REG_FIELDS.map(f => f.name));
-
-// Extra (non-canonical) registration fields — promo / ref / tracking / etc.,
-// declared per-group in `registration.extra_fields` as `[{name}]`. Names only:
-// django-mojo humanizes the label and defaults `required: false`. Must match the
-// server's identifier rule (register_schema._EXTRA_NAME_RE) so the editor never
-// POSTs a config that `validate_extra_fields_config` would reject.
+const CANONICAL_REG_NAMES = new Set(CANONICAL_REG_FIELDS.map(field => field.name));
 const EXTRA_FIELD_NAME_RE = /^[A-Za-z][A-Za-z0-9_]*$/;
+const ACCENT_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+const MAX_ANCESTOR_DEPTH = 50;
 
-// register_schema.DEFAULT_FIELDS — used to seed the grid when neither the
-// group's own override nor the resolved config specify `registration.fields`.
 const DEFAULT_REG_FIELDS = [
     { name: 'first_name', required: false, verify: null },
-    { name: 'last_name',  required: false, verify: null },
-    { name: 'email',      required: true,  verify: 'email' },
-    { name: 'password',   required: true,  verify: null }
+    { name: 'last_name', required: false, verify: null },
+    { name: 'email', required: true, verify: 'email' },
+    { name: 'password', required: true, verify: null }
 ];
 
-// django-mojo DEFAULT_AUTH_CONFIG — fallback when the resolved-config fetch
-// fails so the editor still shows sensible inherited values.
 const STATIC_DEFAULTS = {
     theme: {
-        app_title: 'DJANGO MOJO', logo_url: '', favicon_url: '', hero_image_url: '',
-        hero_headline: 'Welcome back', hero_subheadline: 'Admin Portal',
-        back_to_website_url: '', terms_url: '', layout: 'card', api_base: '',
-        success_redirect: '/', custom_css: '', custom_css_url: ''
+        app_title: 'DJANGO MOJO',
+        auth_provider_name: 'DJANGO MOJO',
+        logo_url: '',
+        favicon_url: '',
+        hero_image_url: '',
+        hero_image_url_light: '',
+        hero_image_url_dark: '',
+        hero_headline: 'Welcome back',
+        hero_subheadline: 'Admin Portal',
+        hero_image_position: 'center',
+        back_to_website_url: '',
+        back_to_website_label: 'Back to website',
+        terms_url: '',
+        layout: 'minimal',
+        appearance: 'system',
+        accent_color: '#6384ff',
+        api_base: '',
+        success_redirect: '/',
+        custom_css: '',
+        custom_css_url: ''
     },
     registration: {
-        enabled: true, fields: null, extra_fields: [], identity_field: '', min_age: null,
-        methods: ['password', 'google', 'apple'], passkey_prompt: 'off'
+        enabled: true,
+        fields: null,
+        extra_fields: [],
+        identity_field: '',
+        min_age: null,
+        methods: ['password', 'google', 'apple', 'github'],
+        passkey_prompt: 'off'
     },
-    login: { methods: ['password', 'sms', 'passkey', 'magic', 'google', 'apple'] }
+    login: {
+        methods: ['password', 'sms', 'passkey', 'magic', 'google', 'apple', 'github'],
+        heading: 'Sign In',
+        supporting_copy: ''
+    }
 };
 
-// Theme text fields: form name + dotted path under `auth_config` + help copy.
-const THEME_TEXT_FIELDS = [
-    { name: 'app_title',           path: 'theme.app_title',           label: 'App title',           help: 'Brand name shown in the login card header.' },
-    { name: 'logo_url',            path: 'theme.logo_url',            label: 'Logo URL',            help: 'Logo image URL — appears in the header and hero panel.' },
-    { name: 'favicon_url',         path: 'theme.favicon_url',         label: 'Favicon URL',         help: 'Favicon URL for the auth pages.' },
-    { name: 'hero_image_url',      path: 'theme.hero_image_url',      label: 'Hero image URL',      help: 'Background image for the left hero panel.' },
-    { name: 'hero_headline',       path: 'theme.hero_headline',       label: 'Hero headline',       help: 'Headline text shown over the hero image.' },
-    { name: 'hero_subheadline',    path: 'theme.hero_subheadline',    label: 'Hero subheadline',    help: 'Supporting text below the hero headline.' },
-    { name: 'back_to_website_url', path: 'theme.back_to_website_url', label: 'Back-to-website URL', help: '"Back to website" link shown in the hero panel.' },
-    { name: 'terms_url',           path: 'theme.terms_url',           label: 'Terms URL',           help: 'Terms & Conditions link shown on the register page.' },
-    { name: 'api_base',            path: 'theme.api_base',            label: 'API base',            help: 'API host for the auth pages — leave blank for same origin.' },
-    { name: 'success_redirect',    path: 'theme.success_redirect',    label: 'Success redirect',    help: 'Where to send the user after a successful login.' },
-    { name: 'custom_css_url',      path: 'theme.custom_css_url',      label: 'Custom CSS URL',      help: 'URL to an external stylesheet — must start with https://.' }
+const THEME_FIELDS = [
+    { form: 'app_title', path: 'theme.app_title', kind: 'text', label: 'App title', help: 'Brand name shown on hosted auth pages.' },
+    { form: 'auth_provider_name', path: 'theme.auth_provider_name', kind: 'text', label: 'Auth provider name', help: 'Provider name used in destination and consent copy.' },
+    { form: 'logo_url', path: 'theme.logo_url', kind: 'text', label: 'Logo URL', help: 'Logo displayed in the auth header and branded layouts.' },
+    { form: 'favicon_url', path: 'theme.favicon_url', kind: 'text', label: 'Favicon URL', help: 'Favicon used by hosted auth pages.' },
+    { form: 'hero_image_url', path: 'theme.hero_image_url', kind: 'text', label: 'Hero image URL', help: 'Default hero image.' },
+    { form: 'hero_image_url_light', path: 'theme.hero_image_url_light', kind: 'text', label: 'Light hero image URL', help: 'Optional hero image for light appearance.' },
+    { form: 'hero_image_url_dark', path: 'theme.hero_image_url_dark', kind: 'text', label: 'Dark hero image URL', help: 'Optional hero image for dark appearance.' },
+    { form: 'hero_headline', path: 'theme.hero_headline', kind: 'text', label: 'Hero headline', help: 'Headline shown over or alongside the hero image.' },
+    { form: 'hero_subheadline', path: 'theme.hero_subheadline', kind: 'text', label: 'Hero subheadline', help: 'Supporting hero copy.' },
+    { form: 'hero_image_position', path: 'theme.hero_image_position', kind: 'select', label: 'Hero image position', options: HERO_POSITION_OPTS },
+    { form: 'back_to_website_url', path: 'theme.back_to_website_url', kind: 'text', label: 'Back-to-website URL', help: 'Relative or absolute HTTP(S) destination.' },
+    { form: 'back_to_website_label', path: 'theme.back_to_website_label', kind: 'text', label: 'Back-to-website label', help: 'Nonblank link text.' },
+    { form: 'terms_url', path: 'theme.terms_url', kind: 'text', label: 'Terms URL', help: 'Terms link shown during registration.' },
+    { form: 'layout', path: 'theme.layout', kind: 'select', label: 'Layout', options: LAYOUT_OPTS },
+    { form: 'appearance', path: 'theme.appearance', kind: 'select', label: 'Appearance', options: APPEARANCE_OPTS },
+    { form: 'accent_color', path: 'theme.accent_color', kind: 'text', label: 'Accent color', help: 'Six-digit hex color such as #6384ff.' },
+    { form: 'api_base', path: 'theme.api_base', kind: 'text', label: 'API base', help: 'API host for auth pages; blank means same origin.' },
+    { form: 'success_redirect', path: 'theme.success_redirect', kind: 'text', label: 'Success redirect', help: 'Destination after successful login.' },
+    { form: 'custom_css', path: 'theme.custom_css', kind: 'textarea', label: 'Custom CSS', help: "Inline CSS cannot contain '<', @import, or external URLs." },
+    { form: 'custom_css_url', path: 'theme.custom_css_url', kind: 'text', label: 'External CSS URL', help: 'Must be an https:// URL.' }
 ];
 
-// FIELD_DESCRIPTORS — every non-grid form field, its dotted path under
-// `auth_config`, and a kind that drives baseline/diff/serialisation.
-//   text   — placeholder-capable; baseline = own override only.
-//   select — baseline = own override, else resolved (no placeholder).
-//   array  — multiselect; baseline = own override, else resolved.
-//   bool   — toggle;      baseline = own override, else resolved.
-//   int    — placeholder-capable number; baseline = own override only.
 const FIELD_DESCRIPTORS = [
-    ...THEME_TEXT_FIELDS.map(f => ({ form: f.name, path: f.path, kind: 'text' })),
-    { form: 'custom_css',         path: 'theme.custom_css',              kind: 'text' },
-    { form: 'layout',             path: 'theme.layout',                  kind: 'select' },
-    { form: 'login_methods',      path: 'login.methods',                 kind: 'array' },
-    { form: 'reg_enabled',        path: 'registration.enabled',          kind: 'bool' },
-    { form: 'reg_passkey_prompt', path: 'registration.passkey_prompt',   kind: 'select' },
-    { form: 'reg_identity_field', path: 'registration.identity_field',   kind: 'select' },
-    { form: 'reg_min_age',        path: 'registration.min_age',          kind: 'int' },
-    { form: 'reg_methods',        path: 'registration.methods',          kind: 'array' }
+    ...THEME_FIELDS,
+    { form: 'login_methods', path: 'login.methods', kind: 'array' },
+    { form: 'login_heading', path: 'login.heading', kind: 'text' },
+    { form: 'login_supporting_copy', path: 'login.supporting_copy', kind: 'textarea' },
+    { form: 'reg_enabled', path: 'registration.enabled', kind: 'bool' },
+    { form: 'reg_passkey_prompt', path: 'registration.passkey_prompt', kind: 'select' },
+    { form: 'reg_identity_field', path: 'registration.identity_field', kind: 'select' },
+    { form: 'reg_min_age', path: 'registration.min_age', kind: 'int' },
+    { form: 'reg_methods', path: 'registration.methods', kind: 'array' }
 ];
 
-// ── Path helpers ───────────────────────────────────────────────────────────
+const SPECIAL_PATHS = ['registration.fields', 'registration.extra_fields'];
+const TRACKED_PATHS = [...FIELD_DESCRIPTORS.map(field => field.path), ...SPECIAL_PATHS];
+
+function clone(value) {
+    if (value === undefined) return undefined;
+    return JSON.parse(JSON.stringify(value));
+}
 
 function getPath(obj, path) {
     if (!obj || typeof obj !== 'object') return undefined;
     return path.split('.').reduce(
-        (o, k) => (o && typeof o === 'object') ? o[k] : undefined,
+        (current, key) => (current && typeof current === 'object') ? current[key] : undefined,
         obj
     );
 }
 
+function hasPath(obj, path) {
+    if (!obj || typeof obj !== 'object') return false;
+    const keys = path.split('.');
+    let current = obj;
+    for (const key of keys) {
+        if (!current || typeof current !== 'object'
+            || !Object.prototype.hasOwnProperty.call(current, key)) return false;
+        current = current[key];
+    }
+    return true;
+}
+
 function setPath(obj, path, value) {
     const keys = path.split('.');
-    let cur = obj;
-    for (let i = 0; i < keys.length - 1; i++) {
-        if (!cur[keys[i]] || typeof cur[keys[i]] !== 'object') cur[keys[i]] = {};
-        cur = cur[keys[i]];
+    let current = obj;
+    for (let index = 0; index < keys.length - 1; index++) {
+        if (!current[keys[index]] || typeof current[keys[index]] !== 'object'
+            || Array.isArray(current[keys[index]])) current[keys[index]] = {};
+        current = current[keys[index]];
     }
-    cur[keys[keys.length - 1]] = value;
+    current[keys[keys.length - 1]] = clone(value);
 }
 
-function sameSet(a, b) {
-    const sa = [...(a || [])].map(String).sort();
-    const sb = [...(b || [])].map(String).sort();
-    return sa.length === sb.length && sa.every((v, i) => v === sb[i]);
+/** Null is a deletion/inheritance marker; every other falsy value overrides. */
+function mergeEffective(base, override) {
+    const out = clone(base) || {};
+    if (!override || typeof override !== 'object' || Array.isArray(override)) return out;
+    for (const [key, value] of Object.entries(override)) {
+        if (value === null) continue;
+        if (value && typeof value === 'object' && !Array.isArray(value)
+            && out[key] && typeof out[key] === 'object' && !Array.isArray(out[key])) {
+            out[key] = mergeEffective(out[key], value);
+        } else {
+            out[key] = clone(value);
+        }
+    }
+    return out;
 }
 
+/** Public `/api/auth/config` is already resolved; preserve even null values. */
+function mergeResolved(base, resolved) {
+    const out = clone(base) || {};
+    if (!resolved || typeof resolved !== 'object' || Array.isArray(resolved)) return out;
+    for (const [key, value] of Object.entries(resolved)) {
+        if (value && typeof value === 'object' && !Array.isArray(value)
+            && out[key] && typeof out[key] === 'object' && !Array.isArray(out[key])) {
+            out[key] = mergeResolved(out[key], value);
+        } else {
+            out[key] = clone(value);
+        }
+    }
+    return out;
+}
 
-// ── Section ────────────────────────────────────────────────────────────────
+function sameValue(left, right) {
+    return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function humanize(name) {
+    return String(name || '').replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function parentId(value) {
+    if (value && typeof value === 'object') return value.id ?? null;
+    return value ?? null;
+}
 
 class GroupAuthConfigSection extends View {
     constructor(options = {}) {
@@ -179,11 +257,16 @@ class GroupAuthConfigSection extends View {
             className: 'group-auth-config-section',
             template: `
                 <div class="detail-section-eyebrow">Auth Config</div>
-                <p class="text-secondary small mb-3">
-                    Branding and sign-in behavior for this group's hosted login, registration,
-                    and passkey pages. Empty fields inherit the deployment defaults
-                    (shown as placeholders).
+                <p class="text-secondary small mb-2">
+                    Hosted login and registration configuration. Every field identifies
+                    where its effective value comes from; Reset queues deletion of only
+                    that leaf on the next save.
                 </p>
+                {{#inheritanceWarning}}
+                <div class="alert alert-warning py-2 px-3 small mb-3 gac-inheritance-warning">
+                    <i class="bi bi-exclamation-triangle me-1"></i>{{inheritanceWarning}}
+                </div>
+                {{/inheritanceWarning}}
                 <div data-container="auth-config-form"></div>
                 <div class="d-flex align-items-center justify-content-end gap-3 mt-3 pt-3 border-top">
                     <span class="gac-status small text-secondary"></span>
@@ -195,504 +278,908 @@ class GroupAuthConfigSection extends View {
             ...options
         });
 
-        this._resolved = STATIC_DEFAULTS;
+        this._deploymentDefaults = clone(STATIC_DEFAULTS);
+        this._ancestorLayers = [];
+        this._rawOwn = {};
+        this._effective = clone(STATIC_DEFAULTS);
+        this._inherited = clone(STATIC_DEFAULTS);
+        this._provenance = {};
+        this._inheritedProvenance = {};
         this._baseline = {};
-        this._placeholders = {};
+        this._baselineExtraWire = [];
+        this._extraRows = [];
+        this._draftResets = new Set();
+        this._extraErrors = [];
+        this._ancestryCertain = true;
+        this.inheritanceWarning = '';
+        this.formView = null;
+        this._formSeed = {};
     }
 
     async onInit() {
-        const own = this.model?.get?.('metadata')?.auth_config || {};
-        this._resolved = await this._fetchResolved();
-        this._baseline = this._buildBaseline(own, this._resolved);
-        this._placeholders = this._buildPlaceholders(this._resolved);
-        this.addChild(this._buildFormView());
+        this._deploymentDefaults = await this._fetchDeploymentDefaults();
+        await this._loadRawState(this.model?.toJSON?.() || this.model?.attributes || {});
+        this.addChild(this._buildFormView(this._baseline));
     }
 
-    /** Construct the embedded FormView from the current baseline. */
-    _buildFormView() {
+    _onModelChange() {
+        // The form owns its draft. Saves explicitly refresh and rebaseline it.
+    }
+
+    async _fetchDeploymentDefaults() {
+        const app = this.getApp();
+        if (!app?.rest) return clone(STATIC_DEFAULTS);
+        try {
+            // No group_uuid: this is code defaults + deployment AUTH_CONFIG only.
+            const resp = await app.rest.GET('/api/auth/config');
+            if (resp && resp.success !== false) {
+                const data = resp.data?.data || resp.data;
+                if (data && typeof data === 'object') {
+                    return mergeResolved(STATIC_DEFAULTS, data);
+                }
+            }
+        } catch {
+            // The static contract remains a complete, safe fallback.
+        }
+        return clone(STATIC_DEFAULTS);
+    }
+
+    async _loadRawState(currentAttributes) {
+        this._rawOwn = clone(currentAttributes?.metadata?.auth_config) || {};
+        const ancestry = await this._walkRawAncestors(parentId(currentAttributes?.parent));
+        this._ancestorLayers = ancestry.layers;
+        this._ancestryCertain = ancestry.certain;
+        this.inheritanceWarning = ancestry.certain ? '' : ancestry.message;
+        this._deriveEffectiveState();
+        this._baseline = this._buildBaseline(this._effective);
+        const extra = getPath(this._effective, 'registration.extra_fields');
+        this._baselineExtraWire = Array.isArray(extra) ? clone(extra) : [];
+        this._extraRows = this._extraRowsFromArray(this._baselineExtraWire);
+        this._seedExtraRows(this._baseline, this._extraRows);
+    }
+
+    async _walkRawAncestors(startId) {
+        const layers = [];
+        const seen = new Set();
+        let id = startId;
+        let depth = 0;
+        while (id !== null && id !== undefined && id !== '') {
+            const key = String(id);
+            if (seen.has(key)) {
+                return { layers: layers.reverse(), certain: false, message: 'Ancestor cycle detected. Effective sources may be incomplete, so resets are disabled.' };
+            }
+            if (depth >= MAX_ANCESTOR_DEPTH) {
+                return { layers: layers.reverse(), certain: false, message: 'Ancestor depth limit reached. Effective sources may be incomplete, so resets are disabled.' };
+            }
+            seen.add(key);
+            const fetched = await this._fetchRawGroup(id);
+            if (!fetched?.ok) {
+                return { layers: layers.reverse(), certain: false, message: `Could not read ancestor Group #${escapeHtml(id)}. Effective sources may be incomplete, so resets are disabled.` };
+            }
+            const attrs = fetched.attributes || {};
+            layers.push({
+                id: attrs.id ?? id,
+                name: attrs.name || `Group #${attrs.id ?? id}`,
+                config: clone(attrs.metadata?.auth_config) || {}
+            });
+            id = parentId(attrs.parent);
+            depth += 1;
+        }
+        return { layers: layers.reverse(), certain: true, message: '' };
+    }
+
+    _newDetachedGroup(id) {
+        return new Group({ id });
+    }
+
+    async _fetchRawGroup(id) {
+        try {
+            const group = this._newDetachedGroup(id);
+            const resp = await group.fetch();
+            if (!resp || resp.success === false || resp.data?.status === false
+                || Object.keys(group.errors || {}).length) return { ok: false };
+            const attributes = group.toJSON();
+            // A permission-downgraded basic graph omits both raw metadata and
+            // parent. Treat that as an uncertain read, never as an empty/root
+            // row, or provenance would be confidently wrong.
+            if (!Object.prototype.hasOwnProperty.call(attributes, 'metadata')
+                || !Object.prototype.hasOwnProperty.call(attributes, 'parent')) return { ok: false };
+            return { ok: true, model: group, attributes };
+        } catch {
+            return { ok: false };
+        }
+    }
+
+    _deriveEffectiveState() {
+        let effective = clone(this._deploymentDefaults);
+        const provenance = {};
+        for (const path of TRACKED_PATHS) provenance[path] = { kind: 'deployment', label: 'Deployment default' };
+
+        for (const layer of this._ancestorLayers) {
+            effective = mergeEffective(effective, layer.config);
+            for (const path of TRACKED_PATHS) {
+                if (hasPath(layer.config, path) && getPath(layer.config, path) !== null) {
+                    provenance[path] = { kind: 'ancestor', label: layer.name, id: layer.id };
+                }
+            }
+        }
+
+        this._inherited = clone(effective);
+        this._inheritedProvenance = clone(provenance);
+        effective = mergeEffective(effective, this._rawOwn);
+        for (const path of TRACKED_PATHS) {
+            if (hasPath(this._rawOwn, path) && getPath(this._rawOwn, path) !== null) {
+                provenance[path] = { kind: 'own', label: 'This group' };
+            }
+        }
+        this._effective = effective;
+        this._provenance = provenance;
+    }
+
+    _buildBaseline(effective) {
+        const baseline = {};
+        for (const field of FIELD_DESCRIPTORS) {
+            const value = getPath(effective, field.path);
+            if (field.kind === 'array') baseline[field.form] = Array.isArray(value) ? clone(value) : [];
+            else if (field.kind === 'bool') baseline[field.form] = !!value;
+            else if (field.kind === 'int') baseline[field.form] = value === null || value === undefined ? '' : value;
+            else baseline[field.form] = value === null || value === undefined ? '' : String(value);
+        }
+
+        const configuredFields = getPath(effective, 'registration.fields');
+        const displayedFields = Array.isArray(configuredFields) && configuredFields.length
+            ? configuredFields : DEFAULT_REG_FIELDS;
+        Object.assign(baseline, this._gridValuesFromArray(displayedFields));
+        return baseline;
+    }
+
+    _gridValuesFromArray(entries) {
+        const byName = {};
+        for (const raw of entries || []) {
+            const entry = typeof raw === 'string' ? { name: raw } : raw;
+            if (entry && entry.name) byName[entry.name] = entry;
+        }
+        const data = {};
+        for (const field of CANONICAL_REG_FIELDS) {
+            const entry = byName[field.name];
+            const password = field.name === 'password';
+            data[`regf_${field.name}_inc`] = !!entry;
+            data[`regf_${field.name}_req`] = password ? true : !!entry?.required;
+            data[`regf_${field.name}_vfy`] = entry?.verify ? String(entry.verify) : '';
+        }
+        return data;
+    }
+
+    _buildFormView(data) {
+        this._formSeed = { ...(data || {}) };
         this.formView = new FormView({
             containerId: 'auth-config-form',
             fields: this._buildFields(),
-            data: { ...this._baseline }
+            data: this._formSeed
         });
         return this.formView;
     }
 
-    /**
-     * The embedded FormView owns its state. A model `change` — fired by this
-     * section's own save, or by an edit in another GroupView section — must not
-     * re-render this section: that would rebuild the form from stale seed data
-     * and wipe the user's input. Mirrors DetailView's own _onModelChange guard.
-     */
-    _onModelChange() {
-        // intentionally a no-op
+    _buildFields() {
+        return [{
+            type: 'tabset',
+            name: 'group-auth-config',
+            tabs: [
+                { label: 'Appearance', fields: this._themeFields(false) },
+                { label: 'Login', fields: this._loginFields() },
+                { label: 'Registration', fields: this._registrationFields() },
+                { label: 'Advanced', fields: this._themeFields(true) }
+            ]
+        }];
     }
 
-    // ── Data load ──────────────────────────────────────────
+    _current(formName) {
+        return this._formSeed[formName] !== undefined ? this._formSeed[formName] : this._baseline[formName];
+    }
 
-    /** Fetch the resolved (inherited) auth config for placeholder display. */
-    async _fetchResolved() {
-        const app = this.getApp();
-        const uuid = this.model?.get?.('uuid');
-        if (!app?.rest || !uuid) return STATIC_DEFAULTS;
-        try {
-            const resp = await app.rest.GET('/api/auth/config', { group_uuid: uuid });
-            if (resp && resp.success !== false) {
-                const cfg = resp.data?.data || resp.data;
-                if (cfg && typeof cfg === 'object') return cfg;
+    _optionsWithUnknown(options, current) {
+        const out = options.map(option => ({ ...option }));
+        const known = new Set(out.map(option => String(option.value)));
+        const values = Array.isArray(current) ? current : [current];
+        for (const raw of values) {
+            const value = raw === null || raw === undefined ? '' : String(raw);
+            if (!known.has(value)) {
+                out.push({ value, label: `Configured (unknown): ${value}` });
+                known.add(value);
             }
-        } catch (e) {
-            // Degrade gracefully — fall back to documented defaults.
-        }
-        return STATIC_DEFAULTS;
-    }
-
-    /**
-     * Build the flat form baseline. Placeholder-capable fields (text / int)
-     * show the group's own override only (blank when unset, so the placeholder
-     * shows through). Other fields show own override else resolved value.
-     */
-    _buildBaseline(own, resolved) {
-        const base = {};
-        for (const d of FIELD_DESCRIPTORS) {
-            const ownVal = getPath(own, d.path);
-            const resVal = getPath(resolved, d.path);
-            if (d.kind === 'text') {
-                base[d.form] = (ownVal === undefined || ownVal === null) ? '' : String(ownVal);
-            } else if (d.kind === 'int') {
-                base[d.form] = (ownVal === undefined || ownVal === null || ownVal === '') ? '' : ownVal;
-            } else if (d.kind === 'array') {
-                const v = (ownVal !== undefined && ownVal !== null) ? ownVal : resVal;
-                base[d.form] = Array.isArray(v) ? [...v] : [];
-            } else if (d.kind === 'bool') {
-                const v = (ownVal !== undefined && ownVal !== null) ? ownVal : resVal;
-                base[d.form] = !!v;
-            } else { // select
-                const v = (ownVal !== undefined && ownVal !== null) ? ownVal : resVal;
-                base[d.form] = (v === undefined || v === null) ? '' : String(v);
-            }
-        }
-        const ownFields = getPath(own, 'registration.fields');
-        const resFields = getPath(resolved, 'registration.fields');
-        const fieldsArr = Array.isArray(ownFields) ? ownFields
-            : (Array.isArray(resFields) ? resFields : DEFAULT_REG_FIELDS);
-        Object.assign(base, this._gridValuesFromArray(fieldsArr));
-
-        // Extra fields — own override, else resolved, else none. The tag input
-        // round-trips as a comma-separated string of names.
-        const ownExtra = getPath(own, 'registration.extra_fields');
-        const resExtra = getPath(resolved, 'registration.extra_fields');
-        const extraArr = Array.isArray(ownExtra) ? ownExtra
-            : (Array.isArray(resExtra) ? resExtra : []);
-        base.reg_extra_fields = this._extraNamesFromArray(extraArr);
-        return base;
-    }
-
-    /** Comma-joined field names from a `registration.extra_fields` array. */
-    _extraNamesFromArray(arr) {
-        return (arr || [])
-            .map(e => (e && typeof e === 'object') ? e.name : e)
-            .filter(n => typeof n === 'string' && n.trim())
-            .map(n => n.trim())
-            .join(',');
-    }
-
-    /** Placeholder text (resolved values) for the placeholder-capable fields. */
-    _buildPlaceholders(resolved) {
-        const ph = {};
-        for (const d of FIELD_DESCRIPTORS) {
-            if (d.kind !== 'text' && d.kind !== 'int') continue;
-            const v = getPath(resolved, d.path);
-            ph[d.form] = (v === undefined || v === null) ? '' : String(v);
-        }
-        return ph;
-    }
-
-    /** Expand a `registration.fields` array into flat grid form values. */
-    _gridValuesFromArray(arr) {
-        const byName = {};
-        (arr || []).forEach(f => { if (f && f.name) byName[f.name] = f; });
-        const out = {};
-        for (const cf of CANONICAL_REG_FIELDS) {
-            const entry = byName[cf.name];
-            const isPassword = cf.name === 'password';
-            out[`regf_${cf.name}_inc`] = !!entry;
-            // Password is always required when present; its toggle is locked on.
-            out[`regf_${cf.name}_req`] = isPassword ? true : !!(entry && entry.required);
-            out[`regf_${cf.name}_vfy`] = (entry && entry.verify) ? String(entry.verify) : '';
         }
         return out;
     }
 
-    // ── Form field config ──────────────────────────────────
-
-    _buildFields() {
-        return [{ type: 'tabset', tabs: [
-            { label: 'Base',         fields: this._baseFields() },
-            { label: 'Login',        fields: this._loginFields() },
-            { label: 'Registration', fields: this._registrationFields() },
-            { label: 'Advanced',     fields: this._advancedFields() }
-        ] }];
-    }
-
-    // Fields under `theme.*` split by tab. BASE = the common branding/links a
-    // group actually configures; ADVANCED = rarely-touched plumbing (API host,
-    // post-login redirect, custom CSS).
-    static BASE_THEME_FIELDS = [
-        'app_title', 'logo_url', 'favicon_url', 'hero_image_url',
-        'hero_headline', 'hero_subheadline', 'back_to_website_url', 'terms_url'
-    ];
-    static ADVANCED_THEME_FIELDS = ['api_base', 'success_redirect', 'custom_css_url'];
-
-    _themeTextField(f) {
+    _wrappedField(field, path, columns = field.columns || 12) {
+        const control = this._draftResets.has(path) ? { ...field, disabled: true } : field;
         return {
-            name: f.name,
-            type: 'text',
-            label: f.label,
-            help: f.help,
-            placeholder: this._placeholders[f.name] || '',
-            columns: 6
+            type: 'group',
+            columns,
+            class: 'gac-field-group',
+            fields: [
+                { ...control, columns: 12 },
+                { type: 'html', html: this._provenanceHtml(path), columns: 12, class: 'mt-1 mb-2' }
+            ]
         };
     }
 
-    _baseFields() {
-        // Layout leads — it's the most consequential presentation choice — then
-        // the branding/link fields up to and including Terms URL.
-        const fields = [{
-            name: 'layout',
-            type: 'select',
-            label: 'Layout',
-            help: 'Card = centered card; Full screen = edge-to-edge split layout.',
-            options: LAYOUT_OPTS,
-            columns: 12
-        }];
-        for (const f of THEME_TEXT_FIELDS) {
-            if (GroupAuthConfigSection.BASE_THEME_FIELDS.includes(f.name)) {
-                fields.push(this._themeTextField(f));
-            }
+    _provenanceHtml(path) {
+        const resetQueued = this._draftResets.has(path);
+        const source = resetQueued ? this._inheritedProvenance[path] : this._provenance[path];
+        const own = hasPath(this._rawOwn, path) && getPath(this._rawOwn, path) !== null;
+        let sourceText = source?.kind === 'own' ? 'Overridden by this group' : `Inherited from ${source?.label || 'deployment default'}`;
+        if (!this._ancestryCertain && source?.kind !== 'own') sourceText = 'Inherited source is uncertain';
+        if (resetQueued) sourceText = `Reset queued · will inherit from ${source?.label || 'deployment default'}`;
+
+        let action = '';
+        if (resetQueued) {
+            action = `<button type="button" class="btn btn-link btn-sm p-0 gac-undo-reset" data-action="undo-auth-field-reset" data-path="${escapeHtml(path)}">Undo reset</button>`;
+        } else if (own) {
+            const disabled = this._ancestryCertain ? '' : ' disabled';
+            const title = this._ancestryCertain ? 'Delete this leaf and inherit its value' : 'Reset disabled until the complete ancestor chain can be read';
+            action = `<button type="button" class="btn btn-link btn-sm p-0 gac-reset-field" data-action="reset-auth-field" data-path="${escapeHtml(path)}" title="${escapeHtml(title)}"${disabled}>Reset</button>`;
         }
-        return fields;
+        return `<div class="d-flex justify-content-between gap-2 small text-secondary gac-provenance" data-path="${escapeHtml(path)}"><span>${escapeHtml(sourceText)}</span>${action}</div>`;
     }
 
-    _advancedFields() {
+    _themeFields(advanced) {
+        const advancedNames = new Set(['api_base', 'success_redirect', 'custom_css', 'custom_css_url']);
         const fields = [];
-        for (const f of THEME_TEXT_FIELDS) {
-            if (GroupAuthConfigSection.ADVANCED_THEME_FIELDS.includes(f.name)) {
-                fields.push(this._themeTextField(f));
-            }
+        for (const descriptor of THEME_FIELDS) {
+            if (advancedNames.has(descriptor.form) !== advanced) continue;
+            const current = this._current(descriptor.form);
+            const field = {
+                name: descriptor.form,
+                type: descriptor.kind === 'textarea' ? 'textarea' : descriptor.kind === 'select' ? 'select' : 'text',
+                label: descriptor.label,
+                help: descriptor.help,
+                rows: descriptor.kind === 'textarea' ? 6 : undefined,
+                options: descriptor.kind === 'select' ? this._optionsWithUnknown(descriptor.options, current) : undefined
+            };
+            fields.push(this._wrappedField(field, descriptor.path, descriptor.kind === 'textarea' ? 12 : 6));
         }
-        fields.push({
-            name: 'custom_css',
-            type: 'textarea',
-            label: 'Custom CSS',
-            help: "Inline CSS injected after the theme stylesheet. Must not contain '<', '@import', or external URLs.",
-            placeholder: this._placeholders.custom_css || '',
-            rows: 5,
-            columns: 12
-        });
         return fields;
     }
 
     _loginFields() {
-        return [{
-            name: 'login_methods',
-            type: 'multiselect',
-            label: 'Login methods',
-            help: 'Login methods offered on the sign-in page. At least one is required.',
-            options: LOGIN_METHOD_OPTS,
-            value: this._baseline.login_methods || [],
-            selectAll: true,
-            clearAll: true,
-            columns: 12
-        }];
+        return [
+            this._wrappedField({
+                name: 'login_heading', type: 'text', label: 'Login heading',
+                help: 'Nonblank heading shown above the sign-in form.'
+            }, 'login.heading', 6),
+            this._wrappedField({
+                name: 'login_supporting_copy', type: 'textarea', label: 'Supporting copy',
+                help: 'Optional text shown below the login heading.', rows: 3
+            }, 'login.supporting_copy', 6),
+            this._wrappedField({
+                name: 'login_methods', type: 'multiselect', label: 'Login methods',
+                help: 'At least one is required.',
+                options: this._optionsWithUnknown(LOGIN_METHOD_OPTS, this._current('login_methods')),
+                value: this._current('login_methods') || [], selectAll: true, clearAll: true
+            }, 'login.methods', 12)
+        ];
     }
 
     _registrationFields() {
         const fields = [
-            {
-                name: 'reg_enabled',
-                type: 'toggle',
-                label: 'Registration enabled',
-                help: 'When off, the registration page is hidden.',
-                columns: 12
-            },
-            {
-                name: 'reg_passkey_prompt',
-                type: 'select',
-                label: 'Passkey prompt',
-                help: 'Whether to prompt for passkey enrollment right after signup.',
-                options: PASSKEY_PROMPT_OPTS,
-                columns: 6
-            },
-            {
-                name: 'reg_identity_field',
-                type: 'select',
-                label: 'Identity field',
-                help: 'Primary identity collected at signup.',
-                options: IDENTITY_FIELD_OPTS,
-                columns: 6
-            },
-            {
-                name: 'reg_min_age',
-                type: 'number',
-                label: 'Minimum age',
-                help: "Minimum age (years) — enforced when 'Date of birth' is a registration field.",
-                placeholder: this._placeholders.reg_min_age || '',
-                min: 0,
-                columns: 6
-            },
-            {
-                name: 'reg_methods',
-                type: 'multiselect',
-                label: 'Signup methods',
-                help: 'Signup methods offered on the registration page.',
-                options: REGISTRATION_METHOD_OPTS,
-                value: this._baseline.reg_methods || [],
-                selectAll: true,
-                clearAll: true,
-                columns: 12
-            },
-            {
-                type: 'header',
-                text: 'Registration form fields',
-                level: 6,
-                class: 'mt-3'
-            },
+            this._wrappedField({
+                name: 'reg_enabled', type: 'toggle', label: 'Registration enabled',
+                help: 'When off, the hosted registration page is hidden.'
+            }, 'registration.enabled', 12),
+            this._wrappedField({
+                name: 'reg_passkey_prompt', type: 'select', label: 'Passkey prompt',
+                options: this._optionsWithUnknown(PASSKEY_PROMPT_OPTS, this._current('reg_passkey_prompt'))
+            }, 'registration.passkey_prompt', 6),
+            this._wrappedField({
+                name: 'reg_identity_field', type: 'select', label: 'Identity field',
+                help: 'Auto chooses email, then phone.',
+                options: this._optionsWithUnknown(IDENTITY_FIELD_OPTS, this._current('reg_identity_field'))
+            }, 'registration.identity_field', 6),
+            this._wrappedField({
+                name: 'reg_min_age', type: 'number', label: 'Minimum age', min: 0,
+                help: 'Applied when date of birth is collected.'
+            }, 'registration.min_age', 6),
+            this._wrappedField({
+                name: 'reg_methods', type: 'multiselect', label: 'Signup methods',
+                options: this._optionsWithUnknown(REGISTRATION_METHOD_OPTS, this._current('reg_methods')),
+                value: this._current('reg_methods') || [], selectAll: true, clearAll: true
+            }, 'registration.methods', 12),
+            { type: 'header', text: 'Registration form fields', level: 6, class: 'mt-3' },
             {
                 type: 'html',
-                html: `<p class="text-secondary small mb-2">Choose which fields the signup form collects. The schema must include email or phone. Password, when included, is always required — omit it only for passwordless (SMS) registration.</p>`
+                html: `<p class="text-secondary small mb-2">An empty saved list is legal and displays django-mojo's default email + password schema. A non-empty passwordless schema must include an SMS-verified phone.</p>${this._provenanceHtml('registration.fields')}`
             }
         ];
-        for (const cf of CANONICAL_REG_FIELDS) {
-            const isPassword = cf.name === 'password';
+
+        const fieldsReset = this._draftResets.has('registration.fields');
+        for (const canonical of CANONICAL_REG_FIELDS) {
+            const password = canonical.name === 'password';
+            const verify = this._current(`regf_${canonical.name}_vfy`);
             fields.push({
                 type: 'group',
-                title: cf.label,
+                title: canonical.label,
                 columns: 12,
                 fields: [
+                    { name: `regf_${canonical.name}_inc`, type: 'toggle', label: 'Include', disabled: fieldsReset, columns: 4 },
+                    { name: `regf_${canonical.name}_req`, type: 'toggle', label: 'Required', disabled: password || fieldsReset, columns: 4 },
                     {
-                        name: `regf_${cf.name}_inc`,
-                        type: 'toggle',
-                        label: 'Include',
-                        columns: 4
-                    },
-                    {
-                        name: `regf_${cf.name}_req`,
-                        type: 'toggle',
-                        label: 'Required',
-                        // Password, when included, is always required — there is
-                        // no optional-password state, so the toggle is locked on.
-                        disabled: isPassword,
-                        columns: 4
-                    },
-                    {
-                        name: `regf_${cf.name}_vfy`,
-                        type: 'select',
-                        label: 'Verify',
-                        options: VERIFY_OPTS,
-                        disabled: isPassword,
-                        columns: 4
+                        name: `regf_${canonical.name}_vfy`, type: 'select', label: 'Verify',
+                        options: this._optionsWithUnknown(VERIFY_OPTS, verify), disabled: password || fieldsReset, columns: 4
                     }
                 ]
             });
         }
-        fields.push(
-            {
-                type: 'header',
-                text: 'Extra fields',
-                level: 6,
-                class: 'mt-3'
-            },
-            {
-                type: 'html',
-                html: `<p class="text-secondary small mb-2">Extra signup fields to capture for this group (e.g. <code>promo</code>, <code>ref</code>, <code>tracking</code>). On the hosted register page each is captured silently from a matching URL query param or asked for as a text input; values reach the registration handler and are stored on <code>user.metadata.registration</code>. Names only — letters, digits, and underscores.</p>`
-            },
-            {
-                name: 'reg_extra_fields',
-                type: 'tags',
-                label: 'Extra field names',
-                value: this._baseline.reg_extra_fields || '',
-                columns: 12
-            }
-        );
+
+        fields.push({
+            type: 'html',
+            class: 'mt-3',
+            html: this._renderExtraFields()
+        });
         return fields;
     }
 
-    // ── Save ───────────────────────────────────────────────
+    _extraRowsFromArray(entries) {
+        return (Array.isArray(entries) ? entries : []).map(entry => {
+            const legacy = typeof entry === 'string';
+            const object = legacy ? { name: entry } : (entry && typeof entry === 'object' ? entry : {});
+            const name = typeof object.name === 'string' ? object.name : '';
+            return {
+                name,
+                label: legacy ? humanize(name) : (typeof object.label === 'string' ? object.label : humanize(name)),
+                required: legacy ? false : !!object.required,
+                original: clone(entry)
+            };
+        });
+    }
 
-    async onActionSaveAuthConfig() {
-        const fv = this.formView;
-        const app = this.getApp();
-        if (!fv) return true;
-
-        // HTML5 field validation — also switches to the tab with the first error.
-        if (typeof fv.validate === 'function' && !fv.validate()) {
-            fv.focusFirstError?.();
-            return true;
+    _seedExtraRows(data, rows) {
+        for (const key of Object.keys(data)) {
+            if (/^reg_extra_\d+_/.test(key)) delete data[key];
         }
+        rows.forEach((row, index) => {
+            data[`reg_extra_${index}_name`] = row.name;
+            data[`reg_extra_${index}_label`] = row.label;
+            data[`reg_extra_${index}_required`] = !!row.required;
+        });
+    }
 
-        const fd = await fv.getFormData();
+    _renderExtraFields() {
+        const errorByIndex = new Map(this._extraErrors.map(error => [error.index, error.message]));
+        const resetQueued = this._draftResets.has('registration.extra_fields');
+        const disabled = resetQueued ? ' disabled' : '';
+        const rows = this._extraRows.map((row, index) => {
+            const message = errorByIndex.get(index) || '';
+            const invalid = message ? ' is-invalid' : '';
+            return `
+                <div class="card bg-body-tertiary mb-2 gac-extra-row" data-index="${index}">
+                    <div class="card-body py-2 px-3">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-4">
+                                <label class="form-label small mb-1">Name</label>
+                                <input class="form-control form-control-sm${invalid}" name="reg_extra_${index}_name"
+                                       value="${escapeHtml(row.name)}" required pattern="[A-Za-z][A-Za-z0-9_]*"${disabled}>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label small mb-1">Label</label>
+                                <input class="form-control form-control-sm" name="reg_extra_${index}_label"
+                                       value="${escapeHtml(row.label)}"${disabled}>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-check form-switch mb-1">
+                                    <input class="form-check-input" type="checkbox" name="reg_extra_${index}_required"${row.required ? ' checked' : ''}${disabled}>
+                                    <label class="form-check-label small">Required</label>
+                                </div>
+                            </div>
+                            <div class="col-md-1 text-end">
+                                <button type="button" class="btn btn-sm btn-link text-secondary" title="Remove extra field"
+                                        data-action="remove-registration-extra" data-index="${index}"${disabled}><i class="bi bi-x-lg"></i></button>
+                            </div>
+                        </div>
+                        <div class="invalid-feedback d-block gac-extra-error">${escapeHtml(message)}</div>
+                    </div>
+                </div>`;
+        }).join('');
 
-        // Cross-field rules the server enforces — checked up front so the admin
-        // gets a clear inline message instead of a raw 400.
-        const loginMethods = Array.isArray(fd.login_methods) ? fd.login_methods : [];
-        if (loginMethods.length === 0) {
-            this._fail('Select at least one login method.');
-            return true;
-        }
-        const regFields = this._assembleRegFields(fd);
-        if (!regFields.some(f => f.name === 'email' || f.name === 'phone')) {
-            this._fail("Registration fields must include 'Email' or 'Phone'.");
-            return true;
-        }
+        return `
+            <div class="d-flex align-items-start justify-content-between gap-3 mb-2">
+                <div><h6 class="mb-1">Extra registration fields</h6><p class="text-secondary small mb-0">Ordered custom fields captured into user registration metadata. Legacy string entries remain strings until edited.</p></div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-action="add-registration-extra"${disabled}><i class="bi bi-plus-lg me-1"></i>Add field</button>
+            </div>
+            ${this._provenanceHtml('registration.extra_fields')}
+            <div class="mt-2 gac-extra-rows">${rows || '<p class="text-secondary small mb-0 gac-extra-empty">No extra fields configured.</p>'}</div>`;
+    }
 
-        const payload = this._diffPayload(fd);
-        if (!payload) {
-            this._setStatus('No changes to save.');
-            return true;
-        }
+    _captureActiveTab() {
+        const root = this.formView?.element;
+        const active = root?.querySelector('.mojo-form-tabset [role="tab"].active');
+        if (!active) return 0;
+        const target = active.getAttribute('data-bs-target');
+        const pane = target ? root.querySelector(target) : null;
+        return Number(pane?.dataset?.tabIndex || 0);
+    }
 
-        this._setStatus('Saving…');
-        app?.showLoading?.();
-        let resp;
-        try {
-            resp = await this.model.save({ metadata: { auth_config: payload } });
-        } catch (e) {
-            resp = null;
-        } finally {
-            app?.hideLoading?.();
+    _restoreActiveTab(index) {
+        const root = this.formView?.element;
+        if (!root) return;
+        const pane = root.querySelector(`.mojo-form-tabset .tab-pane[data-tab-index="${Number(index) || 0}"]`);
+        if (!pane) return;
+        const trigger = root.querySelector(`[data-bs-target="#${pane.id}"]`);
+        if (!trigger) return;
+        const tab = window.bootstrap?.Tab?.getOrCreateInstance?.(trigger);
+        if (tab?.show) {
+            tab.show();
+            return;
         }
+        root.querySelectorAll('.mojo-form-tabset [role="tab"]').forEach(node => {
+            const selected = node === trigger;
+            node.classList.toggle('active', selected);
+            node.setAttribute('aria-selected', selected ? 'true' : 'false');
+        });
+        root.querySelectorAll('.mojo-form-tabset .tab-pane').forEach(node => node.classList.remove('show', 'active'));
+        pane.classList.add('show', 'active');
+    }
 
-        if (resp && resp.status === 200) {
-            // Re-baseline from the saved state and rebuild the form. FormView
-            // freezes its seed data at construction, so without rebuilding it a
-            // later section switch would re-render with the pre-save values.
-            this._baseline = { ...fd };
-            this.removeChild(this.formView);
-            this.addChild(this._buildFormView());
-            await this.formView.render();
-            this._setStatus('All changes saved.', 'success');
-            app?.toast?.success('Auth config saved');
-        } else {
-            this._fail(resp?.message || resp?.data?.error || 'Failed to save auth config');
+    async _rebuildForm(data, activeTab = this._captureActiveTab()) {
+        if (this.formView) this.removeChild(this.formView);
+        const next = this._buildFormView(data);
+        this.addChild(next);
+        if (this.isMounted()) await next.render();
+        this._restoreActiveTab(activeTab);
+        return next;
+    }
+
+    _completeFormData(data) {
+        const complete = data || {};
+        for (const [key, value] of Object.entries(this._formSeed || {})) {
+            if (complete[key] === undefined) complete[key] = clone(value);
         }
+        return complete;
+    }
+
+    _syncExtraRowsFromForm(data) {
+        this._extraRows = this._extraRows.map((row, index) => ({
+            name: String(data[`reg_extra_${index}_name`] ?? row.name ?? ''),
+            label: String(data[`reg_extra_${index}_label`] ?? row.label ?? ''),
+            required: !!data[`reg_extra_${index}_required`],
+            original: clone(row.original)
+        }));
+        this._seedExtraRows(data, this._extraRows);
+    }
+
+    async onActionAddRegistrationExtra() {
+        const data = this._completeFormData(await this.formView.getFormData());
+        const active = this._captureActiveTab();
+        this._syncExtraRowsFromForm(data);
+        this._extraRows.push({ name: '', label: '', required: false, original: undefined });
+        this._seedExtraRows(data, this._extraRows);
+        this._extraErrors = [];
+        await this._rebuildForm(data, active);
         return true;
     }
 
-    /** Show a failure message inline and as a toast. */
-    _fail(msg) {
-        this._setStatus(msg, 'danger');
-        this.getApp()?.toast?.error(msg);
+    async onActionRemoveRegistrationExtra(_event, element) {
+        const data = this._completeFormData(await this.formView.getFormData());
+        const active = this._captureActiveTab();
+        this._syncExtraRowsFromForm(data);
+        const index = Number(element?.dataset?.index);
+        if (Number.isInteger(index) && index >= 0 && index < this._extraRows.length) {
+            this._extraRows.splice(index, 1);
+        }
+        this._seedExtraRows(data, this._extraRows);
+        this._extraErrors = [];
+        await this._rebuildForm(data, active);
+        return true;
     }
 
-    /** Update the inline save-status text in the footer. */
-    _setStatus(text, tone) {
-        const el = this.element?.querySelector('.gac-status');
-        if (!el) return;
-        el.textContent = text || '';
-        el.className = 'gac-status small '
-            + (tone === 'danger' ? 'text-danger'
-                : tone === 'success' ? 'text-success'
-                : 'text-secondary');
+    async onActionResetAuthField(_event, element) {
+        const path = element?.dataset?.path;
+        if (!TRACKED_PATHS.includes(path) || !this._ancestryCertain) return true;
+        const data = this._completeFormData(await this.formView.getFormData());
+        const active = this._captureActiveTab();
+        this._syncExtraRowsFromForm(data);
+        this._draftResets.add(path);
+        this._applyPathToDraft(path, getPath(this._inherited, path), data);
+        await this._rebuildForm(data, active);
+        this._setStatus(`Reset queued for ${path}. Save to apply it.`);
+        return true;
     }
 
-    // ── Diff / serialisation ───────────────────────────────
+    async onActionUndoAuthFieldReset(_event, element) {
+        const path = element?.dataset?.path;
+        if (!this._draftResets.has(path)) return true;
+        const data = this._completeFormData(await this.formView.getFormData());
+        const active = this._captureActiveTab();
+        this._syncExtraRowsFromForm(data);
+        this._draftResets.delete(path);
+        this._applyPathToDraft(path, getPath(this._effective, path), data);
+        await this._rebuildForm(data, active);
+        this._setStatus(`Reset cancelled for ${path}.`);
+        return true;
+    }
 
-    /**
-     * Build the nested `auth_config` payload of fields changed from the
-     * baseline. Returns null when nothing changed.
-     */
-    _diffPayload(fd) {
+    _applyPathToDraft(path, value, data) {
+        const descriptor = FIELD_DESCRIPTORS.find(field => field.path === path);
+        if (descriptor) {
+            if (descriptor.kind === 'array') data[descriptor.form] = Array.isArray(value) ? clone(value) : [];
+            else if (descriptor.kind === 'bool') data[descriptor.form] = !!value;
+            else if (descriptor.kind === 'int') data[descriptor.form] = value === null || value === undefined ? '' : value;
+            else data[descriptor.form] = value === null || value === undefined ? '' : String(value);
+            return;
+        }
+        if (path === 'registration.fields') {
+            const displayed = Array.isArray(value) && value.length ? value : DEFAULT_REG_FIELDS;
+            Object.assign(data, this._gridValuesFromArray(displayed));
+        } else if (path === 'registration.extra_fields') {
+            this._extraRows = this._extraRowsFromArray(Array.isArray(value) ? value : []);
+            this._seedExtraRows(data, this._extraRows);
+        }
+    }
+
+    _assembleRegFields(data) {
+        const fields = [];
+        for (const canonical of CANONICAL_REG_FIELDS) {
+            if (!data[`regf_${canonical.name}_inc`]) continue;
+            if (canonical.name === 'password') {
+                fields.push({ name: 'password', required: true, verify: null });
+            } else {
+                fields.push({
+                    name: canonical.name,
+                    required: !!data[`regf_${canonical.name}_req`],
+                    verify: data[`regf_${canonical.name}_vfy`] || null
+                });
+            }
+        }
+        return fields;
+    }
+
+    _rowMatchesOriginal(row, name, label, required) {
+        const original = row.original;
+        if (typeof original === 'string') {
+            return name === original.trim() && label === humanize(original.trim()) && required === false;
+        }
+        if (!original || typeof original !== 'object') return false;
+        const originalName = typeof original.name === 'string' ? original.name.trim() : '';
+        const originalLabel = typeof original.label === 'string' ? original.label : humanize(originalName);
+        return name === originalName && label === originalLabel && required === !!original.required;
+    }
+
+    _assembleExtraFields(data, rows = this._extraRows) {
+        return rows.map((row, index) => {
+            const name = String(data[`reg_extra_${index}_name`] ?? row.name ?? '').trim();
+            const label = String(data[`reg_extra_${index}_label`] ?? row.label ?? '').trim();
+            const required = !!data[`reg_extra_${index}_required`];
+            if (this._rowMatchesOriginal(row, name, label, required)) return clone(row.original);
+            const entry = { name, required };
+            if (label) entry.label = label;
+            return entry;
+        });
+    }
+
+    _validateExtraFields(data) {
+        const errors = [];
+        const seen = new Set();
+        this._extraRows.forEach((row, index) => {
+            const name = String(data[`reg_extra_${index}_name`] ?? '').trim();
+            let message = '';
+            if (!name) message = 'Name is required.';
+            else if (!EXTRA_FIELD_NAME_RE.test(name)) message = 'Use a letter followed by letters, digits, or underscores.';
+            else if (CANONICAL_REG_NAMES.has(name)) message = `${name} is canonical; configure it above.`;
+            else if (seen.has(name)) message = `${name} is duplicated.`;
+            if (name) seen.add(name);
+            if (message) errors.push({ index, message });
+        });
+        return errors;
+    }
+
+    _showExtraValidation(errors) {
+        this._extraErrors = errors;
+        const root = this.formView?.element;
+        if (!root) return;
+        root.querySelectorAll('.gac-extra-row').forEach(row => {
+            const index = Number(row.dataset.index);
+            const error = errors.find(item => item.index === index);
+            row.querySelector('[name$="_name"]')?.classList.toggle('is-invalid', !!error);
+            const message = row.querySelector('.gac-extra-error');
+            if (message) message.textContent = error?.message || '';
+        });
+    }
+
+    _isSafeNavigationUrl(value) {
+        const raw = String(value || '').trim();
+        if (!raw || raw.includes('\\')) return raw === '';
+        try {
+            const url = new URL(raw, 'https://placeholder.invalid');
+            if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(raw)) {
+                return (url.protocol === 'http:' || url.protocol === 'https:') && !!url.host;
+            }
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    _validateDraft(data) {
+        const loginMethods = Array.isArray(data.login_methods) ? data.login_methods : [];
+        if (!loginMethods.length) return 'Select at least one login method.';
+        const knownLogin = new Set(LOGIN_METHOD_OPTS.map(option => option.value));
+        const unknownLogin = loginMethods.find(method => !knownLogin.has(method));
+        if (unknownLogin) return `Unknown configured login method '${unknownLogin}' must be replaced or reset before saving.`;
+        const registrationMethods = Array.isArray(data.reg_methods) ? data.reg_methods : [];
+        const knownRegistration = new Set(REGISTRATION_METHOD_OPTS.map(option => option.value));
+        const unknownRegistration = registrationMethods.find(method => !knownRegistration.has(method));
+        if (unknownRegistration) return `Unknown configured signup method '${unknownRegistration}' must be replaced or reset before saving.`;
+
+        for (const [form, path, options, label] of [
+            ['layout', 'theme.layout', LAYOUT_OPTS, 'layout'],
+            ['appearance', 'theme.appearance', APPEARANCE_OPTS, 'appearance'],
+            ['hero_image_position', 'theme.hero_image_position', HERO_POSITION_OPTS, 'hero image position'],
+            ['reg_passkey_prompt', 'registration.passkey_prompt', PASSKEY_PROMPT_OPTS, 'passkey prompt']
+        ]) {
+            const known = new Set(options.map(option => option.value));
+            if (!this._draftResets.has(path) && !known.has(data[form])) {
+                return `Unknown configured ${label} '${data[form]}' must be replaced or reset before saving.`;
+            }
+        }
+
+        const fields = this._assembleRegFields(data);
+        if (fields.length) {
+            if (!fields.some(field => field.name === 'email' || field.name === 'phone')) {
+                return "Registration fields must include 'Email' or 'Phone'.";
+            }
+            if (!fields.some(field => field.name === 'password')) {
+                const phone = fields.find(field => field.name === 'phone');
+                if (!phone || phone.verify !== 'sms') {
+                    return "Passwordless registration requires a Phone field with Verify set to SMS.";
+                }
+            }
+        }
+
+        if (!this._draftResets.has('theme.accent_color') && !ACCENT_COLOR_RE.test(String(data.accent_color || ''))) {
+            return 'Accent color must be a six-digit hex color such as #6384ff.';
+        }
+        if (!this._draftResets.has('theme.back_to_website_url') && !this._isSafeNavigationUrl(data.back_to_website_url)) {
+            return 'Back-to-website URL must be relative or an absolute HTTP(S) URL.';
+        }
+        if (!this._draftResets.has('theme.custom_css_url') && data.custom_css_url
+            && !String(data.custom_css_url).startsWith('https://')) {
+            return 'External CSS URL must start with https://.';
+        }
+        if (!this._draftResets.has('theme.custom_css')) {
+            const css = String(data.custom_css || '');
+            const lower = css.toLowerCase();
+            if (css.includes('<') || lower.includes('@import') || lower.includes('://')
+                || /url\(\s*['"]?\s*\/\//i.test(css)) {
+                return "Inline CSS cannot contain '<', @import, or external URLs.";
+            }
+        }
+        for (const [key, label, path] of [
+            ['auth_provider_name', 'Auth provider name', 'theme.auth_provider_name'],
+            ['back_to_website_label', 'Back-to-website label', 'theme.back_to_website_label'],
+            ['login_heading', 'Login heading', 'login.heading']
+        ]) {
+            if (!this._draftResets.has(path) && !String(data[key] || '').trim()) return `${label} cannot be blank.`;
+        }
+        return '';
+    }
+
+    _normalize(value, kind) {
+        if (kind === 'array') return Array.isArray(value) ? clone(value) : [];
+        if (kind === 'bool') return !!value;
+        if (kind === 'int') return value === '' || value === null || value === undefined ? null : Number(value);
+        return value === null || value === undefined ? '' : String(value);
+    }
+
+    _different(value, baseline, kind) {
+        if (kind === 'bool') return !!value !== !!baseline;
+        if (kind === 'int') return this._normalize(value, kind) !== this._normalize(baseline, kind);
+        if (kind === 'array') return !sameValue(this._normalize(value, kind), this._normalize(baseline, kind));
+        return String(value ?? '').trim() !== String(baseline ?? '').trim();
+    }
+
+    _diffPayload(data) {
         const payload = {};
         let changed = false;
-
-        for (const d of FIELD_DESCRIPTORS) {
-            const cur = fd[d.form];
-            const base = this._baseline[d.form];
-            if (this._isDifferent(cur, base, d.kind)) {
-                setPath(payload, d.path, this._normalizeForSave(cur, d.kind));
+        for (const descriptor of FIELD_DESCRIPTORS) {
+            if (this._draftResets.has(descriptor.path)) continue;
+            if (this._different(data[descriptor.form], this._baseline[descriptor.form], descriptor.kind)) {
+                setPath(payload, descriptor.path, this._normalize(data[descriptor.form], descriptor.kind));
                 changed = true;
             }
         }
 
-        const curFields = this._assembleRegFields(fd);
-        const baseFields = this._assembleRegFields(this._baseline);
-        if (JSON.stringify(curFields) !== JSON.stringify(baseFields)) {
-            setPath(payload, 'registration.fields', curFields);
-            changed = true;
+        if (!this._draftResets.has('registration.fields')) {
+            const current = this._assembleRegFields(data);
+            const baseline = this._assembleRegFields(this._baseline);
+            if (!sameValue(current, baseline)) {
+                setPath(payload, 'registration.fields', current);
+                changed = true;
+            }
         }
 
-        const curExtra = this._assembleExtraFields(fd);
-        const baseExtra = this._assembleExtraFields(this._baseline);
-        if (JSON.stringify(curExtra) !== JSON.stringify(baseExtra)) {
-            setPath(payload, 'registration.extra_fields', curExtra);
-            changed = true;
+        if (!this._draftResets.has('registration.extra_fields')) {
+            const current = this._assembleExtraFields(data);
+            if (!sameValue(current, this._baselineExtraWire)) {
+                setPath(payload, 'registration.extra_fields', current);
+                changed = true;
+            }
         }
 
+        for (const path of this._draftResets) {
+            setPath(payload, path, null);
+            changed = true;
+        }
         return changed ? payload : null;
     }
 
-    _isDifferent(cur, base, kind) {
-        if (kind === 'array') return !sameSet(cur, base);
-        if (kind === 'bool')  return !!cur !== !!base;
-        if (kind === 'int') {
-            const a = (cur === '' || cur === null || cur === undefined) ? null : Number(cur);
-            const b = (base === '' || base === null || base === undefined) ? null : Number(base);
-            return a !== b;
-        }
-        // text / select
-        const a = (cur === null || cur === undefined) ? '' : String(cur).trim();
-        const b = (base === null || base === undefined) ? '' : String(base).trim();
-        return a !== b;
-    }
-
-    _normalizeForSave(cur, kind) {
-        if (kind === 'array') return [...(cur || [])];
-        if (kind === 'bool')  return !!cur;
-        if (kind === 'int')   return (cur === '' || cur === null || cur === undefined) ? null : Number(cur);
-        return (cur === null || cur === undefined) ? '' : String(cur);
-    }
-
-    /** Collapse the grid form values into a canonical `registration.fields` array. */
-    _assembleRegFields(fd) {
-        const arr = [];
-        for (const cf of CANONICAL_REG_FIELDS) {
-            if (!fd[`regf_${cf.name}_inc`]) continue;
-            if (cf.name === 'password') {
-                // Password, when included, is always required and has no verify.
-                arr.push({ name: 'password', required: true, verify: null });
-                continue;
+    _rebaseRawBranch(latestRaw, intent) {
+        const sparse = {};
+        const apply = (value, prefix = '') => {
+            for (const [key, child] of Object.entries(value || {})) {
+                const path = prefix ? `${prefix}.${key}` : key;
+                if (child && typeof child === 'object' && !Array.isArray(child)) apply(child, path);
+                // A reset that is already absent is satisfied. Sending its
+                // null would materialize a missing branch on some backends.
+                else if (child !== null || hasPath(latestRaw, path)) setPath(sparse, path, child);
             }
-            arr.push({
-                name: cf.name,
-                required: !!fd[`regf_${cf.name}_req`],
-                verify: fd[`regf_${cf.name}_vfy`] || null
-            });
-        }
-        return arr;
+        };
+        apply(intent);
+        return sparse;
     }
 
-    /**
-     * Collapse the tag-input value into a canonical `registration.extra_fields`
-     * array of `[{name}]`. Accepts the comma-separated string the TagInput
-     * returns (or an already-split array). Trims, drops blanks, dedupes, and
-     * drops names that collide with a canonical field or fail the server's
-     * identifier rule — so the saved config always passes server validation.
-     */
-    _assembleExtraFields(fd) {
-        const raw = fd ? fd.reg_extra_fields : '';
-        const parts = Array.isArray(raw) ? raw : String(raw || '').split(',');
-        const seen = new Set();
-        const arr = [];
-        for (const part of parts) {
-            const name = String(part || '').trim();
-            if (!name || seen.has(name)) continue;
-            if (CANONICAL_REG_NAMES.has(name)) continue;
-            if (!EXTRA_FIELD_NAME_RE.test(name)) continue;
-            seen.add(name);
-            arr.push({ name });
+    _saveSucceeded(resp) {
+        if (resp?.skipped) return true;
+        return !!resp && resp.success !== false && resp.data?.status !== false
+            && Object.keys(this.model?.errors || {}).length === 0
+            && (resp.status === 200 || resp.data?.status === true || resp.success === true);
+    }
+
+    _saveError(resp) {
+        return resp?.message || resp?.error || resp?.data?.error || resp?.data?.message
+            || Object.values(this.model?.errors || {})[0] || 'Failed to save auth config';
+    }
+
+    async _saveRebased(intent, latestRaw) {
+        const rebased = this._rebaseRawBranch(latestRaw, intent);
+        if (Object.keys(rebased).length === 0) {
+            return { success: true, status: 200, data: { status: true }, skipped: true };
         }
-        return arr;
+        return this.model.save({ metadata: { auth_config: rebased } }, { skipRender: true });
+    }
+
+    _persistedNullPaths(raw, paths) {
+        return paths.filter(path => hasPath(raw, path) && getPath(raw, path) === null);
+    }
+
+    _intentLeaves(intent, prefix = '', leaves = []) {
+        for (const [key, value] of Object.entries(intent || {})) {
+            const path = prefix ? `${prefix}.${key}` : key;
+            if (value && typeof value === 'object' && !Array.isArray(value)) {
+                this._intentLeaves(value, path, leaves);
+            } else {
+                leaves.push({ path, value });
+            }
+        }
+        return leaves;
+    }
+
+    _verifyIntent(raw, intent) {
+        const mismatched = [];
+        for (const leaf of this._intentLeaves(intent)) {
+            if (leaf.value === null) {
+                if (hasPath(raw, leaf.path) && getPath(raw, leaf.path) !== null) mismatched.push(leaf.path);
+            } else if (!hasPath(raw, leaf.path) || !sameValue(getPath(raw, leaf.path), leaf.value)) {
+                mismatched.push(leaf.path);
+            }
+        }
+        return mismatched;
+    }
+
+    async onActionSaveAuthConfig() {
+        if (!this.formView) return true;
+        const app = this.getApp();
+        const activeTab = this._captureActiveTab();
+        if (typeof this.formView.validate === 'function' && !this.formView.validate()) {
+            this.formView.focusFirstError?.();
+            return true;
+        }
+
+        const data = this._completeFormData(await this.formView.getFormData());
+        this._syncExtraRowsFromForm(data);
+        const extraErrors = this._validateExtraFields(data);
+        if (extraErrors.length) {
+            this._showExtraValidation(extraErrors);
+            this._fail('Fix the highlighted extra registration fields before saving.');
+            return true;
+        }
+        const validationError = this._validateDraft(data);
+        if (validationError) {
+            this._fail(validationError);
+            return true;
+        }
+
+        const intent = this._diffPayload(data);
+        if (!intent) {
+            this._setStatus('No changes to save.');
+            return true;
+        }
+
+        this._setStatus('Refreshing latest group config…');
+        app?.showLoading?.();
+        try {
+            const latest = await this._fetchRawGroup(this.model?.id);
+            if (!latest?.ok) {
+                this._fail('Could not refresh the latest raw Group config. Draft preserved; nothing was saved.');
+                return true;
+            }
+            const latestRaw = clone(latest.attributes?.metadata?.auth_config) || {};
+            this._setStatus('Saving…');
+            let resp = await this._saveRebased(intent, latestRaw);
+            if (!this._saveSucceeded(resp)) {
+                this._fail(this._saveError(resp));
+                return true;
+            }
+
+            let verified = await this._fetchRawGroup(this.model?.id);
+            if (!verified?.ok) {
+                this._fail('Save completed, but the raw Group config could not be verified. Refresh before editing again.');
+                return true;
+            }
+
+            const resetPaths = [...this._draftResets];
+            let verifiedRaw = clone(verified.attributes?.metadata?.auth_config) || {};
+            const mismatched = this._verifyIntent(verifiedRaw, intent);
+            if (mismatched.length) {
+                this._fail(`Save verification did not match the requested leaves: ${mismatched.join(', ')}. Draft preserved.`);
+                return true;
+            }
+            const persistedNulls = this._persistedNullPaths(verifiedRaw, resetPaths);
+            if (persistedNulls.length) {
+                const cleanupIntent = {};
+                persistedNulls.forEach(path => setPath(cleanupIntent, path, null));
+                resp = await this._saveRebased(cleanupIntent, verifiedRaw);
+                if (!this._saveSucceeded(resp)) {
+                    this._fail(`Config saved, but cleanup of ${persistedNulls.join(', ')} failed. ${this._saveError(resp)}`);
+                    return true;
+                }
+                verified = await this._fetchRawGroup(this.model?.id);
+                if (!verified?.ok) {
+                    this._fail('Cleanup save completed, but the raw Group config could not be verified.');
+                    return true;
+                }
+                verifiedRaw = clone(verified.attributes?.metadata?.auth_config) || {};
+                const remaining = this._persistedNullPaths(verifiedRaw, persistedNulls);
+                if (remaining.length) {
+                    this._fail(`Reset cleanup did not remove: ${remaining.join(', ')}. Draft preserved for retry.`);
+                    return true;
+                }
+            }
+
+            this.model?.set?.(verified.attributes, null, { skipRender: true });
+            this._draftResets.clear();
+            this._extraErrors = [];
+            await this._loadRawState(verified.attributes);
+            await this._rebuildForm(this._baseline, activeTab);
+            this._setStatus('All changes saved.', 'success');
+            app?.toast?.success('Auth config saved');
+        } catch (error) {
+            this._fail(error?.message || 'Failed to save auth config. Draft preserved.');
+        } finally {
+            app?.hideLoading?.();
+        }
+        return true;
+    }
+
+    _fail(message) {
+        this._setStatus(message, 'danger');
+        this.getApp()?.toast?.error(message);
+    }
+
+    _setStatus(text, tone) {
+        const element = this.element?.querySelector('.gac-status');
+        if (!element) return;
+        element.textContent = text || '';
+        element.className = `gac-status small ${tone === 'danger' ? 'text-danger' : tone === 'success' ? 'text-success' : 'text-secondary'}`;
     }
 }
 
