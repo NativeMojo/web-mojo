@@ -23,6 +23,7 @@ module.exports = async function (testContext) {
             this.errors = {};
             this.destroyed = false;
             this.rendered = false;
+            this.listeners = {};
             this._buildTabs();
         }
 
@@ -42,6 +43,20 @@ module.exports = async function (testContext) {
         }
 
         async getFormData() { return { ...this.data }; }
+        on(name, callback, context) {
+            if (!this.listeners[name]) this.listeners[name] = [];
+            this.listeners[name].push({ callback, context });
+        }
+        off(name, callback, context) {
+            this.listeners[name] = (this.listeners[name] || []).filter(listener => (
+                listener.callback !== callback || listener.context !== context
+            ));
+        }
+        emit(name, payload) {
+            (this.listeners[name] || []).slice().forEach(listener => {
+                listener.callback.call(listener.context || this, payload);
+            });
+        }
         validate() { return true; }
         focusFirstError() {}
         destroy() { this.destroyed = true; this.element.remove(); }
@@ -59,6 +74,19 @@ module.exports = async function (testContext) {
     );
     delete global.FormView;
     delete global.GroupModelsStub;
+
+    // Load the real FormView class for the native/custom field event-contract
+    // test. Construction is unnecessary there; a prototype-backed instance
+    // drives the production handleFieldChange() path without initializing the
+    // unrelated file/date/image component toolchain.
+    global.FormPlugins = {};
+    global.FileDropMixin = cls => cls;
+    const ActualFormView = loader.loadModuleFromFile(
+        path.resolve(__dirname, '../../src/core/forms/FormView.js'),
+        'FormView'
+    );
+    delete global.FormPlugins;
+    delete global.FileDropMixin;
 
     function makeModel(attributes = {}, save = null) {
         const model = {
@@ -119,6 +147,7 @@ module.exports = async function (testContext) {
         section._extraRows = section._extraRowsFromArray(section._baselineExtraWire);
         section._seedExtraRows(section._baseline, section._extraRows);
         section.formView = section._buildFormView(section._baseline);
+        section._wireFormView(section.formView);
         section.children[section.formView.id] = section.formView;
         section.formView.parent = section;
         section.element.innerHTML = '<span class="gac-status"></span><div data-container="auth-config-form"></div>';
@@ -493,6 +522,137 @@ module.exports = async function (testContext) {
             expect(section._baseline.app_title).toBe('Deploy');
             expect(section._captureActiveTab()).toBe(2);
             expect(app.toast.success).toHaveBeenCalledWith('Auth config saved');
+        });
+    });
+
+    describe('private workspace event contract', () => {
+        const flush = () => new Promise(resolve => setTimeout(resolve, 0));
+
+        it('emits one canonical changed payload for text, select, toggle, and multiselect FormView changes', async () => {
+            const section = seed(newSection());
+            section._unwireFormView(section.formView);
+            const actualForm = Object.create(ActualFormView.prototype);
+            actualForm.data = { ...section._baseline };
+            actualForm.model = null;
+            actualForm.autosaveModelField = false;
+            actualForm.options = {};
+            actualForm._listeners = {};
+            actualForm._updateShowWhen = () => {};
+            actualForm.getFormData = async () => ({ ...actualForm.data });
+            section.formView = actualForm;
+            section._wireFormView(actualForm);
+            const events = [];
+            section.on('auth-config:changed', payload => events.push(payload));
+            for (const [field, value] of [
+                ['app_title', 'Draft title'],
+                ['layout', 'editorial'],
+                ['reg_enabled', false],
+                ['login_methods', ['password', 'magic']]
+            ]) {
+                actualForm.handleFieldChange(field, value);
+                await flush();
+            }
+            expect(events).toHaveLength(4);
+            expect(events[0].diff.theme.app_title).toBe('Draft title');
+            expect(events[1].diff.theme.layout).toBe('editorial');
+            expect(events[2].diff.registration.enabled).toBe(false);
+            expect(events[3].diff.login.methods).toEqual(['password', 'magic']);
+            expect(events.every(event => event.dirty)).toBe(true);
+        });
+
+        it('emits structured-row changes once through explicit input/toggle listeners', async () => {
+            const section = seed(newSection(), { registration: { extra_fields: ['promo'] } });
+            section.formView.element.innerHTML = section._renderExtraFields();
+            section._wireStructuredRows();
+            const events = [];
+            section.on('auth-config:changed', payload => events.push(payload));
+
+            const label = section.formView.element.querySelector('[name="reg_extra_0_label"]');
+            label.value = 'Promotion code';
+            section.formView.data.reg_extra_0_label = label.value;
+            label.dispatchEvent(new Event('input', { bubbles: true }));
+            await flush();
+            const toggle = section.formView.element.querySelector('[name="reg_extra_0_required"]');
+            toggle.checked = true;
+            section.formView.data.reg_extra_0_required = true;
+            toggle.dispatchEvent(new Event('change', { bubbles: true }));
+            await flush();
+
+            expect(events).toHaveLength(2);
+            expect(events[0].diff.registration.extra_fields[0].label).toBe('Promotion code');
+            expect(events[1].diff.registration.extra_fields[0].required).toBe(true);
+        });
+
+        it('discards stale async getFormData completions during rapid changes', async () => {
+            const section = seed(newSection());
+            const resolvers = [];
+            section.formView.getFormData = () => new Promise(resolve => resolvers.push(resolve));
+            const events = [];
+            section.on('auth-config:changed', payload => events.push(payload));
+            section.formView.emit('field:change', { field: 'app_title', value: 'first' });
+            await Promise.resolve();
+            section.formView.emit('field:change', { field: 'app_title', value: 'second' });
+            await Promise.resolve();
+            resolvers[1]({ ...section._baseline, app_title: 'second' });
+            resolvers[0]({ ...section._baseline, app_title: 'first' });
+            await flush();
+            expect(events).toHaveLength(1);
+            expect(events[0].formData.app_title).toBe('second');
+        });
+
+        it('emits resolved once on readiness and saved only after refresh/rebuild', async () => {
+            const section = newSection({ id: 10, parent: null, metadata: { auth_config: {} } });
+            section._fetchDeploymentDefaults = jest.fn().mockResolvedValue(section._deploymentDefaults);
+            section._walkRawAncestors = jest.fn().mockResolvedValue({ layers: [], certain: true, message: '' });
+            const order = [];
+            section.on('auth-config:resolved', payload => order.push(['resolved', payload]));
+            section.on('auth-config:saved', payload => order.push(['saved', payload]));
+            await section.onInit();
+            expect(order.map(item => item[0])).toEqual(['resolved']);
+
+            section.formView.data = { ...section._baseline, login_heading: 'Saved heading' };
+            section._fetchRawGroup = jest.fn()
+                .mockResolvedValueOnce({ ok: true, attributes: { id: 10, parent: null, metadata: { auth_config: {} } } })
+                .mockResolvedValueOnce({ ok: true, attributes: { id: 10, parent: null, metadata: { auth_config: { login: { heading: 'Saved heading' } } } } });
+            await section.onActionSaveAuthConfig();
+            expect(order.map(item => item[0])).toEqual(['resolved', 'saved']);
+            expect(order[1][1].dirty).toBe(false);
+            expect(order[1][1].resolvedConfig.login.heading).toBe('Saved heading');
+        });
+
+        it('unwires replaced and destroyed forms so one later input emits once', async () => {
+            const section = seed(newSection());
+            const old = section.formView;
+            await section._rebuildForm({ ...section._baseline }, 0);
+            expect(old.listeners['field:change'] || []).toHaveLength(0);
+            const events = [];
+            section.on('auth-config:changed', payload => events.push(payload));
+            section.formView.data.app_title = 'Only once';
+            section.formView.emit('field:change', { field: 'app_title', value: 'Only once' });
+            await flush();
+            expect(events).toHaveLength(1);
+            const current = section.formView;
+            await section.destroy();
+            expect(current.listeners['field:change'] || []).toHaveLength(0);
+        });
+
+        it('does not emit saved for no-op or failed saves and retains dirty state', async () => {
+            const failed = seed(new Section({
+                model: makeModel({ id: 10 }, jest.fn().mockResolvedValue({ success: false, error: 'nope' })),
+                app: makeApp()
+            }));
+            const saved = [];
+            failed.on('auth-config:saved', payload => saved.push(payload));
+            failed.formView.data.app_title = 'Dirty';
+            failed._fetchRawGroup = jest.fn().mockResolvedValue({ ok: true, attributes: { id: 10, parent: null, metadata: { auth_config: {} } } });
+            await failed.onActionSaveAuthConfig();
+            expect(saved).toHaveLength(0);
+            expect(failed.formView.data.app_title).toBe('Dirty');
+
+            const noOp = seed(newSection());
+            noOp.on('auth-config:saved', payload => saved.push(payload));
+            await noOp.onActionSaveAuthConfig();
+            expect(saved).toHaveLength(0);
         });
     });
 };

@@ -294,12 +294,24 @@ class GroupAuthConfigSection extends View {
         this.inheritanceWarning = '';
         this.formView = null;
         this._formSeed = {};
+        this._changeGeneration = 0;
+        this._lastChangeSignature = '';
+        this._structuredInputHandler = null;
+        this._structuredChangeHandler = null;
     }
 
     async onInit() {
         this._deploymentDefaults = await this._fetchDeploymentDefaults();
         await this._loadRawState(this.model?.toJSON?.() || this.model?.attributes || {});
-        this.addChild(this._buildFormView(this._baseline));
+        const form = this._buildFormView(this._baseline);
+        this._wireFormView(form);
+        this.addChild(form);
+        this.emit('auth-config:resolved', this._resolvedPayload());
+    }
+
+    async onAfterRender() {
+        await super.onAfterRender();
+        this._wireStructuredRows();
     }
 
     _onModelChange() {
@@ -458,6 +470,85 @@ class GroupAuthConfigSection extends View {
             data: this._formSeed
         });
         return this.formView;
+    }
+
+    _wireFormView(form) {
+        form?.on?.('field:change', this._onFormFieldChange, this);
+    }
+
+    _unwireFormView(form = this.formView) {
+        form?.off?.('field:change', this._onFormFieldChange, this);
+        this._unwireStructuredRows();
+    }
+
+    _onFormFieldChange(event = {}) {
+        // Structured rows live inside an HTML field and have their own
+        // delegated listener below. Ignore their generic FormView event so a
+        // single edit cannot produce two section-level change events.
+        if (String(event.field || '').startsWith('reg_extra_')) return;
+        this._queueConfigChanged();
+    }
+
+    _wireStructuredRows() {
+        this._unwireStructuredRows();
+        const root = this.formView?.element;
+        if (!root) return;
+        this._structuredInputHandler = event => {
+            const input = event.target?.closest?.('.gac-extra-row input');
+            if (!input || input.type === 'checkbox') return;
+            this._queueConfigChanged();
+        };
+        this._structuredChangeHandler = event => {
+            const input = event.target?.closest?.('.gac-extra-row input');
+            if (!input || input.type !== 'checkbox') return;
+            this._queueConfigChanged();
+        };
+        root.addEventListener('input', this._structuredInputHandler);
+        root.addEventListener('change', this._structuredChangeHandler);
+    }
+
+    _unwireStructuredRows() {
+        const root = this.formView?.element;
+        if (root && this._structuredInputHandler) {
+            root.removeEventListener('input', this._structuredInputHandler);
+        }
+        if (root && this._structuredChangeHandler) {
+            root.removeEventListener('change', this._structuredChangeHandler);
+        }
+        this._structuredInputHandler = null;
+        this._structuredChangeHandler = null;
+    }
+
+    _resolvedPayload(formData = this._baseline, diff = null) {
+        const data = clone(formData) || {};
+        return {
+            dirty: !!diff,
+            formData: data,
+            diff: clone(diff),
+            resolvedConfig: clone(this._effective),
+            registrationEnabled: !!getPath(this._effective, 'registration.enabled'),
+            layout: getPath(this._effective, 'theme.layout') || 'minimal',
+            appearance: getPath(this._effective, 'theme.appearance') || 'system'
+        };
+    }
+
+    _queueConfigChanged() {
+        const generation = ++this._changeGeneration;
+        const form = this.formView;
+        Promise.resolve().then(async () => {
+            if (generation !== this._changeGeneration || form !== this.formView) return;
+            const data = this._completeFormData(await form?.getFormData?.());
+            if (generation !== this._changeGeneration || form !== this.formView) return;
+            this._syncExtraRowsFromForm(data);
+            const diff = this._diffPayload(data);
+            const payload = this._resolvedPayload(data, diff);
+            const signature = JSON.stringify({ dirty: payload.dirty, formData: payload.formData, diff: payload.diff });
+            if (signature === this._lastChangeSignature) return;
+            this._lastChangeSignature = signature;
+            this.emit('auth-config:changed', payload);
+        }).catch(() => {
+            // A replaced/destroyed form can reject while being superseded.
+        });
     }
 
     _buildFields() {
@@ -721,10 +812,15 @@ class GroupAuthConfigSection extends View {
     }
 
     async _rebuildForm(data, activeTab = this._captureActiveTab()) {
-        if (this.formView) this.removeChild(this.formView);
+        if (this.formView) {
+            this._unwireFormView(this.formView);
+            this.removeChild(this.formView);
+        }
         const next = this._buildFormView(data);
+        this._wireFormView(next);
         this.addChild(next);
         if (this.isMounted()) await next.render();
+        this._wireStructuredRows();
         this._restoreActiveTab(activeTab);
         return next;
     }
@@ -755,6 +851,7 @@ class GroupAuthConfigSection extends View {
         this._seedExtraRows(data, this._extraRows);
         this._extraErrors = [];
         await this._rebuildForm(data, active);
+        this._queueConfigChanged();
         return true;
     }
 
@@ -769,6 +866,7 @@ class GroupAuthConfigSection extends View {
         this._seedExtraRows(data, this._extraRows);
         this._extraErrors = [];
         await this._rebuildForm(data, active);
+        this._queueConfigChanged();
         return true;
     }
 
@@ -782,6 +880,7 @@ class GroupAuthConfigSection extends View {
         this._applyPathToDraft(path, getPath(this._inherited, path), data);
         await this._rebuildForm(data, active);
         this._setStatus(`Reset queued for ${path}. Save to apply it.`);
+        this._queueConfigChanged();
         return true;
     }
 
@@ -795,6 +894,7 @@ class GroupAuthConfigSection extends View {
         this._applyPathToDraft(path, getPath(this._effective, path), data);
         await this._rebuildForm(data, active);
         this._setStatus(`Reset cancelled for ${path}.`);
+        this._queueConfigChanged();
         return true;
     }
 
@@ -1104,6 +1204,9 @@ class GroupAuthConfigSection extends View {
             return true;
         }
 
+        // The save owns this draft snapshot now. Any slower field read that
+        // started before it must not emit after the save/refresh sequence.
+        this._changeGeneration += 1;
         this._setStatus('Refreshing latest group config…');
         app?.showLoading?.();
         try {
@@ -1160,8 +1263,11 @@ class GroupAuthConfigSection extends View {
             this._extraErrors = [];
             await this._loadRawState(verified.attributes);
             await this._rebuildForm(this._baseline, activeTab);
+            this._changeGeneration += 1;
+            this._lastChangeSignature = '';
             this._setStatus('All changes saved.', 'success');
             app?.toast?.success('Auth config saved');
+            this.emit('auth-config:saved', this._resolvedPayload());
         } catch (error) {
             this._fail(error?.message || 'Failed to save auth config. Draft preserved.');
         } finally {
@@ -1180,6 +1286,12 @@ class GroupAuthConfigSection extends View {
         if (!element) return;
         element.textContent = text || '';
         element.className = `gac-status small ${tone === 'danger' ? 'text-danger' : tone === 'success' ? 'text-success' : 'text-secondary'}`;
+    }
+
+    async destroy() {
+        this._changeGeneration += 1;
+        this._unwireFormView();
+        return super.destroy();
     }
 }
 

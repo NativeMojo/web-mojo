@@ -2,6 +2,29 @@
 
 ## 2.9.0 — 2026-08-08
 
+### Admin · Group Auth Config hosted-page visual preview workspace (#2139)
+
+- **Configure Auth** now opens an `xxl`, fixed-body workspace with an
+  independently scrolling editor and sticky preview on wide screens, a stacked
+  narrow layout, desktop/phone fixed-size frames scaled from measured space,
+  and a focus-preview affordance when the side-by-side result is too small.
+- Apps may set the exact `hosted_auth_origin` and root-relative
+  `hosted_auth_paths` for login, registration, and passkey (required when the
+  matching django `BOUNCER_*_PATH` settings differ). Preview URLs are rebuilt
+  with only `group_uuid` and canonical `auth_theme` / `auth_appearance` query
+  keys; only known unsaved layout/appearance enums are temporary comparisons.
+- Inline display is a conservative, same-origin best effort: an exact no-cache,
+  no-Authorization, manual-redirect probe must return the expected 2xx HTML
+  shell. Bouncer challenges/decoys, redirects, wrong content, disabled saved
+  registration, enforcing `frame-ancestors`, X-Frame-Options, ambiguous CSP,
+  timeout, and network errors all use the exact external fallback. Hardened
+  django-mojo hosted pages normally enforce `frame-ancestors 'none'`.
+- A passed page loads only into an empty sandbox with no referrer, focus,
+  pointer interaction, scripts, forms, popups, or navigation. It is labeled as
+  static saved first paint: JS-driven extra rows, passkey/session behavior, and
+  credential interaction are omitted. Confirmed saves refresh it; failed/no-op
+  saves preserve the draft and current visual.
+
 ### Admin · Group Auth Config contract parity and honest inheritance (#2138)
 
 - Expanded the Group Auth Config editor to django-mojo's complete hosted-auth

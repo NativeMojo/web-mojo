@@ -339,7 +339,26 @@ Events are entered via the framework's `TagInput` (`type: 'tags'`). `WebhookSubs
 
 ## Auth Config — per-group editor (`GroupView` → Auth Config)
 
-`GroupView` exposes a permission-gated **Configure Auth** context-menu action. It opens `GroupAuthConfigSection` in a modal to edit `group.metadata.auth_config` — the structured config that drives the django-mojo–hosted login, registration, and passkey pages — through a form instead of raw JSON.
+`GroupView` exposes a permission-gated **Configure Auth** context-menu action. It opens an `xxl` workspace with `GroupAuthConfigSection` beside a private hosted-page visual preview. On wide screens the editor scrolls independently while the preview stays sticky; narrow screens stack the two surfaces. Desktop (`1280 × 800`) and phone (`390 × 844`) frames retain their real dimensions and are scaled inside a measured viewport. When a side-by-side frame would become too small to read, **Focus preview** temporarily gives it the full workspace.
+
+The hosted-page location is app configuration, not inferred from django settings:
+
+```js
+const app = new PortalApp({
+    hosted_auth_origin: 'https://app.example.com',
+    hosted_auth_paths: {
+        login: '/auth',
+        registration: '/register',
+        passkey: '/passkey'
+    }
+});
+```
+
+`hosted_auth_origin` must be an exact HTTP(S) origin without credentials, path, query, or hash. When omitted, the workspace uses the configured REST `baseURL` origin, then `window.location.origin`. `hosted_auth_paths` values must be root-relative, query/hash-free, and dot-segment-safe; defaults are `/auth`, `/register`, and `/passkey`. Apps must set these paths when django-mojo's `BOUNCER_LOGIN_PATH`, `BOUNCER_REGISTER_PATH`, or `BOUNCER_PASSKEY_PATH` differs. Every destination URL is built fresh with a closed query allowlist: `group_uuid` plus canonical `auth_theme` / `auth_appearance` only. Unsaved comparison is intentionally limited to known layout and appearance enums; every other visual remains the saved server-resolved value.
+
+Inline display is an honest best-effort boundary, not a supported auth iframe integration. The workspace probes only an exact same-origin URL with same-origin credentials, no cache, no application Authorization header, manual redirect refusal, and a bounded timeout. It requires an unredirected 2xx `text/html` response with the expected hosted-auth shell/page sentinel. A bouncer challenge or decoy, mismatched response URL, enforcing `frame-ancestors`, `X-Frame-Options`, ambiguous/multiple CSP, disabled saved registration, timeout, and network/content failures all produce a named external fallback. Report-only CSP is ignored. django-mojo normally sends `frame-ancestors 'none'` on its credential-bearing hosted pages, so external fallback is expected on hardened deployments.
+
+Only a passed representation is navigated in an empty `sandbox` iframe with no referrer, no tab stop, pointer events disabled, and a noninteractive overlay. The workspace never reads or manipulates credential DOM. A frame load means only that loading completed; it is not proof that authentication works. The comparison is the static server-rendered first paint: JavaScript-driven extra registration rows, passkey/session behavior, and all credential interactions are omitted. The exact current URL is always offered as a `noopener noreferrer` external action. A confirmed save refreshes the resolved config and probes again; failed and no-op saves leave both the draft and visual unchanged.
 
 `GroupAuthConfigSection` covers the complete current public contract across four tabs:
 

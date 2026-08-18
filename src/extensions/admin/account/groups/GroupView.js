@@ -46,7 +46,7 @@ import {
 import { LogList } from '@core/models/Log.js';
 import { IncidentEventList } from '@ext/admin/models/Incident.js';
 import AdminMetadataSection from '../../shared/AdminMetadataSection.js';
-import GroupAuthConfigSection from './GroupAuthConfigSection.js';
+import GroupAuthConfigWorkspace from './GroupAuthConfigWorkspace.js';
 import GroupGeofenceSection from './GroupGeofenceSection.js';
 import { GEOFENCE_VIEW_PERMS } from '@ext/admin/security/geofence/geofenceData.js';
 import ApiKeyView from '../api_keys/ApiKeyView.js';
@@ -2142,18 +2142,19 @@ class GroupView extends DetailView {
     }
 
     /**
-     * Context-menu "Configure Auth" — opens the group's auth-config editor in
-     * a modal rather than as an inline detail section (the 3-tab form is too
-     * heavy for the side-nav). The section is self-contained (own Save +
-     * inline status), so the modal carries no footer buttons.
+     * Context-menu "Configure Auth" — opens the editor beside a private,
+     * noninteractive hosted-page visual preview. The workspace owns its
+     * editor/preview scrolling, so the modal body itself stays fixed.
      */
     async onActionConfigureAuth() {
-        const section = new GroupAuthConfigSection({ model: this.model });
+        const workspace = new GroupAuthConfigWorkspace({ model: this.model });
         const dialog = new ModalView({
             title: `Configure Auth — ${this.model.get('name')}`,
-            body: section,
-            size: 'lg',
-            scrollable: true,
+            body: workspace,
+            size: 'xxl',
+            scrollable: false,
+            noBodyPadding: true,
+            bodyClass: 'overflow-hidden',
             buttons: [],
             closeButton: true
         });
