@@ -364,6 +364,8 @@ class GroupAuthConfigSection extends View {
                 return { layers: layers.reverse(), certain: false, message: 'Ancestor depth limit reached. Effective sources may be incomplete, so resets are disabled.' };
             }
             seen.add(key);
+            // Parent ids are discovered from each response, so this walk is intentionally serial.
+            // eslint-disable-next-line no-await-in-loop
             const fetched = await this._fetchRawGroup(id);
             if (!fetched?.ok) {
                 return { layers: layers.reverse(), certain: false, message: `Could not read ancestor Group #${escapeHtml(id)}. Effective sources may be incomplete, so resets are disabled.` };
