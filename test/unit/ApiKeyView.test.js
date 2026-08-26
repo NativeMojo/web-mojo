@@ -134,6 +134,7 @@ module.exports = async function (testContext) {
             model = makeApiKeyModel();
             view = new ApiKeyView({ model });
             await view.render(false);
+            await view.limitsSection.render(false);
         });
 
         it('extends DetailView (not a hand-rolled View)', () => {
@@ -257,6 +258,7 @@ module.exports = async function (testContext) {
             });
             view = new ApiKeyView({ model });
             await view.render(false);
+            await view.limitsSection.render(false);
 
             const keys = Array.from(view.limitsSection.element.querySelectorAll('tbody code'))
                 .map(el => el.textContent);
@@ -268,6 +270,7 @@ module.exports = async function (testContext) {
             model = makeApiKeyModel({ limits: null });
             view = new ApiKeyView({ model });
             await view.render(false);
+            await view.limitsSection.render(false);
             expect(view.limitsSection.element.textContent).toContain('Stored rate limits are malformed');
             expect(view.limitsSection.element.textContent).not.toContain('Unlimited (default)');
 
@@ -280,6 +283,7 @@ module.exports = async function (testContext) {
             });
             view = new ApiKeyView({ model });
             await view.render(false);
+            await view.limitsSection.render(false);
             expect(view.limitsSection.element.querySelectorAll('tbody code')).toHaveLength(3);
             expect(view.limitsSection.element.textContent).toContain('Invalid stored override');
             expect(view.limitsSection.element.textContent)
@@ -390,6 +394,7 @@ module.exports = async function (testContext) {
             view = new ApiKeyView({ model });
             const section = view.limitsSection;
             section.checkPermissions = () => true;
+            await section.render(false);
             const invalid = [
                 { key: ' ', limit: 1, window: 1 },
                 { key: '__replace', limit: 1, window: 1 },
@@ -444,6 +449,7 @@ module.exports = async function (testContext) {
             view = new ApiKeyView({ model });
             const section = view.limitsSection;
             section.checkPermissions = () => true;
+            await section.render(false);
             section.render = jest.fn().mockResolvedValue(section);
             const toast = { error: jest.fn() };
             section.getApp = () => ({ toast });
@@ -463,6 +469,7 @@ module.exports = async function (testContext) {
             view = new ApiKeyView({ model });
             const section = view.limitsSection;
             section.checkPermissions = () => true;
+            await section.render(false);
             section.render = jest.fn().mockResolvedValue(section);
             ModalStub.form.mockResolvedValue({ limit: 20, window: 2 });
             model.save = async () => ({
@@ -489,6 +496,7 @@ module.exports = async function (testContext) {
             view = new ApiKeyView({ model });
             const section = view.limitsSection;
             section.checkPermissions = () => true;
+            await section.render(false);
             section.render = jest.fn().mockResolvedValue(section);
             model.save = async () => { throw new Error('network rejected'); };
             ModalStub.form.mockResolvedValue({ limit: 20, window: 2 });

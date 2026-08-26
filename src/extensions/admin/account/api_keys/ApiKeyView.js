@@ -319,27 +319,27 @@ class ApiKeyLimitsSection extends View {
                                             <td>{{.limitLabel}}</td>
                                             <td>{{.windowLabel}}</td>
                                             <td class="text-end text-nowrap">
-                                                {{#canEdit|bool}}
+                                                {{#.canEdit|bool}}
                                                     <button type="button" class="btn btn-outline-secondary btn-sm"
                                                             data-action="edit-limit" data-key="{{.key}}">
                                                         <i class="bi bi-pencil me-1"></i>Edit
                                                     </button>
-                                                {{/canEdit|bool}}
-                                                {{#canRemove|bool}}
+                                                {{/.canEdit|bool}}
+                                                {{#.canRemove|bool}}
                                                     <button type="button" class="btn btn-outline-danger btn-sm ms-1"
                                                             data-action="remove-limit" data-key="{{.key}}">
                                                         <i class="bi bi-trash me-1"></i>Remove
                                                     </button>
-                                                {{/canRemove|bool}}
+                                                {{/.canRemove|bool}}
                                             </td>
                                         </tr>
-                                        {{^valid|bool}}
+                                        {{^.valid|bool}}
                                             <tr>
                                                 <td colspan="4" class="small text-danger pt-0">
                                                     {{.invalidReason}}
                                                 </td>
                                             </tr>
-                                        {{/valid|bool}}
+                                        {{/.valid|bool}}
                                     {{/limitRows}}
                                 </tbody>
                             </table>
