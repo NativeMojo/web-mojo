@@ -17,9 +17,10 @@ const { testHelpers } = require('../utils/test-helpers');
 const { loadModule } = require('../utils/simple-module-loader');
 
 module.exports = async function (testContext) {
-    const { describe, it, expect, beforeEach, jest } = testContext;
+    const { describe, it, expect, beforeEach } = testContext;
 
     await testHelpers.setup();
+    const jest = global.jest;
 
     // Load primitives first so the loader satisfies ApiKeyView's deps.
     // ContextMenu must precede DetailView: the transformed DetailView module
