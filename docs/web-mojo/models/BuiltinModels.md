@@ -673,6 +673,51 @@ document into the backend's merge-style permission patch.
 
 Permission threshold for CRUD is `manage_group` / `manage_groups` / `groups`.
 
+### Per-key rate-limit overrides
+
+`limits` is a map of endpoint decorator bucket keys to positive integer request
+limits and positive integer windows in **minutes**:
+
+```json
+{
+  "orders": {"limit": 500, "window": 1},
+  "api": {"limit": 5000, "window": 5}
+}
+```
+
+An empty object means **Unlimited (default)** for per-key hard overrides on
+ordinary throughput gates. It does not disable strict endpoint limits,
+positive decorator fallbacks, or deliberately enabled deployment ceilings.
+Absent override keys, malformed entries, and non-positive values create no
+per-key hard ceiling. A valid positive limit with an omitted `window` uses the
+endpoint decorator's default window; the structured editor still requires an
+explicit limit and whole-minute window for every new or edited row.
+
+The backend deep-merges JSONField dictionaries, so use a sparse one-key patch
+to add or edit an override and a `null` tombstone to remove one without changing
+siblings:
+
+```js
+await key.save({
+    limits: { orders: { limit: 500, window: 1 } }
+});
+
+await key.save({
+    limits: { orders: null }
+});
+```
+
+Successful normal REST saves return the authoritative full ApiKey row and full
+`limits` map; use that response as the source of truth (or fetch the model when
+integrating with a compatible server that omits it). The root key `__replace`
+is reserved by django-mojo's generic JSONField updater: do not create it as an
+endpoint key. A legacy stored `__replace` entry cannot be removed with a generic
+sparse tombstone and must be repaired outside the structured editor.
+
+The shared `ApiKeyView` Rate Limits section exposes this structured add/edit/
+remove workflow to operators with any of `manage_group`, `manage_groups`, or
+`groups`; the REST resource remains authoritative.
+
 ---
 
 ## WebhookSubscription & WebhookSubscriptionList

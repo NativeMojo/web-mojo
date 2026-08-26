@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **API key details now include a structured rate-limit editor.** Both the
+  standalone and per-group admin surfaces show sorted explicit endpoint caps,
+  the safe **Unlimited (default)** no-overrides state, invalid legacy data, and
+  permission-gated add/edit/remove controls backed by sparse `ApiKey.save()`
+  patches. Requires django-mojo 1.20.0 (item 3105 contract) to deploy first;
+  deploy the successor portal-mojo surface afterward.
+
 ## 2.10.1 — 2026-08-18
 
 - **Configure Auth now uses a true fullscreen modal.** This prevents the editor

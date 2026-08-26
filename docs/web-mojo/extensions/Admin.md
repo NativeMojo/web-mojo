@@ -13,6 +13,7 @@
 - [The `system` Sidebar Menu](#the-system-sidebar-menu)
 - [Topbar Wiring](#topbar-wiring)
 - [Permissions](#permissions)
+- [API Key Rate Limits](#api-key-rate-limits)
 - [Phone Hub — Config Page (`system/phonehub/config`)](#phone-hub--config-page-systemphonehubconfig)
 - [Importing Individual Pages & Views](#importing-individual-pages--views)
 - [Convenience Helpers (`Class.show(...)`)](#convenience-helpers-classshow)
@@ -304,6 +305,36 @@ Every admin page is registered with a `permissions:` requirement. The framework'
 - `view_support` / `support` — contact-form messages
 
 > ℹ️ The complete `(route, permissions)` mapping lives in [`src/admin.js`](../../src/admin.js) as the single source of truth. Don't duplicate it here — read the source.
+
+---
+
+## API Key Rate Limits
+
+Clicking an API key from either the standalone API Keys page or a Group's
+**API Keys** section opens the same `ApiKeyView`. Its **Rate Limits** section
+lists the key's explicit endpoint overrides in alphabetical order and lets an
+authorized operator add, edit, or remove one structured `{limit, window}` row.
+Windows are positive whole minutes; limits are positive whole request counts.
+Endpoint keys are immutable after creation, so renaming is remove-and-add.
+
+With no overrides the section says **Unlimited (default)**. This means no
+per-key hard override is configured for ordinary throughput; strict endpoint
+limits, positive decorator fallbacks, and enabled deployment ceilings can
+still apply. Malformed legacy rows remain visible as invalid rather than being
+misrepresented as working caps. The reserved `__replace` root key is shown as
+invalid and read-only because django-mojo's generic JSON updater consumes it,
+so a sparse Remove request cannot repair that stored entry.
+
+A legacy row with a valid limit but no `window` is also marked incomplete, but
+the copy remains honest: django-mojo applies that endpoint decorator's default
+window. New and edited rows always collect an explicit whole-minute window.
+
+Mutation controls fail closed unless `View.checkPermissions` grants at least
+one of `manage_group`, `manage_groups`, or `groups`. Each write goes through the
+existing `ApiKey.save(...)` model path. Add/edit sends one sparse limits entry;
+Remove sends that entry as `null`, preserving sibling overrides. The complete
+limits map returned by django-mojo is authoritative, with a defensive fetch for
+compatible servers that acknowledge a save without returning the map.
 
 ---
 
