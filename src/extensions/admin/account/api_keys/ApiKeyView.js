@@ -3,8 +3,8 @@
  *
  * Sections:
  *   Overview     — key facts (ID, group, created, last used) + token note
- *   Permissions  — guided autosave switches plus a complete raw JSON policy
- *                  editor for grants outside the registered catalog
+ *   Permissions  — guided autosave switches, freeform permission names, and
+ *                  a complete raw JSON policy editor
  *   ── Reference ──
  *   Rate Limits  — structured per-key hard-limit overrides
  *   Usage        — Authorization header snippet
@@ -84,11 +84,12 @@ class ApiKeyOverviewSection extends View {
 
 // ── Permissions section ────────────────────────────────────
 //
-// The guided editor is one autosaving FormView over the live
-// ApiKey.permissionTabset(). The JSON editor binds to the same model and saves
-// explicitly, treating the document as the complete policy. Because the
-// backend setter is merge-style, ApiKey.buildPermissionsPatch() emits false
-// for omitted existing keys so the result has replacement semantics.
+// The guided editor combines an autosaving FormView over the live
+// ApiKey.permissionTabset() with an explicitly saved TagInput for uncatalogued
+// permission names. The JSON editor binds to the same model and saves as the
+// complete policy. Because the backend setter is merge-style,
+// ApiKey.buildPermissionsPatch() emits false for omitted existing keys so the
+// result has replacement semantics.
 //
 // A failed save needs no handling here: FormView.executeBatchSave already
 // toasts the server error and calls revertFields(), so a 403 on a protected
@@ -103,7 +104,7 @@ class ApiKeyPermissionsSection extends View {
                     <div>
                         <div class="detail-section-eyebrow">API key permissions</div>
                         <p class="text-secondary small mb-0">
-                            Edit common grants with switches or manage the complete policy as JSON.
+                            Edit common grants with switches, add permission names, or manage the complete policy as JSON.
                         </p>
                     </div>
                     <div class="btn-group btn-group-sm" role="group" aria-label="Permission editor mode">
@@ -123,6 +124,17 @@ class ApiKeyPermissionsSection extends View {
                         Toggles autosave as soon as you flip them.
                     </p>
                     <div data-container="apikey-perms"></div>
+                    <div class="border-top mt-3 pt-3">
+                        <div data-container="apikey-custom-perms"></div>
+                        <div class="d-flex flex-wrap align-items-center justify-content-end gap-3 mt-2">
+                            <span class="api-key-custom-permissions-status small text-secondary"
+                                  role="status" aria-live="polite"></span>
+                            <button type="button" class="btn btn-primary btn-sm"
+                                    data-action="save-custom-permissions">
+                                <i class="bi bi-check-lg me-1"></i>Save permission names
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div data-policy-pane="json" class="{{jsonPaneClass}}">
@@ -163,6 +175,16 @@ class ApiKeyPermissionsSection extends View {
             autosaveModelField: true
         });
         this.addChild(this.formView);
+
+        this.customFormView = new FormView({
+            containerId: 'apikey-custom-perms',
+            fields: [ApiKeyForms.customPermissionsField()],
+            data: {
+                custom_permissions: ApiKey.customPermissionNames(
+                    this.model?.get?.('permissions')).join(',')
+            }
+        });
+        this.addChild(this.customFormView);
 
         this.rawFormView = new FormView({
             containerId: 'apikey-perms-json',
@@ -212,6 +234,55 @@ class ApiKeyPermissionsSection extends View {
         button.setAttribute('aria-pressed', active ? 'true' : 'false');
     }
 
+    async onActionSaveCustomPermissions() {
+        const app = this.getApp();
+        const formData = await this.customFormView.getFormData();
+        let patch;
+        try {
+            patch = ApiKey.buildCustomPermissionsPatch(
+                this.model?.get?.('permissions'), formData.custom_permissions);
+        } catch (error) {
+            this._setCustomPermissionsStatus(error.message, 'danger');
+            app?.toast?.error(error.message);
+            return true;
+        }
+
+        if (Object.keys(patch).length === 0) {
+            this._setCustomPermissionsStatus('No changes.');
+            return true;
+        }
+
+        this._setCustomPermissionsStatus('Saving…');
+        app?.showLoading?.();
+        let resp;
+        try {
+            resp = await this.model.save(
+                { permissions: patch }, { skipRender: true });
+        } catch (error) {
+            resp = { success: false, error: error.message };
+        } finally {
+            app?.hideLoading?.();
+        }
+
+        const failed = !resp || resp.success === false
+            || resp.data?.status === false
+            || Object.keys(this.model?.errors || {}).length > 0;
+        if (failed) {
+            const message = resp?.data?.error || resp?.error || resp?.message
+                || 'Failed to save the permission names.';
+            this._setCustomPermissionsStatus(message, 'danger');
+            app?.toast?.error(message);
+            return true;
+        }
+
+        this.rawFormView.syncFormWithModel?.();
+        this.formView.syncFormWithModel?.();
+        await this._syncCustomPermissionsInput();
+        this._setCustomPermissionsStatus('Permission names saved.', 'success');
+        app?.toast?.success('API key permissions saved');
+        return true;
+    }
+
     async onActionSaveJsonPolicy() {
         const app = this.getApp();
         const formData = await this.rawFormView.getFormData();
@@ -251,6 +322,7 @@ class ApiKeyPermissionsSection extends View {
 
         this.rawFormView.syncFormWithModel?.();
         this.formView.syncFormWithModel?.();
+        await this._syncCustomPermissionsInput();
         this._setPolicyStatus('Policy saved.', 'success');
         app?.toast?.success('API key permissions saved');
         return true;
@@ -264,6 +336,27 @@ class ApiKeyPermissionsSection extends View {
             + (tone === 'danger' ? 'text-danger'
                 : tone === 'success' ? 'text-success'
                 : 'text-secondary');
+    }
+
+    _setCustomPermissionsStatus(text, tone) {
+        const el = this.element?.querySelector('.api-key-custom-permissions-status');
+        if (!el) return;
+        el.textContent = text || '';
+        el.className = 'api-key-custom-permissions-status small '
+            + (tone === 'danger' ? 'text-danger'
+                : tone === 'success' ? 'text-success'
+                : 'text-secondary');
+    }
+
+    async _syncCustomPermissionsInput() {
+        const value = ApiKey.customPermissionNames(
+            this.model?.get?.('permissions')).join(',');
+        this.customFormView.data = {
+            ...(this.customFormView.data || {}),
+            custom_permissions: value
+        };
+        const input = this.customFormView.customComponents?.get?.('custom_permissions');
+        await input?.setFormValue?.(value);
     }
 }
 

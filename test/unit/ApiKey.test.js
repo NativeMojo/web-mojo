@@ -78,6 +78,49 @@ module.exports = async function (testContext) {
             expect(names).toContain('group');
         });
 
+        it('create form offers SMS grants and a freeform permission-name input', () => {
+            const fields = ApiKeyForms.create.fields;
+            const tabset = fields.find(f => f.type === 'tabset');
+            const permissionNames = tabset.tabs
+                .flatMap(tab => tab.fields.map(field => field.name));
+            expect(permissionNames).toContain('permissions.send_sms');
+            expect(permissionNames).toContain('permissions.comms');
+
+            const custom = fields.find(f => f.name === 'custom_permissions');
+            expect(custom).toBeDefined();
+            expect(custom.type).toBe('tags');
+        });
+
+        it('normalizes freeform permission names into a grant-only create payload', () => {
+            const payload = ApiKey.buildCreatePayload({
+                name: 'SMS bridge',
+                group: 7,
+                'permissions.send_sms': true,
+                'permissions.view_logs': false,
+                custom_permissions: 'orders.read, custom_delivery'
+            });
+
+            expect(payload).toEqual({
+                name: 'SMS bridge',
+                group: 7,
+                'permissions.send_sms': true,
+                'permissions.orders.read': true,
+                'permissions.custom_delivery': true
+            });
+        });
+
+        it('builds an add/remove patch for uncatalogued permission names', () => {
+            const patch = ApiKey.buildCustomPermissionsPatch(
+                { view_logs: true, legacy_custom: true, remove_me: true },
+                'legacy_custom,new_custom'
+            );
+
+            expect(patch).toEqual({
+                new_custom: true,
+                remove_me: false
+            });
+        });
+
         it('create tabset stays live across Member.registerPermissions (reference at use, not a frozen copy)', () => {
             // try/finally rather than relying on afterEach alone: if an
             // assertion throws, the Member registry must still be restored or

@@ -66,6 +66,24 @@ ApiKey.buildPermissionsPatch = function (current, desired) {
     return patch;
 };
 
+/** Normalize TagInput/array permission names into a unique trimmed list. */
+ApiKey.normalizePermissionNames = function (value) {
+    const raw = Array.isArray(value)
+        ? value
+        : (typeof value === 'string' ? value.split(',') : []);
+    const names = [];
+    for (const item of raw) {
+        let name = String(item ?? '').trim();
+        if (name.startsWith('permissions.')) name = name.slice('permissions.'.length).trim();
+        if (!name) continue;
+        if (name === '__replace') {
+            throw new Error('Permission "__replace" is reserved and cannot be granted.');
+        }
+        if (!names.includes(name)) names.push(name);
+    }
+    return names;
+};
+
 /**
  * ApiKeyList - Collection of ApiKey records.
  * Filter by group: new ApiKeyList({ params: { group: groupId } })
@@ -98,6 +116,20 @@ ApiKey.FEDERATION_PERMISSIONS = [
         tooltip: 'Lets this key push abuse signals (attacker/abuser flags, '
                + 'threat level) into this fleet\'s shared GeoIP threat intel. '
                + 'Fleet-wide in effect, not limited to this group.'
+    }
+];
+
+/** Common machine grants that are useful on keys but not Member defaults. */
+ApiKey.INTEGRATION_PERMISSIONS = [
+    {
+        name: 'send_sms',
+        label: 'Send SMS',
+        tooltip: 'Send outbound SMS messages for this key\'s group.'
+    },
+    {
+        name: 'comms',
+        label: 'Communications',
+        tooltip: 'Broad communications access, including SMS. Prefer Send SMS when that is all the integration needs.'
     }
 ];
 
@@ -161,6 +193,14 @@ const _federationSwitch = (p, canGrant) => ({
     ...(canGrant ? {} : { disabled: true })
 });
 
+const _integrationSwitch = (p) => ({
+    name: `permissions.${p.name}`,
+    type: 'switch',
+    label: p.label,
+    columns: 6,
+    ...(p.tooltip ? { tooltip: p.tooltip } : {})
+});
+
 /**
  * The API key permission tabset: every Group Member tab, plus a Federation
  * tab that exists only here.
@@ -174,10 +214,16 @@ const _federationSwitch = (p, canGrant) => ({
 ApiKey.permissionTabset = function (canGrant) {
     const allowed = canGrant === undefined ? ApiKey.canGrantFederation() : !!canGrant;
     const memberTabs = Member.PERMISSION_TABSET[0]?.tabs || [];
+    const memberNames = new Set(memberTabs.flatMap(tab =>
+        (tab.fields || []).map(field => field.name?.replace(/^permissions\./, ''))));
+    const integrationFields = ApiKey.INTEGRATION_PERMISSIONS
+        .filter(permission => !memberNames.has(permission.name))
+        .map(_integrationSwitch);
     return [{
         type: 'tabset',
         tabs: [
             ...memberTabs,
+            ...(integrationFields.length ? [{ label: 'Integrations', fields: integrationFields }] : []),
             {
                 label: 'Federation',
                 fields: ApiKey.FEDERATION_PERMISSIONS.map(p => _federationSwitch(p, allowed))
@@ -190,6 +236,62 @@ ApiKey.permissionTabset = function (canGrant) {
 // getter, not a value — see permissionTabset() on why this must resolve late.
 Object.defineProperty(ApiKey, 'PERMISSION_TABSET', {
     get() { return ApiKey.permissionTabset(); }
+});
+
+/** Every permission represented by a guided switch, regardless of grant gate. */
+ApiKey.catalogPermissionNames = function () {
+    return ApiKey.permissionTabset(true)[0].tabs
+        .flatMap(tab => tab.fields || [])
+        .map(field => field.name?.replace(/^permissions\./, ''))
+        .filter(Boolean);
+};
+
+/** Truthy stored permissions that have no guided switch. */
+ApiKey.customPermissionNames = function (permissions) {
+    const catalog = new Set(ApiKey.catalogPermissionNames());
+    if (!permissions || typeof permissions !== 'object' || Array.isArray(permissions)) return [];
+    return Object.entries(permissions)
+        .filter(([name, value]) => !catalog.has(name) && (value === true || value === 1))
+        .map(([name]) => name)
+        .sort();
+};
+
+/**
+ * Convert both guided switches and the freeform TagInput into the existing
+ * dotted-key, grant-only create wire shape.
+ */
+ApiKey.buildCreatePayload = function (formData) {
+    const source = formData || {};
+    const payload = Object.fromEntries(Object.entries(source).filter(([key, value]) =>
+        key !== 'custom_permissions'
+        && (!key.startsWith('permissions.') || value === true)));
+    for (const name of ApiKey.normalizePermissionNames(source.custom_permissions)) {
+        payload[`permissions.${name}`] = true;
+    }
+    return payload;
+};
+
+/** Add/revoke only uncatalogued grants, leaving every guided switch alone. */
+ApiKey.buildCustomPermissionsPatch = function (current, desired) {
+    const catalog = new Set(ApiKey.catalogPermissionNames());
+    const before = new Set(ApiKey.customPermissionNames(current));
+    const after = ApiKey.normalizePermissionNames(desired)
+        .filter(name => !catalog.has(name));
+    const patch = Object.fromEntries(
+        after.filter(name => !before.has(name)).map(name => [name, true]));
+    for (const name of before) {
+        if (!after.includes(name)) patch[name] = false;
+    }
+    return patch;
+};
+
+const customPermissionsField = () => ({
+    name: 'custom_permissions',
+    type: 'tags',
+    label: 'Additional permission names',
+    placeholder: 'Type a permission and press Enter',
+    columns: 12,
+    help: 'Add permission strings that are not listed above. Remove a tag to revoke it when editing; the server authorizes every change.'
 });
 
 /**
@@ -236,7 +338,8 @@ const ApiKeyForms = {
                     class: 'mt-2 mb-0',
                     columns: 12
                 },
-                ...ApiKey.PERMISSION_TABSET
+                ...ApiKey.PERMISSION_TABSET,
+                customPermissionsField()
             ];
         }
     },
@@ -254,7 +357,9 @@ const ApiKeyForms = {
                 columns: 12
             }
         ]
-    }
+    },
+
+    customPermissionsField
 };
 
 export { ApiKey, ApiKeyList, ApiKeyForms };

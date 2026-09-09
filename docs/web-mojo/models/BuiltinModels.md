@@ -642,17 +642,22 @@ await keys.fetch();
 of its group, so the create form embeds the **Group Member permission
 catalog** as a switch tabset — the same `Member.PERMISSION_TABSET` the
 MemberView permissions editor consumes (app permissions registered via
-`Member.registerPermissions(...)` appear automatically). Each switch is a
-dotted `permissions.<name>` key saved as a boolean. Callers should strip
-unchecked (`false`) permission keys before POSTing a create (grant-only
-semantics — see `ApiKeyTablePage.onActionAdd`).
+`Member.registerPermissions(...)` appear automatically). An API-key-only
+**Integrations** tab includes `send_sms` and the broader `comms` grant. Each
+switch is a dotted `permissions.<name>` key saved as a boolean.
+
+Create and detail forms also include **Additional permission names**, a tags
+input for arbitrary backend permission strings that have no guided switch.
+Removing a tag in the detail editor revokes that custom grant. Use
+`ApiKey.buildCreatePayload(formData)` when submitting the create form; it
+converts those tags to dotted grant keys and strips unchecked switches.
 
 `ApiKeyForms.edit` is name-only: `is_active` is toggled from the ApiKeyView
 detail header's active switch, and permissions autosave from its Permissions
 section (`ApiKeyView` extends `DetailView`).
 
-The Permissions section also has a **JSON policy** mode for permissions that
-are not registered in the guided catalog. It edits the complete boolean map:
+The Permissions section retains a **JSON policy** mode for bulk or complete
+policy editing. It edits the complete boolean map:
 
 ```json
 {
@@ -670,6 +675,8 @@ whether the current operator may grant or revoke every changed key.
 `ApiKey.validatePermissionsPolicy(policy)` validates this document shape, and
 `ApiKey.buildPermissionsPatch(current, desired)` converts the complete desired
 document into the backend's merge-style permission patch.
+`ApiKey.buildCustomPermissionsPatch(current, desired)` creates the narrow
+add/revoke patch used by the freeform tags editor.
 
 Permission threshold for CRUD is `manage_group` / `manage_groups` / `groups`.
 

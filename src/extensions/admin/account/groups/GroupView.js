@@ -1704,21 +1704,20 @@ class GroupView extends DetailView {
         });
         if (!data) return;
 
-        // Grant-only create: drop unchecked permission switches so the POST
-        // carries one dotted `permissions.<name>: true` key per granted
-        // permission and nothing else (absent = not granted; explicit falses
-        // would fire the backend's per-key permission gate for nothing).
-        //
         // Model.save(data) sends `data` as the POST body verbatim — it does
-        // NOT serialize from constructor attributes. Pass the payload here
-        // (mirrors the proven pattern in ApiKeyTablePage.onActionAdd).
+        // NOT serialize from constructor attributes. Normalize the guided
+        // switches and freeform permission tags before adding the fixed group.
         const newKey = new ApiKey();
-        const payload = {
-            ...Object.fromEntries(
-                Object.entries(data).filter(([k, v]) => !k.startsWith('permissions.') || v === true)
-            ),
-            group: this.model.id
-        };
+        let payload;
+        try {
+            payload = {
+                ...ApiKey.buildCreatePayload(data),
+                group: this.model.id
+            };
+        } catch (error) {
+            this.getApp()?.toast?.error(error.message);
+            return;
+        }
         const resp = await newKey.save(payload);
         if (!resp?.data?.status || (resp?.status && resp.status >= 400)) {
             this.getApp()?.toast?.error(

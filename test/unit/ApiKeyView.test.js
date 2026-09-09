@@ -205,6 +205,57 @@ module.exports = async function (testContext) {
             expect(field.label).toBe('Permissions policy (JSON)');
         });
 
+        it('Permissions section exposes uncatalogued grants as removable tags', async () => {
+            model = makeApiKeyModel({
+                permissions: {
+                    view_logs: true,
+                    legacy_custom: true,
+                    remove_me: true
+                }
+            });
+            view = new ApiKeyView({ model });
+            await view.render(false);
+
+            const custom = view.permissionsSection.customFormView;
+            expect(custom).toBeInstanceOf(FormViewStub);
+            expect(custom.options.fields[0].type).toBe('tags');
+            expect(custom.data.custom_permissions).toBe('legacy_custom,remove_me');
+        });
+
+        it('freeform permission save adds and removes only uncatalogued grants', async () => {
+            model = makeApiKeyModel({
+                permissions: {
+                    view_logs: true,
+                    legacy_custom: true,
+                    remove_me: true
+                }
+            });
+            view = new ApiKeyView({ model });
+            await view.render(false);
+            const section = view.permissionsSection;
+            section.customFormView.getFormData = async () => ({
+                custom_permissions: 'legacy_custom,new_custom'
+            });
+
+            await section.onActionSaveCustomPermissions();
+
+            expect(model.saveCalls).toHaveLength(1);
+            expect(model.saveCalls[0]).toEqual({
+                payload: {
+                    permissions: {
+                        new_custom: true,
+                        remove_me: false
+                    }
+                },
+                options: { skipRender: true }
+            });
+            expect(model.get('permissions')).toEqual({
+                view_logs: true,
+                legacy_custom: true,
+                new_custom: true
+            });
+        });
+
         it('raw JSON save treats the document as complete and supports uncatalogued permissions', async () => {
             const section = view.permissionsSection;
             section.rawFormView.getFormData = async () => ({

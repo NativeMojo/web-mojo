@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **API keys can grant SMS and custom permissions without JSON editing.** The
+  guided editor now includes `send_sms` and `comms`, while create and detail
+  forms accept arbitrary permission names as removable tags. The server
+  remains authoritative for every grant and revocation.
 - **API key details now include a structured rate-limit editor.** Both the
   standalone and per-group admin surfaces show sorted explicit endpoint caps,
   the safe **Unlimited (default)** no-overrides state, invalid legacy data, and

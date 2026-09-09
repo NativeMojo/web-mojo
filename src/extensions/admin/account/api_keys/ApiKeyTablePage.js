@@ -77,13 +77,13 @@ class ApiKeyTablePage extends TablePage {
         });
         if (!result) return;
 
-        // Grant-only create: drop unchecked permission switches so the POST
-        // carries one dotted `permissions.<name>: true` key per granted
-        // permission and nothing else (absent = not granted; explicit falses
-        // would fire the backend's per-key permission gate for nothing).
-        const payload = Object.fromEntries(
-            Object.entries(result).filter(([k, v]) => !k.startsWith('permissions.') || v === true)
-        );
+        let payload;
+        try {
+            payload = ApiKey.buildCreatePayload(result);
+        } catch (error) {
+            app.showError(error.message);
+            return;
+        }
 
         const resp = await model.save(payload);
         if (!resp?.data?.status) {
