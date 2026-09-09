@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.10.2 — 2026-09-09
 
 - **API keys can grant SMS and custom permissions without JSON editing.** The
   guided editor now includes `send_sms` and `comms`, while create and detail
