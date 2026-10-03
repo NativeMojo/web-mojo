@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.10.3 — 2026-10-02
+
+- **WebSocketClient answers server-initiated pings.** A `{type: 'ping', ts}`
+  frame is now replied to at once with `{type: 'pong', ts}`, counts as proof
+  of life (clears the pending pong timeout), and is not emitted to `message`
+  listeners. django-mojo 1.32 pings every 20 s and culls a socket silent for
+  90 s; answering from the message handler keeps realtime connections alive
+  while a background tab throttles the client's own ping timer. The client's
+  own `{action: 'ping'}` heartbeat is unchanged.
+
 ## 2.10.2 — 2026-09-09
 
 - **API keys can grant SMS and custom permissions without JSON editing.** The
