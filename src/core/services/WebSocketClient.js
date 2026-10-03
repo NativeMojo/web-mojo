@@ -5,6 +5,12 @@
  * - Infinite auto-reconnect with capped exponential backoff + jitter (never gives up)
  * - Separate "intentional disconnect" flag so clean closes still reconnect
  * - Heartbeat ping/pong with timeout-driven force-reconnect
+ * - Answers server-initiated pings: a {type:'ping', ts} frame is replied to
+ *   at once with {type:'pong', ts}, counts as proof of life (clears the
+ *   pending pong timeout), and is never emitted to 'message' listeners.
+ *   The server (django-mojo >= 1.32) pings every 20 s and culls a socket
+ *   idle for 90 s; answering from the message handler keeps the socket
+ *   alive even when a background tab throttles the client's own ping timer.
  * - Immediate reconnect nudge on browser visibility / window focus restore
  * - Optional integration with WebApp's browser:focus event bus
  * - Event-driven architecture using EventEmitter
@@ -232,6 +238,18 @@ class WebSocketClient {
     // Absorb pong heartbeat response
     if (data?.type === 'pong') {
       this._clearPongTimeout();
+      return;
+    }
+
+    // Server-initiated heartbeat: answer at once on the open socket, treat it
+    // as proof of life, and absorb it (never emitted as a message).
+    if (data?.type === 'ping') {
+      this._clearPongTimeout();
+      try {
+        this.send({ type: 'pong', ts: data.ts });
+      } catch (err) {
+        this._log('Pong send failed:', err.message);
+      }
       return;
     }
 

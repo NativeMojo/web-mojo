@@ -28,7 +28,7 @@
 `WebSocketClient` provides:
 
 - **Auto-reconnect** with configurable exponential backoff
-- **Heartbeat ping/pong** — sends a `ping` action on an interval and closes the connection if no `pong` is received within a timeout window
+- **Heartbeat ping/pong** — sends a `ping` action on an interval and closes the connection if no `pong` is received within a timeout window; answers server-initiated `ping` frames with a `pong` at once
 - **Token authentication** — sends an `authenticate` message immediately after connecting
 - **Event-driven API** — uses the `EventEmitter` mixin; subscribe with `.on()`, `.once()`, `.off()`
 - **Smart message routing** — typed messages are emitted as `message:<type>` in addition to the generic `message` event
@@ -178,6 +178,8 @@ This allows different parts of your application to subscribe only to the message
 
 Messages with `type: 'pong'` are consumed internally by the heartbeat system and are **not** emitted to `'message'` listeners.
 
+Messages with `type: 'ping'` (server-initiated heartbeats) are answered with `{ type: 'pong', ts }` and are likewise **not** emitted.
+
 ---
 
 ## Authentication
@@ -272,6 +274,10 @@ await ws.connect();
 `WebSocketClient` sends a `{ action: 'ping' }` message on `pingInterval` and expects a `{ type: 'pong' }` response within `pongTimeout` milliseconds.
 
 If no pong arrives in time, the socket is forcibly closed (code `1006`) and auto-reconnect triggers.
+
+### Server-initiated pings
+
+django-mojo 1.32+ sends `{ "type": "ping", "ts": <epoch> }` every 20 s to each authenticated socket and closes one that has been silent for 90 s. `WebSocketClient` answers each such frame immediately with `{ type: 'pong', ts }` (echoing `ts`), treats it as proof of life (the pending pong timeout is cleared), and does not emit it as a message. Because the reply is sent from the message handler rather than a timer, the socket stays alive even while a background tab throttles or suspends the client's own `pingInterval`.
 
 ```js
 // Disable heartbeat entirely
