@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.10.4 — 2026-11-09
 
 - **Group Settings distinguishes the selected group from its parent.** The
   header identifies the parent, the edit dialog names the selected group, and
