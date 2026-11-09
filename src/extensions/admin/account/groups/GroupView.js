@@ -1345,10 +1345,6 @@ class GroupView extends DetailView {
               when: m => !!m.get('metadata')?.portal }
         ];
 
-        // Kind-aware noun for user-facing copy. Falls back to 'Group'
-        // when `kind` is unset or unknown.
-        const kindNoun = kindLabel(kind) || 'Group';
-
         // Phase 4 pattern: admin-tier-tagged kebab items get filtered by
         // ModalView.filterContextMenuItems via app.activeUser.hasPermission.
         // Two perm tiers for Groups (line 214 of the spec — deactivate
@@ -1359,18 +1355,17 @@ class GroupView extends DetailView {
         const GROUP_AUTH_PERMS = ['sys.groups', 'sys.manage_groups'];
 
         const contextItems = [
-            { label: `Edit ${kindNoun}`,    action: 'edit-group',       icon: 'bi-pencil',        permissions: GROUP_ADMIN_PERMS },
-            { label: 'Invite Member',       action: 'invite-member',    icon: 'bi-person-plus',   permissions: GROUP_ADMIN_PERMS },
-            { label: `Add Sub-${kindNoun}`, action: 'add-child-group',  icon: 'bi-diagram-3',     permissions: GROUP_ADMIN_PERMS },
-            { label: 'Configure Auth',      action: 'configure-auth',   icon: 'bi-box-arrow-in-right', permissions: GROUP_AUTH_PERMS }
+            { label: 'Edit Group',    action: 'edit-group',      icon: 'bi-pencil',      permissions: GROUP_ADMIN_PERMS },
+            { label: 'Invite Member', action: 'invite-member',   icon: 'bi-person-plus', permissions: GROUP_ADMIN_PERMS },
+            { label: 'Add Sub-Group', action: 'add-child-group', icon: 'bi-diagram-3',   permissions: GROUP_ADMIN_PERMS },
+            { label: 'Configure Auth', action: 'configure-auth', icon: 'bi-box-arrow-in-right', permissions: GROUP_AUTH_PERMS },
+            { label: 'View Parent', action: 'view-parent-menu', icon: 'bi-arrow-up-right-square', when: m => !!m.get('parent.id') },
+            { type: 'divider' },
+            { label: 'Deactivate Group', action: 'state-toggle', icon: 'bi-toggle-off', permissions: GROUP_DESTRUCTIVE_PERMS,
+              when: m => !!m.get('is_active') },
+            { label: 'Activate Group', action: 'state-toggle', icon: 'bi-toggle-on', permissions: GROUP_DESTRUCTIVE_PERMS,
+              when: m => !m.get('is_active') }
         ];
-        if (model.get('parent')?.id) {
-            contextItems.push({ label: 'View Parent', action: 'view-parent-menu', icon: 'bi-arrow-up-right-square' });
-        }
-        contextItems.push({ type: 'divider' });
-        contextItems.push(model.get('is_active')
-            ? { label: `Deactivate ${kindNoun}`, action: 'state-toggle', icon: 'bi-toggle-off', permissions: GROUP_DESTRUCTIVE_PERMS }
-            : { label: `Activate ${kindNoun}`,   action: 'state-toggle', icon: 'bi-toggle-on',  permissions: GROUP_DESTRUCTIVE_PERMS });
 
         super({
             className: 'group-view',
@@ -1379,7 +1374,10 @@ class GroupView extends DetailView {
             header: {
                 icon: headerIcon,
                 titleField: 'name',
-                subtitlePath: '_subtitle',
+                subtitleFn: m => {
+                    const parentName = m.get('parent.name');
+                    return parentName ? `Parent group · ${parentName}` : '';
+                },
                 chips,
                 // Active toggle is emitted from auxFn (not via framework's
                 // `activeField`) so the right gutter is a 2-row block:
@@ -1412,8 +1410,6 @@ class GroupView extends DetailView {
         this.eventsSection                  = eventsSection;
         this.auditSection                   = auditSection;
         this.metadataSection                = metadataSection;
-
-        this._refreshComputedFields();
     }
 
     async onAfterBuild() {
@@ -1478,7 +1474,6 @@ class GroupView extends DetailView {
         // Re-render the header so chips + auxFn reflect populated collections
         const refreshHeader = () => {
             if (this.headerView?.isMounted()) this.headerView.render().catch(() => {});
-            this._refreshComputedFields();
         };
         this.membersCollection.on('fetch:success',   refreshHeader, this);
         this.subGroupsCollection.on('fetch:success', refreshHeader, this);
@@ -1494,28 +1489,6 @@ class GroupView extends DetailView {
         this.webhookSubscriptionsCollection.fetch().catch(() => {});
         this.eventsCollection.fetch().catch(()    => {});
         this.auditCollection.fetch().catch(()     => {});
-    }
-
-    /**
-     * Compute the synthetic `_subtitle` field the header binds to via
-     * subtitlePath. Shows the parent breadcrumb when there is one; empty
-     * otherwise. Kind is already conveyed by a header chip — don't
-     * duplicate it as a subtitle row.
-     */
-    _refreshComputedFields() {
-        const m = this.model;
-        const parent = m.get('parent');
-        m.attributes._subtitle = parent?.name ? String(parent.name) : '';
-    }
-
-    /**
-     * Kind-aware noun for user-facing copy. Returns the localized label
-     * (`Organization`, `Department`, `Team`, etc.) or falls back to
-     * `Group` when `kind` is unset. Phase 5 — spec line 264 ("Don't
-     * hardcode 'group' in copy").
-     */
-    _kindNoun() {
-        return kindLabel(this.model.get('kind')) || 'Group';
     }
 
     /**
@@ -1546,7 +1519,7 @@ class GroupView extends DetailView {
 
     async onActionEditGroup() {
         const resp = await Modal.modelForm({
-            title: `Edit ${this._kindNoun()} — ${this.model.get('name')}`,
+            title: `Edit Group — ${escapeHtml(this.model.get('name') || '')}`,
             model: this.model,
             size: 'lg',
             formConfig: GroupForms.detailed
@@ -1668,9 +1641,8 @@ class GroupView extends DetailView {
      * kebab "Add Sub-Group" entry.
      */
     async _addSubGroup() {
-        const noun = this._kindNoun();
         const data = await Modal.form({
-            title: `Add Sub-${noun} to ${this.model.get('name')}`,
+            title: `Add Sub-Group to ${escapeHtml(this.model.get('name') || '')}`,
             size: 'sm',
             fields: GroupForms.create.fields.filter(f => f.name !== 'parent')
         });
@@ -1681,10 +1653,10 @@ class GroupView extends DetailView {
         const resp = await newGroup.save(payload);
         const ok = resp?.data?.status || (resp?.status && resp.status < 400);
         if (ok) {
-            this.getApp()?.toast?.success(`Sub-${noun.toLowerCase()} created`);
+            this.getApp()?.toast?.success('Sub-group created');
             await this.subGroupsCollection.fetch().catch(() => {});
         } else {
-            this.getApp()?.toast?.error(resp?.data?.error || resp?.message || `Failed to create sub-${noun.toLowerCase()}`);
+            this.getApp()?.toast?.error(resp?.data?.error || resp?.message || 'Failed to create sub-group');
         }
     }
 
@@ -2122,10 +2094,9 @@ class GroupView extends DetailView {
         const toActive = !this.model.get('is_active');
         const verb = toActive ? 'activate' : 'deactivate';
         const Verb = toActive ? 'Activate' : 'Deactivate';
-        const noun = this._kindNoun();
         const confirmed = await Modal.confirm(
             `Are you sure you want to ${verb} <strong>${escapeHtml(this.model.get('name') || '')}</strong>?`,
-            `${Verb} ${noun}`
+            `${Verb} Group`
         );
         if (!confirmed) return true;
 
@@ -2170,7 +2141,6 @@ class GroupView extends DetailView {
      * save (header chips, identity, overview, permissions).
      */
     async _fullRefresh() {
-        this._refreshComputedFields();
         if (this.headerView?.isMounted())         await this.headerView.render();
         if (this.overviewSection?.isMounted())    await this.overviewSection.render();
         if (this.identitySection?.isMounted())    await this.identitySection.render();

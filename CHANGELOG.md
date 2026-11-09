@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- **Group Settings distinguishes the selected group from its parent.** The
+  header identifies the parent, the edit dialog names the selected group, and
+  the action menu uses group labels even when the group has a custom kind.
+
 ## 2.10.3 — 2026-10-02
 
 - **WebSocketClient answers server-initiated pings.** A `{type: 'ping', ts}`
